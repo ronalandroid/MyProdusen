@@ -1,329 +1,254 @@
-import { prisma } from '@/lib/db';
-import { hashPassword } from '@/lib/auth';
+import { db, employees, users, shifts, workLocations } from '@/lib/db';
+import { eq, and, or, like, sql } from 'drizzle-orm';
 import { getNextNIP } from '@/lib/utils/nip-generator';
-import { EmployeeStatus, UserRole } from '@prisma/client';
-import { CreateEmployeeInput, UpdateEmployeeInput } from '@/lib/validations/employee';
+import { hashPassword } from '@/lib/auth';
+
+export type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
 export class EmployeeService {
-  async createEmployee(data: CreateEmployeeInput) {
+  async createEmployee(data: {
+    email: string;
+    username: string;
+    password: string;
+    fullName: string;
+    phone?: string;
+    address?: string;
+    division?: string;
+    position?: string;
+    supervisorId?: string;
+    defaultShiftId?: string;
+    defaultLocationId?: string;
+    joinDate?: Date;
+  }) {
     // Check if email already exists
-    const existingEmail = await prisma.user.findUnique({
-      where: { email: data.email },
-    });
+    const [existingEmail] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, data.email))
+      .limit(1);
 
     if (existingEmail) {
       throw new Error('Email sudah terdaftar');
     }
 
     // Check if username already exists
-    const existingUsername = await prisma.user.findUnique({
-      where: { username: data.username },
-    });
+    const [existingUsername] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, data.username))
+      .limit(1);
 
     if (existingUsername) {
       throw new Error('Username sudah terdaftar');
     }
 
+    // Get all existing NIPs
+    const allEmployees = await db.select({ nip: employees.nip }).from(employees);
+    const existingNIPs = allEmployees.map(e => e.nip);
+
     // Generate NIP
-    const joinDate = typeof data.joinDate === 'string' ? new Date(data.joinDate) : data.joinDate;
-    const existingNIPs = await prisma.employee.findMany({
-      select: { nip: true },
-    });
-    const nip = await getNextNIP(joinDate, existingNIPs.map(e => e.nip));
+    const joinDate = data.joinDate || new Date();
+    const nip = await getNextNIP(joinDate, existingNIPs);
 
     // Hash password
     const hashedPassword = await hashPassword(data.password);
 
-    // Create user and employee in transaction
-    const result = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email: data.email,
-          username: data.username,
-          password: hashedPassword,
-          role: data.role,
-        },
-      });
+    // Generate IDs
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const employeeId = `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      const employee = await tx.employee.create({
-        data: {
-          nip,
-          userId: user.id,
-          fullName: data.fullName,
-          email: data.email,
-          phone: data.phone,
-          address: data.address,
-          joinDate,
-          division: data.division,
-          position: data.position,
-          supervisorId: data.supervisorId,
-          defaultShiftId: data.defaultShiftId,
-          defaultLocationId: data.defaultLocationId,
-          emergencyContact: data.emergencyContact,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              username: true,
-              role: true,
-            },
-          },
-          supervisor: true,
-          defaultShift: true,
-          defaultLocation: true,
-        },
-      });
+    // Create user
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userId,
+        email: data.email,
+        username: data.username,
+        password: hashedPassword,
+        role: 'EMPLOYEE',
+      })
+      .returning();
 
-      return employee;
-    });
+    // Create employee
+    const [employee] = await db
+      .insert(employees)
+      .values({
+        id: employeeId,
+        nip,
+        userId: user.id,
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        division: data.division,
+        position: data.position,
+        supervisorId: data.supervisorId,
+        defaultShiftId: data.defaultShiftId,
+        defaultLocationId: data.defaultLocationId,
+        joinDate: joinDate,
+        status: 'ACTIVE',
+      })
+      .returning();
 
-    return result;
+    return employee;
   }
 
   async getEmployees(filters?: {
+    search?: string;
     status?: EmployeeStatus;
     division?: string;
     supervisorId?: string;
-    search?: string;
   }) {
-    const where: any = {};
+    let query = db.select().from(employees);
+
+    const conditions = [];
+
+    if (filters?.search) {
+      conditions.push(
+        or(
+          like(employees.fullName, `%${filters.search}%`),
+          like(employees.nip, `%${filters.search}%`),
+          like(employees.email, `%${filters.search}%`)
+        )
+      );
+    }
 
     if (filters?.status) {
-      where.status = filters.status;
+      conditions.push(eq(employees.status, filters.status));
     }
 
     if (filters?.division) {
-      where.division = filters.division;
+      conditions.push(eq(employees.division, filters.division));
     }
 
     if (filters?.supervisorId) {
-      where.supervisorId = filters.supervisorId;
+      conditions.push(eq(employees.supervisorId, filters.supervisorId));
     }
 
-    if (filters?.search) {
-      where.OR = [
-        { fullName: { contains: filters.search, mode: 'insensitive' } },
-        { nip: { contains: filters.search, mode: 'insensitive' } },
-        { email: { contains: filters.search, mode: 'insensitive' } },
-      ];
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
     }
 
-    const employees = await prisma.employee.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            username: true,
-            role: true,
-            isActive: true,
-          },
-        },
-        supervisor: {
-          select: {
-            id: true,
-            fullName: true,
-            nip: true,
-          },
-        },
-        defaultShift: true,
-        defaultLocation: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    return employees;
+    return await query;
   }
 
   async getEmployeeById(id: string) {
-    const employee = await prisma.employee.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            username: true,
-            role: true,
-            isActive: true,
-          },
-        },
-        supervisor: {
-          select: {
-            id: true,
-            fullName: true,
-            nip: true,
-          },
-        },
-        subordinates: {
-          select: {
-            id: true,
-            fullName: true,
-            nip: true,
-          },
-        },
-        defaultShift: true,
-        defaultLocation: true,
-      },
-    });
+    const [employee] = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.id, id))
+      .limit(1);
 
     if (!employee) {
       throw new Error('Karyawan tidak ditemukan');
     }
 
-    return employee;
+    // Get related data
+    let supervisor = null;
+    if (employee.supervisorId) {
+      const [sup] = await db
+        .select()
+        .from(employees)
+        .where(eq(employees.id, employee.supervisorId))
+        .limit(1);
+      supervisor = sup || null;
+    }
+
+    let defaultShift = null;
+    if (employee.defaultShiftId) {
+      const [shift] = await db
+        .select()
+        .from(shifts)
+        .where(eq(shifts.id, employee.defaultShiftId))
+        .limit(1);
+      defaultShift = shift || null;
+    }
+
+    let defaultLocation = null;
+    if (employee.defaultLocationId) {
+      const [location] = await db
+        .select()
+        .from(workLocations)
+        .where(eq(workLocations.id, employee.defaultLocationId))
+        .limit(1);
+      defaultLocation = location || null;
+    }
+
+    return {
+      ...employee,
+      supervisor,
+      defaultShift,
+      defaultLocation,
+    };
   }
 
-  async updateEmployee(id: string, data: UpdateEmployeeInput) {
-    const employee = await prisma.employee.findUnique({
-      where: { id },
-    });
+  async updateEmployee(id: string, data: Partial<{
+    fullName: string;
+    phone: string;
+    address: string;
+    division: string;
+    position: string;
+    supervisorId: string;
+    status: EmployeeStatus;
+    defaultShiftId: string;
+    defaultLocationId: string;
+    profilePhoto: string;
+    emergencyContact: string;
+  }>) {
+    const [employee] = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.id, id))
+      .limit(1);
 
     if (!employee) {
       throw new Error('Karyawan tidak ditemukan');
     }
 
-    // Check if email is being changed and already exists
-    if (data.email && data.email !== employee.email) {
-      const existingEmail = await prisma.user.findFirst({
-        where: {
-          email: data.email,
-          id: { not: employee.userId },
-        },
-      });
+    const [updated] = await db
+      .update(employees)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(employees.id, id))
+      .returning();
 
-      if (existingEmail) {
-        throw new Error('Email sudah terdaftar');
-      }
-    }
-
-    // Update employee and user in transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Update user email if changed
-      if (data.email && data.email !== employee.email) {
-        await tx.user.update({
-          where: { id: employee.userId },
-          data: { email: data.email },
-        });
-      }
-
-      // Update employee
-      const updated = await tx.employee.update({
-        where: { id },
-        data: {
-          fullName: data.fullName,
-          email: data.email,
-          phone: data.phone,
-          address: data.address,
-          division: data.division,
-          position: data.position,
-          supervisorId: data.supervisorId,
-          defaultShiftId: data.defaultShiftId,
-          defaultLocationId: data.defaultLocationId,
-          emergencyContact: data.emergencyContact,
-          status: data.status,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              username: true,
-              role: true,
-              isActive: true,
-            },
-          },
-          supervisor: true,
-          defaultShift: true,
-          defaultLocation: true,
-        },
-      });
-
-      return updated;
-    });
-
-    return result;
+    return updated;
   }
 
-  async deactivateEmployee(id: string) {
-    const employee = await prisma.employee.findUnique({
-      where: { id },
-    });
+  async deleteEmployee(id: string) {
+    const [employee] = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.id, id))
+      .limit(1);
 
     if (!employee) {
       throw new Error('Karyawan tidak ditemukan');
     }
 
-    // Deactivate employee and user
-    await prisma.$transaction(async (tx) => {
-      await tx.employee.update({
-        where: { id },
-        data: { status: EmployeeStatus.INACTIVE },
-      });
+    // Delete employee (will cascade to user due to FK)
+    await db
+      .delete(employees)
+      .where(eq(employees.id, id));
 
-      await tx.user.update({
-        where: { id: employee.userId },
-        data: { isActive: false },
-      });
-    });
+    // Delete associated user
+    await db
+      .delete(users)
+      .where(eq(users.id, employee.userId));
 
-    return { message: 'Karyawan berhasil dinonaktifkan' };
-  }
-
-  async activateEmployee(id: string) {
-    const employee = await prisma.employee.findUnique({
-      where: { id },
-    });
-
-    if (!employee) {
-      throw new Error('Karyawan tidak ditemukan');
-    }
-
-    // Activate employee and user
-    await prisma.$transaction(async (tx) => {
-      await tx.employee.update({
-        where: { id },
-        data: { status: EmployeeStatus.ACTIVE },
-      });
-
-      await tx.user.update({
-        where: { id: employee.userId },
-        data: { isActive: true },
-      });
-    });
-
-    return { message: 'Karyawan berhasil diaktifkan' };
+    return { message: 'Karyawan berhasil dihapus' };
   }
 
   async getEmployeeByUserId(userId: string) {
-    const employee = await prisma.employee.findUnique({
-      where: { userId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            username: true,
-            role: true,
-            isActive: true,
-          },
-        },
-        supervisor: true,
-        defaultShift: true,
-        defaultLocation: true,
-      },
-    });
+    const [employee] = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.userId, userId))
+      .limit(1);
 
-    if (!employee) {
-      throw new Error('Data karyawan tidak ditemukan');
-    }
-
-    return employee;
+    return employee || null;
   }
 }
 

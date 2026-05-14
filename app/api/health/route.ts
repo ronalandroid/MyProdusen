@@ -1,23 +1,24 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { NextRequest } from 'next/server';
+import { db } from '@/lib/db';
+import { sql } from 'drizzle-orm';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    await prisma.$queryRaw`SELECT 1`;
-
-    return NextResponse.json({
-      success: true,
+    // Test database connection
+    await db.execute(sql`SELECT 1`);
+    
+    return Response.json({
       status: 'ok',
-      database: 'ok',
       timestamp: new Date().toISOString(),
+      database: 'connected',
     });
-  } catch (error) {
-    return NextResponse.json(
+  } catch (error: any) {
+    return Response.json(
       {
-        success: false,
         status: 'error',
-        database: 'error',
         timestamp: new Date().toISOString(),
+        database: 'disconnected',
+        error: error.message,
       },
       { status: 503 }
     );

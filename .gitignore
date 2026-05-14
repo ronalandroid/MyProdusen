@@ -34,6 +34,10 @@ yarn-error.log*
 next-env.d.ts
 
 # uploads
+/uploads
 /public/uploads
 
-# prisma migrations must be committed for production deploy
+# drizzle
+.drizzle
+
+# drizzle migrations must be committed for production deploy

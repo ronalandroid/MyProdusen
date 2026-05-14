@@ -12,6 +12,10 @@ export async function POST(request: NextRequest) {
     // Get employee data
     const employee = await employeeService.getEmployeeByUserId(user.userId);
     
+    if (!employee) {
+      return errorResponse('Data karyawan tidak ditemukan');
+    }
+    
     const body = await getRequestBody(request);
     
     // Validate input
@@ -24,7 +28,6 @@ export async function POST(request: NextRequest) {
     const userAgent = getUserAgent(request);
     
     const attendance = await attendanceService.checkOut({
-      attendanceId: validation.data.attendanceId,
       employeeId: employee.id,
       latitude: validation.data.latitude,
       longitude: validation.data.longitude,

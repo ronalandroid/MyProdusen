@@ -1,15 +1,16 @@
-import { prisma } from '@/lib/db';
+import { db, users, employees } from '@/lib/db';
 import { hashPassword, verifyPassword, generateToken } from '@/lib/auth';
-import { UserRole } from '@prisma/client';
+import { eq } from 'drizzle-orm';
+
+export type UserRole = 'SUPERADMIN' | 'ADMIN_HR' | 'SUPERVISOR' | 'EMPLOYEE';
 
 export class AuthService {
   async login(email: string, password: string) {
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: {
-        employee: true,
-      },
-    });
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
     if (!user) {
       throw new Error('Email atau password salah');
@@ -24,10 +25,17 @@ export class AuthService {
       throw new Error('Email atau password salah');
     }
 
+    // Get employee data if exists
+    const [employee] = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.userId, user.id))
+      .limit(1);
+
     const token = generateToken({
       userId: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role as UserRole,
     });
 
     return {
@@ -37,7 +45,7 @@ export class AuthService {
         email: user.email,
         username: user.username,
         role: user.role,
-        employee: user.employee,
+        employee: employee || null,
       },
     };
   }
@@ -49,18 +57,22 @@ export class AuthService {
     role: UserRole;
   }) {
     // Check if email already exists
-    const existingEmail = await prisma.user.findUnique({
-      where: { email: data.email },
-    });
+    const [existingEmail] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, data.email))
+      .limit(1);
 
     if (existingEmail) {
       throw new Error('Email sudah terdaftar');
     }
 
     // Check if username already exists
-    const existingUsername = await prisma.user.findUnique({
-      where: { username: data.username },
-    });
+    const [existingUsername] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, data.username))
+      .limit(1);
 
     if (existingUsername) {
       throw new Error('Username sudah terdaftar');
@@ -68,14 +80,19 @@ export class AuthService {
 
     const hashedPassword = await hashPassword(data.password);
 
-    const user = await prisma.user.create({
-      data: {
+    // Generate unique ID (using timestamp + random)
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userId,
         email: data.email,
         username: data.username,
         password: hashedPassword,
         role: data.role,
-      },
-    });
+      })
+      .returning();
 
     return {
       id: user.id,
@@ -86,9 +103,11 @@ export class AuthService {
   }
 
   async changePassword(userId: string, currentPassword: string, newPassword: string) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
 
     if (!user) {
       throw new Error('User tidak ditemukan');
@@ -105,27 +124,23 @@ export class AuthService {
 
     const hashedPassword = await hashPassword(newPassword);
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-    });
+    await db
+      .update(users)
+      .set({ 
+        password: hashedPassword,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
 
     return { message: 'Password berhasil diubah' };
   }
 
   async getUserProfile(userId: string) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        employee: {
-          include: {
-            supervisor: true,
-            defaultShift: true,
-            defaultLocation: true,
-          },
-        },
-      },
-    });
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
 
     if (!user) {
       throw new Error('User tidak ditemukan');
@@ -135,13 +150,39 @@ export class AuthService {
       throw new Error('Akun tidak aktif');
     }
 
+    // Get employee data with relations
+    const [employee] = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.userId, user.id))
+      .limit(1);
+
+    let employeeData = null;
+    if (employee) {
+      // Get supervisor if exists
+      let supervisor = null;
+      if (employee.supervisorId) {
+        const [sup] = await db
+          .select()
+          .from(employees)
+          .where(eq(employees.id, employee.supervisorId))
+          .limit(1);
+        supervisor = sup || null;
+      }
+
+      employeeData = {
+        ...employee,
+        supervisor,
+      };
+    }
+
     return {
       id: user.id,
       email: user.email,
       username: user.username,
       role: user.role,
       isActive: user.isActive,
-      employee: user.employee,
+      employee: employeeData,
     };
   }
 }

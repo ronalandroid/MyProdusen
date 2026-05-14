@@ -1,4 +1,5 @@
-import { prisma } from '@/lib/db';
+import { db, shifts } from '@/lib/db';
+import { eq } from 'drizzle-orm';
 
 export class ShiftService {
   async createShift(data: {
@@ -6,43 +7,38 @@ export class ShiftService {
     startTime: string;
     endTime: string;
   }) {
-    const shift = await prisma.shift.create({
-      data: {
+    const shiftId = `shift_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    const [shift] = await db
+      .insert(shifts)
+      .values({
+        id: shiftId,
         name: data.name,
         startTime: data.startTime,
         endTime: data.endTime,
-      },
-    });
+        isActive: true,
+      })
+      .returning();
 
     return shift;
   }
 
-  async getShifts(includeInactive: boolean = false) {
-    const where = includeInactive ? {} : { isActive: true };
+  async getShifts(filters?: { isActive?: boolean }) {
+    let query = db.select().from(shifts);
 
-    const shifts = await prisma.shift.findMany({
-      where,
-      orderBy: {
-        startTime: 'asc',
-      },
-    });
+    if (filters?.isActive !== undefined) {
+      query = query.where(eq(shifts.isActive, filters.isActive)) as any;
+    }
 
-    return shifts;
+    return await query;
   }
 
   async getShiftById(id: string) {
-    const shift = await prisma.shift.findUnique({
-      where: { id },
-      include: {
-        employees: {
-          select: {
-            id: true,
-            fullName: true,
-            nip: true,
-          },
-        },
-      },
-    });
+    const [shift] = await db
+      .select()
+      .from(shifts)
+      .where(eq(shifts.id, id))
+      .limit(1);
 
     if (!shift) {
       throw new Error('Shift tidak ditemukan');
@@ -51,63 +47,48 @@ export class ShiftService {
     return shift;
   }
 
-  async updateShift(
-    id: string,
-    data: {
-      name?: string;
-      startTime?: string;
-      endTime?: string;
-      isActive?: boolean;
-    }
-  ) {
-    const shift = await prisma.shift.findUnique({
-      where: { id },
-    });
+  async updateShift(id: string, data: Partial<{
+    name: string;
+    startTime: string;
+    endTime: string;
+    isActive: boolean;
+  }>) {
+    const [shift] = await db
+      .select()
+      .from(shifts)
+      .where(eq(shifts.id, id))
+      .limit(1);
 
     if (!shift) {
       throw new Error('Shift tidak ditemukan');
     }
 
-    const updated = await prisma.shift.update({
-      where: { id },
-      data,
-    });
+    const [updated] = await db
+      .update(shifts)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(shifts.id, id))
+      .returning();
 
     return updated;
   }
 
   async deleteShift(id: string) {
-    const shift = await prisma.shift.findUnique({
-      where: { id },
-      include: {
-        employees: true,
-        attendances: true,
-      },
-    });
+    const [shift] = await db
+      .select()
+      .from(shifts)
+      .where(eq(shifts.id, id))
+      .limit(1);
 
     if (!shift) {
       throw new Error('Shift tidak ditemukan');
     }
 
-    // Check if shift is being used
-    if (shift.employees.length > 0) {
-      throw new Error('Shift masih digunakan oleh karyawan');
-    }
-
-    if (shift.attendances.length > 0) {
-      // Soft delete by deactivating
-      await prisma.shift.update({
-        where: { id },
-        data: { isActive: false },
-      });
-
-      return { message: 'Shift berhasil dinonaktifkan' };
-    }
-
-    // Hard delete if no historical data
-    await prisma.shift.delete({
-      where: { id },
-    });
+    await db
+      .delete(shifts)
+      .where(eq(shifts.id, id));
 
     return { message: 'Shift berhasil dihapus' };
   }

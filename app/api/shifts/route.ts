@@ -7,8 +7,8 @@ import { z } from 'zod';
 
 const createShiftSchema = z.object({
   name: z.string().min(3, 'Nama shift minimal 3 karakter'),
-  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format waktu harus HH:MM'),
-  endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format waktu harus HH:MM'),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Format waktu harus HH:MM'),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Format waktu harus HH:MM'),
 });
 
 export async function GET(request: NextRequest) {
@@ -16,13 +16,15 @@ export async function GET(request: NextRequest) {
     const user = await requireAuth(request);
     
     if (!hasPermission(user.role, 'SHIFT_READ')) {
-      return forbiddenResponse('Anda tidak memiliki akses untuk melihat shift');
+      return forbiddenResponse('Anda tidak memiliki akses untuk melihat data shift');
     }
     
     const { searchParams } = new URL(request.url);
-    const includeInactive = searchParams.get('includeInactive') === 'true';
+    const isActiveParam = searchParams.get('isActive');
     
-    const shifts = await shiftService.getShifts(includeInactive);
+    const filters = isActiveParam !== null ? { isActive: isActiveParam === 'true' } : undefined;
+    
+    const shifts = await shiftService.getShifts(filters);
     
     return successResponse(shifts);
   } catch (error: any) {
@@ -43,6 +45,7 @@ export async function POST(request: NextRequest) {
     
     const body = await getRequestBody(request);
     
+    // Validate input
     const validation = createShiftSchema.safeParse(body);
     if (!validation.success) {
       return validationErrorResponse(validation.error.errors[0].message);

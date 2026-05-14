@@ -5,12 +5,12 @@ import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { z } from 'zod';
 
-const createLocationSchema = z.object({
+const createWorkLocationSchema = z.object({
   name: z.string().min(3, 'Nama lokasi minimal 3 karakter'),
   address: z.string().min(5, 'Alamat minimal 5 karakter'),
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
-  radius: z.number().positive().optional(),
+  latitude: z.number().min(-90).max(90, 'Latitude tidak valid'),
+  longitude: z.number().min(-180).max(180, 'Longitude tidak valid'),
+  radius: z.number().min(10).max(1000, 'Radius harus antara 10-1000 meter').optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -18,13 +18,15 @@ export async function GET(request: NextRequest) {
     const user = await requireAuth(request);
     
     if (!hasPermission(user.role, 'LOCATION_READ')) {
-      return forbiddenResponse('Anda tidak memiliki akses untuk melihat lokasi kerja');
+      return forbiddenResponse('Anda tidak memiliki akses untuk melihat data lokasi kerja');
     }
     
     const { searchParams } = new URL(request.url);
-    const includeInactive = searchParams.get('includeInactive') === 'true';
+    const isActiveParam = searchParams.get('isActive');
     
-    const locations = await workLocationService.getWorkLocations(includeInactive);
+    const filters = isActiveParam !== null ? { isActive: isActiveParam === 'true' } : undefined;
+    
+    const locations = await workLocationService.getWorkLocations(filters);
     
     return successResponse(locations);
   } catch (error: any) {
@@ -45,7 +47,8 @@ export async function POST(request: NextRequest) {
     
     const body = await getRequestBody(request);
     
-    const validation = createLocationSchema.safeParse(body);
+    // Validate input
+    const validation = createWorkLocationSchema.safeParse(body);
     if (!validation.success) {
       return validationErrorResponse(validation.error.errors[0].message);
     }

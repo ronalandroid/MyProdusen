@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { verifyToken, JwtPayload } from './auth';
-import { prisma } from './db';
+import { db, users } from './db';
+import { eq } from 'drizzle-orm';
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: JwtPayload;
@@ -23,15 +24,16 @@ export async function authenticate(request: NextRequest): Promise<JwtPayload | n
     return null;
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: payload.userId },
-    select: {
-      id: true,
-      email: true,
-      role: true,
-      isActive: true,
-    },
-  });
+  const [user] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      role: users.role,
+      isActive: users.isActive,
+    })
+    .from(users)
+    .where(eq(users.id, payload.userId))
+    .limit(1);
 
   if (!user?.isActive) {
     return null;
@@ -40,7 +42,7 @@ export async function authenticate(request: NextRequest): Promise<JwtPayload | n
   return {
     userId: user.id,
     email: user.email,
-    role: user.role,
+    role: user.role as any,
   };
 }
 

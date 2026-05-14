@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { UserRole } from '@prisma/client';
+
+export type UserRole = 'SUPERADMIN' | 'ADMIN_HR' | 'SUPERVISOR' | 'EMPLOYEE';
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;

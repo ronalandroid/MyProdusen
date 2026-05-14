@@ -5,7 +5,10 @@ export const createEmployeeSchema = z.object({
   email: z.string().email('Email tidak valid'),
   phone: z.string().optional(),
   address: z.string().optional(),
-  joinDate: z.string().or(z.date()),
+  joinDate: z.string().or(z.date()).optional().transform((val) => {
+    if (!val) return undefined;
+    return typeof val === 'string' ? new Date(val) : val;
+  }),
   division: z.string().optional(),
   position: z.string().optional(),
   supervisorId: z.string().optional(),

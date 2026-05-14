@@ -1,6 +1,8 @@
-import { prisma } from '@/lib/db';
-import { LeaveStatus, LeaveType } from '@prisma/client';
-import { dateRangesOverlap } from '@/lib/utils/date';
+import { db, leaveRequests, employees } from '@/lib/db';
+import { eq, and, gte, lte, desc } from 'drizzle-orm';
+
+export type LeaveType = 'LEAVE' | 'SICK' | 'PERMISSION';
+export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export class LeaveService {
   async createLeaveRequest(data: {
@@ -15,203 +17,174 @@ export class LeaveService {
       throw new Error('Tanggal mulai tidak boleh lebih besar dari tanggal selesai');
     }
 
-    // Check for overlapping leave requests
-    const overlapping = await prisma.leaveRequest.findFirst({
-      where: {
-        employeeId: data.employeeId,
-        status: {
-          in: [LeaveStatus.PENDING, LeaveStatus.APPROVED],
-        },
-        OR: [
-          {
-            AND: [
-              { startDate: { lte: data.endDate } },
-              { endDate: { gte: data.startDate } },
-            ],
-          },
-        ],
-      },
-    });
+    // Check if employee exists
+    const [employee] = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.id, data.employeeId))
+      .limit(1);
 
-    if (overlapping) {
-      throw new Error('Anda sudah memiliki pengajuan izin/cuti pada tanggal tersebut');
+    if (!employee) {
+      throw new Error('Karyawan tidak ditemukan');
     }
 
-    const leaveRequest = await prisma.leaveRequest.create({
-      data: {
+    const leaveId = `leave_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    const [leave] = await db
+      .insert(leaveRequests)
+      .values({
+        id: leaveId,
         employeeId: data.employeeId,
         type: data.type,
         startDate: data.startDate,
         endDate: data.endDate,
         reason: data.reason,
-      },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            fullName: true,
-            nip: true,
-          },
-        },
-      },
-    });
+        status: 'PENDING',
+      })
+      .returning();
 
-    return leaveRequest;
+    return leave;
   }
 
   async getLeaveRequests(filters?: {
     employeeId?: string;
-    supervisorId?: string;
     status?: LeaveStatus;
-    type?: LeaveType;
     startDate?: Date;
     endDate?: Date;
   }) {
-    const where: any = {};
+    const conditions = [];
 
     if (filters?.employeeId) {
-      where.employeeId = filters.employeeId;
-    }
-
-    if (filters?.supervisorId) {
-      where.employee = {
-        supervisorId: filters.supervisorId,
-      };
+      conditions.push(eq(leaveRequests.employeeId, filters.employeeId));
     }
 
     if (filters?.status) {
-      where.status = filters.status;
+      conditions.push(eq(leaveRequests.status, filters.status));
     }
 
-    if (filters?.type) {
-      where.type = filters.type;
+    if (filters?.startDate) {
+      conditions.push(gte(leaveRequests.startDate, filters.startDate));
     }
 
-    if (filters?.startDate || filters?.endDate) {
-      where.startDate = {};
-      if (filters.startDate) {
-        where.startDate.gte = filters.startDate;
-      }
-      if (filters.endDate) {
-        where.startDate.lte = filters.endDate;
-      }
+    if (filters?.endDate) {
+      conditions.push(lte(leaveRequests.endDate, filters.endDate));
     }
 
-    const leaveRequests = await prisma.leaveRequest.findMany({
-      where,
-      include: {
-        employee: {
-          select: {
-            id: true,
-            fullName: true,
-            nip: true,
-            division: true,
-            position: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    let query = db
+      .select()
+      .from(leaveRequests)
+      .orderBy(desc(leaveRequests.createdAt));
 
-    return leaveRequests;
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    return await query;
   }
 
   async getLeaveRequestById(id: string) {
-    const leaveRequest = await prisma.leaveRequest.findUnique({
-      where: { id },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            fullName: true,
-            nip: true,
-            division: true,
-            position: true,
-          },
-        },
-      },
-    });
+    const [leave] = await db
+      .select()
+      .from(leaveRequests)
+      .where(eq(leaveRequests.id, id))
+      .limit(1);
 
-    if (!leaveRequest) {
-      throw new Error('Pengajuan tidak ditemukan');
+    if (!leave) {
+      throw new Error('Pengajuan izin tidak ditemukan');
     }
 
-    return leaveRequest;
+    // Get employee data
+    const [employee] = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.id, leave.employeeId))
+      .limit(1);
+
+    return {
+      ...leave,
+      employee: employee || null,
+    };
   }
 
   async approveLeaveRequest(id: string, approvedBy: string) {
-    const leaveRequest = await prisma.leaveRequest.findUnique({
-      where: { id },
-    });
+    const [leave] = await db
+      .select()
+      .from(leaveRequests)
+      .where(eq(leaveRequests.id, id))
+      .limit(1);
 
-    if (!leaveRequest) {
-      throw new Error('Pengajuan tidak ditemukan');
+    if (!leave) {
+      throw new Error('Pengajuan izin tidak ditemukan');
     }
 
-    if (leaveRequest.status !== LeaveStatus.PENDING) {
-      throw new Error('Pengajuan sudah diproses');
+    if (leave.status !== 'PENDING') {
+      throw new Error('Pengajuan izin sudah diproses');
     }
 
-    const updated = await prisma.leaveRequest.update({
-      where: { id },
-      data: {
-        status: LeaveStatus.APPROVED,
+    const [updated] = await db
+      .update(leaveRequests)
+      .set({
+        status: 'APPROVED',
         approvedBy,
         approvedAt: new Date(),
-      },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            fullName: true,
-            nip: true,
-          },
-        },
-      },
-    });
-
-    // TODO: Create notification for employee
+        updatedAt: new Date(),
+      })
+      .where(eq(leaveRequests.id, id))
+      .returning();
 
     return updated;
   }
 
-  async rejectLeaveRequest(id: string, rejectedBy: string, reason: string) {
-    const leaveRequest = await prisma.leaveRequest.findUnique({
-      where: { id },
-    });
+  async rejectLeaveRequest(id: string, rejectedBy: string, rejectionReason: string) {
+    const [leave] = await db
+      .select()
+      .from(leaveRequests)
+      .where(eq(leaveRequests.id, id))
+      .limit(1);
 
-    if (!leaveRequest) {
-      throw new Error('Pengajuan tidak ditemukan');
+    if (!leave) {
+      throw new Error('Pengajuan izin tidak ditemukan');
     }
 
-    if (leaveRequest.status !== LeaveStatus.PENDING) {
-      throw new Error('Pengajuan sudah diproses');
+    if (leave.status !== 'PENDING') {
+      throw new Error('Pengajuan izin sudah diproses');
     }
 
-    const updated = await prisma.leaveRequest.update({
-      where: { id },
-      data: {
-        status: LeaveStatus.REJECTED,
+    const [updated] = await db
+      .update(leaveRequests)
+      .set({
+        status: 'REJECTED',
         rejectedBy,
         rejectedAt: new Date(),
-        rejectionReason: reason,
-      },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            fullName: true,
-            nip: true,
-          },
-        },
-      },
-    });
-
-    // TODO: Create notification for employee
+        rejectionReason,
+        updatedAt: new Date(),
+      })
+      .where(eq(leaveRequests.id, id))
+      .returning();
 
     return updated;
+  }
+
+  async deleteLeaveRequest(id: string) {
+    const [leave] = await db
+      .select()
+      .from(leaveRequests)
+      .where(eq(leaveRequests.id, id))
+      .limit(1);
+
+    if (!leave) {
+      throw new Error('Pengajuan izin tidak ditemukan');
+    }
+
+    if (leave.status !== 'PENDING') {
+      throw new Error('Hanya pengajuan dengan status PENDING yang dapat dihapus');
+    }
+
+    await db
+      .delete(leaveRequests)
+      .where(eq(leaveRequests.id, id));
+
+    return { message: 'Pengajuan izin berhasil dihapus' };
   }
 }
 

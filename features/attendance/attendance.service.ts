@@ -1,7 +1,9 @@
-import { prisma } from '@/lib/db';
+import { db, attendances, employees, workLocations, shifts } from '@/lib/db';
 import { calculateDistance, isWithinGeofence, isGpsAccuracyAcceptable } from '@/lib/geofencing';
 import { calculateLateMinutes, calculateEarlyLeaveMinutes, calculateMinutesDifference } from '@/lib/utils/date';
-import { AttendanceStatus } from '@prisma/client';
+import { eq, and, gte, lt, desc } from 'drizzle-orm';
+
+export type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'SICK' | 'PERMISSION';
 
 export class AttendanceService {
   async checkIn(data: {
@@ -17,13 +19,11 @@ export class AttendanceService {
     userAgent?: string;
   }) {
     // Get employee data
-    const employee = await prisma.employee.findUnique({
-      where: { id: data.employeeId },
-      include: {
-        defaultShift: true,
-        defaultLocation: true,
-      },
-    });
+    const [employee] = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.id, data.employeeId))
+      .limit(1);
 
     if (!employee) {
       throw new Error('Karyawan tidak ditemukan');
@@ -39,24 +39,28 @@ export class AttendanceService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const existingCheckIn = await prisma.attendance.findFirst({
-      where: {
-        employeeId: data.employeeId,
-        checkInTime: {
-          gte: today,
-          lt: tomorrow,
-        },
-      },
-    });
+    const [existingCheckIn] = await db
+      .select()
+      .from(attendances)
+      .where(
+        and(
+          eq(attendances.employeeId, data.employeeId),
+          gte(attendances.checkInTime, today),
+          lt(attendances.checkInTime, tomorrow)
+        )
+      )
+      .limit(1);
 
     if (existingCheckIn) {
       throw new Error('Anda sudah melakukan check-in hari ini');
     }
 
     // Get work location
-    const workLocation = await prisma.workLocation.findUnique({
-      where: { id: data.workLocationId },
-    });
+    const [workLocation] = await db
+      .select()
+      .from(workLocations)
+      .where(eq(workLocations.id, data.workLocationId))
+      .limit(1);
 
     if (!workLocation) {
       throw new Error('Lokasi kerja tidak ditemukan');
@@ -98,26 +102,34 @@ export class AttendanceService {
     const shiftId = data.shiftId || employee.defaultShiftId;
     let shift = null;
     if (shiftId) {
-      shift = await prisma.shift.findUnique({
-        where: { id: shiftId },
-      });
+      const [shiftData] = await db
+        .select()
+        .from(shifts)
+        .where(eq(shifts.id, shiftId))
+        .limit(1);
+      shift = shiftData || null;
     }
 
     // Calculate late minutes
     const checkInTime = new Date();
     let lateMinutes = 0;
-    let status: AttendanceStatus = AttendanceStatus.PRESENT;
+    let status: AttendanceStatus = 'PRESENT';
 
     if (shift) {
       lateMinutes = calculateLateMinutes(checkInTime, shift.startTime);
       if (lateMinutes > 0) {
-        status = AttendanceStatus.LATE;
+        status = 'LATE';
       }
     }
 
+    // Generate attendance ID
+    const attendanceId = `att_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     // Create attendance record
-    const attendance = await prisma.attendance.create({
-      data: {
+    const [attendance] = await db
+      .insert(attendances)
+      .values({
+        id: attendanceId,
         employeeId: data.employeeId,
         workLocationId: data.workLocationId,
         shiftId: shiftId || null,
@@ -132,25 +144,13 @@ export class AttendanceService {
         checkInUserAgent: data.userAgent,
         status,
         lateMinutes,
-      },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            fullName: true,
-            nip: true,
-          },
-        },
-        workLocation: true,
-        shift: true,
-      },
-    });
+      })
+      .returning();
 
     return attendance;
   }
 
   async checkOut(data: {
-    attendanceId: string;
     employeeId: string;
     latitude: number;
     longitude: number;
@@ -160,26 +160,41 @@ export class AttendanceService {
     ipAddress?: string;
     userAgent?: string;
   }) {
-    // Get attendance record
-    const attendance = await prisma.attendance.findUnique({
-      where: { id: data.attendanceId },
-      include: {
-        employee: true,
-        workLocation: true,
-        shift: true,
-      },
-    });
+    // Get today's attendance
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [attendance] = await db
+      .select()
+      .from(attendances)
+      .where(
+        and(
+          eq(attendances.employeeId, data.employeeId),
+          gte(attendances.checkInTime, today),
+          lt(attendances.checkInTime, tomorrow)
+        )
+      )
+      .limit(1);
 
     if (!attendance) {
-      throw new Error('Data absensi tidak ditemukan');
-    }
-
-    if (attendance.employeeId !== data.employeeId) {
-      throw new Error('Anda tidak memiliki akses untuk check-out absensi ini');
+      throw new Error('Anda belum melakukan check-in hari ini');
     }
 
     if (attendance.checkOutTime) {
-      throw new Error('Anda sudah melakukan check-out');
+      throw new Error('Anda sudah melakukan check-out hari ini');
+    }
+
+    // Get work location
+    const [workLocation] = await db
+      .select()
+      .from(workLocations)
+      .where(eq(workLocations.id, attendance.workLocationId))
+      .limit(1);
+
+    if (!workLocation) {
+      throw new Error('Lokasi kerja tidak ditemukan');
     }
 
     // Validate GPS accuracy
@@ -191,38 +206,51 @@ export class AttendanceService {
     const distance = calculateDistance(
       data.latitude,
       data.longitude,
-      attendance.workLocation.latitude,
-      attendance.workLocation.longitude
+      workLocation.latitude,
+      workLocation.longitude
     );
 
     // Validate geo-fencing
     const isWithinRadius = isWithinGeofence(
       data.latitude,
       data.longitude,
-      attendance.workLocation.latitude,
-      attendance.workLocation.longitude,
-      attendance.workLocation.radius
+      workLocation.latitude,
+      workLocation.longitude,
+      workLocation.radius
     );
 
     if (!isWithinRadius) {
       throw new Error(
-        `Anda berada di luar radius lokasi kerja (${Math.round(distance)}m dari lokasi). Radius maksimal: ${attendance.workLocation.radius}m`
+        `Anda berada di luar radius lokasi kerja (${Math.round(distance)}m dari lokasi). Radius maksimal: ${workLocation.radius}m`
       );
     }
 
-    // Calculate work duration and early leave
     const checkOutTime = new Date();
-    const totalWorkMinutes = calculateMinutesDifference(attendance.checkInTime, checkOutTime);
-    
+
+    // Calculate early leave minutes
     let earlyLeaveMinutes = 0;
-    if (attendance.shift) {
-      earlyLeaveMinutes = calculateEarlyLeaveMinutes(checkOutTime, attendance.shift.endTime);
+    if (attendance.shiftId) {
+      const [shift] = await db
+        .select()
+        .from(shifts)
+        .where(eq(shifts.id, attendance.shiftId))
+        .limit(1);
+
+      if (shift) {
+        earlyLeaveMinutes = calculateEarlyLeaveMinutes(checkOutTime, shift.endTime);
+      }
     }
 
+    // Calculate total work minutes
+    const totalWorkMinutes = calculateMinutesDifference(
+      attendance.checkInTime,
+      checkOutTime
+    );
+
     // Update attendance record
-    const updated = await prisma.attendance.update({
-      where: { id: data.attendanceId },
-      data: {
+    const [updated] = await db
+      .update(attendances)
+      .set({
         checkOutTime,
         checkOutLatitude: data.latitude,
         checkOutLongitude: data.longitude,
@@ -232,21 +260,12 @@ export class AttendanceService {
         checkOutDeviceInfo: data.deviceInfo,
         checkOutIp: data.ipAddress,
         checkOutUserAgent: data.userAgent,
-        totalWorkMinutes,
         earlyLeaveMinutes,
-      },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            fullName: true,
-            nip: true,
-          },
-        },
-        workLocation: true,
-        shift: true,
-      },
-    });
+        totalWorkMinutes,
+        updatedAt: new Date(),
+      })
+      .where(eq(attendances.id, attendance.id))
+      .returning();
 
     return updated;
   }
@@ -257,150 +276,55 @@ export class AttendanceService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const attendance = await prisma.attendance.findFirst({
-      where: {
-        employeeId,
-        checkInTime: {
-          gte: today,
-          lt: tomorrow,
-        },
-      },
-      include: {
-        workLocation: true,
-        shift: true,
-      },
-    });
+    const [attendance] = await db
+      .select()
+      .from(attendances)
+      .where(
+        and(
+          eq(attendances.employeeId, employeeId),
+          gte(attendances.checkInTime, today),
+          lt(attendances.checkInTime, tomorrow)
+        )
+      )
+      .limit(1);
 
-    return attendance;
+    return attendance || null;
   }
 
   async getAttendances(filters?: {
     employeeId?: string;
-    supervisorId?: string;
-    workLocationId?: string;
-    status?: AttendanceStatus;
     startDate?: Date;
     endDate?: Date;
+    status?: AttendanceStatus;
   }) {
-    const where: any = {};
+    const conditions = [];
 
     if (filters?.employeeId) {
-      where.employeeId = filters.employeeId;
+      conditions.push(eq(attendances.employeeId, filters.employeeId));
     }
 
-    if (filters?.supervisorId) {
-      where.employee = {
-        supervisorId: filters.supervisorId,
-      };
+    if (filters?.startDate) {
+      conditions.push(gte(attendances.checkInTime, filters.startDate));
     }
 
-    if (filters?.workLocationId) {
-      where.workLocationId = filters.workLocationId;
+    if (filters?.endDate) {
+      conditions.push(lt(attendances.checkInTime, filters.endDate));
     }
 
     if (filters?.status) {
-      where.status = filters.status;
+      conditions.push(eq(attendances.status, filters.status));
     }
 
-    if (filters?.startDate || filters?.endDate) {
-      where.checkInTime = {};
-      if (filters.startDate) {
-        where.checkInTime.gte = filters.startDate;
-      }
-      if (filters.endDate) {
-        where.checkInTime.lte = filters.endDate;
-      }
+    let query = db
+      .select()
+      .from(attendances)
+      .orderBy(desc(attendances.checkInTime));
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
     }
 
-    const attendances = await prisma.attendance.findMany({
-      where,
-      include: {
-        employee: {
-          select: {
-            id: true,
-            fullName: true,
-            nip: true,
-          },
-        },
-        workLocation: true,
-        shift: true,
-      },
-      orderBy: {
-        checkInTime: 'desc',
-      },
-    });
-
-    return attendances;
-  }
-
-  async manualAdjustment(data: {
-    attendanceId: string;
-    adjustedBy: string;
-    reason: string;
-    checkInTime?: Date;
-    checkOutTime?: Date;
-    status?: AttendanceStatus;
-  }) {
-    const attendance = await prisma.attendance.findUnique({
-      where: { id: data.attendanceId },
-      include: {
-        shift: true,
-      },
-    });
-
-    if (!attendance) {
-      throw new Error('Data absensi tidak ditemukan');
-    }
-
-    const updateData: any = {
-      isManualAdjustment: true,
-      adjustmentReason: data.reason,
-      adjustedBy: data.adjustedBy,
-    };
-
-    if (data.checkInTime) {
-      updateData.checkInTime = data.checkInTime;
-      
-      // Recalculate late minutes
-      if (attendance.shift) {
-        updateData.lateMinutes = calculateLateMinutes(data.checkInTime, attendance.shift.startTime);
-      }
-    }
-
-    if (data.checkOutTime) {
-      updateData.checkOutTime = data.checkOutTime;
-      
-      // Recalculate work duration
-      const checkInTime = data.checkInTime || attendance.checkInTime;
-      updateData.totalWorkMinutes = calculateMinutesDifference(checkInTime, data.checkOutTime);
-      
-      // Recalculate early leave
-      if (attendance.shift) {
-        updateData.earlyLeaveMinutes = calculateEarlyLeaveMinutes(data.checkOutTime, attendance.shift.endTime);
-      }
-    }
-
-    if (data.status) {
-      updateData.status = data.status;
-    }
-
-    const updated = await prisma.attendance.update({
-      where: { id: data.attendanceId },
-      data: updateData,
-      include: {
-        employee: {
-          select: {
-            id: true,
-            fullName: true,
-            nip: true,
-          },
-        },
-        workLocation: true,
-        shift: true,
-      },
-    });
-
-    return updated;
+    return await query;
   }
 }
 
