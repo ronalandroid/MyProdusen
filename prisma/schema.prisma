@@ -1,0 +1,304 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPERADMIN
+  ADMIN_HR
+  SUPERVISOR
+  EMPLOYEE
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  LEAVE
+  SICK
+  PERMISSION
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LeaveType {
+  LEAVE
+  SICK
+  PERMISSION
+}
+
+enum KpiScoringType {
+  HIGHER_IS_BETTER
+  LOWER_IS_BETTER
+  BOOLEAN
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  username      String         @unique
+  password      String
+  role          UserRole       @default(EMPLOYEE)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  employee      Employee?
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  
+  @@index([email])
+  @@index([username])
+}
+
+model Employee {
+  id                String          @id @default(cuid())
+  nip               String          @unique
+  userId            String          @unique
+  fullName          String
+  email             String
+  phone             String?
+  address           String?
+  joinDate          DateTime        @default(now())
+  division          String?
+  position          String?
+  supervisorId      String?
+  status            EmployeeStatus  @default(ACTIVE)
+  profilePhoto      String?
+  emergencyContact  String?
+  defaultShiftId    String?
+  defaultLocationId String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  supervisor        Employee?       @relation("EmployeeSupervisor", fields: [supervisorId], references: [id])
+  subordinates      Employee[]      @relation("EmployeeSupervisor")
+  defaultShift      Shift?          @relation(fields: [defaultShiftId], references: [id])
+  defaultLocation   WorkLocation?   @relation(fields: [defaultLocationId], references: [id])
+  
+  attendances       Attendance[]
+  leaveRequests     LeaveRequest[]
+  kpiAssignments    KpiAssignment[]
+  kpiResults        KpiResult[]
+  
+  @@index([nip])
+  @@index([userId])
+  @@index([supervisorId])
+}
+
+model WorkLocation {
+  id          String       @id @default(cuid())
+  name        String
+  address     String
+  latitude    Float
+  longitude   Float
+  radius      Int          @default(100)
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  employees   Employee[]
+  attendances Attendance[]
+  
+  @@index([isActive])
+}
+
+model Shift {
+  id          String     @id @default(cuid())
+  name        String
+  startTime   String
+  endTime     String
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  employees   Employee[]
+  attendances Attendance[]
+}
+
+model Attendance {
+  id                  String            @id @default(cuid())
+  employeeId          String
+  workLocationId      String
+  shiftId             String?
+  checkInTime         DateTime
+  checkInLatitude     Float
+  checkInLongitude    Float
+  checkInAccuracy     Float?
+  checkInDistance     Float?
+  checkInSelfie       String
+  checkInDeviceInfo   String?
+  checkInIp           String?
+  checkInUserAgent    String?
+  checkOutTime        DateTime?
+  checkOutLatitude    Float?
+  checkOutLongitude   Float?
+  checkOutAccuracy    Float?
+  checkOutDistance    Float?
+  checkOutSelfie      String?
+  checkOutDeviceInfo  String?
+  checkOutIp          String?
+  checkOutUserAgent   String?
+  status              AttendanceStatus  @default(PRESENT)
+  lateMinutes         Int               @default(0)
+  earlyLeaveMinutes   Int               @default(0)
+  totalWorkMinutes    Int               @default(0)
+  isManualAdjustment  Boolean           @default(false)
+  adjustmentReason    String?
+  adjustedBy          String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  
+  employee            Employee          @relation(fields: [employeeId], references: [id])
+  workLocation        WorkLocation      @relation(fields: [workLocationId], references: [id])
+  shift               Shift?            @relation(fields: [shiftId], references: [id])
+  
+  @@index([employeeId])
+  @@index([workLocationId])
+  @@index([checkInTime])
+  @@index([status])
+}
+
+model LeaveRequest {
+  id          String       @id @default(cuid())
+  employeeId  String
+  type        LeaveType
+  startDate   DateTime
+  endDate     DateTime
+  reason      String
+  status      LeaveStatus  @default(PENDING)
+  approvedBy  String?
+  approvedAt  DateTime?
+  rejectedBy  String?
+  rejectedAt  DateTime?
+  rejectionReason String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  employee    Employee     @relation(fields: [employeeId], references: [id])
+  
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate])
+}
+
+model KpiTemplate {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  items       KpiItem[]
+  assignments KpiAssignment[]
+}
+
+model KpiItem {
+  id            String         @id @default(cuid())
+  templateId    String
+  name          String
+  description   String?
+  weight        Float          @default(1.0)
+  scoringType   KpiScoringType @default(HIGHER_IS_BETTER)
+  targetValue   Float?
+  minValue      Float?
+  maxValue      Float?
+  unit          String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  template      KpiTemplate    @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  results       KpiResult[]
+  
+  @@index([templateId])
+}
+
+model KpiAssignment {
+  id          String      @id @default(cuid())
+  employeeId  String
+  templateId  String
+  period      String
+  assignedBy  String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  employee    Employee    @relation(fields: [employeeId], references: [id])
+  template    KpiTemplate @relation(fields: [templateId], references: [id])
+  
+  @@unique([employeeId, templateId, period])
+  @@index([employeeId])
+  @@index([period])
+}
+
+model KpiResult {
+  id          String    @id @default(cuid())
+  employeeId  String
+  itemId      String
+  period      String
+  actualValue Float
+  score       Float
+  isApproved  Boolean   @default(false)
+  approvedBy  String?
+  approvedAt  DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  item        KpiItem   @relation(fields: [itemId], references: [id])
+  
+  @@unique([employeeId, itemId, period])
+  @@index([employeeId])
+  @@index([period])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  action      String
+  entity      String
+  entityId    String?
+  oldValue    String?
+  newValue    String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  message     String
+  type        String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
