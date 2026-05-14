@@ -24,6 +24,7 @@ Last updated: 2026-05-15.
 - `GET/POST /api/shifts`
 - `GET/PATCH/DELETE /api/shifts/[id]`
 - `GET /api/attendance`
+- `GET /api/attendance/today`
 - `POST /api/attendance/check-in`
 - `POST /api/attendance/check-out`
 - `GET/POST /api/leave`
@@ -37,26 +38,26 @@ Last updated: 2026-05-15.
 - Audit log write service and audit API are missing.
 - Notification API/service is missing.
 - Payroll backend is not in MVP backend scope yet.
-- `/api/attendance/today` is documented historically but not implemented.
 - Attendance manual adjustment service exists but has no API route.
 
 ## Security Gaps
-- `requireAuth` verifies JWT but does not refresh role/isActive from database yet.
-- Dashboard pages do not have root Next middleware protection yet.
-- Supervisor row-level scoping needs hardening for employees, attendance, and leave.
-- Register role hierarchy must prevent Admin HR from creating Superadmin.
+- `requireAuth` verifies JWT and refreshes active user/role from database.
+- Dashboard pages have interim client-side profile guard; root middleware still needs cookie/httpOnly session before server guard.
+- Supervisor row-level scoping is improved for employee detail, attendance list, and leave list/detail/approval.
+- Register role hierarchy blocks Admin HR from creating Superadmin or peer Admin HR.
 - Login rate limiting is not implemented.
 - Password policy is still weak.
 - Selfie upload validation and durable storage path are not production-ready.
 
 ## Database Gaps
-- `prisma/migrations` should be generated and committed before production deploy.
+- Initial Prisma migration exists and must stay committed before production deploy.
 - Attendance needs a DB-level uniqueness strategy for one check-in per employee per day.
 - Soft-delete/history requirements need consistent modeling across entities.
 - Seed script contains demo credentials and must not be used as production bootstrap.
 
 ## Frontend Gaps
-- Login page currently needs full API/token/session integration.
+- Login page calls `/api/auth/login`, stores interim Bearer token in localStorage, and redirects to dashboard.
+- Profile page reads `/api/auth/profile` and logout clears the local token.
 - Dashboard, employees, attendance, leave, KPI, reports, audit, payroll, and profile pages need real data wiring.
 - Attendance page needs browser geolocation, camera/selfie capture, current status, and history integration.
 - UI must keep WCAG-friendly contrast and avoid overusing yellow/red.

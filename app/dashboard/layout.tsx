@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, Clock, Users, Calendar, User } from "lucide-react";
+import { fetchProfile, getToken } from "@/lib/auth-client";
 
 export default function DashboardLayout({
   children,
@@ -10,6 +12,18 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  useEffect(() => {
+    if (!getToken()) {
+      router.replace("/login");
+      return;
+    }
+
+    fetchProfile()
+      .then(() => setIsCheckingSession(false))
+      .catch(() => router.replace("/login"));
+  }, [router]);
 
   const navItems = [
     { name: "Beranda", icon: Home, path: "/dashboard" },
@@ -18,6 +32,14 @@ export default function DashboardLayout({
     { name: "Cuti", icon: Calendar, path: "/dashboard/leave" },
     { name: "Akun", icon: User, path: "/dashboard/profile" },
   ];
+
+  if (isCheckingSession) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
+        Memeriksa sesi...
+      </div>
+    );
+  }
 
   return (
     <div className="layout-wrapper">

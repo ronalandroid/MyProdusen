@@ -20,14 +20,14 @@
 - Add audit log service and write calls for mutations.
 
 ## Phase 4 — Core Feature Wiring
-- Wire login UI to API and persist auth session safely.
+- Upgrade interim localStorage login token to safer httpOnly cookie/session when server middleware is added.
 - Wire employee, location, shift, and leave pages to APIs.
-- Add row-level scoping for own data/team data/global data.
+- Continue row-level scoping hardening for remaining routes and add integration tests.
 
 ## Phase 5 — Attendance Production Flow
 - Add geolocation permission UX.
 - Add camera/selfie capture and validated upload storage.
-- Add `/api/attendance/today` and manual adjustment route.
+- Add manual adjustment route and wire `/api/attendance/today` to attendance UI.
 - Validate employee location/shift assignment before attendance.
 
 ## Phase 6 — KPI + Reports

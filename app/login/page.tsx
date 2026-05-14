@@ -3,16 +3,46 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import { setToken } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/dashboard");
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: identifier,
+          password,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok || !payload.success || !payload.data?.token) {
+        throw new Error(payload.error || "Login gagal");
+      }
+
+      setToken(payload.data.token);
+      router.replace("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login gagal");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -31,11 +61,11 @@ export default function LoginPage() {
         {/* Form */}
         <form onSubmit={handleLogin}>
           <div className="input-group">
-            <label className="label">NIP / Email</label>
+            <label className="label">Email</label>
             <input
-              type="text"
+              type="email"
               className="input"
-              placeholder="Masukkan NIP atau email"
+              placeholder="Masukkan email perusahaan"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
@@ -82,8 +112,13 @@ export default function LoginPage() {
           </div>
 
           <button type="submit" className="btn btn-primary" style={{ marginBottom: "24px" }}>
-            Masuk
+            {isSubmitting ? "Memproses..." : "Masuk"}
           </button>
+          {error && (
+            <p role="alert" style={{ fontSize: "12px", color: "var(--danger)", marginTop: "-12px", marginBottom: "16px" }}>
+              {error}
+            </p>
+          )}
         </form>
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
