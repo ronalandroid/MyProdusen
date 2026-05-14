@@ -58,8 +58,9 @@ Last updated: 2026-05-15.
 ## Frontend Gaps
 - Login page calls `/api/auth/login`, stores interim Bearer token in localStorage, and redirects to dashboard.
 - Profile page reads `/api/auth/profile` and logout clears the local token.
-- Dashboard, employees, attendance, leave, KPI, reports, audit, payroll, and profile pages need real data wiring.
-- Attendance page needs browser geolocation, camera/selfie capture, current status, and history integration.
+- Profile and attendance pages now have partial real API wiring.
+- Dashboard, employees, leave, KPI, reports, audit, and payroll pages still need real data wiring.
+- Attendance page uses browser geolocation and `/api/attendance/today`, but still needs real camera/selfie upload instead of placeholder selfie value.
 - UI must keep WCAG-friendly contrast and avoid overusing yellow/red.
 
 ## Deployment Gaps

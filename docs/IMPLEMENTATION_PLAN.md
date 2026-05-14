@@ -25,9 +25,9 @@
 - Continue row-level scoping hardening for remaining routes and add integration tests.
 
 ## Phase 5 — Attendance Production Flow
-- Add geolocation permission UX.
+- Improve geolocation permission UX and user guidance.
 - Add camera/selfie capture and validated upload storage.
-- Add manual adjustment route and wire `/api/attendance/today` to attendance UI.
+- Add manual adjustment route and complete attendance UI edge states.
 - Validate employee location/shift assignment before attendance.
 
 ## Phase 6 — KPI + Reports

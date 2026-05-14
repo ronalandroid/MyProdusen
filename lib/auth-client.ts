@@ -18,6 +18,20 @@ export interface ClientUserProfile {
     division?: string | null;
     position?: string | null;
     profilePhoto?: string | null;
+    defaultShift?: {
+      id: string;
+      name: string;
+      startTime: string;
+      endTime: string;
+    } | null;
+    defaultLocation?: {
+      id: string;
+      name: string;
+      address: string;
+      latitude: number;
+      longitude: number;
+      radius: number;
+    } | null;
   } | null;
 }
 
