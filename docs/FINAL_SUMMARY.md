@@ -1,5 +1,7 @@
 # 🎉 MyProdusen - Development Complete Summary
 
+> Historical summary. For current readiness, gaps, and next work, use `docs/CURRENT_STATE.md`, `docs/IMPLEMENTATION_PLAN.md`, and `docs/API_GAP_MATRIX.md` as source of truth. Production-readiness claims below may be stale.
+
 **Project:** MyProdusen Employee Management System  
 **Client:** Produsen Dimsum Medan  
 **Completion Date:** May 14, 2026  

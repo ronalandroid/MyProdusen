@@ -1,5 +1,7 @@
 # 📊 MyProdusen Project Status
 
+> Historical status snapshot. For current completeness and next work, use `docs/CURRENT_STATE.md`, `docs/IMPLEMENTATION_PLAN.md`, and `docs/API_GAP_MATRIX.md` as source of truth. Stale percentages below must not be used for readiness decisions.
+
 **Last Updated:** May 14, 2026 - 15:37 WIB  
 **Phase:** MVP Core Backend Development  
 **Overall Progress:** 85% Backend | 5% Frontend

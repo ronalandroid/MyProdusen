@@ -5,6 +5,20 @@ import { successResponse, errorResponse, validationErrorResponse, forbiddenRespo
 import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 
+async function canReadEmployee(user: Awaited<ReturnType<typeof requireAuth>>, employee: Awaited<ReturnType<typeof employeeService.getEmployeeById>>) {
+  if (user.role === 'SUPERADMIN' || user.role === 'ADMIN_HR') {
+    return true;
+  }
+
+  const currentEmployee = await employeeService.getEmployeeByUserId(user.userId);
+
+  if (user.role === 'SUPERVISOR') {
+    return employee.supervisorId === currentEmployee.id || employee.id === currentEmployee.id;
+  }
+
+  return employee.id === currentEmployee.id;
+}
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -12,11 +26,15 @@ export async function GET(
   try {
     const user = await requireAuth(request);
     
-    if (!hasPermission(user.role, 'EMPLOYEE_READ')) {
+    if (!hasPermission(user.role, 'EMPLOYEE_READ') && !hasPermission(user.role, 'EMPLOYEE_READ_OWN')) {
       return forbiddenResponse('Anda tidak memiliki akses untuk melihat data karyawan');
     }
     
     const employee = await employeeService.getEmployeeById((await context.params).id);
+
+    if (!(await canReadEmployee(user, employee))) {
+      return forbiddenResponse('Anda tidak memiliki akses untuk melihat data karyawan ini');
+    }
     
     return successResponse(employee);
   } catch (error: any) {

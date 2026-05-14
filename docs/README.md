@@ -1,5 +1,7 @@
 # MyProdusen - Employee Management System
 
+> Current source of truth: `docs/CURRENT_STATE.md`, `docs/IMPLEMENTATION_PLAN.md`, and `docs/API_GAP_MATRIX.md`. This README may contain historical implementation notes; use the source-of-truth docs for current completeness, gaps, and phase order.
+
 Web application untuk mengelola kehadiran karyawan, KPI, dan performa untuk Produsen Dimsum Medan.
 
 ## 🚀 Features

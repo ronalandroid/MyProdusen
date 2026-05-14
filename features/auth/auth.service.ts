@@ -94,6 +94,10 @@ export class AuthService {
       throw new Error('User tidak ditemukan');
     }
 
+    if (!user.isActive) {
+      throw new Error('Akun tidak aktif');
+    }
+
     const isPasswordValid = await verifyPassword(currentPassword, user.password);
     if (!isPasswordValid) {
       throw new Error('Password lama salah');
@@ -125,6 +129,10 @@ export class AuthService {
 
     if (!user) {
       throw new Error('User tidak ditemukan');
+    }
+
+    if (!user.isActive) {
+      throw new Error('Akun tidak aktif');
     }
 
     return {

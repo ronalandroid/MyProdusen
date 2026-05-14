@@ -106,7 +106,7 @@ export class AttendanceService {
     // Calculate late minutes
     const checkInTime = new Date();
     let lateMinutes = 0;
-    let status = AttendanceStatus.PRESENT;
+    let status: AttendanceStatus = AttendanceStatus.PRESENT;
 
     if (shift) {
       lateMinutes = calculateLateMinutes(checkInTime, shift.startTime);
@@ -276,6 +276,7 @@ export class AttendanceService {
 
   async getAttendances(filters?: {
     employeeId?: string;
+    supervisorId?: string;
     workLocationId?: string;
     status?: AttendanceStatus;
     startDate?: Date;
@@ -285,6 +286,12 @@ export class AttendanceService {
 
     if (filters?.employeeId) {
       where.employeeId = filters.employeeId;
+    }
+
+    if (filters?.supervisorId) {
+      where.employee = {
+        supervisorId: filters.supervisorId,
+      };
     }
 
     if (filters?.workLocationId) {

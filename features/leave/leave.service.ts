@@ -61,6 +61,7 @@ export class LeaveService {
 
   async getLeaveRequests(filters?: {
     employeeId?: string;
+    supervisorId?: string;
     status?: LeaveStatus;
     type?: LeaveType;
     startDate?: Date;
@@ -70,6 +71,12 @@ export class LeaveService {
 
     if (filters?.employeeId) {
       where.employeeId = filters.employeeId;
+    }
+
+    if (filters?.supervisorId) {
+      where.employee = {
+        supervisorId: filters.supervisorId,
+      };
     }
 
     if (filters?.status) {

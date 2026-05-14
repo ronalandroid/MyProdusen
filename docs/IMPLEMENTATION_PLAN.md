@@ -1,0 +1,53 @@
+# Implementation Plan — MyProdusen
+
+## Phase 1 — Stabilize Foundation
+- Keep `npm run lint` and `npm run build` green.
+- Commit root `AGENTS.md` and current-state docs.
+- Generate and commit Prisma initial migration.
+- Add health check and Docker baseline validation.
+
+## Phase 2 — Auth + RBAC Hardening
+- Remove production JWT fallback and require strong `JWT_SECRET`.
+- Update auth middleware to fetch active user/role from database.
+- Add root middleware for `/dashboard` protection.
+- Enforce role hierarchy during user creation.
+- Add login rate limiting and stronger password policy.
+
+## Phase 3 — Database Safety
+- Add attendance date uniqueness strategy.
+- Add safe migration workflow docs.
+- Split dev seed from production bootstrap.
+- Add audit log service and write calls for mutations.
+
+## Phase 4 — Core Feature Wiring
+- Wire login UI to API and persist auth session safely.
+- Wire employee, location, shift, and leave pages to APIs.
+- Add row-level scoping for own data/team data/global data.
+
+## Phase 5 — Attendance Production Flow
+- Add geolocation permission UX.
+- Add camera/selfie capture and validated upload storage.
+- Add `/api/attendance/today` and manual adjustment route.
+- Validate employee location/shift assignment before attendance.
+
+## Phase 6 — KPI + Reports
+- Add KPI service and `/api/kpi/*` routes.
+- Add dashboard aggregation endpoints.
+- Add CSV/Excel export endpoints for attendance, leave, KPI, and employee reports.
+
+## Phase 7 — Notification + Audit UI
+- Add notification service/API and unread/read status.
+- Add audit log API and Superadmin audit page integration.
+- Add retention policy docs.
+
+## Phase 8 — Testing
+- Unit tests: geofencing, date rules, NIP, permissions, KPI scoring.
+- Integration tests: auth, RBAC, attendance geofence, leave approvals.
+- Build gate: typecheck, test, build.
+
+## Phase 9 — Docker + Coolify Release
+- Validate Docker image locally.
+- Configure Coolify envs and persistent `/app/uploads` volume.
+- Run `prisma migrate deploy` in release process.
+- Add backup/restore schedule.
+- Final security and demo checklist.

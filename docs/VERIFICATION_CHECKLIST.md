@@ -1,5 +1,7 @@
 # ✅ MyProdusen - Verification Checklist
 
+> Historical checklist. For current verification scope and readiness, use `docs/CURRENT_STATE.md`, `docs/IMPLEMENTATION_PLAN.md`, and `docs/API_GAP_MATRIX.md` as source of truth before relying on checked items below.
+
 **Date:** May 14, 2026 - 15:41 WIB  
 **Status:** Ready for Testing
 

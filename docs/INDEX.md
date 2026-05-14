@@ -4,6 +4,8 @@
 **Client:** Produsen Dimsum Medan  
 **Last Updated:** May 14, 2026 - 15:42 WIB
 
+> Current source of truth: `docs/CURRENT_STATE.md`, `docs/IMPLEMENTATION_PLAN.md`, and `docs/API_GAP_MATRIX.md`. Older summary/status docs are historical and may contain stale completion percentages or production-readiness claims.
+
 ---
 
 ## 🚀 Getting Started
@@ -28,7 +30,10 @@
 ## 📋 Project Documentation
 
 ### Planning & Requirements
-- **[prd .md](prd%20.md)** - Product Requirements Document (Source of Truth)
+- **[prd.md](prd.md)** - Product Requirements Document
+- **[CURRENT_STATE.md](CURRENT_STATE.md)** - Current implementation status and known gaps (source of truth)
+- **[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)** - Approved phase order and next work (source of truth)
+- **[API_GAP_MATRIX.md](API_GAP_MATRIX.md)** - Implemented vs planned API surface (source of truth)
 - **[AGENT.md](AGENT.md)** - Development Guidelines & Best Practices
 
 ### Implementation Details

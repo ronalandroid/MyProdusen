@@ -30,6 +30,19 @@ export async function GET(request: NextRequest) {
       filters.employeeId = employee.id;
     } else if (!hasPermission(user.role, 'LEAVE_READ')) {
       return forbiddenResponse('Anda tidak memiliki akses untuk melihat pengajuan izin');
+    } else if (user.role === 'SUPERVISOR') {
+      const supervisor = await employeeService.getEmployeeByUserId(user.userId);
+      const employeeId = searchParams.get('employeeId');
+
+      if (employeeId) {
+        const targetEmployee = await employeeService.getEmployeeById(employeeId);
+        if (targetEmployee.supervisorId !== supervisor.id) {
+          return forbiddenResponse('Anda hanya dapat melihat pengajuan tim Anda');
+        }
+        filters.employeeId = employeeId;
+      } else {
+        filters.supervisorId = supervisor.id;
+      }
     } else {
       // For supervisor/admin, can filter by employee
       const employeeId = searchParams.get('employeeId');

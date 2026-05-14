@@ -1,0 +1,30 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://myprodusen:myprodusen@postgres:5432/myprodusen?schema=public
+      JWT_SECRET: change-this-to-a-strong-32-character-secret
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: myprodusen
+      POSTGRES_USER: myprodusen
+      POSTGRES_PASSWORD: myprodusen
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres-data:
+  uploads:

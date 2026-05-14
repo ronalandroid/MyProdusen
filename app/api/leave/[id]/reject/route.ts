@@ -3,7 +3,18 @@ import { leaveService } from '@/features/leave/leave.service';
 import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse, notFoundResponse } from '@/lib/utils/response';
 import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
+import { employeeService } from '@/features/employees/employee.service';
 import { z } from 'zod';
+
+async function canRejectLeave(user: Awaited<ReturnType<typeof requireAuth>>, employeeId: string) {
+  if (user.role === 'SUPERADMIN' || user.role === 'ADMIN_HR') {
+    return true;
+  }
+
+  const supervisor = await employeeService.getEmployeeByUserId(user.userId);
+  const targetEmployee = await employeeService.getEmployeeById(employeeId);
+  return targetEmployee.supervisorId === supervisor.id;
+}
 
 const rejectLeaveSchema = z.object({
   reason: z.string().min(10, 'Alasan penolakan minimal 10 karakter'),
@@ -27,8 +38,15 @@ export async function POST(
       return validationErrorResponse(validation.error.errors[0].message);
     }
     
+    const { id } = await context.params;
+    const existingLeaveRequest = await leaveService.getLeaveRequestById(id);
+
+    if (!(await canRejectLeave(user, existingLeaveRequest.employeeId))) {
+      return forbiddenResponse('Anda hanya dapat menolak pengajuan tim Anda');
+    }
+
     const leaveRequest = await leaveService.rejectLeaveRequest(
-      (await context.params).id,
+      id,
       user.userId,
       validation.data.reason
     );

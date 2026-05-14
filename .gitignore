@@ -36,5 +36,4 @@ next-env.d.ts
 # uploads
 /public/uploads
 
-# prisma
-/prisma/migrations
+# prisma migrations must be committed for production deploy

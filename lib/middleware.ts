@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { verifyToken, JwtPayload } from './auth';
-import { unauthorizedResponse } from './utils/response';
+import { prisma } from './db';
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: JwtPayload;
@@ -18,8 +18,30 @@ export async function authenticate(request: NextRequest): Promise<JwtPayload | n
   
   const token = authHeader.substring(7);
   const payload = verifyToken(token);
-  
-  return payload;
+
+  if (!payload) {
+    return null;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      isActive: true,
+    },
+  });
+
+  if (!user?.isActive) {
+    return null;
+  }
+
+  return {
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+  };
 }
 
 /**

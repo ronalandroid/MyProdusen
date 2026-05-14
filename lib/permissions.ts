@@ -1,6 +1,6 @@
 import { UserRole } from '@prisma/client';
 
-export const PERMISSIONS = {
+export const PERMISSIONS: Record<string, readonly UserRole[]> = {
   // User Management
   USER_CREATE: [UserRole.SUPERADMIN, UserRole.ADMIN_HR],
   USER_READ: [UserRole.SUPERADMIN, UserRole.ADMIN_HR, UserRole.SUPERVISOR],
@@ -71,6 +71,21 @@ export const PERMISSIONS = {
 
 export type Permission = keyof typeof PERMISSIONS;
 
+const ROLE_RANK: Record<UserRole, number> = {
+  [UserRole.EMPLOYEE]: 1,
+  [UserRole.SUPERVISOR]: 2,
+  [UserRole.ADMIN_HR]: 3,
+  [UserRole.SUPERADMIN]: 4,
+};
+
+export function canManageRole(actorRole: UserRole, targetRole: UserRole): boolean {
+  if (actorRole === UserRole.SUPERADMIN) {
+    return true;
+  }
+
+  return ROLE_RANK[actorRole] > ROLE_RANK[targetRole];
+}
+
 export function hasPermission(userRole: UserRole, permission: Permission): boolean {
   const allowedRoles = PERMISSIONS[permission];
   return allowedRoles.includes(userRole);
@@ -84,7 +99,9 @@ export function requirePermission(userRole: UserRole, permission: Permission): v
 
 export function canAccessOwnData(userRole: UserRole, userId: string, targetUserId: string): boolean {
   // Superadmin and Admin HR can access all data
-  if ([UserRole.SUPERADMIN, UserRole.ADMIN_HR].includes(userRole)) {
+  const fullAccessRoles: readonly UserRole[] = [UserRole.SUPERADMIN, UserRole.ADMIN_HR];
+
+  if (fullAccessRoles.includes(userRole)) {
     return true;
   }
   
@@ -99,7 +116,9 @@ export function canAccessTeamData(
   supervisorId?: string
 ): boolean {
   // Superadmin and Admin HR can access all data
-  if ([UserRole.SUPERADMIN, UserRole.ADMIN_HR].includes(userRole)) {
+  const fullAccessRoles: readonly UserRole[] = [UserRole.SUPERADMIN, UserRole.ADMIN_HR];
+
+  if (fullAccessRoles.includes(userRole)) {
     return true;
   }
   

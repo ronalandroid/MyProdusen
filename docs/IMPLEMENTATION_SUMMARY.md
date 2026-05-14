@@ -1,5 +1,7 @@
 # 🎉 MyProdusen Implementation Summary
 
+> Historical implementation snapshot. For current completeness, API gaps, and approved phase order, use `docs/CURRENT_STATE.md`, `docs/IMPLEMENTATION_PLAN.md`, and `docs/API_GAP_MATRIX.md` as source of truth.
+
 **Date:** May 14, 2026  
 **Status:** MVP Core Backend Complete ✅
 

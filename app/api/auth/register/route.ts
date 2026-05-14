@@ -3,7 +3,7 @@ import { authService } from '@/features/auth/auth.service';
 import { registerSchema } from '@/lib/validations/auth';
 import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse } from '@/lib/utils/response';
 import { getRequestBody, requireAuth } from '@/lib/middleware';
-import { hasPermission } from '@/lib/permissions';
+import { canManageRole, hasPermission } from '@/lib/permissions';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,6 +20,10 @@ export async function POST(request: NextRequest) {
     const validation = registerSchema.safeParse(body);
     if (!validation.success) {
       return validationErrorResponse(validation.error.errors[0].message);
+    }
+
+    if (!canManageRole(user.role, validation.data.role)) {
+      return forbiddenResponse('Anda tidak memiliki akses untuk membuat role tersebut');
     }
     
     const result = await authService.register(validation.data);

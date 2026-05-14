@@ -1,5 +1,7 @@
 # 🚀 MyProdusen - Complete API Documentation
 
+> Historical API reference. Current source of truth: `docs/CURRENT_STATE.md`, `docs/IMPLEMENTATION_PLAN.md`, and `docs/API_GAP_MATRIX.md`. Verify endpoint availability against `docs/API_GAP_MATRIX.md` before implementation or testing.
+
 **Version:** 1.0  
 **Base URL:** `http://localhost:3000/api`  
 **Last Updated:** May 14, 2026 - 15:59 WIB
@@ -609,7 +611,7 @@ curl -X POST http://localhost:3000/api/leave \
 ---
 
 **Last Updated:** May 14, 2026 - 15:59 WIB  
-**Status:** ✅ All 19 endpoints ready to use  
+**Status:** Historical API reference; current gaps tracked in `docs/API_GAP_MATRIX.md`  
 **Version:** 1.0
 
 ---

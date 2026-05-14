@@ -2,19 +2,19 @@ import { z } from 'zod';
 
 export const loginSchema = z.object({
   email: z.string().email('Email tidak valid'),
-  password: z.string().min(6, 'Password minimal 6 karakter'),
+  password: z.string().min(1, 'Password wajib diisi'),
 });
 
 export const registerSchema = z.object({
   email: z.string().email('Email tidak valid'),
   username: z.string().min(3, 'Username minimal 3 karakter'),
-  password: z.string().min(6, 'Password minimal 6 karakter'),
+  password: z.string().min(10, 'Password minimal 10 karakter'),
   role: z.enum(['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE']),
 });
 
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Password lama wajib diisi'),
-  newPassword: z.string().min(6, 'Password baru minimal 6 karakter'),
+  newPassword: z.string().min(10, 'Password baru minimal 10 karakter'),
   confirmPassword: z.string().min(1, 'Konfirmasi password wajib diisi'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'Password baru dan konfirmasi tidak cocok',
@@ -27,7 +27,7 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Token wajib diisi'),
-  password: z.string().min(6, 'Password minimal 6 karakter'),
+  password: z.string().min(10, 'Password minimal 10 karakter'),
   confirmPassword: z.string().min(1, 'Konfirmasi password wajib diisi'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Password dan konfirmasi tidak cocok',
