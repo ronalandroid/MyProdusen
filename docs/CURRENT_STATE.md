@@ -60,7 +60,8 @@ Last updated: 2026-05-15.
 - Profile page reads `/api/auth/profile` and logout clears the local token.
 - Profile and attendance pages now have partial real API wiring.
 - Dashboard, employees, leave, KPI, reports, audit, and payroll pages still need real data wiring.
-- Attendance page uses browser geolocation and `/api/attendance/today`, but still needs real camera/selfie upload instead of placeholder selfie value.
+- Attendance page uses browser geolocation, `/api/attendance/today`, and camera/file selfie capture as a data URL.
+- Attendance still needs durable upload storage so selfie images are stored as validated file paths/object keys instead of DB data strings.
 - UI must keep WCAG-friendly contrast and avoid overusing yellow/red.
 
 ## Deployment Gaps

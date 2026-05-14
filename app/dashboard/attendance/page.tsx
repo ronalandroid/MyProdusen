@@ -63,6 +63,25 @@ function getBrowserPosition(): Promise<GeolocationPosition> {
   });
 }
 
+function readImageAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/")) {
+      reject(new Error("File selfie harus berupa gambar"));
+      return;
+    }
+
+    if (file.size > 4 * 1024 * 1024) {
+      reject(new Error("Ukuran selfie maksimal 4MB"));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Gagal membaca file selfie"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function AttendancePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<ClientUserProfile | null>(null);
@@ -72,6 +91,7 @@ export default function AttendancePage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selfieData, setSelfieData] = useState("");
 
   const employee = profile?.employee;
   const locationName = todayAttendance?.workLocation?.name || employee?.defaultLocation?.name || "Lokasi kerja belum tersedia";
@@ -144,12 +164,16 @@ export default function AttendancePage() {
         throw new Error("Lokasi kerja default belum diatur oleh HR");
       }
 
+      if (!selfieData) {
+        throw new Error("Ambil selfie terlebih dahulu");
+      }
+
       const position = await getBrowserPosition();
       const payload = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
         accuracy: position.coords.accuracy,
-        selfie: "selfie-capture-ui-pending",
+        selfie: selfieData,
         deviceInfo: navigator.userAgent,
         ...(type === "check-in"
           ? {
@@ -181,6 +205,7 @@ export default function AttendancePage() {
       }
 
       setMessage(type === "check-in" ? "Check-in berhasil disimpan" : "Check-out berhasil disimpan");
+      setSelfieData("");
       await loadAttendance();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menyimpan absensi");
@@ -228,6 +253,38 @@ export default function AttendancePage() {
           {error || message}
         </div>
       )}
+
+      <div className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div>
+          <h2 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "4px" }}>Selfie Kehadiran</h2>
+          <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Ambil selfie terbaru sebelum check-in atau check-out.</p>
+        </div>
+        <input
+          aria-label="Ambil selfie kehadiran"
+          accept="image/*"
+          capture="user"
+          type="file"
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            setError("");
+            try {
+              setSelfieData(await readImageAsDataUrl(file));
+            } catch (err) {
+              setSelfieData("");
+              setError(err instanceof Error ? err.message : "Gagal membaca selfie");
+            }
+          }}
+          style={{ fontSize: "12px" }}
+        />
+        {selfieData && (
+          <img
+            src={selfieData}
+            alt="Preview selfie"
+            style={{ width: "96px", height: "96px", borderRadius: "16px", objectFit: "cover", border: "1px solid var(--border-color)" }}
+          />
+        )}
+      </div>
 
       <div style={{ display: "flex", gap: "12px" }}>
         <button
