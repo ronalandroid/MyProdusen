@@ -153,6 +153,7 @@ All dashboard pages are implemented and wired to real APIs:
 - Payroll period lock guard added for attendance check-in, check-out, and manual adjustment after payroll approval/paid status
 - Overtime requests now respect locked payroll periods, exclude paid overtime from future payroll runs, and mark approved overtime as paid when payroll is approved
 - Overtime create/approve/reject actions now write audit logs
+- Employee document center added with RBAC-scoped document list/create API and document self-service page
 - Reports page includes HRIS presets for routine attendance, leave, KPI, and geo-fence exception reports
 - CSV exports use dynamic filenames, export permission checks, and audit logging for attendance/leave/KPI reports
 

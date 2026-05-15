@@ -18,6 +18,7 @@ export default function Sidebar() {
     { name: "Cuti", icon: Calendar, path: "/dashboard/leave", primary: true },
     { name: "KPI", icon: BarChart3, path: "/dashboard/kpi", primary: false },
     { name: "Laporan", icon: FileText, path: "/dashboard/reports", primary: false },
+    { name: "Dokumen", icon: FileText, path: "/dashboard/documents", primary: false },
     { name: "Notifikasi", icon: Bell, path: "/dashboard/notifications", primary: true },
     { name: "Audit", icon: Shield, path: "/dashboard/audit", primary: false },
     { name: "Akun", icon: User, path: "/dashboard/profile", primary: true },

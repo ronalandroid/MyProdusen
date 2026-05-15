@@ -1,0 +1,186 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { ArrowLeft, FileText, RefreshCcw, ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { getAuthHeaders } from "@/lib/auth-client";
+
+interface EmployeeDocument {
+  id: string;
+  title: string;
+  category: string;
+  description?: string | null;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  status: string;
+  expiryDate?: string | null;
+  createdAt: string;
+}
+
+export default function DocumentsPage() {
+  const router = useRouter();
+  const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    category: "OTHER",
+    title: "",
+    description: "",
+    fileUrl: "",
+    fileName: "",
+    fileSize: 1,
+    mimeType: "application/pdf",
+    expiryDate: "",
+  });
+
+  useEffect(() => {
+    loadDocuments();
+  }, []);
+
+  const loadDocuments = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await fetch('/api/documents', { headers: getAuthHeaders() });
+      const payload = await response.json();
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || 'Dokumen gagal dimuat');
+      }
+
+      setDocuments(payload.data || []);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Dokumen gagal dimuat');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createDocument = async (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      setSubmitting(true);
+      setError("");
+      const response = await fetch('/api/documents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          ...formData,
+          fileSize: Number(formData.fileSize),
+          expiryDate: formData.expiryDate || undefined,
+        }),
+      });
+      const payload = await response.json();
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || 'Dokumen gagal disimpan');
+      }
+
+      setIsModalOpen(false);
+      setFormData({ category: "OTHER", title: "", description: "", fileUrl: "", fileName: "", fileSize: 1, mimeType: "application/pdf", expiryDate: "" });
+      await loadDocuments();
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Dokumen gagal disimpan');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+        <button type="button" onClick={() => router.back()} className="flex items-center gap-3 text-[var(--text-primary)]">
+          <ArrowLeft size={24} />
+          <span className="text-xl font-bold">Dokumen Karyawan</span>
+        </button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={loadDocuments} disabled={loading}>
+            <RefreshCcw size={16} className="mr-2" />
+            Refresh
+          </Button>
+          <Button onClick={() => setIsModalOpen(true)}>Tambah Dokumen</Button>
+        </div>
+      </header>
+
+      <div className="card" style={{ padding: "16px", display: "flex", gap: "12px", alignItems: "flex-start" }}>
+        <ShieldCheck size={22} color="var(--success)" />
+        <div>
+          <p className="text-sm font-semibold">Akses dokumen dibatasi</p>
+          <p className="text-xs text-[var(--text-secondary)]">Karyawan hanya melihat dokumennya sendiri. HR/Superadmin dapat mengelola dokumen karyawan sesuai RBAC.</p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="card" role="alert" style={{ padding: "16px", borderColor: "var(--danger)" }}>
+          <p className="font-semibold text-[var(--danger)]">{error}</p>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="min-h-[320px] flex items-center justify-center">
+          <LoadingSpinner message="Memuat dokumen..." />
+        </div>
+      ) : documents.length === 0 ? (
+        <div className="card empty-state-card" style={{ padding: "24px", textAlign: "center" }}>
+          <FileText size={36} className="mx-auto mb-3 text-[var(--text-muted)]" />
+          <h2 className="text-lg font-semibold">Belum ada dokumen</h2>
+          <p className="text-sm text-[var(--text-secondary)]">Kontrak, sertifikat, identitas, dan dokumen HR akan tampil di sini.</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {documents.map((document) => (
+            <article key={document.id} className="card" style={{ padding: "16px" }}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{document.category}</p>
+                  <h2 className="text-base font-semibold">{document.title}</h2>
+                  <p className="text-sm text-[var(--text-secondary)] mt-1">{document.description || document.fileName}</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-2">{document.mimeType} • {(document.fileSize / 1024).toFixed(1)} KB</p>
+                </div>
+                <a className="text-link text-sm" href={document.fileUrl} target="_blank" rel="noreferrer">Buka</a>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Tambah Dokumen" size="lg">
+        <form onSubmit={createDocument} className="flex flex-col gap-4">
+          <Input label="Judul" value={formData.title} onChange={(event) => setFormData({ ...formData, title: event.target.value })} required />
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">Kategori</label>
+            <select className="input" value={formData.category} onChange={(event) => setFormData({ ...formData, category: event.target.value })}>
+              <option value="CONTRACT">Kontrak</option>
+              <option value="CERTIFICATE">Sertifikat</option>
+              <option value="ID">Identitas</option>
+              <option value="EDUCATION">Pendidikan</option>
+              <option value="MEDICAL">Medis</option>
+              <option value="OTHER">Lainnya</option>
+            </select>
+          </div>
+          <Input label="URL File" value={formData.fileUrl} onChange={(event) => setFormData({ ...formData, fileUrl: event.target.value })} required />
+          <Input label="Nama File" value={formData.fileName} onChange={(event) => setFormData({ ...formData, fileName: event.target.value })} required />
+          <Input label="Ukuran File (bytes)" type="number" value={String(formData.fileSize)} onChange={(event) => setFormData({ ...formData, fileSize: Number(event.target.value) })} required />
+          <Input label="MIME Type" value={formData.mimeType} onChange={(event) => setFormData({ ...formData, mimeType: event.target.value })} required />
+          <Input label="Tanggal Expired" type="date" value={formData.expiryDate} onChange={(event) => setFormData({ ...formData, expiryDate: event.target.value })} />
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">Deskripsi</label>
+            <textarea className="input" rows={3} value={formData.description} onChange={(event) => setFormData({ ...formData, description: event.target.value })} />
+          </div>
+          <Button type="submit" loading={submitting}>Simpan Dokumen</Button>
+        </form>
+      </Modal>
+    </div>
+  );
+}

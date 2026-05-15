@@ -57,7 +57,7 @@ export function buildSelfServiceSections(input: SelfServiceInput): SelfServiceSe
       title: 'Dokumen & Slip Gaji',
       value: 'Segera',
       description: 'Placeholder dokumen karyawan dan slip gaji pribadi.',
-      href: '/dashboard/payroll',
+      href: '/dashboard/documents',
       tone: 'muted',
     },
   ];
