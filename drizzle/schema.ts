@@ -8,6 +8,8 @@ export const attendanceStatusEnum = pgEnum('AttendanceStatus', ['PRESENT', 'LATE
 export const leaveStatusEnum = pgEnum('LeaveStatus', ['PENDING', 'APPROVED', 'REJECTED']);
 export const leaveTypeEnum = pgEnum('LeaveType', ['LEAVE', 'SICK', 'PERMISSION']);
 export const kpiScoringTypeEnum = pgEnum('KpiScoringType', ['HIGHER_IS_BETTER', 'LOWER_IS_BETTER', 'BOOLEAN']);
+export const attendanceExceptionTypeEnum = pgEnum('AttendanceExceptionType', ['OUTSIDE_GEOFENCE', 'BAD_GPS_ACCURACY', 'MISSING_SELFIE', 'MANUAL_ADJUSTMENT', 'LATE_CORRECTION', 'MISSING_CHECKOUT']);
+export const attendanceExceptionStatusEnum = pgEnum('AttendanceExceptionStatus', ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']);
 
 // User table
 export const users = pgTable('User', {
@@ -118,6 +120,28 @@ export const attendances = pgTable('Attendance', {
     table.employeeId,
     sql`DATE(${table.checkInTime})`
   ),
+}));
+
+// Attendance Exception table
+export const attendanceExceptions = pgTable('AttendanceException', {
+  id: text('id').primaryKey(),
+  attendanceId: text('attendanceId'),
+  employeeId: text('employeeId').notNull(),
+  type: attendanceExceptionTypeEnum('type').notNull(),
+  status: attendanceExceptionStatusEnum('status').default('PENDING').notNull(),
+  reason: text('reason').notNull(),
+  requestedBy: text('requestedBy').notNull(),
+  reviewedBy: text('reviewedBy'),
+  reviewNote: text('reviewNote'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  reviewedAt: timestamp('reviewedAt', { mode: 'date' }),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  attendanceIdIdx: index('AttendanceException_attendanceId_idx').on(table.attendanceId),
+  employeeIdIdx: index('AttendanceException_employeeId_idx').on(table.employeeId),
+  statusIdx: index('AttendanceException_status_idx').on(table.status),
+  typeIdx: index('AttendanceException_type_idx').on(table.type),
+  createdAtIdx: index('AttendanceException_createdAt_idx').on(table.createdAt),
 }));
 
 // Leave Request table
@@ -270,6 +294,7 @@ export const employeesRelations = relations(employees, ({ one, many }) => ({
     references: [workLocations.id],
   }),
   attendances: many(attendances),
+  attendanceExceptions: many(attendanceExceptions),
   leaveRequests: many(leaveRequests),
   kpiAssignments: many(kpiAssignments),
   kpiResults: many(kpiResults),
@@ -287,6 +312,17 @@ export const attendancesRelations = relations(attendances, ({ one }) => ({
   shift: one(shifts, {
     fields: [attendances.shiftId],
     references: [shifts.id],
+  }),
+}));
+
+export const attendanceExceptionsRelations = relations(attendanceExceptions, ({ one }) => ({
+  attendance: one(attendances, {
+    fields: [attendanceExceptions.attendanceId],
+    references: [attendances.id],
+  }),
+  employee: one(employees, {
+    fields: [attendanceExceptions.employeeId],
+    references: [employees.id],
   }),
 }));
 
@@ -951,4 +987,3 @@ export const employeeDocumentsRelations = relations(employeeDocuments, ({ one })
     references: [users.id],
   }),
 }));
-

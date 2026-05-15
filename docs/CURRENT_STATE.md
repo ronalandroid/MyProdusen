@@ -145,6 +145,9 @@ All dashboard pages are implemented and wired to real APIs:
 - Dashboard includes action queue cards for leave, KPI review, late/absent employees, and unread notifications
 - Employee dashboard gets personal action cards for attendance, leave requests, and KPI
 - Notification inbox API and page added (`/api/notifications`, `/dashboard/notifications`)
+- Attendance exception workflow added for bad GPS accuracy, outside geo-fence, missing selfie, manual/correction cases
+- Exception queue API and review page added (`/api/attendance/exceptions`, `/dashboard/attendance/exceptions`)
+- Exception approval/rejection creates audit logs and employee notifications
 - Reports page includes HRIS presets for routine attendance, leave, KPI, and geo-fence exception reports
 - CSV exports use dynamic filenames, export permission checks, and audit logging for attendance/leave/KPI reports
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Clock, Users, Calendar, User, MapPin, Clock3, BarChart3, FileText, Shield, Bell } from "lucide-react";
+import { Home, Clock, Users, Calendar, User, MapPin, Clock3, BarChart3, FileText, Shield, Bell, AlertTriangle } from "lucide-react";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -10,6 +10,7 @@ export default function Sidebar() {
   const navItems = [
     { name: "Beranda", icon: Home, path: "/dashboard", primary: true },
     { name: "Kehadiran", icon: Clock, path: "/dashboard/attendance", primary: true },
+    { name: "Exception", icon: AlertTriangle, path: "/dashboard/attendance/exceptions", primary: false },
     { name: "Karyawan", icon: Users, path: "/dashboard/employees", primary: true },
     { name: "Lokasi Kerja", icon: MapPin, path: "/dashboard/locations", primary: false },
     { name: "Shift", icon: Clock3, path: "/dashboard/shifts", primary: false },

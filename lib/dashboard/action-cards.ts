@@ -8,6 +8,7 @@ export interface DashboardActionInput {
   lateToday: number;
   absentToday: number;
   unreadNotifications: number;
+  pendingAttendanceExceptions: number;
 }
 
 export interface DashboardActionCard {
@@ -46,6 +47,13 @@ export function buildDashboardActions(role: UserRole, input: DashboardActionInpu
   }
 
   return [
+    {
+      label: 'Exception Absensi',
+      value: input.pendingAttendanceExceptions,
+      href: '/dashboard/attendance/exceptions?status=PENDING',
+      tone: input.pendingAttendanceExceptions > 0 ? 'warning' : 'success',
+      description: 'Absensi butuh review karena GPS, radius, selfie, atau koreksi.',
+    },
     {
       label: 'Cuti Menunggu',
       value: input.pendingLeaves,

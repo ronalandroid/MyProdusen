@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { db, employees, attendances, leaveRequests, kpiResults, notifications, payrollRuns } from '@/lib/db';
+import { db, employees, attendances, leaveRequests, kpiResults, notifications, payrollRuns, attendanceExceptions } from '@/lib/db';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse } from '@/utils/response';
 import { eq, and, gte, lte, sql, desc, inArray } from 'drizzle-orm';
@@ -28,6 +28,9 @@ export async function GET(request: NextRequest) {
       : undefined;
     const scopedKpiFilter = scopedEmployeeIds
       ? inArray(kpiResults.employeeId, scopedEmployeeIds)
+      : undefined;
+    const scopedExceptionFilter = scopedEmployeeIds
+      ? inArray(attendanceExceptions.employeeId, scopedEmployeeIds)
       : undefined;
     const scopedEmployeeFilter = scopedEmployeeIds
       ? inArray(employees.id, scopedEmployeeIds)
@@ -113,6 +116,12 @@ export async function GET(request: NextRequest) {
       .where(and(eq(notifications.userId, user.userId), eq(notifications.isRead, false)));
     const unreadNotifications = unreadNotificationsResult?.count || 0;
 
+    const [pendingExceptionsResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(attendanceExceptions)
+      .where(and(eq(attendanceExceptions.status, 'PENDING'), scopedExceptionFilter));
+    const pendingAttendanceExceptions = pendingExceptionsResult?.count || 0;
+
     const [latestPayrollRun] = await db
       .select({ period: payrollRuns.period, status: payrollRuns.status })
       .from(payrollRuns)
@@ -137,6 +146,7 @@ export async function GET(request: NextRequest) {
       pendingLeaves,
       pendingKpiApprovals,
       unreadNotifications,
+      pendingAttendanceExceptions,
       payrollPeriodStatus: latestPayrollRun || null,
       date: today.toISOString(),
       role: user.role,

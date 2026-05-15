@@ -22,6 +22,7 @@ interface DashboardStats {
   lateToday: number;
   absentToday: number;
   unreadNotifications: number;
+  pendingAttendanceExceptions: number;
   payrollPeriodStatus: { period: string; status: string } | null;
   role: UserRole;
 }
@@ -42,6 +43,7 @@ export default function DashboardPage() {
     lateToday: 0,
     absentToday: 0,
     unreadNotifications: 0,
+    pendingAttendanceExceptions: 0,
     payrollPeriodStatus: null,
     role: "EMPLOYEE",
   });
@@ -93,6 +95,7 @@ export default function DashboardPage() {
     lateToday: stats.lateToday,
     absentToday: stats.absentToday,
     unreadNotifications: stats.unreadNotifications,
+    pendingAttendanceExceptions: stats.pendingAttendanceExceptions,
   });
 
   return (

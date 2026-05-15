@@ -4,13 +4,17 @@ import { checkOutSchema } from '@/utils/validation/attendance';
 import { successResponse, errorResponse, validationErrorResponse, unauthorizedResponse } from '@/utils/response';
 import { getRequestBody, requireAuth, getClientIp, getUserAgent } from '@/lib/middleware';
 import { employeeService } from '@/services/employees/employee.service';
+import { attendanceExceptionService } from '@/features/attendance/attendance-exception.service';
+import { classifyAttendanceExceptionError } from '@/lib/attendance/exception-policy';
 
 export async function POST(request: NextRequest) {
+  let user: Awaited<ReturnType<typeof requireAuth>> | null = null;
+  let employee: Awaited<ReturnType<typeof employeeService.getEmployeeByUserId>> | null = null;
   try {
-    const user = await requireAuth(request);
+    user = await requireAuth(request);
     
     // Get employee data
-    const employee = await employeeService.getEmployeeByUserId(user.userId);
+    employee = await employeeService.getEmployeeByUserId(user.userId);
     
     if (!employee) {
       return errorResponse('Data karyawan tidak ditemukan');
@@ -42,6 +46,15 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     if (error.message === 'Unauthorized') {
       return unauthorizedResponse();
+    }
+    const trigger = classifyAttendanceExceptionError(error.message || 'Check-out gagal');
+    if (trigger && user && employee) {
+      await attendanceExceptionService.createException({
+        employeeId: employee.id,
+        type: trigger.type,
+        reason: trigger.reason,
+        requestedBy: user.userId,
+      });
     }
     return errorResponse(error.message || 'Check-out gagal');
   }
