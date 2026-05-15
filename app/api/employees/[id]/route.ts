@@ -37,7 +37,19 @@ export async function GET(
       return forbiddenResponse('Anda tidak memiliki akses untuk melihat data karyawan ini');
     }
     
-    return successResponse(employee);
+    // Include user role in response
+    const { db, users } = await import('@/lib/db');
+    const { eq } = await import('drizzle-orm');
+    const [userRecord] = await db
+      .select({ role: users.role })
+      .from(users)
+      .where(eq(users.id, employee.userId))
+      .limit(1);
+    
+    return successResponse({
+      ...employee,
+      user: userRecord ? { role: userRecord.role } : undefined,
+    });
   } catch (error: any) {
     if (error.message === 'Unauthorized') {
       return unauthorizedResponse();
