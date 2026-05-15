@@ -6,6 +6,7 @@ import { cacheManager } from '@/lib/cache/cache-manager';
 import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
 import { CacheStrategy } from '@/lib/cache/cache-strategies';
 import { saveDataUrlImage } from '@/lib/upload';
+import { payrollPeriodLockService } from '@/features/payroll/payroll-period-lock.service';
 
 export type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'SICK' | 'PERMISSION';
 
@@ -74,6 +75,8 @@ export class AttendanceService {
     if (existingCheckIn) {
       throw new Error('Anda sudah melakukan check-in hari ini');
     }
+
+    await payrollPeriodLockService.assertAttendanceDateEditable(new Date());
 
     // Get work location
     const [workLocation] = await db
@@ -218,6 +221,8 @@ export class AttendanceService {
       throw new Error('Anda sudah melakukan check-out hari ini');
     }
 
+    await payrollPeriodLockService.assertAttendanceDateEditable(attendance.checkInTime);
+
     // Get work location
     const [workLocation] = await db
       .select()
@@ -351,6 +356,18 @@ export class AttendanceService {
     if (!data.reason || data.reason.trim().length < 5) {
       throw new Error('Alasan penyesuaian wajib diisi minimal 5 karakter');
     }
+
+    const [existingAttendance] = await db
+      .select()
+      .from(attendances)
+      .where(eq(attendances.id, id))
+      .limit(1);
+
+    if (!existingAttendance) {
+      throw new Error('Data absensi tidak ditemukan');
+    }
+
+    await payrollPeriodLockService.assertAttendanceDateEditable(existingAttendance.checkInTime, data.reason);
 
     const [attendance] = await db
       .update(attendances)
