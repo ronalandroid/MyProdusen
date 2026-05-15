@@ -6,8 +6,14 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is required');
 }
 
+function normalizeDatabaseUrl(databaseUrl: string) {
+  const url = new URL(databaseUrl);
+  url.searchParams.delete('schema');
+  return url.toString();
+}
+
 // Create postgres connection
-const connectionString = process.env.DATABASE_URL;
+const connectionString = normalizeDatabaseUrl(process.env.DATABASE_URL);
 const client = postgres(connectionString);
 
 // Create drizzle instance
