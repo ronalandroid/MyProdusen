@@ -33,6 +33,16 @@
 ## 🆕 HRIS Enhancement Documentation
 
 ### Feature Analysis
+- **[COMPETITOR_RESEARCH.md](./COMPETITOR_RESEARCH.md)** - HRIS Competitor Benchmark
+  - Mekari Talenta, Gadjian, LinovHR, GreatDay HR patterns
+  - Product gap analysis for MyProdusen
+  - Talenta-like roadmap and backlog priorities
+
+- **[HRIS_COMPETITOR_ACTION_PLAN.md](./HRIS_COMPETITOR_ACTION_PLAN.md)** - Competitor-Informed Delivery Plan
+  - Action dashboard, exception queue, ESS, leave balance, payroll lock
+  - Acceptance criteria and testing requirements
+  - Practical implementation order for HRIS polish
+
 - **[HRIS_FEATURE_ANALYSIS.md](./HRIS_FEATURE_ANALYSIS.md)** - Gap Analysis & Roadmap
   - Current features vs standard HRIS
   - Missing critical features
@@ -128,6 +138,8 @@ docs/
 ├── IMPLEMENTATION_PLAN.md            # Development phases
 ├── DEPLOYMENT_GUIDE.md               # Deployment instructions
 ├── SECURITY_REVIEW.md                # Security hardening
+├── COMPETITOR_RESEARCH.md            # HRIS benchmark and roadmap
+├── HRIS_COMPETITOR_ACTION_PLAN.md    # Competitor-informed delivery plan
 ├── HRIS_FEATURE_ANALYSIS.md          # HRIS gap analysis
 ├── HRIS_IMPLEMENTATION_STATUS.md     # HRIS progress tracking
 └── HRIS_FEATURES_SUMMARY.md          # HRIS feature guide
@@ -206,4 +218,3 @@ For documentation questions or updates:
 - Project Lead: [Your Name]
 - Email: support@myprodusen.com
 - Repository: [GitHub URL]
-
