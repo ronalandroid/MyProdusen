@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
-import { workLocationService } from '@/features/work-locations/work-location.service';
-import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse, notFoundResponse } from '@/lib/utils/response';
+import { workLocationService } from '@/services/work-locations/work-location.service';
+import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse, notFoundResponse } from '@/utils/response';
 import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { z } from 'zod';
+import { logAudit } from '@/lib/audit';
 
 const updateLocationSchema = z.object({
   name: z.string().min(3, 'Nama lokasi minimal 3 karakter').optional(),
@@ -57,7 +58,10 @@ export async function PUT(
       return validationErrorResponse(validation.error.errors[0].message);
     }
     
-    const location = await workLocationService.updateWorkLocation((await context.params).id, validation.data);
+    const { id } = await context.params;
+    const oldLocation = await workLocationService.getWorkLocationById(id);
+    const location = await workLocationService.updateWorkLocation(id, validation.data);
+    await logAudit(user.userId, 'UPDATE', 'WorkLocation', id, oldLocation, location, request);
     
     return successResponse(location, 'Lokasi kerja berhasil diubah');
   } catch (error: any) {
@@ -82,7 +86,10 @@ export async function DELETE(
       return forbiddenResponse('Anda tidak memiliki akses untuk menghapus lokasi kerja');
     }
     
-    const result = await workLocationService.deleteWorkLocation((await context.params).id);
+    const { id } = await context.params;
+    const oldLocation = await workLocationService.getWorkLocationById(id);
+    const result = await workLocationService.deleteWorkLocation(id);
+    await logAudit(user.userId, 'DELETE', 'WorkLocation', id, oldLocation, undefined, request);
     
     return successResponse(result, result.message);
   } catch (error: any) {

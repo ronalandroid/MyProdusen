@@ -2,6 +2,10 @@ import { db, attendances, employees, workLocations, shifts } from '@/lib/db';
 import { calculateDistance, isWithinGeofence, isGpsAccuracyAcceptable } from '@/lib/geofencing';
 import { calculateLateMinutes, calculateEarlyLeaveMinutes, calculateMinutesDifference } from '@/lib/utils/date';
 import { eq, and, gte, lt, desc } from 'drizzle-orm';
+import { cacheManager } from '@/lib/cache/cache-manager';
+import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
+import { CacheStrategy } from '@/lib/cache/cache-strategies';
+import { saveDataUrlImage } from '@/lib/upload';
 
 export type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'SICK' | 'PERMISSION';
 
@@ -31,6 +35,22 @@ export class AttendanceService {
 
     if (employee.status !== 'ACTIVE') {
       throw new Error('Karyawan tidak aktif');
+    }
+
+    if (!employee.defaultLocationId) {
+      throw new Error('Lokasi kerja default belum ditetapkan untuk karyawan');
+    }
+
+    if (employee.defaultLocationId !== data.workLocationId) {
+      throw new Error('Lokasi kerja tidak sesuai dengan penugasan karyawan');
+    }
+
+    if (!employee.defaultShiftId) {
+      throw new Error('Shift default belum ditetapkan untuk karyawan');
+    }
+
+    if (data.shiftId && data.shiftId !== employee.defaultShiftId) {
+      throw new Error('Shift tidak sesuai dengan penugasan karyawan');
     }
 
     // Check if already checked in today
@@ -99,7 +119,7 @@ export class AttendanceService {
     }
 
     // Get shift
-    const shiftId = data.shiftId || employee.defaultShiftId;
+    const shiftId = employee.defaultShiftId;
     let shift = null;
     if (shiftId) {
       const [shiftData] = await db
@@ -108,6 +128,14 @@ export class AttendanceService {
         .where(eq(shifts.id, shiftId))
         .limit(1);
       shift = shiftData || null;
+    }
+
+    if (!shift) {
+      throw new Error('Shift kerja tidak ditemukan');
+    }
+
+    if (!shift.isActive) {
+      throw new Error('Shift kerja tidak aktif');
     }
 
     // Calculate late minutes
@@ -124,6 +152,7 @@ export class AttendanceService {
 
     // Generate attendance ID
     const attendanceId = `att_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const selfieUpload = await saveDataUrlImage(data.selfie);
 
     // Create attendance record
     const [attendance] = await db
@@ -138,7 +167,7 @@ export class AttendanceService {
         checkInLongitude: data.longitude,
         checkInAccuracy: data.accuracy,
         checkInDistance: distance,
-        checkInSelfie: data.selfie,
+        checkInSelfie: selfieUpload.path,
         checkInDeviceInfo: data.deviceInfo,
         checkInIp: data.ipAddress,
         checkInUserAgent: data.userAgent,
@@ -146,6 +175,9 @@ export class AttendanceService {
         lateMinutes,
       })
       .returning();
+
+    // Invalidate attendance caches
+    await this.invalidateAttendanceCaches(data.employeeId);
 
     return attendance;
   }
@@ -246,6 +278,7 @@ export class AttendanceService {
       attendance.checkInTime,
       checkOutTime
     );
+    const selfieUpload = await saveDataUrlImage(data.selfie);
 
     // Update attendance record
     const [updated] = await db
@@ -256,7 +289,7 @@ export class AttendanceService {
         checkOutLongitude: data.longitude,
         checkOutAccuracy: data.accuracy,
         checkOutDistance: distance,
-        checkOutSelfie: data.selfie,
+        checkOutSelfie: selfieUpload.path,
         checkOutDeviceInfo: data.deviceInfo,
         checkOutIp: data.ipAddress,
         checkOutUserAgent: data.userAgent,
@@ -267,31 +300,112 @@ export class AttendanceService {
       .where(eq(attendances.id, attendance.id))
       .returning();
 
+    // Invalidate attendance caches
+    await this.invalidateAttendanceCaches(data.employeeId);
+
     return updated;
   }
 
   async getTodayAttendance(employeeId: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const cacheKey = CacheKeys.attendance.today(employeeId);
+
+    return await cacheManager.wrap(
+      cacheKey,
+      async () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const [attendance] = await db
+          .select()
+          .from(attendances)
+          .where(
+            and(
+              eq(attendances.employeeId, employeeId),
+              gte(attendances.checkInTime, today),
+              lt(attendances.checkInTime, tomorrow)
+            )
+          )
+          .limit(1);
+
+        return attendance || null;
+      },
+      {
+        ttl: CacheStrategy.attendanceToday,
+        tags: [CacheTags.attendance],
+      }
+    );
+  }
+
+  async adjustAttendance(id: string, data: {
+    checkInTime?: Date;
+    checkOutTime?: Date;
+    status?: AttendanceStatus;
+    lateMinutes?: number;
+    earlyLeaveMinutes?: number;
+    totalWorkMinutes?: number;
+    reason: string;
+    adjustedBy: string;
+  }) {
+    if (!data.reason || data.reason.trim().length < 5) {
+      throw new Error('Alasan penyesuaian wajib diisi minimal 5 karakter');
+    }
 
     const [attendance] = await db
-      .select()
-      .from(attendances)
-      .where(
-        and(
-          eq(attendances.employeeId, employeeId),
-          gte(attendances.checkInTime, today),
-          lt(attendances.checkInTime, tomorrow)
-        )
-      )
-      .limit(1);
+      .update(attendances)
+      .set({
+        checkInTime: data.checkInTime,
+        checkOutTime: data.checkOutTime,
+        status: data.status,
+        lateMinutes: data.lateMinutes,
+        earlyLeaveMinutes: data.earlyLeaveMinutes,
+        totalWorkMinutes: data.totalWorkMinutes,
+        isManualAdjustment: true,
+        adjustmentReason: data.reason,
+        adjustedBy: data.adjustedBy,
+        updatedAt: new Date(),
+      })
+      .where(eq(attendances.id, id))
+      .returning();
 
-    return attendance || null;
+    if (!attendance) {
+      throw new Error('Data absensi tidak ditemukan');
+    }
+
+    // Invalidate attendance caches
+    await this.invalidateAttendanceCaches(attendance.employeeId);
+
+    return attendance;
   }
 
   async getAttendances(filters?: {
+    employeeId?: string;
+    startDate?: Date;
+    endDate?: Date;
+    status?: AttendanceStatus;
+  }) {
+    const dateStr = filters?.startDate?.toISOString().split('T')[0];
+    const cacheKey = CacheKeys.attendance.list(dateStr, filters?.employeeId);
+
+    // Only cache simple queries
+    if (filters?.employeeId && filters?.startDate && !filters?.endDate && !filters?.status) {
+      return await cacheManager.wrap(
+        cacheKey,
+        async () => {
+          return await this.fetchAttendances(filters);
+        },
+        {
+          ttl: CacheStrategy.attendanceList,
+          tags: [CacheTags.attendance],
+        }
+      );
+    }
+
+    return await this.fetchAttendances(filters);
+  }
+
+  private async fetchAttendances(filters?: {
     employeeId?: string;
     startDate?: Date;
     endDate?: Date;
@@ -325,6 +439,19 @@ export class AttendanceService {
     }
 
     return await query;
+  }
+
+  private async invalidateAttendanceCaches(employeeId?: string): Promise<void> {
+    await cacheManager.invalidateByTag(CacheTags.attendance);
+    
+    if (employeeId) {
+      await cacheManager.delete(CacheKeys.attendance.today(employeeId));
+    }
+    
+    await cacheManager.delete(CacheKeys.attendance.today());
+    await cacheManager.deletePattern('attendance:list:*');
+    await cacheManager.deletePattern('attendance:stats:*');
+    await cacheManager.invalidateByTag(CacheTags.dashboard);
   }
 }
 

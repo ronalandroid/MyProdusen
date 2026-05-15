@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
-import { employeeService } from '@/features/employees/employee.service';
-import { createEmployeeSchema } from '@/lib/validations/employee';
-import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse } from '@/lib/utils/response';
+import { employeeService } from '@/services/employees/employee.service';
+import { createEmployeeSchema } from '@/utils/validation/employee';
+import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
 import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
+import { logAudit } from '@/lib/audit';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,6 +21,13 @@ export async function GET(request: NextRequest) {
       supervisorId: searchParams.get('supervisorId') || undefined,
       search: searchParams.get('search') || undefined,
     };
+
+    if (user.role === 'SUPERVISOR') {
+      const supervisor = await employeeService.getEmployeeByUserId(user.userId);
+      filters.supervisorId = supervisor.id;
+    } else if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
+      return forbiddenResponse('Anda tidak memiliki akses untuk melihat daftar karyawan');
+    }
     
     const employees = await employeeService.getEmployees(filters);
     
@@ -49,6 +57,7 @@ export async function POST(request: NextRequest) {
     }
     
     const employee = await employeeService.createEmployee(validation.data);
+    await logAudit(user.userId, 'CREATE', 'Employee', employee.id, undefined, employee, request);
     
     return successResponse(employee, 'Karyawan berhasil dibuat');
   } catch (error: any) {

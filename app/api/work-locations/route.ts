@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
-import { workLocationService } from '@/features/work-locations/work-location.service';
-import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse } from '@/lib/utils/response';
+import { workLocationService } from '@/services/work-locations/work-location.service';
+import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
 import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { z } from 'zod';
+import { logAudit } from '@/lib/audit';
 
 const createWorkLocationSchema = z.object({
   name: z.string().min(3, 'Nama lokasi minimal 3 karakter'),
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
     }
     
     const location = await workLocationService.createWorkLocation(validation.data);
+    await logAudit(user.userId, 'CREATE', 'WorkLocation', location.id, undefined, location, request);
     
     return successResponse(location, 'Lokasi kerja berhasil dibuat');
   } catch (error: any) {

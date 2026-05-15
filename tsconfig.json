@@ -23,9 +23,17 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"],
+      "@/components/*": ["./src/components/*"],
+      "@/services/*": ["./src/services/*"],
+      "@/utils/*": ["./src/utils/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/api/*": ["./src/api/*"],
+      "@/assets/*": ["./src/assets/*"],
+      "@/context/*": ["./src/context/*"],
+      "@/data/*": ["./src/data/*"],
+      "@/lib/*": ["./lib/*"],
+      "@/features/*": ["./features/*"]
     }
   },
   "include": [

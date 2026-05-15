@@ -1,116 +1,319 @@
 "use client";
 
-import { Bell } from "lucide-react";
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
+import Link from "next/link";
+import { Bell, CheckCircle, Clock, TrendingUp, Users, AlertTriangle, CalendarDays, RefreshCcw, ArrowRight } from "lucide-react";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { getAuthHeaders, fetchProfile } from "@/lib/auth-client";
+
+interface DashboardStats {
+  totalEmployees: number;
+  activeEmployees: number;
+  todayAttendance: {
+    total: number;
+    present: number;
+    percentage: number;
+  };
+  pendingLeave: number;
+}
+
+const numberFormatter = new Intl.NumberFormat("id-ID");
 
 export default function DashboardPage() {
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
+  const [error, setError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalEmployees: 0,
+    activeEmployees: 0,
+    todayAttendance: { total: 0, present: 0, percentage: 0 },
+    pendingLeave: 0,
+  });
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const userProfile = await fetchProfile();
+      setProfile(userProfile);
+
+      const [employeesRes, attendanceRes, leaveRes] = await Promise.all([
+        fetch("/api/employees", { headers: getAuthHeaders() }),
+        fetch("/api/attendance/today", { headers: getAuthHeaders() }),
+        fetch("/api/leave?status=PENDING", { headers: getAuthHeaders() }),
+      ]);
+
+      const [employeesData, attendanceData, leaveData] = await Promise.all([
+        employeesRes.json(),
+        attendanceRes.json(),
+        leaveRes.json(),
+      ]);
+
+      if (!employeesRes.ok || !attendanceRes.ok || !leaveRes.ok) {
+        throw new Error("Sebagian data dashboard gagal dimuat.");
+      }
+
+      const employees = employeesData.success ? employeesData.data || [] : [];
+      const activeEmployees = employees.filter((employee: any) => employee.status === "ACTIVE");
+      const todayAttendance = attendanceData.success ? attendanceData.data || [] : [];
+      const pendingLeave = leaveData.success ? (leaveData.data || []).length : 0;
+
+      setStats({
+        totalEmployees: employees.length,
+        activeEmployees: activeEmployees.length,
+        todayAttendance: {
+          total: activeEmployees.length,
+          present: todayAttendance.length,
+          percentage: activeEmployees.length > 0
+            ? Math.round((todayAttendance.length / activeEmployees.length) * 100)
+            : 0,
+        },
+        pendingLeave,
+      });
+      setLastUpdated(new Date());
+    } catch (dashboardError) {
+      console.error("Failed to load dashboard data:", dashboardError);
+      setError(dashboardError instanceof Error ? dashboardError.message : "Dashboard gagal dimuat.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" message="Memuat dashboard..." />
+      </div>
+    );
+  }
+
+  const displayName = profile?.employee?.fullName || profile?.username || "User";
+  const initials = displayName.substring(0, 2).toUpperCase();
+  const currentHour = new Date().getHours();
+  const greeting = currentHour < 12 ? "Selamat Pagi" : currentHour < 18 ? "Selamat Siang" : "Selamat Malam";
+
   return (
-    <div style={{ padding: "24px" }}>
+    <div className="dashboard-page animate-fade-in">
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
-        <div>
-          <h1 style={{ fontSize: "20px", fontWeight: 700, display: "flex", alignItems: "center", gap: "8px" }}>
-            Halo, Deni! 👋
-          </h1>
-          <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
-            Semangat bekerja hari ini!
+      <header className="dashboard-header animate-slide-up">
+        <div className="dashboard-greeting">
+          <p className="eyebrow">Dashboard Operasional</p>
+          <h1 className="text-2xl sm:text-3xl">{greeting}, {displayName} 👋</h1>
+          <p className="text-sm sm:text-base">Pantau kehadiran, cuti, dan data tim hari ini.</p>
+          {lastUpdated && (
+            <span className="last-updated">
+              Diperbarui {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
+        </div>
+        <div className="dashboard-header-actions">
+          <Link href="/dashboard/leave" className="icon-button" aria-label="Lihat notifikasi cuti">
+            <Bell size={20} aria-hidden="true" />
+            {stats.pendingLeave > 0 && <span className="notification-dot" aria-hidden="true" />}
+          </Link>
+          <Link href="/dashboard/profile" className="avatar avatar-link" aria-label="Buka profil pengguna">
+            {profile?.employee?.profilePhoto ? (
+              <img src={profile.employee.profilePhoto} alt="" />
+            ) : (
+              initials
+            )}
+          </Link>
+        </div>
+      </header>
+
+      {/* Error Alert */}
+      {error && (
+        <section className="alert-card animate-slide-up" role="alert" style={{ animationDelay: '100ms' }}>
+          <AlertTriangle size={20} aria-hidden="true" />
+          <div className="flex-1">
+            <strong>Data belum lengkap</strong>
+            <p>{error}</p>
+          </div>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={loadDashboardData}>
+            <RefreshCcw size={14} aria-hidden="true" />
+            Coba lagi
+          </button>
+        </section>
+      )}
+
+      {/* Hero Card - Attendance */}
+      <section className="hero-card animate-slide-up" aria-labelledby="attendance-title" style={{ animationDelay: '200ms' }}>
+        <div className="flex-1">
+          <p className="eyebrow text-white/80">Prioritas Hari Ini</p>
+          <h2 id="attendance-title" className="text-white text-xl sm:text-2xl mb-2">Kehadiran Tim</h2>
+          <p className="text-white/90 text-sm sm:text-base">
+            <span className="font-bold text-lg sm:text-xl">{stats.todayAttendance.present}</span> dari{" "}
+            <span className="font-bold text-lg sm:text-xl">{stats.todayAttendance.total}</span> karyawan aktif sudah tercatat hadir.
           </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{ position: "relative" }}>
-            <Bell size={24} color="var(--text-primary)" />
-            <div style={{ position: "absolute", top: "0", right: "2px", width: "8px", height: "8px", backgroundColor: "var(--danger)", borderRadius: "50%", border: "2px solid var(--bg-main)" }}></div>
-          </div>
-          <div className="avatar" style={{ width: "40px", height: "40px", backgroundColor: "#EAEAEA" }}>
-            <img src="/logo.png" alt="Avatar" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
-          </div>
+        <div className="attendance-meter">
+          <span className="text-3xl sm:text-4xl">{stats.todayAttendance.percentage}%</span>
+          <small className="text-xs sm:text-sm">Hadir</small>
         </div>
-      </div>
+        <Link href="/dashboard/attendance" className="hero-action group">
+          <span>Buka Kehadiran</span>
+          <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+        </Link>
+      </section>
 
-      {/* Ringkasan Hari Ini */}
-      <h2 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "12px" }}>Ringkasan Hari Ini</h2>
-      <div className="card" style={{ padding: "20px", marginBottom: "24px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>
-              <span style={{ color: "var(--info)" }}>👥</span> Karyawan
-            </div>
-            <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--info)" }}>128</div>
-            <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>Total aktif</div>
-          </div>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>
-              <span style={{ color: "var(--success)" }}>✅</span> Hadir Hari Ini
-            </div>
-            <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--success)" }}>96%</div>
-            <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>123 / 128</div>
-          </div>
+      {/* Stats Grid */}
+      <section aria-labelledby="summary-title" className="animate-slide-up" style={{ animationDelay: '300ms' }}>
+        <div className="section-heading">
+          <h2 id="summary-title">Ringkasan Hari Ini</h2>
         </div>
-        <div style={{ height: "1px", backgroundColor: "var(--border-color)", marginBottom: "16px" }} />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>
-              <span style={{ color: "var(--warning)" }}>⏳</span> Cuti Pengajuan
-            </div>
-            <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--warning)" }}>8</div>
-            <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>Menunggu</div>
-          </div>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>
-              <span style={{ color: "var(--primary)" }}>💰</span> Penggajian
-            </div>
-            <div style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>Rp 312 jt</div>
-            <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>Juni 2025</div>
-          </div>
+        <div className="stats-grid">
+          <StatCard 
+            icon={<Users size={22} aria-hidden="true" />} 
+            label="Total Karyawan" 
+            value={stats.totalEmployees} 
+            tone="info"
+            delay="400ms"
+          />
+          <StatCard 
+            icon={<CheckCircle size={22} aria-hidden="true" />} 
+            label="Karyawan Aktif" 
+            value={stats.activeEmployees} 
+            tone="success"
+            delay="450ms"
+          />
+          <StatCard 
+            icon={<Clock size={22} aria-hidden="true" />} 
+            label="Hadir Hari Ini" 
+            value={`${stats.todayAttendance.percentage}%`} 
+            tone="primary"
+            delay="500ms"
+          />
+          <StatCard 
+            icon={<CalendarDays size={22} aria-hidden="true" />} 
+            label="Cuti Pending" 
+            value={stats.pendingLeave} 
+            tone="warning"
+            delay="550ms"
+          />
         </div>
-      </div>
+      </section>
 
-      {/* Kehadiran Minggu Ini */}
-      <h2 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "12px" }}>Kehadiran Minggu Ini</h2>
-      <div className="card" style={{ padding: "16px", marginBottom: "24px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", color: "var(--text-muted)", height: "80px", position: "relative" }}>
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", position: "absolute", left: 0, top: 0, bottom: 0, paddingRight: "8px" }}>
-              <span>100%</span>
-              <span>75%</span>
-              <span>50%</span>
-              <span>25%</span>
-              <span>0%</span>
-            </div>
-            <div style={{ width: "100%", marginLeft: "24px", display: "flex", alignItems: "flex-end", justifyContent: "space-between", paddingBottom: "12px" }}>
-              {[80, 90, 85, 95, 90, 40, 20].map((val, i) => (
-                <div key={i} style={{ width: "16px", height: "100%", display: "flex", alignItems: "flex-end", position: "relative" }}>
-                  <div style={{ width: "100%", height: `${val}%`, backgroundColor: "var(--success)", borderRadius: "2px 2px 0 0" }}></div>
-                  <span style={{ position: "absolute", bottom: "-16px", left: "50%", transform: "translateX(-50%)", fontSize: "10px" }}>
-                    {['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'][i]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+      {/* Quick Actions */}
+      <section aria-labelledby="quick-actions-title" className="animate-slide-up" style={{ animationDelay: '600ms' }}>
+        <div className="section-heading">
+          <h2 id="quick-actions-title">Aksi Cepat</h2>
         </div>
-      </div>
+        <div className="quick-actions-grid">
+          <QuickAction 
+            href="/dashboard/attendance" 
+            icon={<Clock size={24} aria-hidden="true" />} 
+            title="Kehadiran" 
+            description="Check-in, check-out, dan status hari ini"
+            delay="650ms"
+          />
+          <QuickAction 
+            href="/dashboard/leave" 
+            icon={<CalendarDays size={24} aria-hidden="true" />} 
+            title="Ajukan Cuti" 
+            description="Buat atau tinjau pengajuan cuti"
+            delay="700ms"
+          />
+          <QuickAction 
+            href="/dashboard/reports" 
+            icon={<TrendingUp size={24} aria-hidden="true" />} 
+            title="Laporan" 
+            description="Ekspor data dan pantau tren"
+            delay="750ms"
+          />
+          <QuickAction 
+            href="/dashboard/employees" 
+            icon={<Users size={24} aria-hidden="true" />} 
+            title="Karyawan" 
+            description="Kelola data anggota tim"
+            delay="800ms"
+          />
+        </div>
+      </section>
 
-      {/* Penggajian Bulan Ini */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-        <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Penggajian Bulan Ini</h2>
-        <a href="/dashboard/payroll" style={{ fontSize: "12px", color: "var(--text-muted)", textDecoration: "none" }}>Lihat Semua &gt;</a>
-      </div>
-      <div className="card" style={{ padding: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={() => window.location.href='/dashboard/payroll'}>
-        <div>
-          <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>Total Payout</div>
-          <div style={{ fontSize: "20px", fontWeight: 700 }}>Rp 312.450.000</div>
+      {/* Insights Grid */}
+      <section className="insights-grid animate-slide-up" aria-labelledby="insights-title" style={{ animationDelay: '850ms' }}>
+        <div className="section-heading full-span">
+          <h2 id="insights-title">Insight Operasional</h2>
         </div>
-        <div style={{ position: "relative", width: "60px", height: "60px" }}>
-          {/* Simple doughnut chart mockup using CSS conic-gradient */}
-          <div style={{ 
-            width: "100%", height: "100%", borderRadius: "50%", 
-            background: "conic-gradient(var(--success) 0% 70%, var(--danger) 70% 85%, var(--primary) 85% 100%)",
-            display: "flex", alignItems: "center", justifyContent: "center"
-          }}>
-            <div style={{ width: "40px", height: "40px", backgroundColor: "var(--bg-card)", borderRadius: "50%" }}></div>
+        <div className="card empty-state-card">
+          <div className="w-12 h-12 rounded-xl bg-[var(--primary-light)] flex items-center justify-center mb-3">
+            <TrendingUp size={24} className="text-[var(--primary-dark)]" aria-hidden="true" />
           </div>
+          <h3 className="text-base sm:text-lg">KPI rata-rata belum tersedia</h3>
+          <p className="text-xs sm:text-sm">Dashboard tidak menampilkan angka KPI sampai API agregasi Phase 6 siap.</p>
+          <Link href="/dashboard/kpi" className="text-link text-sm">Kelola KPI →</Link>
         </div>
-      </div>
+        <div className="card empty-state-card">
+          <div className="w-12 h-12 rounded-xl bg-[var(--info-bg)] flex items-center justify-center mb-3">
+            <Clock size={24} className="text-[var(--info)]" aria-hidden="true" />
+          </div>
+          <h3 className="text-base sm:text-lg">Tren mingguan belum tersedia</h3>
+          <p className="text-xs sm:text-sm">Grafik mingguan menunggu endpoint historis agar data produksi tidak memakai mock.</p>
+          <Link href="/dashboard/reports" className="text-link text-sm">Buka Laporan →</Link>
+        </div>
+      </section>
     </div>
+  );
+}
+
+function StatCard({ 
+  icon, 
+  label, 
+  value, 
+  tone,
+  delay 
+}: { 
+  icon: ReactNode; 
+  label: string; 
+  value: number | string; 
+  tone: "primary" | "success" | "warning" | "info";
+  delay?: string;
+}) {
+  return (
+    <article 
+      className={`card stat-card stat-card-${tone} animate-scale-in hover:scale-105 transition-transform duration-200`}
+      style={{ animationDelay: delay }}
+    >
+      <div className="stat-icon">{icon}</div>
+      <div>
+        <p className="text-xs sm:text-sm">{label}</p>
+        <strong className="text-xl sm:text-2xl">{typeof value === "number" ? numberFormatter.format(value) : value}</strong>
+      </div>
+    </article>
+  );
+}
+
+function QuickAction({ 
+  href, 
+  icon, 
+  title, 
+  description,
+  delay 
+}: { 
+  href: string; 
+  icon: ReactNode; 
+  title: string; 
+  description: string;
+  delay?: string;
+}) {
+  return (
+    <Link 
+      href={href} 
+      className="card quick-action-card group animate-scale-in"
+      style={{ animationDelay: delay }}
+    >
+      <span className="quick-action-icon group-hover:scale-110 transition-transform">{icon}</span>
+      <span>
+        <strong className="text-sm sm:text-base">{title}</strong>
+        <small className="text-xs sm:text-sm">{description}</small>
+      </span>
+    </Link>
   );
 }

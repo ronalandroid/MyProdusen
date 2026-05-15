@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server';
-import { authService } from '@/features/auth/auth.service';
-import { changePasswordSchema } from '@/lib/validations/auth';
-import { successResponse, errorResponse, validationErrorResponse, unauthorizedResponse } from '@/lib/utils/response';
+import { authService } from '@/services/auth/auth.service';
+import { changePasswordSchema } from '@/utils/validation/auth';
+import { successResponse, errorResponse, validationErrorResponse, unauthorizedResponse } from '@/utils/response';
 import { getRequestBody, requireAuth } from '@/lib/middleware';
+import { logAudit } from '@/lib/audit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +20,7 @@ export async function POST(request: NextRequest) {
     const { currentPassword, newPassword } = validation.data;
     
     const result = await authService.changePassword(user.userId, currentPassword, newPassword);
+    await logAudit(user.userId, 'CHANGE_PASSWORD', 'User', user.userId, undefined, { userId: user.userId }, request);
     
     return successResponse(result, 'Password berhasil diubah');
   } catch (error: any) {

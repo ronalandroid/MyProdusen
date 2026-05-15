@@ -2,6 +2,9 @@ import { db, employees, users, shifts, workLocations } from '@/lib/db';
 import { eq, and, or, like, sql } from 'drizzle-orm';
 import { getNextNIP } from '@/lib/utils/nip-generator';
 import { hashPassword } from '@/lib/auth';
+import { cacheManager } from '@/lib/cache/cache-manager';
+import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
+import { CacheStrategy } from '@/lib/cache/cache-strategies';
 
 export type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
@@ -90,10 +93,41 @@ export class EmployeeService {
       })
       .returning();
 
+    // Invalidate employee caches
+    await this.invalidateEmployeeCaches();
+
     return employee;
   }
 
   async getEmployees(filters?: {
+    search?: string;
+    status?: EmployeeStatus;
+    division?: string;
+    supervisorId?: string;
+  }) {
+    const cacheKey = CacheKeys.employees.list(
+      filters?.status,
+      filters?.supervisorId
+    );
+
+    // Only cache simple list queries without search
+    if (!filters?.search && !filters?.division) {
+      return await cacheManager.wrap(
+        cacheKey,
+        async () => {
+          return await this.fetchEmployees(filters);
+        },
+        {
+          ttl: CacheStrategy.employeeList,
+          tags: [CacheTags.employees],
+        }
+      );
+    }
+
+    return await this.fetchEmployees(filters);
+  }
+
+  private async fetchEmployees(filters?: {
     search?: string;
     status?: EmployeeStatus;
     division?: string;
@@ -133,53 +167,64 @@ export class EmployeeService {
   }
 
   async getEmployeeById(id: string) {
-    const [employee] = await db
-      .select()
-      .from(employees)
-      .where(eq(employees.id, id))
-      .limit(1);
+    const cacheKey = CacheKeys.employees.detail(id);
 
-    if (!employee) {
-      throw new Error('Karyawan tidak ditemukan');
-    }
+    return await cacheManager.wrap(
+      cacheKey,
+      async () => {
+        const [employee] = await db
+          .select()
+          .from(employees)
+          .where(eq(employees.id, id))
+          .limit(1);
 
-    // Get related data
-    let supervisor = null;
-    if (employee.supervisorId) {
-      const [sup] = await db
-        .select()
-        .from(employees)
-        .where(eq(employees.id, employee.supervisorId))
-        .limit(1);
-      supervisor = sup || null;
-    }
+        if (!employee) {
+          throw new Error('Karyawan tidak ditemukan');
+        }
 
-    let defaultShift = null;
-    if (employee.defaultShiftId) {
-      const [shift] = await db
-        .select()
-        .from(shifts)
-        .where(eq(shifts.id, employee.defaultShiftId))
-        .limit(1);
-      defaultShift = shift || null;
-    }
+        // Get related data
+        let supervisor = null;
+        if (employee.supervisorId) {
+          const [sup] = await db
+            .select()
+            .from(employees)
+            .where(eq(employees.id, employee.supervisorId))
+            .limit(1);
+          supervisor = sup || null;
+        }
 
-    let defaultLocation = null;
-    if (employee.defaultLocationId) {
-      const [location] = await db
-        .select()
-        .from(workLocations)
-        .where(eq(workLocations.id, employee.defaultLocationId))
-        .limit(1);
-      defaultLocation = location || null;
-    }
+        let defaultShift = null;
+        if (employee.defaultShiftId) {
+          const [shift] = await db
+            .select()
+            .from(shifts)
+            .where(eq(shifts.id, employee.defaultShiftId))
+            .limit(1);
+          defaultShift = shift || null;
+        }
 
-    return {
-      ...employee,
-      supervisor,
-      defaultShift,
-      defaultLocation,
-    };
+        let defaultLocation = null;
+        if (employee.defaultLocationId) {
+          const [location] = await db
+            .select()
+            .from(workLocations)
+            .where(eq(workLocations.id, employee.defaultLocationId))
+            .limit(1);
+          defaultLocation = location || null;
+        }
+
+        return {
+          ...employee,
+          supervisor,
+          defaultShift,
+          defaultLocation,
+        };
+      },
+      {
+        ttl: CacheStrategy.employeeDetail,
+        tags: [CacheTags.employees],
+      }
+    );
   }
 
   async updateEmployee(id: string, data: Partial<{
@@ -214,6 +259,9 @@ export class EmployeeService {
       .where(eq(employees.id, id))
       .returning();
 
+    // Invalidate caches
+    await this.invalidateEmployeeCaches(id);
+
     return updated;
   }
 
@@ -238,6 +286,9 @@ export class EmployeeService {
       .delete(users)
       .where(eq(users.id, employee.userId));
 
+    // Invalidate caches
+    await this.invalidateEmployeeCaches(id);
+
     return { message: 'Karyawan berhasil dihapus' };
   }
 
@@ -249,6 +300,17 @@ export class EmployeeService {
       .limit(1);
 
     return employee || null;
+  }
+
+  private async invalidateEmployeeCaches(employeeId?: string): Promise<void> {
+    await cacheManager.invalidateByTag(CacheTags.employees);
+    
+    if (employeeId) {
+      await cacheManager.delete(CacheKeys.employees.detail(employeeId));
+    }
+    
+    await cacheManager.delete(CacheKeys.employees.count());
+    await cacheManager.deletePattern('employees:list:*');
   }
 }
 

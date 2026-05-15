@@ -1,89 +1,396 @@
 "use client";
 
-import { ArrowLeft, SlidersHorizontal } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, Plus, Calendar, Clock } from "lucide-react";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useToast } from "@/components/ui/Toast";
+import { getAuthHeaders } from "@/lib/auth-client";
+
+interface LeaveRequest {
+  id: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: string;
+  employee: {
+    fullName: string;
+    nip: string;
+  };
+  approvedBy?: {
+    fullName: string;
+  } | null;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  createdAt: string;
+}
 
 export default function LeavePage() {
   const router = useRouter();
+  const { success, error: showError } = useToast();
+  
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    type: "LEAVE",
+    startDate: "",
+    endDate: "",
+    reason: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchLeaveRequests();
+  }, [statusFilter]);
+
+  const fetchLeaveRequests = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") {
+        params.append("status", statusFilter);
+      }
+      
+      const response = await fetch(`/api/leave?${params.toString()}`, {
+        headers: getAuthHeaders(),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setLeaveRequests(data.data || []);
+      } else {
+        showError(data.error || "Gagal memuat data cuti");
+      }
+    } catch (err) {
+      showError("Terjadi kesalahan saat memuat data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreate = () => {
+    setFormData({
+      type: "LEAVE",
+      startDate: "",
+      endDate: "",
+      reason: "",
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const response = await fetch("/api/leave", {
+        method: "POST",
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        success(data.message || "Pengajuan cuti berhasil dibuat");
+        setIsModalOpen(false);
+        fetchLeaveRequests();
+      } else {
+        showError(data.error || "Gagal membuat pengajuan");
+      }
+    } catch (err) {
+      showError("Terjadi kesalahan saat membuat pengajuan");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleApprove = async (id: string) => {
+    setSubmitting(true);
+    try {
+      const response = await fetch(`/api/leave/${id}/approve`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        success(data.message || "Pengajuan berhasil disetujui");
+        setIsDetailModalOpen(false);
+        fetchLeaveRequests();
+      } else {
+        showError(data.error || "Gagal menyetujui pengajuan");
+      }
+    } catch (err) {
+      showError("Terjadi kesalahan saat menyetujui pengajuan");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    setSubmitting(true);
+    try {
+      const response = await fetch(`/api/leave/${id}/reject`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        success(data.message || "Pengajuan berhasil ditolak");
+        setIsDetailModalOpen(false);
+        fetchLeaveRequests();
+      } else {
+        showError(data.error || "Gagal menolak pengajuan");
+      }
+    } catch (err) {
+      showError("Terjadi kesalahan saat menolak pengajuan");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, { label: string; className: string }> = {
+      PENDING: { label: "Menunggu", className: "badge-warning" },
+      APPROVED: { label: "Disetujui", className: "badge-success" },
+      REJECTED: { label: "Ditolak", className: "badge-danger" },
+    };
+    
+    const statusInfo = statusMap[status] || { label: status, className: "" };
+    return <span className={`badge ${statusInfo.className}`}>{statusInfo.label}</span>;
+  };
+
+  const getTypeBadge = (type: string) => {
+    const typeMap: Record<string, string> = {
+      LEAVE: "Cuti",
+      SICK: "Sakit",
+      PERMISSION: "Izin",
+    };
+    return typeMap[type] || type;
+  };
+
+  const calculateDays = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ padding: "24px", flex: 1, display: "flex", flexDirection: "column", gap: "20px" }}>
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={() => router.back()}>
-            <ArrowLeft size={24} />
-            <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Cuti</h1>
-          </div>
-          <SlidersHorizontal size={24} color="var(--text-primary)" />
+    <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px", position: "relative", minHeight: "100%" }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={() => router.back()}>
+          <ArrowLeft size={24} />
+          <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Cuti & Izin</h1>
         </div>
+      </div>
 
-        {/* Sisa Cuti Card */}
-        <div style={{ backgroundColor: "var(--primary)", borderRadius: "var(--radius-lg)", padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {/* Filter */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <select
+          className="input"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{ appearance: "none", backgroundColor: "white" }}
+        >
+          <option value="all">Semua Status</option>
+          <option value="PENDING">Menunggu</option>
+          <option value="APPROVED">Disetujui</option>
+          <option value="REJECTED">Ditolak</option>
+        </select>
+      </div>
+
+      {/* List */}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <LoadingSpinner size="lg" message="Memuat data cuti..." />
+        </div>
+      ) : leaveRequests.length === 0 ? (
+        <div className="text-center py-12 text-[var(--text-secondary)]">
+          Belum ada pengajuan cuti
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "24px" }}>
+          {leaveRequests.map((leave) => (
+            <div
+              key={leave.id}
+              onClick={() => {
+                setSelectedLeave(leave);
+                setIsDetailModalOpen(true);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderBottom: "1px solid var(--border-color)",
+                paddingBottom: "16px",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                  <span style={{ fontSize: "14px", fontWeight: 600 }}>{getTypeBadge(leave.type)}</span>
+                  {getStatusBadge(leave.status)}
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Calendar size={14} />
+                  {formatDate(leave.startDate)} - {formatDate(leave.endDate)} ({calculateDays(leave.startDate, leave.endDate)} hari)
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>
+                  {leave.employee.fullName} • {leave.employee.nip}
+                </div>
+              </div>
+              <div style={{ color: "var(--text-muted)" }}>&gt;</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* FAB */}
+      <button className="fab" onClick={handleCreate}>
+        <Plus size={24} />
+      </button>
+
+      {/* Create Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Ajukan Cuti/Izin"
+        size="lg"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSubmit} loading={submitting}>
+              Ajukan
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "4px" }}>Sisa Cuti Anda</div>
-            <div style={{ fontSize: "24px", fontWeight: 800, color: "var(--text-primary)" }}>12 / 12 <span style={{ fontSize: "14px", fontWeight: 600 }}>hari</span></div>
-            <div style={{ fontSize: "10px", color: "var(--text-primary)", opacity: 0.8 }}>Tahun 2025</div>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">
+              Jenis
+            </label>
+            <select
+              className="input"
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+              required
+            >
+              <option value="LEAVE">Cuti</option>
+              <option value="SICK">Sakit</option>
+              <option value="PERMISSION">Izin</option>
+            </select>
           </div>
-          <div style={{ width: "48px", height: "48px", backgroundColor: "rgba(255,255,255,0.3)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: "24px" }}>📋</span>
+          <Input
+            label="Tanggal Mulai"
+            type="date"
+            value={formData.startDate}
+            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+            required
+          />
+          <Input
+            label="Tanggal Selesai"
+            type="date"
+            value={formData.endDate}
+            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+            required
+          />
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">
+              Alasan
+            </label>
+            <textarea
+              className="input"
+              rows={4}
+              value={formData.reason}
+              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+              placeholder="Jelaskan alasan pengajuan..."
+              required
+              style={{ resize: "vertical" }}
+            />
           </div>
-        </div>
+        </form>
+      </Modal>
 
-        {/* Tabs */}
-        <div style={{ display: "flex", borderBottom: "1px solid var(--border-color)", marginBottom: "8px" }}>
-          <div style={{ flex: 1, textAlign: "center", paddingBottom: "12px", fontSize: "14px", fontWeight: 600, color: "var(--primary)", borderBottom: "2px solid var(--primary)" }}>
-            Pengajuan Saya
-          </div>
-          <div style={{ flex: 1, textAlign: "center", paddingBottom: "12px", fontSize: "14px", fontWeight: 500, color: "var(--text-muted)" }}>
-            Riwayat
-          </div>
-        </div>
-
-        {/* List */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "80px" }}>
-          <div style={{ borderBottom: "1px solid var(--border-color)", paddingBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {/* Detail Modal */}
+      <Modal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        title="Detail Pengajuan"
+        size="lg"
+        footer={
+          selectedLeave?.status === "PENDING" ? (
+            <>
+              <Button variant="danger" onClick={() => handleReject(selectedLeave.id)} loading={submitting}>
+                Tolak
+              </Button>
+              <Button onClick={() => handleApprove(selectedLeave.id)} loading={submitting}>
+                Setujui
+              </Button>
+            </>
+          ) : undefined
+        }
+      >
+        {selectedLeave && (
+          <div className="flex flex-col gap-4">
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>Cuti Tahunan</div>
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>5 - 7 Juni 2025 (3 hari)</div>
-              <div style={{ fontSize: "10px", color: "#D97706", fontWeight: 600, marginTop: "4px" }}>Menunggu Persetujuan</div>
+              <p className="text-xs text-[var(--text-secondary)] mb-1">Jenis</p>
+              <p className="text-sm font-semibold">{getTypeBadge(selectedLeave.type)}</p>
             </div>
-            <div style={{ color: "var(--text-muted)" }}>&gt;</div>
-          </div>
-
-          <div style={{ borderBottom: "1px solid var(--border-color)", paddingBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>Cuti Sakit</div>
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>12 Mei 2025 (1 hari)</div>
-              <div style={{ fontSize: "10px", color: "var(--success)", fontWeight: 600, marginTop: "4px" }}>Disetujui</div>
+              <p className="text-xs text-[var(--text-secondary)] mb-1">Status</p>
+              {getStatusBadge(selectedLeave.status)}
             </div>
-            <div style={{ fontSize: "10px", color: "var(--success)", fontWeight: 600, backgroundColor: "var(--success-bg)", padding: "2px 8px", borderRadius: "100px" }}>Cuti Sakit</div>
-          </div>
-
-          <div style={{ borderBottom: "1px solid var(--border-color)", paddingBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>Cuti Tahunan</div>
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>2 - 4 April 2025 (3 hari)</div>
-              <div style={{ fontSize: "10px", color: "var(--success)", fontWeight: 600, marginTop: "4px" }}>Disetujui</div>
+              <p className="text-xs text-[var(--text-secondary)] mb-1">Karyawan</p>
+              <p className="text-sm font-semibold">{selectedLeave.employee.fullName}</p>
+              <p className="text-xs text-[var(--text-muted)]">{selectedLeave.employee.nip}</p>
             </div>
-            <div style={{ fontSize: "10px", color: "var(--success)", fontWeight: 600, backgroundColor: "var(--success-bg)", padding: "2px 8px", borderRadius: "100px" }}>Cuti Tahunan</div>
-          </div>
-
-          <div style={{ borderBottom: "1px solid var(--border-color)", paddingBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>Cuti Pribadi</div>
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>20 Maret 2025 (1 hari)</div>
-              <div style={{ fontSize: "10px", color: "var(--danger)", fontWeight: 600, marginTop: "4px" }}>Ditolak</div>
+              <p className="text-xs text-[var(--text-secondary)] mb-1">Periode</p>
+              <p className="text-sm">{formatDate(selectedLeave.startDate)} - {formatDate(selectedLeave.endDate)}</p>
+              <p className="text-xs text-[var(--text-muted)]">{calculateDays(selectedLeave.startDate, selectedLeave.endDate)} hari</p>
             </div>
-            <div style={{ color: "var(--text-muted)" }}></div>
+            <div>
+              <p className="text-xs text-[var(--text-secondary)] mb-1">Alasan</p>
+              <p className="text-sm">{selectedLeave.reason}</p>
+            </div>
+            {selectedLeave.approvedBy && (
+              <div>
+                <p className="text-xs text-[var(--text-secondary)] mb-1">Disetujui oleh</p>
+                <p className="text-sm">{selectedLeave.approvedBy.fullName}</p>
+                <p className="text-xs text-[var(--text-muted)]">{selectedLeave.approvedAt ? formatDate(selectedLeave.approvedAt) : ""}</p>
+              </div>
+            )}
           </div>
-        </div>
-      </div>
-
-      {/* Fixed Button */}
-      <div style={{ position: "absolute", bottom: "100px", left: "24px", right: "24px", zIndex: 10 }}>
-        <button className="btn btn-primary">Ajukan Cuti</button>
-      </div>
+        )}
+      </Modal>
     </div>
   );
 }

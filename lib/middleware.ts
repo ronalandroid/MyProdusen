@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { verifyToken, JwtPayload } from './auth';
+import { verifyToken, JwtPayload, getAuthCookie } from './auth';
 import { db, users } from './db';
 import { eq } from 'drizzle-orm';
 
@@ -8,16 +8,30 @@ export interface AuthenticatedRequest extends NextRequest {
 }
 
 /**
- * Middleware to authenticate requests using JWT token
+ * Middleware to authenticate requests using JWT token from cookie or header
  */
 export async function authenticate(request: NextRequest): Promise<JwtPayload | null> {
-  const authHeader = request.headers.get('authorization');
+  let token: string | null = null;
   
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  // Try to get token from cookie first (preferred)
+  try {
+    token = await getAuthCookie();
+  } catch (error) {
+    token = null;
+  }
+  
+  // Fallback to Authorization header for API clients
+  if (!token) {
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
+  
+  if (!token) {
     return null;
   }
   
-  const token = authHeader.substring(7);
   const payload = verifyToken(token);
 
   if (!payload) {

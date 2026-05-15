@@ -4,6 +4,10 @@
 - Read `docs/prd.md` first before product or code changes.
 - Read `docs/CURRENT_STATE.md` before estimating completeness.
 - Read `docs/IMPLEMENTATION_PLAN.md` before choosing next work.
+- Keep all project documentation markdown files in `docs/`.
+- If new documentation is needed, create it directly under `docs/`.
+- Do not create root-level `.md` files except this required `AGENTS.md` control file.
+- Update `docs/INDEX.md` when adding, moving, or renaming documentation.
 - Treat older summary docs as historical if they conflict with current-state docs.
 
 ## Non-Negotiable Rules
@@ -17,7 +21,7 @@
 - Attendance must be complete before dashboard/report aggregation.
 
 ## Engineering Standard
-- Next.js App Router, TypeScript, Tailwind, Prisma, PostgreSQL.
+- Next.js App Router, TypeScript, Tailwind, Drizzle ORM, PostgreSQL.
 - Keep business logic in services and reusable server utilities.
 - Validate input with Zod at API boundaries.
 - Keep UI clean, mobile-friendly, accessible, and consistent with brand colors.

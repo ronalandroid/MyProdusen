@@ -1,5 +1,5 @@
 import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 // Enums
 export const userRoleEnum = pgEnum('UserRole', ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE']);
@@ -114,6 +114,10 @@ export const attendances = pgTable('Attendance', {
   workLocationIdIdx: index('Attendance_workLocationId_idx').on(table.workLocationId),
   checkInTimeIdx: index('Attendance_checkInTime_idx').on(table.checkInTime),
   statusIdx: index('Attendance_status_idx').on(table.status),
+  employeeCheckInDateUnique: uniqueIndex('Attendance_employeeId_checkInDate_key').on(
+    table.employeeId,
+    sql`DATE(${table.checkInTime})`
+  ),
 }));
 
 // Leave Request table

@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
-import { attendanceService } from '@/features/attendance/attendance.service';
-import { checkInSchema } from '@/lib/validations/attendance';
-import { successResponse, errorResponse, validationErrorResponse, unauthorizedResponse } from '@/lib/utils/response';
+import { attendanceService } from '@/services/attendance/attendance.service';
+import { checkInSchema } from '@/utils/validation/attendance';
+import { successResponse, errorResponse, validationErrorResponse, unauthorizedResponse } from '@/utils/response';
 import { getRequestBody, requireAuth, getClientIp, getUserAgent } from '@/lib/middleware';
-import { employeeService } from '@/features/employees/employee.service';
+import { employeeService } from '@/services/employees/employee.service';
 
 export async function POST(request: NextRequest) {
   try {

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
-import { setToken } from "@/lib/auth-client";
+import { Eye, EyeOff, Mail, Lock, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasError = Boolean(error);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +25,7 @@ export default function LoginPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           email: identifier,
           password,
@@ -32,11 +34,10 @@ export default function LoginPage() {
 
       const payload = await response.json();
 
-      if (!response.ok || !payload.success || !payload.data?.token) {
+      if (!response.ok || !payload.success) {
         throw new Error(payload.error || "Login gagal");
       }
 
-      setToken(payload.data.token);
       router.replace("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login gagal");
@@ -46,103 +47,247 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ backgroundColor: "#FFFFFF", minHeight: "100vh", padding: "24px", display: "flex", flexDirection: "column" }}>
-      <div style={{ flex: 1 }}>
-        {/* Header */}
-        <div style={{ marginTop: "40px", marginBottom: "40px" }}>
-          <h1 style={{ fontSize: "24px", fontWeight: 700, marginBottom: "8px" }}>
-            Masuk ke <span style={{ color: "var(--primary)" }}>MyProdusen</span>
-          </h1>
-          <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
-            Gunakan akun perusahaan untuk masuk.
-          </p>
-        </div>
+    <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 lg:bg-gradient-to-br lg:from-[var(--primary-light)] lg:via-white lg:to-gray-50">
+      {/* Back Button - Mobile Only */}
+      <div className="lg:hidden p-4">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+        >
+          <ArrowLeft size={18} />
+          <span>Kembali</span>
+        </Link>
+      </div>
 
-        {/* Form */}
-        <form onSubmit={handleLogin}>
-          <div className="input-group">
-            <label className="label">Email</label>
-            <input
-              type="email"
-              className="input"
-              placeholder="Masukkan email perusahaan"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              required
-            />
-          </div>
+      <section className="min-h-screen flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+        <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          {/* Left Side - Branding (Desktop Only) */}
+          <div className="hidden lg:flex flex-col justify-center space-y-8 animate-fade-in">
+            {/* Logo */}
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center shadow-lg">
+                <img src="/logo.png" alt="" className="w-10 h-10" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1">
+                  <span className="text-3xl font-extrabold text-[var(--text-primary)]">My</span>
+                  <span className="text-3xl font-extrabold text-[var(--primary)]">Produsen</span>
+                </div>
+                <p className="text-sm text-[var(--text-muted)] font-medium">Produsen Dimsum Medan</p>
+              </div>
+            </div>
 
-          <div className="input-group" style={{ marginBottom: "8px" }}>
-            <label className="label">Kata Sandi</label>
-            <div style={{ position: "relative" }}>
-              <input
-                type={showPassword ? "text" : "password"}
-                className="input"
-                placeholder="Masukkan kata sandi"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{ paddingRight: "48px" }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: "absolute",
-                  right: "16px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "none",
-                  border: "none",
-                  color: "var(--text-muted)",
-                  cursor: "pointer",
-                  padding: 0,
-                  display: "flex",
-                }}
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
+            {/* Heading */}
+            <div className="space-y-4">
+              <h1 className="text-5xl font-extrabold text-[var(--text-primary)] leading-tight">
+                Kelola kehadiran dan tim produksi dari satu tempat
+              </h1>
+              <p className="text-lg text-[var(--text-secondary)] leading-relaxed max-w-lg">
+                Masuk dengan akun perusahaan untuk membuka dashboard, absensi, dan pengelolaan operasional.
+              </p>
+            </div>
+
+            {/* Features */}
+            <div className="space-y-3">
+              {[
+                "Absensi real-time dengan geolokasi",
+                "Manajemen cuti dan izin otomatis",
+                "Laporan dan analitik lengkap",
+              ].map((feature, index) => (
+                <div key={index} className="flex items-center gap-3 animate-slide-up" style={{ animationDelay: `${index * 100}ms` }}>
+                  <div className="w-6 h-6 rounded-full bg-[var(--success)] flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-[var(--text-secondary)] font-medium">{feature}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div style={{ textAlign: "right", marginBottom: "32px" }}>
-            <a href="#" style={{ fontSize: "12px", color: "var(--text-secondary)", textDecoration: "none", fontWeight: 500 }}>
-              Lupa kata sandi?
-            </a>
-          </div>
+          {/* Right Side - Login Form */}
+          <div className="w-full max-w-md mx-auto lg:mx-0 animate-scale-in">
+            <div className="bg-white rounded-3xl shadow-2xl border border-[var(--border-color)] p-6 sm:p-8 lg:p-10">
+              {/* Mobile Logo */}
+              <div className="lg:hidden mb-8 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center shadow-lg">
+                  <img src="/logo.png" alt="" className="w-10 h-10" />
+                </div>
+                <div className="flex items-center justify-center gap-1 mb-2">
+                  <span className="text-2xl font-extrabold text-[var(--text-primary)]">My</span>
+                  <span className="text-2xl font-extrabold text-[var(--primary)]">Produsen</span>
+                </div>
+                <p className="text-sm text-[var(--text-muted)]">Produsen Dimsum Medan</p>
+              </div>
 
-          <button type="submit" className="btn btn-primary" style={{ marginBottom: "24px" }}>
-            {isSubmitting ? "Memproses..." : "Masuk"}
-          </button>
-          {error && (
-            <p role="alert" style={{ fontSize: "12px", color: "var(--danger)", marginTop: "-12px", marginBottom: "16px" }}>
-              {error}
+              {/* Form Header */}
+              <div className="mb-8">
+                <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-2">
+                  Masuk ke Akun
+                </h2>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Gunakan email dan kata sandi perusahaan Anda
+                </p>
+              </div>
+
+              {/* Error Alert */}
+              {hasError && (
+                <div
+                  id="login-error"
+                  role="alert"
+                  className="mb-6 p-4 rounded-xl bg-red-50 border-2 border-red-200 flex items-start gap-3 animate-fade-in"
+                >
+                  <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-red-800">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Login Form */}
+              <form onSubmit={handleLogin} className="space-y-5" noValidate>
+                {/* Email Input */}
+                <div>
+                  <label htmlFor="login-email" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">
+                    Email Perusahaan
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
+                      <Mail size={20} />
+                    </div>
+                    <input
+                      id="login-email"
+                      type="email"
+                      className="
+                        w-full pl-12 pr-4 py-3.5
+                        text-sm font-medium
+                        bg-[var(--bg-input)] text-[var(--text-primary)]
+                        border-2 rounded-xl
+                        transition-all duration-200
+                        placeholder:text-[var(--text-muted)] placeholder:font-normal
+                        focus:outline-none focus:ring-4
+                        disabled:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-60
+                        border-[var(--border-color)] focus:border-[var(--primary)] focus:ring-[var(--primary-light)]
+                      "
+                      placeholder="nama@perusahaan.com"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      autoComplete="email"
+                      required
+                      aria-invalid={hasError}
+                      aria-describedby={hasError ? "login-error" : undefined}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+
+                {/* Password Input */}
+                <div>
+                  <label htmlFor="login-password" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">
+                    Kata Sandi
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
+                      <Lock size={20} />
+                    </div>
+                    <input
+                      id="login-password"
+                      type={showPassword ? "text" : "password"}
+                      className="
+                        w-full pl-12 pr-12 py-3.5
+                        text-sm font-medium
+                        bg-[var(--bg-input)] text-[var(--text-primary)]
+                        border-2 rounded-xl
+                        transition-all duration-200
+                        placeholder:text-[var(--text-muted)] placeholder:font-normal
+                        focus:outline-none focus:ring-4
+                        disabled:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-60
+                        border-[var(--border-color)] focus:border-[var(--primary)] focus:ring-[var(--primary-light)]
+                      "
+                      placeholder="Masukkan kata sandi"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="current-password"
+                      required
+                      aria-invalid={hasError}
+                      aria-describedby={hasError ? "login-error" : undefined}
+                      disabled={isSubmitting}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="
+                        absolute right-3 top-1/2 -translate-y-1/2
+                        p-2 rounded-lg
+                        text-[var(--text-muted)] hover:text-[var(--text-primary)]
+                        hover:bg-[var(--bg-hover)]
+                        transition-all duration-200
+                        focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]
+                        disabled:cursor-not-allowed disabled:opacity-50
+                      "
+                      aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                      disabled={isSubmitting}
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  className="
+                    w-full
+                    bg-[var(--primary)] hover:bg-[var(--primary-hover)]
+                    text-[var(--text-primary)]
+                    px-6 py-4
+                    rounded-xl
+                    font-bold text-base
+                    shadow-lg hover:shadow-xl
+                    transition-all duration-200
+                    hover:scale-[1.02]
+                    active:scale-[0.98]
+                    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                    focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--primary-light)]
+                  "
+                  disabled={isSubmitting || !identifier || !password}
+                  aria-busy={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Memproses...
+                    </span>
+                  ) : (
+                    "Masuk"
+                  )}
+                </button>
+              </form>
+
+              {/* Footer */}
+              <div className="mt-8 pt-6 border-t border-[var(--border-color)] text-center">
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Belum punya akun?{" "}
+                  <span className="font-semibold text-[var(--text-primary)]">Hubungi HRD</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Additional Info */}
+            <p className="mt-6 text-center text-xs text-[var(--text-muted)]">
+              Dengan masuk, Anda menyetujui kebijakan privasi dan syarat penggunaan kami
             </p>
-          )}
-        </form>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
-          <div style={{ flex: 1, height: "1px", backgroundColor: "var(--border-color)" }} />
-          <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>atau masuk dengan</span>
-          <div style={{ flex: 1, height: "1px", backgroundColor: "var(--border-color)" }} />
+          </div>
         </div>
-
-        <button type="button" className="btn btn-outline" style={{ gap: "12px" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-          </svg>
-          Google
-        </button>
-      </div>
-
-      <div style={{ textAlign: "center", marginTop: "auto", paddingTop: "24px" }}>
-        <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
-          Belum punya akun? <a href="#" style={{ color: "var(--text-primary)", fontWeight: 600, textDecoration: "none" }}>Hubungi HRD.</a>
-        </p>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

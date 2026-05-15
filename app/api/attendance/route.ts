@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
-import { attendanceService } from '@/features/attendance/attendance.service';
-import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse } from '@/lib/utils/response';
+import { attendanceService } from '@/services/attendance/attendance.service';
+import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
 import { requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
-import { employeeService } from '@/features/employees/employee.service';
+import { employeeService } from '@/services/employees/employee.service';
 
 export async function GET(request: NextRequest) {
   try {

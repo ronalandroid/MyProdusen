@@ -6,13 +6,32 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://myprodusen:myprodusen@postgres:5432/myprodusen?schema=public
-      JWT_SECRET: change-this-to-a-strong-32-character-secret
+      REDIS_URL: redis://redis:6379
+      REDIS_PASSWORD: ""
+      REDIS_DB: 0
+      REDIS_MAX_RETRIES: 3
+      CACHE_ENABLED: true
+      CACHE_DEFAULT_TTL: 300
+      JWT_SECRET: change-this-to-a-strong-random-32-plus-character-secret-for-production
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       UPLOAD_DIR: /app/uploads
+      MAX_UPLOAD_SIZE: 5242880
+      DEFAULT_GEOFENCE_RADIUS: 100
+      SESSION_TIMEOUT_HOURS: 8
     volumes:
       - uploads:/app/uploads
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   postgres:
     image: postgres:16-alpine
@@ -24,7 +43,28 @@ services:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myprodusen"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres-data:
+  redis-data:
   uploads:

@@ -1,11 +1,24 @@
 import { NextRequest } from 'next/server';
-import { authService } from '@/features/auth/auth.service';
-import { loginSchema } from '@/lib/validations/auth';
-import { successResponse, errorResponse, validationErrorResponse } from '@/lib/utils/response';
+import { authService } from '@/services/auth/auth.service';
+import { loginSchema } from '@/utils/validation/auth';
+import { successResponse, errorResponse, validationErrorResponse } from '@/utils/response';
 import { getRequestBody } from '@/lib/middleware';
+import { setAuthCookie } from '@/lib/auth';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimitResult = await rateLimit(request, RATE_LIMITS.LOGIN);
+    
+    if (rateLimitResult.limited) {
+      const resetIn = Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000 / 60);
+      return errorResponse(
+        `Terlalu banyak percobaan login. Coba lagi dalam ${resetIn} menit.`,
+        429
+      );
+    }
+    
     const body = await getRequestBody(request);
     
     // Validate input
@@ -19,7 +32,16 @@ export async function POST(request: NextRequest) {
     // Perform login
     const result = await authService.login(email, password);
     
-    return successResponse(result, 'Login berhasil');
+    // Set httpOnly cookie instead of returning token
+    await setAuthCookie(result.token);
+    
+    // Return user data without token
+    return successResponse(
+      {
+        user: result.user,
+      },
+      'Login berhasil'
+    );
   } catch (error: any) {
     return errorResponse(error.message || 'Login gagal');
   }

@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
-import { shiftService } from '@/features/shifts/shift.service';
-import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse, notFoundResponse } from '@/lib/utils/response';
+import { shiftService } from '@/services/shifts/shift.service';
+import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse, notFoundResponse } from '@/utils/response';
 import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { z } from 'zod';
+import { logAudit } from '@/lib/audit';
 
 const updateShiftSchema = z.object({
   name: z.string().min(3, 'Nama shift minimal 3 karakter').optional(),
@@ -55,7 +56,10 @@ export async function PUT(
       return validationErrorResponse(validation.error.errors[0].message);
     }
     
-    const shift = await shiftService.updateShift((await context.params).id, validation.data);
+    const { id } = await context.params;
+    const oldShift = await shiftService.getShiftById(id);
+    const shift = await shiftService.updateShift(id, validation.data);
+    await logAudit(user.userId, 'UPDATE', 'Shift', id, oldShift, shift, request);
     
     return successResponse(shift, 'Shift berhasil diubah');
   } catch (error: any) {
@@ -80,7 +84,10 @@ export async function DELETE(
       return forbiddenResponse('Anda tidak memiliki akses untuk menghapus shift');
     }
     
-    const result = await shiftService.deleteShift((await context.params).id);
+    const { id } = await context.params;
+    const oldShift = await shiftService.getShiftById(id);
+    const result = await shiftService.deleteShift(id);
+    await logAudit(user.userId, 'DELETE', 'Shift', id, oldShift, undefined, request);
     
     return successResponse(result, result.message);
   } catch (error: any) {

@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
-import { employeeService } from '@/features/employees/employee.service';
-import { updateEmployeeSchema } from '@/lib/validations/employee';
-import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse, notFoundResponse } from '@/lib/utils/response';
+import { employeeService } from '@/services/employees/employee.service';
+import { updateEmployeeSchema } from '@/utils/validation/employee';
+import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse, notFoundResponse } from '@/utils/response';
 import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
+import { logAudit } from '@/lib/audit';
 
 async function canReadEmployee(user: Awaited<ReturnType<typeof requireAuth>>, employee: Awaited<ReturnType<typeof employeeService.getEmployeeById>>) {
   if (user.role === 'SUPERADMIN' || user.role === 'ADMIN_HR') {
@@ -67,7 +68,10 @@ export async function PUT(
       return validationErrorResponse(validation.error.errors[0].message);
     }
     
-    const employee = await employeeService.updateEmployee((await context.params).id, validation.data);
+    const { id } = await context.params;
+    const oldEmployee = await employeeService.getEmployeeById(id);
+    const employee = await employeeService.updateEmployee(id, validation.data);
+    await logAudit(user.userId, 'UPDATE', 'Employee', id, oldEmployee, employee, request);
     
     return successResponse(employee, 'Data karyawan berhasil diubah');
   } catch (error: any) {
@@ -78,5 +82,33 @@ export async function PUT(
       return notFoundResponse(error.message);
     }
     return errorResponse(error.message || 'Gagal mengubah data karyawan');
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await requireAuth(request);
+
+    if (!hasPermission(user.role, 'EMPLOYEE_DELETE')) {
+      return forbiddenResponse('Anda tidak memiliki akses untuk menghapus data karyawan');
+    }
+
+    const { id } = await context.params;
+    const oldEmployee = await employeeService.getEmployeeById(id);
+    const result = await employeeService.deleteEmployee(id);
+    await logAudit(user.userId, 'DELETE', 'Employee', id, oldEmployee, undefined, request);
+
+    return successResponse(result, result.message);
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return unauthorizedResponse();
+    }
+    if (error.message === 'Karyawan tidak ditemukan') {
+      return notFoundResponse(error.message);
+    }
+    return errorResponse(error.message || 'Gagal menghapus data karyawan');
   }
 }

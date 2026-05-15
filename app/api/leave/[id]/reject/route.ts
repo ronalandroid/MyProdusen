@@ -1,10 +1,11 @@
 import { NextRequest } from 'next/server';
-import { leaveService } from '@/features/leave/leave.service';
-import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse, notFoundResponse } from '@/lib/utils/response';
+import { leaveService } from '@/services/leave/leave.service';
+import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse, notFoundResponse } from '@/utils/response';
 import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
-import { employeeService } from '@/features/employees/employee.service';
+import { employeeService } from '@/services/employees/employee.service';
 import { z } from 'zod';
+import { logAudit } from '@/lib/audit';
 
 async function canRejectLeave(user: Awaited<ReturnType<typeof requireAuth>>, employeeId: string) {
   if (user.role === 'SUPERADMIN' || user.role === 'ADMIN_HR') {
@@ -50,6 +51,7 @@ export async function POST(
       user.userId,
       validation.data.reason
     );
+    await logAudit(user.userId, 'REJECT', 'LeaveRequest', id, existingLeaveRequest, leaveRequest, request);
     
     return successResponse(leaveRequest, 'Pengajuan berhasil ditolak');
   } catch (error: any) {

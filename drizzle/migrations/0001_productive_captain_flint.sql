@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "Attendance_employeeId_checkInDate_key" ON "Attendance" USING btree ("employeeId",DATE("checkInTime"));

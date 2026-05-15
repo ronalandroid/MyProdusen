@@ -1,10 +1,11 @@
 import { NextRequest } from 'next/server';
-import { leaveService } from '@/features/leave/leave.service';
-import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse } from '@/lib/utils/response';
+import { leaveService } from '@/services/leave/leave.service';
+import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
 import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
-import { employeeService } from '@/features/employees/employee.service';
+import { employeeService } from '@/services/employees/employee.service';
 import { z } from 'zod';
+import { logAudit } from '@/lib/audit';
 
 const createLeaveSchema = z.object({
   type: z.enum(['LEAVE', 'SICK', 'PERMISSION']),
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
       endDate: typeof endDate === 'string' ? new Date(endDate) : endDate,
       reason,
     });
+    await logAudit(user.userId, 'CREATE', 'LeaveRequest', leaveRequest.id, undefined, leaveRequest, request);
     
     return successResponse(leaveRequest, 'Pengajuan berhasil dibuat');
   } catch (error: any) {

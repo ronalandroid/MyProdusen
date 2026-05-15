@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
-import { shiftService } from '@/features/shifts/shift.service';
-import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse } from '@/lib/utils/response';
+import { shiftService } from '@/services/shifts/shift.service';
+import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
 import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { z } from 'zod';
+import { logAudit } from '@/lib/audit';
 
 const createShiftSchema = z.object({
   name: z.string().min(3, 'Nama shift minimal 3 karakter'),
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
     }
     
     const shift = await shiftService.createShift(validation.data);
+    await logAudit(user.userId, 'CREATE', 'Shift', shift.id, undefined, shift, request);
     
     return successResponse(shift, 'Shift berhasil dibuat');
   } catch (error: any) {
