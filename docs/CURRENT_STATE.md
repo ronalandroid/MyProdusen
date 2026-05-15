@@ -151,6 +151,8 @@ All dashboard pages are implemented and wired to real APIs:
 - Leave balance ledger added with annual entitlement, request hold, approval, rejection release, and employee balance API
 - Employee self-service hub added for profile summary, attendance, leave balance, requests, KPI, notifications, and document/payslip entry point
 - Payroll period lock guard added for attendance check-in, check-out, and manual adjustment after payroll approval/paid status
+- Overtime requests now respect locked payroll periods, exclude paid overtime from future payroll runs, and mark approved overtime as paid when payroll is approved
+- Overtime create/approve/reject actions now write audit logs
 - Reports page includes HRIS presets for routine attendance, leave, KPI, and geo-fence exception reports
 - CSV exports use dynamic filenames, export permission checks, and audit logging for attendance/leave/KPI reports
 

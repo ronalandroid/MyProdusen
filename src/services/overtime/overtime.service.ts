@@ -7,6 +7,8 @@ import {
 } from '@/drizzle/schema';
 import { eq, and, gte, lte, isNull } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { calculateOvertimeHourlyRate } from '@/lib/overtime/payroll-integration';
+import { payrollPeriodLockService } from '@/features/payroll/payroll-period-lock.service';
 
 export class OvertimeService {
   // ============================================
@@ -118,6 +120,8 @@ export class OvertimeService {
     rateId: string;
     reason: string;
   }) {
+    await payrollPeriodLockService.assertAttendanceDateEditable(data.overtimeDate, data.reason);
+
     // Get employee payroll to calculate pay
     const [payroll] = await db
       .select()
@@ -138,7 +142,7 @@ export class OvertimeService {
     const rate = await this.getRateById(data.rateId);
 
     // Calculate overtime pay
-    const hourlyRate = payroll.baseSalary / 173; // 173 working hours per month
+    const hourlyRate = calculateOvertimeHourlyRate(payroll.baseSalary);
     const calculatedPay = hourlyRate * data.durationHours * rate.multiplier;
 
     const [request] = await db
@@ -224,6 +228,8 @@ export class OvertimeService {
   ) {
     const existing = await this.getRequestById(id);
 
+    await payrollPeriodLockService.assertAttendanceDateEditable(data.overtimeDate || existing.request.overtimeDate, data.reason);
+
     if (existing.request.status !== 'PENDING') {
       throw new Error('Hanya request dengan status PENDING yang bisa diubah');
     }
@@ -268,6 +274,8 @@ export class OvertimeService {
   async approveRequest(id: string, approvedBy: string) {
     const existing = await this.getRequestById(id);
 
+    await payrollPeriodLockService.assertAttendanceDateEditable(existing.request.overtimeDate, 'Approval lembur oleh reviewer');
+
     if (existing.request.status !== 'PENDING') {
       throw new Error('Request sudah diproses');
     }
@@ -288,6 +296,8 @@ export class OvertimeService {
 
   async rejectRequest(id: string, approvedBy: string, rejectedReason: string) {
     const existing = await this.getRequestById(id);
+
+    await payrollPeriodLockService.assertAttendanceDateEditable(existing.request.overtimeDate, rejectedReason);
 
     if (existing.request.status !== 'PENDING') {
       throw new Error('Request sudah diproses');

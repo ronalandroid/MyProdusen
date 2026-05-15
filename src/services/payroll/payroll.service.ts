@@ -484,6 +484,7 @@ export class PayrollService {
         and(
           eq(overtimeRequests.employeeId, employeeId),
           eq(overtimeRequests.status, 'APPROVED'),
+          eq(overtimeRequests.isPaid, false),
           gte(overtimeRequests.overtimeDate, startDate),
           lte(overtimeRequests.overtimeDate, endDate)
         )
@@ -571,6 +572,20 @@ export class PayrollService {
       })
       .where(eq(payrollRuns.id, runId))
       .returning();
+
+    await db
+      .update(overtimeRequests)
+      .set({
+        isPaid: true,
+        paidInPayrollRunId: runId,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(overtimeRequests.status, 'APPROVED'),
+        eq(overtimeRequests.isPaid, false),
+        gte(overtimeRequests.overtimeDate, run.periodStart),
+        lte(overtimeRequests.overtimeDate, run.periodEnd)
+      ));
 
     return updated;
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { overtimeService } from '@/src/services/overtime/overtime.service';
 import { getCurrentUser } from '@/lib/auth-context';
+import { logAudit } from '@/lib/audit';
 
 export async function POST(
   request: NextRequest,
@@ -17,6 +18,7 @@ export async function POST(
     }
 
     const overtimeRequest = await overtimeService.approveRequest(params.id, user.id);
+    await logAudit(user.id, 'APPROVE', 'OvertimeRequest', params.id, undefined, overtimeRequest, request);
 
     return NextResponse.json({ data: overtimeRequest });
   } catch (error: any) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { overtimeService } from '@/src/services/overtime/overtime.service';
 import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
+import { logAudit } from '@/lib/audit';
 
 const rejectSchema = z.object({
   rejectedReason: z.string().min(10, 'Alasan penolakan minimal 10 karakter'),
@@ -29,6 +30,7 @@ export async function POST(
       user.id,
       validated.rejectedReason
     );
+    await logAudit(user.id, 'REJECT', 'OvertimeRequest', params.id, undefined, overtimeRequest, request);
 
     return NextResponse.json({ data: overtimeRequest });
   } catch (error: any) {

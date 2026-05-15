@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { overtimeService } from '@/src/services/overtime/overtime.service';
 import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
+import { logAudit } from '@/lib/audit';
 
 const createRequestSchema = z.object({
   overtimeDate: z.string().transform((val) => new Date(val)),
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
       ...validated,
       employeeId: user.employeeId,
     });
+    await logAudit(user.id, 'CREATE', 'OvertimeRequest', overtimeRequest.id, undefined, overtimeRequest, request);
 
     return NextResponse.json({ data: overtimeRequest }, { status: 201 });
   } catch (error: any) {
