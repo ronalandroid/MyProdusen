@@ -149,6 +149,7 @@ All dashboard pages are implemented and wired to real APIs:
 - Exception queue API and review page added (`/api/attendance/exceptions`, `/dashboard/attendance/exceptions`)
 - Exception approval/rejection creates audit logs and employee notifications
 - Leave balance ledger added with annual entitlement, request hold, approval, rejection release, and employee balance API
+- Employee self-service hub added for profile summary, attendance, leave balance, requests, KPI, notifications, and document/payslip entry point
 - Reports page includes HRIS presets for routine attendance, leave, KPI, and geo-fence exception reports
 - CSV exports use dynamic filenames, export permission checks, and audit logging for attendance/leave/KPI reports
 
