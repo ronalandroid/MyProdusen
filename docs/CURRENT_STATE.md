@@ -135,8 +135,18 @@ All dashboard pages are implemented and wired to real APIs:
 - `/dashboard/leave` - Leave request management
 - `/dashboard/kpi` - KPI management and tracking
 - `/dashboard/reports` - Reports with CSV export
+- `/dashboard/notifications` - Notification inbox with read status
 - `/dashboard/audit` - Audit log viewer (SUPERADMIN only)
 - `/dashboard/payroll` - Payroll placeholder (future feature)
+
+### Competitor-Informed HRIS Polish ✅
+
+- Role-scoped dashboard stats now come from `/api/dashboard/stats`
+- Dashboard includes action queue cards for leave, KPI review, late/absent employees, and unread notifications
+- Employee dashboard gets personal action cards for attendance, leave requests, and KPI
+- Notification inbox API and page added (`/api/notifications`, `/dashboard/notifications`)
+- Reports page includes HRIS presets for routine attendance, leave, KPI, and geo-fence exception reports
+- CSV exports use dynamic filenames, export permission checks, and audit logging for attendance/leave/KPI reports
 
 ### Attendance System ✅
 

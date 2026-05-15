@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Bell, CheckCircle, Clock, TrendingUp, Users, AlertTriangle, CalendarDays, RefreshCcw, ArrowRight } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders, fetchProfile } from "@/lib/auth-client";
+import { buildDashboardActions, type DashboardActionTone } from "@/lib/dashboard/action-cards";
+import type { UserRole } from "@/lib/permissions";
 
 interface DashboardStats {
   totalEmployees: number;
@@ -16,6 +18,12 @@ interface DashboardStats {
     percentage: number;
   };
   pendingLeave: number;
+  pendingKpiApprovals: number;
+  lateToday: number;
+  absentToday: number;
+  unreadNotifications: number;
+  payrollPeriodStatus: { period: string; status: string } | null;
+  role: UserRole;
 }
 
 const numberFormatter = new Intl.NumberFormat("id-ID");
@@ -30,6 +38,12 @@ export default function DashboardPage() {
     activeEmployees: 0,
     todayAttendance: { total: 0, present: 0, percentage: 0 },
     pendingLeave: 0,
+    pendingKpiApprovals: 0,
+    lateToday: 0,
+    absentToday: 0,
+    unreadNotifications: 0,
+    payrollPeriodStatus: null,
+    role: "EMPLOYEE",
   });
 
   useEffect(() => {
@@ -44,39 +58,14 @@ export default function DashboardPage() {
       const userProfile = await fetchProfile();
       setProfile(userProfile);
 
-      const [employeesRes, attendanceRes, leaveRes] = await Promise.all([
-        fetch("/api/employees", { headers: getAuthHeaders() }),
-        fetch("/api/attendance/today", { headers: getAuthHeaders() }),
-        fetch("/api/leave?status=PENDING", { headers: getAuthHeaders() }),
-      ]);
+      const statsRes = await fetch("/api/dashboard/stats", { headers: getAuthHeaders() });
+      const statsData = await statsRes.json();
 
-      const [employeesData, attendanceData, leaveData] = await Promise.all([
-        employeesRes.json(),
-        attendanceRes.json(),
-        leaveRes.json(),
-      ]);
-
-      if (!employeesRes.ok || !attendanceRes.ok || !leaveRes.ok) {
-        throw new Error("Sebagian data dashboard gagal dimuat.");
+      if (!statsRes.ok || !statsData.success) {
+        throw new Error(statsData.error || "Sebagian data dashboard gagal dimuat.");
       }
 
-      const employees = employeesData.success ? employeesData.data || [] : [];
-      const activeEmployees = employees.filter((employee: any) => employee.status === "ACTIVE");
-      const todayAttendance = attendanceData.success ? attendanceData.data || [] : [];
-      const pendingLeave = leaveData.success ? (leaveData.data || []).length : 0;
-
-      setStats({
-        totalEmployees: employees.length,
-        activeEmployees: activeEmployees.length,
-        todayAttendance: {
-          total: activeEmployees.length,
-          present: todayAttendance.length,
-          percentage: activeEmployees.length > 0
-            ? Math.round((todayAttendance.length / activeEmployees.length) * 100)
-            : 0,
-        },
-        pendingLeave,
-      });
+      setStats(statsData.data);
       setLastUpdated(new Date());
     } catch (dashboardError) {
       console.error("Failed to load dashboard data:", dashboardError);
@@ -98,6 +87,13 @@ export default function DashboardPage() {
   const initials = displayName.substring(0, 2).toUpperCase();
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? "Selamat Pagi" : currentHour < 18 ? "Selamat Siang" : "Selamat Malam";
+  const actionCards = buildDashboardActions(stats.role, {
+    pendingLeaves: stats.pendingLeave,
+    pendingKpiApprovals: stats.pendingKpiApprovals,
+    lateToday: stats.lateToday,
+    absentToday: stats.absentToday,
+    unreadNotifications: stats.unreadNotifications,
+  });
 
   return (
     <div className="dashboard-page animate-fade-in">
@@ -114,9 +110,9 @@ export default function DashboardPage() {
           )}
         </div>
         <div className="dashboard-header-actions">
-          <Link href="/dashboard/leave" className="icon-button" aria-label="Lihat notifikasi cuti">
+          <Link href="/dashboard/notifications" className="icon-button" aria-label="Lihat notifikasi">
             <Bell size={20} aria-hidden="true" />
-            {stats.pendingLeave > 0 && <span className="notification-dot" aria-hidden="true" />}
+            {stats.unreadNotifications > 0 && <span className="notification-dot" aria-hidden="true" />}
           </Link>
           <Link href="/dashboard/profile" className="avatar avatar-link" aria-label="Buka profil pengguna">
             {profile?.employee?.profilePhoto ? (
@@ -163,6 +159,18 @@ export default function DashboardPage() {
         </Link>
       </section>
 
+      {/* Action Queue */}
+      <section aria-labelledby="actions-title" className="animate-slide-up" style={{ animationDelay: '260ms' }}>
+        <div className="section-heading">
+          <h2 id="actions-title">Antrian Aksi</h2>
+        </div>
+        <div className="quick-actions-grid">
+          {actionCards.map((action, index) => (
+            <ActionQueueCard key={action.label} action={action} delay={`${320 + index * 50}ms`} />
+          ))}
+        </div>
+      </section>
+
       {/* Stats Grid */}
       <section aria-labelledby="summary-title" className="animate-slide-up" style={{ animationDelay: '300ms' }}>
         <div className="section-heading">
@@ -196,6 +204,13 @@ export default function DashboardPage() {
             value={stats.pendingLeave} 
             tone="warning"
             delay="550ms"
+          />
+          <StatCard 
+            icon={<Bell size={22} aria-hidden="true" />} 
+            label="Notifikasi" 
+            value={stats.unreadNotifications} 
+            tone="info"
+            delay="600ms"
           />
         </div>
       </section>
@@ -235,6 +250,18 @@ export default function DashboardPage() {
             delay="800ms"
           />
         </div>
+        <div className="card empty-state-card">
+          <div className="w-12 h-12 rounded-xl bg-[var(--warning-bg)] flex items-center justify-center mb-3">
+            <CalendarDays size={24} className="text-[var(--warning)]" aria-hidden="true" />
+          </div>
+          <h3 className="text-base sm:text-lg">Status periode payroll</h3>
+          <p className="text-xs sm:text-sm">
+            {stats.payrollPeriodStatus
+              ? `${stats.payrollPeriodStatus.period} sedang ${stats.payrollPeriodStatus.status}.`
+              : "Belum ada periode payroll berjalan."}
+          </p>
+          <Link href="/dashboard/payroll" className="text-link text-sm">Buka Payroll →</Link>
+        </div>
       </section>
 
       {/* Insights Grid */}
@@ -261,6 +288,32 @@ export default function DashboardPage() {
       </section>
     </div>
   );
+}
+
+function ActionQueueCard({ action, delay }: { action: ReturnType<typeof buildDashboardActions>[number]; delay?: string }) {
+  return (
+    <Link
+      href={action.href}
+      className={`card quick-action-card group animate-scale-in action-card-${action.tone}`}
+      style={{ animationDelay: delay }}
+    >
+      <span>
+        <strong className="text-sm sm:text-base">{action.label}</strong>
+        <small className="text-xs sm:text-sm">{action.description}</small>
+      </span>
+      <strong className="text-xl sm:text-2xl" style={{ color: mapToneToColor(action.tone) }}>
+        {typeof action.value === "number" ? numberFormatter.format(action.value) : action.value}
+      </strong>
+    </Link>
+  );
+}
+
+function mapToneToColor(tone: DashboardActionTone) {
+  if (tone === 'danger') return 'var(--danger)';
+  if (tone === 'warning') return 'var(--warning)';
+  if (tone === 'success') return 'var(--success)';
+  if (tone === 'info') return 'var(--info)';
+  return 'var(--primary)';
 }
 
 function StatCard({ 

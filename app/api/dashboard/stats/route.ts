@@ -1,28 +1,43 @@
 import { NextRequest } from 'next/server';
-import { db, employees, attendances, leaveRequests, kpiResults } from '@/lib/db';
+import { db, employees, attendances, leaveRequests, kpiResults, notifications, payrollRuns } from '@/lib/db';
 import { requireAuth } from '@/lib/middleware';
-import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
-import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { successResponse, errorResponse, unauthorizedResponse } from '@/utils/response';
+import { eq, and, gte, lte, sql, desc, inArray } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     
-    // Only SUPERADMIN, ADMIN_HR, and SUPERVISOR can view dashboard stats
-    if (!['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'].includes(user.role)) {
-      return forbiddenResponse('Anda tidak memiliki akses');
-    }
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    const [currentEmployee] = await db
+      .select({ id: employees.id, defaultShiftId: employees.defaultShiftId })
+      .from(employees)
+      .where(eq(employees.userId, user.userId))
+      .limit(1);
+
+    const scopedEmployeeIds = await getScopedEmployeeIds(user.role, currentEmployee?.id);
+    const scopedAttendanceFilter = scopedEmployeeIds
+      ? inArray(attendances.employeeId, scopedEmployeeIds)
+      : undefined;
+    const scopedLeaveFilter = scopedEmployeeIds
+      ? inArray(leaveRequests.employeeId, scopedEmployeeIds)
+      : undefined;
+    const scopedKpiFilter = scopedEmployeeIds
+      ? inArray(kpiResults.employeeId, scopedEmployeeIds)
+      : undefined;
+    const scopedEmployeeFilter = scopedEmployeeIds
+      ? inArray(employees.id, scopedEmployeeIds)
+      : undefined;
+
     // Total active employees
     const [totalEmployeesResult] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(employees)
-      .where(eq(employees.status, 'ACTIVE'));
+      .where(and(eq(employees.status, 'ACTIVE'), scopedEmployeeFilter));
     const totalEmployees = totalEmployeesResult?.count || 0;
 
     // Today's attendance count
@@ -31,6 +46,7 @@ export async function GET(request: NextRequest) {
       .from(attendances)
       .where(
         and(
+          scopedAttendanceFilter,
           gte(attendances.checkInTime, today),
           lte(attendances.checkInTime, tomorrow)
         )
@@ -50,7 +66,8 @@ export async function GET(request: NextRequest) {
         and(
           gte(attendances.checkInTime, today),
           lte(attendances.checkInTime, tomorrow),
-          eq(attendances.status, 'LATE')
+          eq(attendances.status, 'LATE'),
+          scopedAttendanceFilter
         )
       );
     const lateToday = lateTodayResult?.count || 0;
@@ -59,7 +76,7 @@ export async function GET(request: NextRequest) {
     const [pendingLeavesResult] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(leaveRequests)
-      .where(eq(leaveRequests.status, 'PENDING'));
+      .where(and(eq(leaveRequests.status, 'PENDING'), scopedLeaveFilter));
     const pendingLeaves = pendingLeavesResult?.count || 0;
 
     // Approved leaves today
@@ -70,7 +87,8 @@ export async function GET(request: NextRequest) {
         and(
           eq(leaveRequests.status, 'APPROVED'),
           lte(leaveRequests.startDate, today),
-          gte(leaveRequests.endDate, today)
+          gte(leaveRequests.endDate, today),
+          scopedLeaveFilter
         )
       );
     const onLeaveToday = onLeaveResult?.count || 0;
@@ -83,24 +101,45 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(kpiResults.period, currentMonth),
-          eq(kpiResults.isApproved, false)
+          eq(kpiResults.isApproved, false),
+          scopedKpiFilter
         )
       );
     const pendingKpiApprovals = pendingKpiResult?.count || 0;
+
+    const [unreadNotificationsResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(notifications)
+      .where(and(eq(notifications.userId, user.userId), eq(notifications.isRead, false)));
+    const unreadNotifications = unreadNotificationsResult?.count || 0;
+
+    const [latestPayrollRun] = await db
+      .select({ period: payrollRuns.period, status: payrollRuns.status })
+      .from(payrollRuns)
+      .orderBy(desc(payrollRuns.period))
+      .limit(1);
 
     // Absent today (employees not checked in and not on leave)
     const absentToday = totalEmployees - todayAttendance - onLeaveToday;
 
     return successResponse({
       totalEmployees,
-      todayAttendance,
-      attendanceRate,
+      activeEmployees: totalEmployees,
+      todayAttendance: {
+        total: totalEmployees,
+        present: todayAttendance,
+        percentage: attendanceRate,
+      },
       lateToday,
       absentToday: Math.max(0, absentToday),
       onLeaveToday,
+      pendingLeave: pendingLeaves,
       pendingLeaves,
       pendingKpiApprovals,
+      unreadNotifications,
+      payrollPeriodStatus: latestPayrollRun || null,
       date: today.toISOString(),
+      role: user.role,
     });
   } catch (error: any) {
     if (error.message === 'Unauthorized') {
@@ -108,4 +147,25 @@ export async function GET(request: NextRequest) {
     }
     return errorResponse(error.message || 'Gagal mengambil statistik dashboard');
   }
+}
+
+async function getScopedEmployeeIds(role: string, employeeId?: string): Promise<string[] | undefined> {
+  if (role === 'SUPERADMIN' || role === 'ADMIN_HR') {
+    return undefined;
+  }
+
+  if (!employeeId) {
+    return [];
+  }
+
+  if (role === 'SUPERVISOR') {
+    const team = await db
+      .select({ id: employees.id })
+      .from(employees)
+      .where(eq(employees.supervisorId, employeeId));
+
+    return [employeeId, ...team.map((member) => member.id)];
+  }
+
+  return [employeeId];
 }

@@ -6,6 +6,7 @@ import { ArrowLeft, Download, FileText, Calendar, Users, Clock } from "lucide-re
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { getReportPresets, resolveReportPreset, type ReportPresetId } from "@/lib/reports/report-presets";
 
 export default function ReportsPage() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function ReportsPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState("all");
+  const [selectedPreset, setSelectedPreset] = useState<ReportPresetId | "">("");
 
   // Placeholder data - will be replaced with real API calls when backend is ready
   const reportSummary = {
@@ -38,13 +40,36 @@ export default function ReportsPage() {
   };
 
   const handleExport = (format: 'csv' | 'pdf') => {
-    // Placeholder - will be implemented when backend is ready
-    alert(`Export ${format.toUpperCase()} akan tersedia setelah backend API siap`);
+    if (format === 'pdf') {
+      alert('Export PDF belum aktif. Gunakan CSV untuk laporan siap pakai.');
+      return;
+    }
+
+    const endpointMap: Record<string, string> = {
+      attendance: '/api/reports/attendance',
+      leave: '/api/reports/leave',
+      performance: '/api/reports/kpi',
+    };
+    const params = new URLSearchParams({ format: 'csv' });
+
+    if (startDate) params.set('from', startDate);
+    if (endDate) params.set('to', endDate);
+    if (selectedEmployee !== 'all') params.set('employeeId', selectedEmployee);
+    if (selectedPreset) params.set('preset', selectedPreset);
+
+    window.location.href = `${endpointMap[reportType]}?${params.toString()}`;
   };
 
   const handleGenerate = () => {
-    // Placeholder - will be implemented when backend is ready
-    alert("Generate report akan tersedia setelah backend API siap");
+    handleExport('csv');
+  };
+
+  const handlePreset = (presetId: ReportPresetId) => {
+    const preset = resolveReportPreset(presetId);
+    setSelectedPreset(presetId);
+    setReportType(preset.reportType);
+    setStartDate(preset.startDate);
+    setEndDate(preset.endDate);
   };
 
   return (
@@ -69,10 +94,32 @@ export default function ReportsPage() {
       }}>
         <FileText size={20} color="var(--info)" style={{ flexShrink: 0, marginTop: "2px" }} />
         <div>
-          <p className="text-sm font-semibold text-[var(--info)] mb-1">Fitur dalam pengembangan</p>
+          <p className="text-sm font-semibold text-[var(--info)] mb-1">Preset laporan HRIS</p>
           <p className="text-xs text-[var(--text-secondary)]">
-            Backend API untuk laporan sedang dalam pengembangan. Data yang ditampilkan adalah contoh placeholder.
+            Gunakan preset untuk laporan rutin seperti kehadiran hari ini, terlambat bulan ini, cuti per status, dan KPI periode berjalan.
           </p>
+        </div>
+      </div>
+
+      {/* Report Presets */}
+      <div className="card" style={{ padding: "16px" }}>
+        <h3 className="text-sm font-semibold mb-3">Preset Cepat</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px" }}>
+          {getReportPresets().map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => handlePreset(preset.id)}
+              className={`p-3 rounded-lg border text-left transition-all ${
+                selectedPreset === preset.id
+                  ? "border-[var(--primary)] bg-[var(--warning-bg)]"
+                  : "border-[var(--border-color)] bg-white"
+              }`}
+            >
+              <p className="text-xs font-semibold text-[var(--text-primary)]">{preset.label}</p>
+              <p className="text-[11px] text-[var(--text-secondary)] mt-1">{preset.description}</p>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -150,7 +197,7 @@ export default function ReportsPage() {
             </select>
           </div>
           <Button onClick={handleGenerate} fullWidth>
-            Generate Laporan
+            Export Sesuai Filter
           </Button>
         </div>
       </div>
