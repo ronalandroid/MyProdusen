@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Employee Management System for Produsen Dimsum Medan",
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "next dev --turbopack",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "tsc --noEmit",
@@ -13,7 +13,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} drizzle/seed.ts",
-    "dev:safe": "next dev",
+    "dev:safe": "next dev --webpack",
     "clean": "rm -rf .next tsconfig.tsbuildinfo node_modules/.cache"
   },
   "keywords": [
