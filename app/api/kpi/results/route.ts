@@ -68,6 +68,29 @@ export async function POST(request: NextRequest) {
       return errorResponse('employeeId, itemId, period, dan actualValue wajib diisi', 422);
     }
 
+    // Supervisor team scope check
+    if (user.role === 'SUPERVISOR') {
+      const { db, employees } = await import('@/lib/db');
+      const { eq } = await import('drizzle-orm');
+      const { canManageEmployeeKpi } = await import('@/lib/kpi/team-scope');
+      
+      const [actorEmployee] = await db
+        .select()
+        .from(employees)
+        .where(eq(employees.userId, user.userId))
+        .limit(1);
+      
+      const [targetEmployee] = await db
+        .select()
+        .from(employees)
+        .where(eq(employees.id, employeeId))
+        .limit(1);
+      
+      if (!canManageEmployeeKpi(user.role, actorEmployee, targetEmployee)) {
+        return forbiddenResponse('Anda hanya dapat input KPI untuk tim sendiri');
+      }
+    }
+
     const result = await kpiService.submitResult({
       employeeId,
       itemId,

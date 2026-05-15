@@ -1,28 +1,47 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Home, Clock, Users, Calendar, User, MapPin, Clock3, BarChart3, FileText, Shield, Bell, AlertTriangle, BriefcaseBusiness } from "lucide-react";
+import { fetchProfile } from "@/lib/auth-client";
+import { getNavigationForRole } from "@/lib/navigation/role-navigation";
+import type { UserRole } from "@/lib/permissions";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [role, setRole] = useState<UserRole | null>(null);
 
-  const navItems = [
-    { name: "Beranda", icon: Home, path: "/dashboard", primary: true },
-    { name: "ESS", icon: BriefcaseBusiness, path: "/dashboard/self-service", primary: true },
-    { name: "Kehadiran", icon: Clock, path: "/dashboard/attendance", primary: true },
-    { name: "Exception", icon: AlertTriangle, path: "/dashboard/attendance/exceptions", primary: false },
-    { name: "Karyawan", icon: Users, path: "/dashboard/employees", primary: true },
-    { name: "Lokasi Kerja", icon: MapPin, path: "/dashboard/locations", primary: false },
-    { name: "Shift", icon: Clock3, path: "/dashboard/shifts", primary: false },
-    { name: "Cuti", icon: Calendar, path: "/dashboard/leave", primary: true },
-    { name: "KPI", icon: BarChart3, path: "/dashboard/kpi", primary: false },
-    { name: "Laporan", icon: FileText, path: "/dashboard/reports", primary: false },
-    { name: "Dokumen", icon: FileText, path: "/dashboard/documents", primary: false },
-    { name: "Notifikasi", icon: Bell, path: "/dashboard/notifications", primary: true },
-    { name: "Audit", icon: Shield, path: "/dashboard/audit", primary: false },
-    { name: "Akun", icon: User, path: "/dashboard/profile", primary: true },
-  ];
+  useEffect(() => {
+    fetchProfile()
+      .then((profile) => setRole(profile.role as UserRole))
+      .catch(() => setRole('EMPLOYEE'));
+  }, []);
+
+  const iconMap: Record<string, any> = {
+    '/dashboard': Home,
+    '/dashboard/self-service': BriefcaseBusiness,
+    '/dashboard/attendance': Clock,
+    '/dashboard/attendance/exceptions': AlertTriangle,
+    '/dashboard/employees': Users,
+    '/dashboard/locations': MapPin,
+    '/dashboard/shifts': Clock3,
+    '/dashboard/leave': Calendar,
+    '/dashboard/kpi': BarChart3,
+    '/dashboard/reports': FileText,
+    '/dashboard/documents': FileText,
+    '/dashboard/notifications': Bell,
+    '/dashboard/audit': Shield,
+    '/dashboard/profile': User,
+  };
+
+  const allowedNav = role ? getNavigationForRole(role) : [];
+  const navItems = allowedNav.map((item) => ({
+    name: item.name,
+    icon: iconMap[item.path] || Home,
+    path: item.path,
+    primary: item.primary,
+  }));
 
   return (
     <>

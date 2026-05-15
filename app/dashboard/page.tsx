@@ -7,6 +7,7 @@ import { Bell, CheckCircle, Clock, TrendingUp, Users, AlertTriangle, CalendarDay
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders, fetchProfile } from "@/lib/auth-client";
 import { buildDashboardActions, type DashboardActionTone } from "@/lib/dashboard/action-cards";
+import { getRoleExperience } from "@/lib/dashboard/role-experience";
 import type { UserRole } from "@/lib/permissions";
 
 interface DashboardStats {
@@ -89,6 +90,7 @@ export default function DashboardPage() {
   const initials = displayName.substring(0, 2).toUpperCase();
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? "Selamat Pagi" : currentHour < 18 ? "Selamat Siang" : "Selamat Malam";
+  const roleExperience = getRoleExperience(stats.role);
   const actionCards = buildDashboardActions(stats.role, {
     pendingLeaves: stats.pendingLeave,
     pendingKpiApprovals: stats.pendingKpiApprovals,
@@ -103,9 +105,9 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="dashboard-header animate-slide-up">
         <div className="dashboard-greeting">
-          <p className="eyebrow">Dashboard Operasional</p>
-          <h1 className="text-2xl sm:text-3xl">{greeting}, {displayName} 👋</h1>
-          <p className="text-sm sm:text-base">Pantau kehadiran, cuti, dan data tim hari ini.</p>
+          <p className="eyebrow">{roleExperience.eyebrow}</p>
+          <h1 className="text-2xl sm:text-3xl">{greeting}, {displayName}</h1>
+          <p className="text-sm sm:text-base">{roleExperience.subtitle}</p>
           {lastUpdated && (
             <span className="last-updated">
               Diperbarui {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
@@ -146,10 +148,9 @@ export default function DashboardPage() {
       <section className="hero-card animate-slide-up" aria-labelledby="attendance-title" style={{ animationDelay: '200ms' }}>
         <div className="flex-1">
           <p className="eyebrow text-white/80">Prioritas Hari Ini</p>
-          <h2 id="attendance-title" className="text-white text-xl sm:text-2xl mb-2">Kehadiran Tim</h2>
+          <h2 id="attendance-title" className="text-white text-xl sm:text-2xl mb-2">{roleExperience.heroTitle}</h2>
           <p className="text-white/90 text-sm sm:text-base">
-            <span className="font-bold text-lg sm:text-xl">{stats.todayAttendance.present}</span> dari{" "}
-            <span className="font-bold text-lg sm:text-xl">{stats.todayAttendance.total}</span> karyawan aktif sudah tercatat hadir.
+            {roleExperience.heroDescription}
           </p>
         </div>
         <div className="attendance-meter">
@@ -224,34 +225,26 @@ export default function DashboardPage() {
           <h2 id="quick-actions-title">Aksi Cepat</h2>
         </div>
         <div className="quick-actions-grid">
-          <QuickAction 
-            href="/dashboard/attendance" 
-            icon={<Clock size={24} aria-hidden="true" />} 
-            title="Kehadiran" 
-            description="Check-in, check-out, dan status hari ini"
-            delay="650ms"
-          />
-          <QuickAction 
-            href="/dashboard/leave" 
-            icon={<CalendarDays size={24} aria-hidden="true" />} 
-            title="Ajukan Cuti" 
-            description="Buat atau tinjau pengajuan cuti"
-            delay="700ms"
-          />
-          <QuickAction 
-            href="/dashboard/reports" 
-            icon={<TrendingUp size={24} aria-hidden="true" />} 
-            title="Laporan" 
-            description="Ekspor data dan pantau tren"
-            delay="750ms"
-          />
-          <QuickAction 
-            href="/dashboard/employees" 
-            icon={<Users size={24} aria-hidden="true" />} 
-            title="Karyawan" 
-            description="Kelola data anggota tim"
-            delay="800ms"
-          />
+          {roleExperience.quickActions.map((action, index) => {
+            const iconMap = {
+              attendance: <Clock size={24} aria-hidden="true" />,
+              leave: <CalendarDays size={24} aria-hidden="true" />,
+              reports: <TrendingUp size={24} aria-hidden="true" />,
+              employees: <Users size={24} aria-hidden="true" />,
+              kpi: <TrendingUp size={24} aria-hidden="true" />,
+              profile: <Users size={24} aria-hidden="true" />,
+            };
+            return (
+              <QuickAction
+                key={action.href}
+                href={action.href}
+                icon={iconMap[action.icon]}
+                title={action.title}
+                description={action.description}
+                delay={`${650 + index * 50}ms`}
+              />
+            );
+          })}
         </div>
         <div className="card empty-state-card">
           <div className="w-12 h-12 rounded-xl bg-[var(--warning-bg)] flex items-center justify-center mb-3">
