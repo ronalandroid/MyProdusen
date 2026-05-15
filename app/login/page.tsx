@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { isLoginSubmitDisabled } from "@/lib/forms/login-form-state";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -255,7 +256,7 @@ export default function LoginPage() {
                     disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
                     focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--primary-light)]
                   "
-                  disabled={isSubmitting || !identifier || !password}
+                  disabled={isLoginSubmitDisabled(isSubmitting)}
                   aria-busy={isSubmitting}
                 >
                   {isSubmitting ? (
