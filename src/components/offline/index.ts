@@ -1,5 +1,5 @@
 // Offline Components - Barrel Export
-export { default as SyncQueue } from './SyncQueue'
-export { default as ConflictResolver } from './ConflictResolver'
-export { default as OfflineIndicator } from './OfflineIndicator'
-export { default as SyncStatus } from './SyncStatus'
+export { SyncQueue } from './SyncQueue'
+export { ConflictResolver } from './ConflictResolver'
+export { OfflineIndicator } from './OfflineIndicator'
+export { SyncStatus } from './SyncStatus'

@@ -1,4 +1,4 @@
-import type { ApiResponse } from './utils/response';
+import type { ApiResponse } from '../../utils/response';
 
 // Deprecated: kept for backward compatibility with existing pages
 const TOKEN_KEY = 'myprodusen_token';

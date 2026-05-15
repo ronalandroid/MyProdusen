@@ -7,6 +7,8 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   helperText?: string;
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
   fullWidth?: boolean;
 }
 
@@ -18,6 +20,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       helperText,
       icon,
       iconPosition = 'left',
+      leftIcon,
+      rightIcon,
       fullWidth = true,
       className = '',
       id,
@@ -29,6 +33,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
   ) => {
     const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
     const hasError = Boolean(error);
+
+    // Support both leftIcon/rightIcon shorthand and icon/iconPosition pattern
+    const resolvedLeftIcon = leftIcon || (icon && iconPosition === 'left' ? icon : undefined);
+    const resolvedRightIcon = rightIcon || (icon && iconPosition === 'right' ? icon : undefined);
 
     return (
       <div className={`${fullWidth ? 'w-full' : ''}`}>
@@ -43,9 +51,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
         
         <div className="relative">
-          {icon && iconPosition === 'left' && (
+          {resolvedLeftIcon && (
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
-              {icon}
+              {resolvedLeftIcon}
             </div>
           )}
           
@@ -70,16 +78,16 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 ? 'border-[var(--danger)] focus:border-[var(--danger)] focus:ring-red-100' 
                 : 'border-[var(--border-color)] focus:border-[var(--primary)] focus:ring-[var(--primary-light)]'
               }
-              ${icon && iconPosition === 'left' ? 'pl-10' : ''}
-              ${icon && iconPosition === 'right' ? 'pr-10' : ''}
+              ${resolvedLeftIcon ? 'pl-10' : ''}
+              ${resolvedRightIcon ? 'pr-10' : ''}
               ${className}
             `}
             {...props}
           />
           
-          {icon && iconPosition === 'right' && (
+          {resolvedRightIcon && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
-              {icon}
+              {resolvedRightIcon}
             </div>
           )}
           
