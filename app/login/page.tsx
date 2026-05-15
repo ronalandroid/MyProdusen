@@ -38,7 +38,7 @@ export default function LoginPage() {
         throw new Error(payload.error || "Login gagal");
       }
 
-      router.replace("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login gagal");
     } finally {
