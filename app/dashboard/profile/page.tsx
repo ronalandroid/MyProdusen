@@ -17,9 +17,8 @@ export default function ProfilePage() {
 
   const employee = profile?.employee;
 
-  const handleLogout = () => {
-    logout();
-    router.replace("/login");
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (

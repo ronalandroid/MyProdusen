@@ -27,8 +27,8 @@ export default function Sidebar() {
     
     setIsLoggingOut(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.replace("/login");
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+      window.location.href = "/login";
     } catch (error) {
       console.error("Logout failed:", error);
       setIsLoggingOut(false);

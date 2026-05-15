@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
-import { clearAuthCookie } from '@/lib/auth';
 import { successResponse } from '@/utils/response';
+import { clearAuthCookieOnResponse } from '@/lib/auth-response';
 
 export async function POST(request: NextRequest) {
-  // Clear the httpOnly cookie
-  await clearAuthCookie();
-  
-  return successResponse(null, 'Logout berhasil');
+  const response = successResponse(null, 'Logout berhasil');
+
+  // Clear cookie on the same response returned to the browser.
+  return clearAuthCookieOnResponse(response);
 }
