@@ -34,12 +34,9 @@ export default function DocumentsPage() {
     category: "OTHER",
     title: "",
     description: "",
-    fileUrl: "",
-    fileName: "",
-    fileSize: 1,
-    mimeType: "application/pdf",
     expiryDate: "",
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     loadDocuments();
@@ -69,17 +66,21 @@ export default function DocumentsPage() {
     try {
       setSubmitting(true);
       setError("");
+      if (!selectedFile) {
+        throw new Error('Pilih file dokumen terlebih dahulu');
+      }
+
+      const body = new FormData();
+      body.append('file', selectedFile);
+      body.append('category', formData.category);
+      body.append('title', formData.title || selectedFile.name);
+      body.append('description', formData.description);
+      if (formData.expiryDate) body.append('expiryDate', formData.expiryDate);
+
       const response = await fetch('/api/documents', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({
-          ...formData,
-          fileSize: Number(formData.fileSize),
-          expiryDate: formData.expiryDate || undefined,
-        }),
+        headers: getAuthHeaders(),
+        body,
       });
       const payload = await response.json();
 
@@ -88,7 +89,8 @@ export default function DocumentsPage() {
       }
 
       setIsModalOpen(false);
-      setFormData({ category: "OTHER", title: "", description: "", fileUrl: "", fileName: "", fileSize: 1, mimeType: "application/pdf", expiryDate: "" });
+      setSelectedFile(null);
+      setFormData({ category: "OTHER", title: "", description: "", expiryDate: "" });
       await loadDocuments();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Dokumen gagal disimpan');
@@ -169,10 +171,17 @@ export default function DocumentsPage() {
               <option value="OTHER">Lainnya</option>
             </select>
           </div>
-          <Input label="URL File" value={formData.fileUrl} onChange={(event) => setFormData({ ...formData, fileUrl: event.target.value })} required />
-          <Input label="Nama File" value={formData.fileName} onChange={(event) => setFormData({ ...formData, fileName: event.target.value })} required />
-          <Input label="Ukuran File (bytes)" type="number" value={String(formData.fileSize)} onChange={(event) => setFormData({ ...formData, fileSize: Number(event.target.value) })} required />
-          <Input label="MIME Type" value={formData.mimeType} onChange={(event) => setFormData({ ...formData, mimeType: event.target.value })} required />
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">File Dokumen</label>
+            <input
+              className="input"
+              type="file"
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
+              required
+            />
+            <p className="text-xs text-[var(--text-muted)] mt-1">PDF, JPEG, PNG, WebP. Maksimal 10MB.</p>
+          </div>
           <Input label="Tanggal Expired" type="date" value={formData.expiryDate} onChange={(event) => setFormData({ ...formData, expiryDate: event.target.value })} />
           <div>
             <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">Deskripsi</label>
