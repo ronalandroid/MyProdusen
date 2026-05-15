@@ -227,9 +227,9 @@ export default function AttendancePage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <Bell size={24} color="var(--text-primary)" />
-          <div className="avatar" style={{ width: "32px", height: "32px", backgroundColor: "#EAEAEA" }}>
-            <img src="/logo.png" alt="Avatar" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
-          </div>
+          <div className="avatar" style={{ width: "32px", height: "32px", background: "linear-gradient(135deg, #FFC107 0%, #FF8F00 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "white", borderRadius: "50%", flexShrink: 0 }}>
+              {(employee?.fullName || profile?.username || "U").charAt(0).toUpperCase()}
+            </div>
         </div>
       </div>
 

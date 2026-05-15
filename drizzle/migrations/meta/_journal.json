@@ -15,6 +15,20 @@
       "when": 1778837815513,
       "tag": "0001_productive_captain_flint",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778862502739,
+      "tag": "0002_condemned_jubilee",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778863763307,
+      "tag": "0003_nappy_hydra",
+      "breakpoints": true
     }
   ]
 }

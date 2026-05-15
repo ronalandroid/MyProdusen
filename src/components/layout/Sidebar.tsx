@@ -39,10 +39,8 @@ export default function Sidebar() {
     <>
       {/* Desktop Logo & Brand */}
       <div className="desktop-logo">
-        <div className="flex items-center gap-3 px-6 py-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center shadow-md">
-            <img src="/logo.png" alt="" className="w-6 h-6" />
-          </div>
+        <div className="flex items-center gap-3 px-4 py-4">
+          <img src="/logo.png" alt="MyProdusen Logo" className="w-10 h-10 object-contain" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.15))" }} />
           <div className="flex flex-col">
             <span className="text-lg font-bold text-[var(--text-primary)]">
               My<span className="text-[var(--primary)]">Produsen</span>

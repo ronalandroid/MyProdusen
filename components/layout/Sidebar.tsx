@@ -23,8 +23,8 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop Logo */}
-      <div className="desktop-logo" style={{ padding: "0 32px", marginBottom: "32px", display: "flex", alignItems: "center", gap: "8px" }}>
-        <img src="/logo.png" alt="MyProdusen" style={{ width: "32px", height: "32px", borderRadius: "8px" }} />
+      <div className="desktop-logo" style={{ padding: "0 16px", marginBottom: "32px", display: "flex", alignItems: "center", gap: "10px" }}>
+        <img src="/logo.png" alt="MyProdusen" style={{ width: "40px", height: "40px", objectFit: "contain", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.15))" }} />
         <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-primary)" }}>
           My<span style={{ color: "var(--primary)" }}>Produsen</span>
         </span>

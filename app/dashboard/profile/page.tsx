@@ -35,8 +35,8 @@ export default function ProfilePage() {
 
       {/* User Info */}
       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        <div className="avatar" style={{ width: "64px", height: "64px" }}>
-          <img src="/logo.png" alt="Avatar" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+        <div className="avatar" style={{ width: "64px", height: "64px", background: "linear-gradient(135deg, #FFC107 0%, #FF8F00 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px", fontWeight: 700, color: "white", borderRadius: "50%", flexShrink: 0 }}>
+          {(employee?.fullName || profile?.username || "U").charAt(0).toUpperCase()}
         </div>
         <div>
           <h2 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "4px" }}>{employee?.fullName || profile?.username || "Pengguna"}</h2>
