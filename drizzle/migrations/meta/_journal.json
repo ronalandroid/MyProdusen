@@ -36,6 +36,13 @@
       "when": 1778869625359,
       "tag": "0004_attendance_exceptions",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778869988170,
+      "tag": "0005_leave_balance_ledger",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import { eq, and, gte, lte, desc, inArray } from 'drizzle-orm';
 import { cacheManager } from '@/lib/cache/cache-manager';
 import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
 import { CacheStrategy } from '@/lib/cache/cache-strategies';
+import { leaveBalanceService } from './leave-balance.service';
 
 export type LeaveType = 'LEAVE' | 'SICK' | 'PERMISSION';
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -31,6 +32,15 @@ export class LeaveService {
       throw new Error('Karyawan tidak ditemukan');
     }
 
+    if (data.type === 'LEAVE') {
+      const requestedDays = Math.ceil(Math.abs(data.endDate.getTime() - data.startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const balance = await leaveBalanceService.getBalance(data.employeeId, data.startDate.getFullYear());
+
+      if (balance.available < requestedDays) {
+        throw new Error(`Saldo cuti tidak cukup. Tersedia ${balance.available} hari, diajukan ${requestedDays} hari.`);
+      }
+    }
+
     const leaveId = `leave_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     const [leave] = await db
@@ -45,6 +55,16 @@ export class LeaveService {
         status: 'PENDING',
       })
       .returning();
+
+    if (data.type === 'LEAVE') {
+      await leaveBalanceService.holdForRequest({
+        employeeId: data.employeeId,
+        leaveRequestId: leave.id,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        createdBy: data.employeeId,
+      });
+    }
 
     // Invalidate leave caches
     await this.invalidateLeaveCaches(data.employeeId);
@@ -187,6 +207,10 @@ export class LeaveService {
       .where(eq(leaveRequests.id, id))
       .returning();
 
+    if (leave.type === 'LEAVE') {
+      await leaveBalanceService.approveRequest(id, approvedBy);
+    }
+
     // Invalidate leave caches
     await this.invalidateLeaveCaches(leave.employeeId, id);
 
@@ -219,6 +243,10 @@ export class LeaveService {
       })
       .where(eq(leaveRequests.id, id))
       .returning();
+
+    if (leave.type === 'LEAVE') {
+      await leaveBalanceService.releaseRejectedRequest(id, rejectedBy);
+    }
 
     // Invalidate leave caches
     await this.invalidateLeaveCaches(leave.employeeId, id);

@@ -10,6 +10,7 @@ export const leaveTypeEnum = pgEnum('LeaveType', ['LEAVE', 'SICK', 'PERMISSION']
 export const kpiScoringTypeEnum = pgEnum('KpiScoringType', ['HIGHER_IS_BETTER', 'LOWER_IS_BETTER', 'BOOLEAN']);
 export const attendanceExceptionTypeEnum = pgEnum('AttendanceExceptionType', ['OUTSIDE_GEOFENCE', 'BAD_GPS_ACCURACY', 'MISSING_SELFIE', 'MANUAL_ADJUSTMENT', 'LATE_CORRECTION', 'MISSING_CHECKOUT']);
 export const attendanceExceptionStatusEnum = pgEnum('AttendanceExceptionStatus', ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']);
+export const leaveBalanceTransactionTypeEnum = pgEnum('LeaveBalanceTransactionType', ['ENTITLEMENT', 'CARRY_FORWARD', 'REQUEST_HOLD', 'REQUEST_APPROVED', 'REQUEST_REJECTED_RELEASE', 'MANUAL_ADJUSTMENT', 'EXPIRY']);
 
 // User table
 export const users = pgTable('User', {
@@ -166,6 +167,23 @@ export const leaveRequests = pgTable('LeaveRequest', {
   startDateIdx: index('LeaveRequest_startDate_idx').on(table.startDate),
 }));
 
+// Leave Balance Ledger table
+export const leaveBalanceLedger = pgTable('LeaveBalanceLedger', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId').notNull(),
+  leaveRequestId: text('leaveRequestId'),
+  transactionType: leaveBalanceTransactionTypeEnum('transactionType').notNull(),
+  amount: real('amount').notNull(),
+  balanceYear: integer('balanceYear').notNull(),
+  reason: text('reason').notNull(),
+  createdBy: text('createdBy'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  employeeIdIdx: index('LeaveBalanceLedger_employeeId_idx').on(table.employeeId),
+  leaveRequestIdIdx: index('LeaveBalanceLedger_leaveRequestId_idx').on(table.leaveRequestId),
+  balanceYearIdx: index('LeaveBalanceLedger_balanceYear_idx').on(table.balanceYear),
+}));
+
 // KPI Template table
 export const kpiTemplates = pgTable('KpiTemplate', {
   id: text('id').primaryKey(),
@@ -296,6 +314,7 @@ export const employeesRelations = relations(employees, ({ one, many }) => ({
   attendances: many(attendances),
   attendanceExceptions: many(attendanceExceptions),
   leaveRequests: many(leaveRequests),
+  leaveBalanceLedger: many(leaveBalanceLedger),
   kpiAssignments: many(kpiAssignments),
   kpiResults: many(kpiResults),
 }));
@@ -330,6 +349,17 @@ export const leaveRequestsRelations = relations(leaveRequests, ({ one }) => ({
   employee: one(employees, {
     fields: [leaveRequests.employeeId],
     references: [employees.id],
+  }),
+}));
+
+export const leaveBalanceLedgerRelations = relations(leaveBalanceLedger, ({ one }) => ({
+  employee: one(employees, {
+    fields: [leaveBalanceLedger.employeeId],
+    references: [employees.id],
+  }),
+  leaveRequest: one(leaveRequests, {
+    fields: [leaveBalanceLedger.leaveRequestId],
+    references: [leaveRequests.id],
   }),
 }));
 

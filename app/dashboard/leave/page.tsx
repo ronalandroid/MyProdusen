@@ -29,11 +29,20 @@ interface LeaveRequest {
   createdAt: string;
 }
 
+interface LeaveBalance {
+  year: number;
+  entitlement: number;
+  used: number;
+  pending: number;
+  available: number;
+}
+
 export default function LeavePage() {
   const router = useRouter();
   const { success, error: showError } = useToast();
   
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -62,6 +71,9 @@ export default function LeavePage() {
       const response = await fetch(`/api/leave?${params.toString()}`, {
         headers: getAuthHeaders(),
       });
+      const balanceResponse = await fetch('/api/leave/balance', {
+        headers: getAuthHeaders(),
+      });
       
       const data = await response.json();
       
@@ -69,6 +81,13 @@ export default function LeavePage() {
         setLeaveRequests(data.data || []);
       } else {
         showError(data.error || "Gagal memuat data cuti");
+      }
+
+      if (balanceResponse.ok) {
+        const balanceData = await balanceResponse.json();
+        if (balanceData.success) {
+          setLeaveBalance(balanceData.data);
+        }
       }
     } catch (err) {
       showError("Terjadi kesalahan saat memuat data");
@@ -207,6 +226,32 @@ export default function LeavePage() {
           <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Cuti & Izin</h1>
         </div>
       </div>
+
+      {leaveBalance && (
+        <section className="card" style={{ padding: "16px" }} aria-label="Saldo cuti">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <div>
+              <p className="text-xs text-[var(--text-secondary)]">Saldo Cuti {leaveBalance.year}</p>
+              <h2 className="text-lg font-bold">{leaveBalance.available} hari tersedia</h2>
+            </div>
+            <Calendar size={24} color="var(--primary)" />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+            <div style={{ backgroundColor: "var(--bg-main)", borderRadius: "8px", padding: "10px", textAlign: "center" }}>
+              <p className="text-[11px] text-[var(--text-secondary)]">Jatah</p>
+              <p className="text-sm font-bold">{leaveBalance.entitlement}</p>
+            </div>
+            <div style={{ backgroundColor: "var(--bg-main)", borderRadius: "8px", padding: "10px", textAlign: "center" }}>
+              <p className="text-[11px] text-[var(--text-secondary)]">Terpakai</p>
+              <p className="text-sm font-bold text-[var(--danger)]">{leaveBalance.used}</p>
+            </div>
+            <div style={{ backgroundColor: "var(--bg-main)", borderRadius: "8px", padding: "10px", textAlign: "center" }}>
+              <p className="text-[11px] text-[var(--text-secondary)]">Pending</p>
+              <p className="text-sm font-bold text-[var(--warning)]">{leaveBalance.pending}</p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Filter */}
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
