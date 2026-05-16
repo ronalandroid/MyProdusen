@@ -13,7 +13,7 @@ ENV npm_config_fund=false
 
 COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --prefer-offline --no-audit --fund=false
+    npm ci --omit=dev --prefer-offline --no-audit --fund=false
 
 # ---------- Stage 2: Build standalone Next.js ----------------
 FROM node:22-alpine AS builder
