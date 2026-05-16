@@ -35,7 +35,18 @@ const nextConfig = {
         'https://myprodusen.online',
       ],
     },
-    cpus: 2,
+    cpus: 1,
+  },
+
+  outputFileTracingExcludes: {
+    '*': [
+      './docs/**',
+      './tests/**',
+      './coverage/**',
+      './public/uploads/**',
+      './drizzle/**/*.bak',
+      './tmp/**',
+    ],
   },
 
   turbopack: {

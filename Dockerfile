@@ -11,6 +11,8 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
 ENV HOSTNAME=0.0.0.0
+ENV NODE_OPTIONS=--max-old-space-size=1536
+ENV BUILD_HEARTBEAT_MS=15000
 
 # Dummy DATABASE_URL keeps build-time imports safe.
 # The real value is injected at runtime via Coolify env vars.

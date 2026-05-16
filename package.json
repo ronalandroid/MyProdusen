@@ -19,7 +19,7 @@
     "start:prod": "HOSTNAME=0.0.0.0 PORT=${PORT:-3000} sh -c 'if [ -f server.js ]; then exec node server.js; fi; exec node .next/standalone/server.js'",
     "dev:safe": "next dev --webpack",
     "clean": "rm -rf .next tsconfig.tsbuildinfo node_modules/.cache",
-    "build:next": "next build --webpack"
+    "build:next": "node scripts/build-next-with-heartbeat.mjs"
   },
   "keywords": [
     "attendance",
