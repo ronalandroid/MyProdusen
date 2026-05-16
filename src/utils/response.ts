@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
+  code?: string;
   message?: string;
 }
 

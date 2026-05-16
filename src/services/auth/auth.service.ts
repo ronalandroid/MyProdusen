@@ -3,10 +3,12 @@ import { hashPassword, verifyPassword, generateToken } from '@/lib/auth';
 import { validatePassword } from '@/lib/password-policy';
 import { eq, or } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
+import { BaseService } from '@/lib/core/base-service';
+import { AppError } from '@/lib/core/app-error';
 
 export type UserRole = 'SUPERADMIN' | 'ADMIN_HR' | 'SUPERVISOR' | 'EMPLOYEE';
 
-export class AuthService {
+export class AuthService extends BaseService {
   async login(email: string, password: string) {
     const identifier = email.trim();
     const [user] = await db
@@ -16,16 +18,16 @@ export class AuthService {
       .limit(1);
 
     if (!user) {
-      throw new Error('Email atau password salah');
+      throw new AppError('AUTH_INVALID_CREDENTIALS', 'Email atau password salah', 401);
     }
 
     if (!user.isActive) {
-      throw new Error('Akun tidak aktif');
+      throw new AppError('AUTH_USER_INACTIVE', 'Akun tidak aktif', 403);
     }
 
     const isPasswordValid = await verifyPassword(password, user.password);
     if (!isPasswordValid) {
-      throw new Error('Email atau password salah');
+      throw new AppError('AUTH_INVALID_CREDENTIALS', 'Email atau password salah', 401);
     }
 
     // Get employee data if exists

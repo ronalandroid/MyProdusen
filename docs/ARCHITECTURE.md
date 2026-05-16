@@ -88,3 +88,52 @@ Redis failure must degrade gracefully for cache/realtime. Core DB-backed app req
 - Prefer selected columns over full rows in list endpoints.
 - Avoid N+1 queries in dashboard/report paths.
 - Keep `/api/health` fast and public-safe.
+
+## OOP-Friendly Backend Pattern
+
+New backend code should follow a small OOP structure without over-engineering:
+
+```txt
+API Route
+  → withApiHandler()
+  → parseJsonBody() / Zod validation
+  → Domain Service extends BaseService
+  → Drizzle repository/query
+  → typed ApiResponse
+```
+
+Core OOP helpers:
+
+- `lib/core/app-error.ts` — typed application errors with HTTP status and stable codes.
+- `lib/core/base-service.ts` — base class for domain services with shared assertions and safe error handling.
+- `lib/core/route-handler.ts` — route wrapper for centralized error handling and JSON parsing.
+- `lib/core/result.ts` — lightweight `Result<T, E>` type for future service methods that should not throw.
+
+Rules:
+
+- Route files should stay thin.
+- Business logic belongs in service classes.
+- Service classes may extend `BaseService`.
+- Use `AppError` for expected user/business errors.
+- Let `withApiHandler` handle unexpected errors so routes do not leak internals.
+- Do not introduce abstract factories or dependency containers until needed.
+
+First route migrated to the pattern:
+
+- `app/api/auth/login/route.ts`
+
+First service migrated to the pattern:
+
+- `src/services/auth/auth.service.ts`
+
+## 10/10 Engineering Roadmap
+
+Practical next steps toward a stronger score:
+
+1. Migrate all auth/user routes to `withApiHandler`.
+2. Migrate attendance and leave services to `BaseService`.
+3. Add repository classes only for modules with complex query reuse.
+4. Add integration tests for every role boundary.
+5. Turn `ignoreBuildErrors` off after all route typing issues are resolved.
+6. Move remaining duplicate service folders into one canonical feature structure.
+7. Add CI to run lint, test, build, and empty DB migration smoke.
