@@ -144,7 +144,7 @@ export class AuthService extends BaseService {
       });
 
     if (!user) {
-      throw new Error('User tidak ditemukan');
+      throw AppError.notFound('User tidak ditemukan');
     }
 
     return user;
@@ -191,7 +191,7 @@ export class AuthService extends BaseService {
     // Validate new password policy
     const passwordValidation = validatePassword(newPassword);
     if (!passwordValidation.valid) {
-      throw new Error(passwordValidation.errors[0]);
+      throw AppError.validation(passwordValidation.errors[0]);
     }
 
     const [user] = await db
@@ -201,12 +201,12 @@ export class AuthService extends BaseService {
       .limit(1);
 
     if (!user) {
-      throw new Error('User tidak ditemukan');
+      throw AppError.notFound('User tidak ditemukan');
     }
 
     const isPasswordValid = await verifyPassword(oldPassword, user.password);
     if (!isPasswordValid) {
-      throw new Error('Password lama salah');
+      throw AppError.validation('Password lama salah');
     }
 
     const hashedPassword = await hashPassword(newPassword);
@@ -234,7 +234,7 @@ export class AuthService extends BaseService {
       .limit(1);
 
     if (!user) {
-      throw new Error('User tidak ditemukan');
+      throw AppError.notFound('User tidak ditemukan');
     }
 
     // Get employee data if exists

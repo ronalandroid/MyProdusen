@@ -29,7 +29,7 @@ export default function NotificationsPage() {
     loadNotifications();
   }, [filter]);
 
-  useRealtime({
+  const realtime = useRealtime({
     eventTypes: ["notification.created", "notification.read"],
     onEvent: () => loadNotifications(),
   });
@@ -117,7 +117,7 @@ export default function NotificationsPage() {
   return (
     <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-        <button type="button" onClick={() => router.back()} className="flex items-center gap-3 text-[var(--text-primary)]">
+        <button type="button" onClick={() => router.back()} className="flex items-center gap-3 text-[var(--text-primary)]" aria-label="Kembali ke halaman sebelumnya">
           <ArrowLeft size={24} />
           <span className="text-xl font-bold">Notifikasi</span>
         </button>
@@ -128,16 +128,21 @@ export default function NotificationsPage() {
               Tandai Semua Dibaca ({unreadCount})
             </Button>
           )}
-          <Button variant="secondary" onClick={loadNotifications} disabled={loading}>
+          <div className={`text-xs ${realtime.connected ? "text-[var(--success)]" : "text-[var(--text-muted)]"}`} aria-live="polite">
+            {realtime.connected ? "Realtime aktif" : "Realtime standby"}
+          </div>
+          <Button variant="secondary" onClick={loadNotifications} disabled={loading} aria-label="Muat ulang notifikasi">
             <RefreshCcw size={16} />
           </Button>
         </div>
       </header>
 
       {/* Filter Tabs */}
-      <div style={{ display: "flex", gap: "8px", borderBottom: "1px solid var(--border-color)", paddingBottom: "8px" }}>
+      <div role="tablist" aria-label="Filter notifikasi" style={{ display: "flex", gap: "8px", borderBottom: "1px solid var(--border-color)", paddingBottom: "8px" }}>
         <button
           type="button"
+          role="tab"
+          aria-selected={filter === "all"}
           onClick={() => setFilter("all")}
           style={{
             padding: "8px 16px",
@@ -154,6 +159,8 @@ export default function NotificationsPage() {
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={filter === "unread"}
           onClick={() => setFilter("unread")}
           style={{
             padding: "8px 16px",
@@ -181,7 +188,7 @@ export default function NotificationsPage() {
           <LoadingSpinner message="Memuat notifikasi..." />
         </div>
       ) : items.length === 0 ? (
-        <div className="card empty-state-card" style={{ padding: "40px 24px", textAlign: "center" }}>
+        <div className="card empty-state-card" style={{ padding: "40px 24px", textAlign: "center" }} role="status">
           <Bell size={48} className="mx-auto mb-3 text-[var(--text-muted)]" />
           <h2 className="text-lg font-semibold">
             {filter === "unread" ? "Tidak ada notifikasi belum dibaca" : "Belum ada notifikasi"}
@@ -204,12 +211,12 @@ export default function NotificationsPage() {
                 backgroundColor: item.isRead ? "var(--bg-primary)" : "var(--warning-bg)",
               }}
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
                     <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{item.type}</p>
                     {!item.isRead && (
-                      <span style={{ 
+                      <span aria-label="Belum dibaca" style={{ 
                         width: "8px", 
                         height: "8px", 
                         borderRadius: "50%", 
@@ -229,9 +236,9 @@ export default function NotificationsPage() {
                     })}
                   </p>
                 </div>
-                <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                <div className="flex flex-wrap gap-2 sm:flex-nowrap" style={{ flexShrink: 0 }}>
                   {!item.isRead && (
-                    <Button variant="secondary" size="sm" onClick={() => markAsRead(item.id)}>
+                    <Button variant="secondary" size="sm" onClick={() => markAsRead(item.id)} aria-label={`Tandai ${item.title} sudah dibaca`}>
                       <CheckCircle2 size={14} />
                     </Button>
                   )}
@@ -239,6 +246,7 @@ export default function NotificationsPage() {
                     variant="secondary" 
                     size="sm" 
                     onClick={() => deleteNotification(item.id)}
+                    aria-label={`Hapus notifikasi ${item.title}`}
                     style={{ color: "var(--danger)" }}
                   >
                     <Trash2 size={14} />

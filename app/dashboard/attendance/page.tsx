@@ -227,7 +227,7 @@ export default function AttendancePage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <Bell size={24} color="var(--text-primary)" />
-          <div className="avatar" style={{ width: "32px", height: "32px", background: "linear-gradient(135deg, #FFC107 0%, #FF8F00 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "white", borderRadius: "50%", flexShrink: 0 }}>
+          <div className="avatar" style={{ width: "32px", height: "32px", background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "var(--text-primary)", borderRadius: "50%", flexShrink: 0 }}>
               {(employee?.fullName || profile?.username || "U").charAt(0).toUpperCase()}
             </div>
         </div>
@@ -249,7 +249,7 @@ export default function AttendancePage() {
       </div>
 
       {(message || error) && (
-        <div role="status" style={{ fontSize: "12px", color: error ? "var(--danger)" : "var(--success)", fontWeight: 600 }}>
+        <div role={error ? "alert" : "status"} style={{ fontSize: "12px", color: error ? "var(--danger)" : "var(--success)", fontWeight: 600 }} aria-live={error ? "assertive" : "polite"}>
           {error || message}
         </div>
       )}
@@ -286,7 +286,7 @@ export default function AttendancePage() {
         )}
       </div>
 
-      <div style={{ display: "flex", gap: "12px" }}>
+      <div className="flex flex-col gap-3 sm:flex-row">
         <button
           className="btn btn-success"
           style={{ flex: 1, padding: "16px", opacity: todayAttendance || isSubmitting ? 0.6 : 1 }}
@@ -301,7 +301,7 @@ export default function AttendancePage() {
           disabled={!todayAttendance || Boolean(todayAttendance.checkOutTime) || isSubmitting}
           onClick={() => submitAttendance("check-out")}
         >
-          Check-Out
+          {isSubmitting ? "Memproses..." : "Check-Out"}
         </button>
       </div>
 
@@ -326,7 +326,8 @@ export default function AttendancePage() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {history.length === 0 ? (
-            <div className="card" style={{ padding: "16px", fontSize: "12px", color: "var(--text-secondary)" }}>
+            <div className="card empty-state-card" role="status" style={{ padding: "32px 16px", textAlign: "center", fontSize: "12px", color: "var(--text-secondary)" }}>
+              <Info size={32} className="mx-auto mb-2 text-[var(--text-muted)]" />
               Belum ada riwayat kehadiran.
             </div>
           ) : (

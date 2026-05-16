@@ -59,7 +59,7 @@ describe('Auth API', () => {
       const response = await loginPOST(request as any);
       const data = await response.json();
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(401);
       expect(data.success).toBe(false);
       expect(data.message).toContain('Email atau password salah');
     });
@@ -89,7 +89,7 @@ describe('Auth API', () => {
       const response = await loginPOST(request as any);
       const data = await response.json();
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(401);
       expect(data.success).toBe(false);
     });
 
@@ -118,7 +118,7 @@ describe('Auth API', () => {
       const response = await loginPOST(request as any);
       const data = await response.json();
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(403);
       expect(data.success).toBe(false);
       expect(data.message).toContain('tidak aktif');
     });
@@ -335,7 +335,7 @@ describe('Auth API', () => {
       const response = await changePasswordPOST(request as any);
       const data = await response.json();
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(422);
       expect(data.success).toBe(false);
     });
   });
