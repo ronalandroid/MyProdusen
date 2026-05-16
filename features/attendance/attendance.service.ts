@@ -5,7 +5,7 @@ import { eq, and, gte, lt, desc } from 'drizzle-orm';
 import { cacheManager } from '@/lib/cache/cache-manager';
 import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
 import { CacheStrategy } from '@/lib/cache/cache-strategies';
-import { saveDataUrlImage } from '@/lib/upload';
+import { saveUploadedImage } from '@/lib/upload';
 import { payrollPeriodLockService } from '@/features/payroll/payroll-period-lock.service';
 
 export type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'SICK' | 'PERMISSION';
@@ -18,7 +18,7 @@ export class AttendanceService {
     latitude: number;
     longitude: number;
     accuracy: number;
-    selfie: string;
+    selfie: File;
     deviceInfo?: string;
     ipAddress?: string;
     userAgent?: string;
@@ -155,7 +155,7 @@ export class AttendanceService {
 
     // Generate attendance ID
     const attendanceId = `att_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const selfieUpload = await saveDataUrlImage(data.selfie);
+    const selfieUpload = await saveUploadedImage(data.selfie);
 
     // Create attendance record
     const [attendance] = await db
@@ -171,6 +171,8 @@ export class AttendanceService {
         checkInAccuracy: data.accuracy,
         checkInDistance: distance,
         checkInSelfie: selfieUpload.path,
+        checkInSelfieUrl: selfieUpload.path,
+        checkInSelfieUploadedAt: new Date(),
         checkInDeviceInfo: data.deviceInfo,
         checkInIp: data.ipAddress,
         checkInUserAgent: data.userAgent,
@@ -190,7 +192,7 @@ export class AttendanceService {
     latitude: number;
     longitude: number;
     accuracy: number;
-    selfie: string;
+    selfie: File;
     deviceInfo?: string;
     ipAddress?: string;
     userAgent?: string;
@@ -283,7 +285,7 @@ export class AttendanceService {
       attendance.checkInTime,
       checkOutTime
     );
-    const selfieUpload = await saveDataUrlImage(data.selfie);
+    const selfieUpload = await saveUploadedImage(data.selfie);
 
     // Update attendance record
     const [updated] = await db
@@ -295,6 +297,8 @@ export class AttendanceService {
         checkOutAccuracy: data.accuracy,
         checkOutDistance: distance,
         checkOutSelfie: selfieUpload.path,
+        checkOutSelfieUrl: selfieUpload.path,
+        checkOutSelfieUploadedAt: new Date(),
         checkOutDeviceInfo: data.deviceInfo,
         checkOutIp: data.ipAddress,
         checkOutUserAgent: data.userAgent,

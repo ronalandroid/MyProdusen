@@ -37,3 +37,15 @@
 - [ ] Start command: `npm run start`.
 - [ ] Persistent upload volume configured for `UPLOAD_DIR`.
 - [ ] PostgreSQL backup schedule configured.
+
+## Realtime Attendance Selfie Checklist
+
+- [ ] Attendance page uses realtime camera, not file input.
+- [ ] Check-in requires selfie `FormData` blob.
+- [ ] Check-out requires selfie `FormData` blob.
+- [ ] Backend rejects missing selfie.
+- [ ] Backend rejects invalid image MIME type.
+- [ ] Backend rejects oversized selfie.
+- [ ] Selfie filenames are generated server-side.
+- [ ] Selfie proof route checks authorization.
+- [ ] Drizzle migration is safe and non-destructive.

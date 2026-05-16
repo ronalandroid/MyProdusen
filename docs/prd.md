@@ -21,6 +21,7 @@ Fitur absensi wajib menggunakan:
 - Geo-fencing
 - Selfie check-in
 - Selfie check-out
+- Selfie wajib diambil realtime dari kamera perangkat, tanpa upload manual/gallery picker
 - Validasi radius lokasi kerja
 
 ---

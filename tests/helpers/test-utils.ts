@@ -202,6 +202,32 @@ export async function cleanupTestData(ids: {
   }
 }
 
+
+function dataUrlToFile(dataUrl: string, filename = 'selfie.png'): File {
+  const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
+  if (!match) {
+    return new File([dataUrl], filename, { type: 'text/plain' });
+  }
+
+  const bytes = Uint8Array.from(Buffer.from(match[2], 'base64'));
+  return new File([bytes], filename, { type: match[1] });
+}
+
+function createAttendanceFormData(body: Record<string, any>): FormData {
+  const formData = new FormData();
+
+  Object.entries(body).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    if (key === 'selfie') {
+      formData.set('selfie', value instanceof File ? value : dataUrlToFile(String(value)));
+      return;
+    }
+    formData.set(key, String(value));
+  });
+
+  return formData;
+}
+
 export function createMockRequest(
   method: string,
   url: string,
@@ -217,13 +243,20 @@ export function createMockRequest(
     headers.set('authorization', `Bearer ${options.token}`);
   }
 
-  if (options?.body) {
+  const isAttendanceRealtimeSelfie = /\/api\/attendance\/(check-in|check-out)$/.test(url) && options?.body;
+  const body = isAttendanceRealtimeSelfie
+    ? createAttendanceFormData(options.body)
+    : options?.body
+      ? JSON.stringify(options.body)
+      : undefined;
+
+  if (options?.body && !isAttendanceRealtimeSelfie) {
     headers.set('content-type', 'application/json');
   }
 
   return new Request(url, {
     method,
     headers,
-    body: options?.body ? JSON.stringify(options.body) : undefined,
+    body,
   }) as any;
 }

@@ -2,8 +2,9 @@ import { randomUUID } from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
-const PUBLIC_UPLOAD_PATH = '/uploads';
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads');
+const SELFIE_UPLOAD_DIR = path.join(UPLOAD_DIR, 'selfies');
+const PUBLIC_UPLOAD_PATH = '/api/attendance/selfie';
 
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const EXTENSION_BY_MIME_TYPE: Record<string, string> = {
@@ -11,7 +12,11 @@ const EXTENSION_BY_MIME_TYPE: Record<string, string> = {
   'image/png': 'png',
   'image/webp': 'webp',
 };
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const configuredSelfieSizeMb = Number(process.env.MAX_SELFIE_SIZE_MB || '2');
+const configuredUploadBytes = Number(process.env.MAX_UPLOAD_SIZE || '0');
+const MAX_IMAGE_BYTES = Number.isFinite(configuredSelfieSizeMb) && configuredSelfieSizeMb > 0
+  ? configuredSelfieSizeMb * 1024 * 1024
+  : configuredUploadBytes || 2 * 1024 * 1024;
 const DATA_URL_PATTERN = /^data:(image\/(?:jpeg|jpg|png|webp));base64,([A-Za-z0-9+/=\s]+)$/;
 
 export interface UploadResult {
@@ -34,7 +39,7 @@ export function validateImageFile(file: File): void {
   }
 
   if (file.size > MAX_IMAGE_BYTES) {
-    throw new UploadError('Ukuran selfie terlalu besar. Maksimal 5MB.');
+    throw new UploadError(`Ukuran selfie terlalu besar. Maksimal ${Math.round(MAX_IMAGE_BYTES / 1024 / 1024)}MB.`);
   }
 }
 
@@ -64,7 +69,7 @@ function validateImageBuffer(buffer: Buffer, mimeType: string): void {
   }
 
   if (buffer.length > MAX_IMAGE_BYTES) {
-    throw new UploadError('Ukuran selfie terlalu besar. Maksimal 5MB.');
+    throw new UploadError(`Ukuran selfie terlalu besar. Maksimal ${Math.round(MAX_IMAGE_BYTES / 1024 / 1024)}MB.`);
   }
 
   validateImageSignature(buffer, mimeType);
@@ -83,10 +88,10 @@ export function generateUniqueFilename(mimeType: string): string {
 export async function saveUploadedImage(file: File): Promise<UploadResult> {
   validateImageFile(file);
 
-  await mkdir(UPLOAD_DIR, { recursive: true });
+  await mkdir(SELFIE_UPLOAD_DIR, { recursive: true });
 
-  const filename = generateUniqueFilename(file.type);
-  const filePath = path.join(UPLOAD_DIR, filename);
+  const filename = generateUniqueFilename(normalizeMimeType(file.type));
+  const filePath = path.join(SELFIE_UPLOAD_DIR, filename);
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
   validateImageBuffer(buffer, normalizeMimeType(file.type));
@@ -96,7 +101,7 @@ export async function saveUploadedImage(file: File): Promise<UploadResult> {
   return {
     filename,
     path: `${PUBLIC_UPLOAD_PATH}/${filename}`,
-    mimeType: file.type,
+    mimeType: normalizeMimeType(file.type),
     size: file.size,
   };
 }
@@ -112,10 +117,10 @@ export async function saveDataUrlImage(dataUrl: string): Promise<UploadResult> {
   const buffer = Buffer.from(match[2].replace(/\s/g, ''), 'base64');
   validateImageBuffer(buffer, mimeType);
 
-  await mkdir(UPLOAD_DIR, { recursive: true });
+  await mkdir(SELFIE_UPLOAD_DIR, { recursive: true });
 
   const filename = generateUniqueFilename(mimeType);
-  const filePath = path.join(UPLOAD_DIR, filename);
+  const filePath = path.join(SELFIE_UPLOAD_DIR, filename);
 
   await writeFile(filePath, buffer);
 

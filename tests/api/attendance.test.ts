@@ -89,6 +89,101 @@ describe('Attendance API', () => {
       }
     });
 
+    it('should reject check-in without realtime selfie', async () => {
+      const user = await createTestUser('EMPLOYEE');
+      testUserIds.push(user.id);
+
+      const employeeId = await createTestEmployee(user.id);
+      testEmployeeIds.push(employeeId);
+
+      const locationId = await createTestWorkLocation();
+      testLocationIds.push(locationId);
+      const shiftId = await createTestShift();
+      testShiftIds.push(shiftId);
+      await assignAttendanceDefaults(employeeId, locationId, shiftId);
+
+      const request = createMockRequest('POST', 'http://localhost:3000/api/attendance/check-in', {
+        token: user.token,
+        body: {
+          workLocationId: locationId,
+          latitude: 3.5952,
+          longitude: 98.6722,
+          accuracy: 10,
+        },
+      });
+
+      const response = await checkInPOST(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(422);
+      expect(data.success).toBe(false);
+      expect(data.message).toContain('Selfie realtime wajib diambil');
+    });
+
+    it('should reject invalid selfie type', async () => {
+      const user = await createTestUser('EMPLOYEE');
+      testUserIds.push(user.id);
+
+      const employeeId = await createTestEmployee(user.id);
+      testEmployeeIds.push(employeeId);
+
+      const locationId = await createTestWorkLocation();
+      testLocationIds.push(locationId);
+      const shiftId = await createTestShift();
+      testShiftIds.push(shiftId);
+      await assignAttendanceDefaults(employeeId, locationId, shiftId);
+
+      const request = createMockRequest('POST', 'http://localhost:3000/api/attendance/check-in', {
+        token: user.token,
+        body: {
+          workLocationId: locationId,
+          latitude: 3.5952,
+          longitude: 98.6722,
+          accuracy: 10,
+          selfie: new File(['not-image'], 'selfie.txt', { type: 'text/plain' }),
+        },
+      });
+
+      const response = await checkInPOST(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.message).toContain('Tipe file tidak valid');
+    });
+
+    it('should reject oversized selfie', async () => {
+      const user = await createTestUser('EMPLOYEE');
+      testUserIds.push(user.id);
+
+      const employeeId = await createTestEmployee(user.id);
+      testEmployeeIds.push(employeeId);
+
+      const locationId = await createTestWorkLocation();
+      testLocationIds.push(locationId);
+      const shiftId = await createTestShift();
+      testShiftIds.push(shiftId);
+      await assignAttendanceDefaults(employeeId, locationId, shiftId);
+
+      const request = createMockRequest('POST', 'http://localhost:3000/api/attendance/check-in', {
+        token: user.token,
+        body: {
+          workLocationId: locationId,
+          latitude: 3.5952,
+          longitude: 98.6722,
+          accuracy: 10,
+          selfie: new File([new Uint8Array(3 * 1024 * 1024)], 'selfie.jpg', { type: 'image/jpeg' }),
+        },
+      });
+
+      const response = await checkInPOST(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.message).toContain('Ukuran selfie terlalu besar');
+    });
+
     it('should fail when outside geofence', async () => {
       const user = await createTestUser('EMPLOYEE');
       testUserIds.push(user.id);

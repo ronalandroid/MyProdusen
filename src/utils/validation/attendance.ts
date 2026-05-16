@@ -1,18 +1,11 @@
 import { z } from 'zod';
 
-const selfieSchema = z
-  .string()
-  .min(1, 'Selfie wajib diupload')
-  .max(7_000_000, 'Ukuran selfie terlalu besar')
-  .regex(/^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=\s]+$/, 'Format selfie tidak valid');
-
 export const checkInSchema = z.object({
   workLocationId: z.string().min(1, 'Lokasi kerja wajib dipilih'),
   shiftId: z.string().optional(),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   accuracy: z.number().positive(),
-  selfie: selfieSchema,
   deviceInfo: z.string().optional(),
 });
 
@@ -21,7 +14,6 @@ export const checkOutSchema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   accuracy: z.number().positive(),
-  selfie: selfieSchema,
   deviceInfo: z.string().optional(),
 });
 

@@ -51,3 +51,11 @@
 - Run `prisma migrate deploy` in release process.
 - Add backup/restore schedule.
 - Final security and demo checklist.
+
+## Realtime Selfie Attendance Update
+
+- Replace manual file/gallery selfie flow with `navigator.mediaDevices.getUserMedia()` realtime camera capture.
+- Submit attendance with `FormData` containing GPS fields and selfie blob.
+- Validate selfie on backend before check-in/check-out.
+- Store protected selfie URL/path and upload timestamp on attendance rows.
+- Serve selfie proof only through authenticated/authorized API route.
