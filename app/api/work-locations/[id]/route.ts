@@ -1,10 +1,12 @@
 import { NextRequest } from 'next/server';
 import { workLocationService } from '@/services/work-locations/work-location.service';
-import { successResponse, errorResponse, validationErrorResponse, forbiddenResponse, unauthorizedResponse, notFoundResponse } from '@/utils/response';
-import { getRequestBody, requireAuth } from '@/lib/middleware';
+import { successResponse } from '@/utils/response';
+import { requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { z } from 'zod';
 import { logAudit } from '@/lib/audit';
+import { AppError } from '@/lib/core/app-error';
+import { parseJsonBody, withApiHandler } from '@/lib/core/route-handler';
 
 const updateLocationSchema = z.object({
   name: z.string().min(3, 'Nama lokasi minimal 3 karakter').optional(),
@@ -15,90 +17,46 @@ const updateLocationSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  try {
-    const user = await requireAuth(request);
-    
-    if (!hasPermission(user.role, 'LOCATION_READ')) {
-      return forbiddenResponse('Anda tidak memiliki akses untuk melihat lokasi kerja');
-    }
-    
-    const location = await workLocationService.getWorkLocationById((await context.params).id);
-    
-    return successResponse(location);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized') {
-      return unauthorizedResponse();
-    }
-    if (error.message === 'Lokasi kerja tidak ditemukan') {
-      return notFoundResponse(error.message);
-    }
-    return errorResponse(error.message || 'Gagal mengambil data lokasi kerja');
-  }
-}
+export const GET = withApiHandler<{ id: string }>(async (request: NextRequest, { params }) => {
+  const user = await requireAuth(request);
 
-export async function PUT(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  try {
-    const user = await requireAuth(request);
-    
-    if (!hasPermission(user.role, 'LOCATION_UPDATE')) {
-      return forbiddenResponse('Anda tidak memiliki akses untuk mengubah lokasi kerja');
-    }
-    
-    const body = await getRequestBody(request);
-    
-    const validation = updateLocationSchema.safeParse(body);
-    if (!validation.success) {
-      return validationErrorResponse(validation.error.errors[0].message);
-    }
-    
-    const { id } = await context.params;
-    const oldLocation = await workLocationService.getWorkLocationById(id);
-    const location = await workLocationService.updateWorkLocation(id, validation.data);
-    await logAudit(user.userId, 'UPDATE', 'WorkLocation', id, oldLocation, location, request);
-    
-    return successResponse(location, 'Lokasi kerja berhasil diubah');
-  } catch (error: any) {
-    if (error.message === 'Unauthorized') {
-      return unauthorizedResponse();
-    }
-    if (error.message === 'Lokasi kerja tidak ditemukan') {
-      return notFoundResponse(error.message);
-    }
-    return errorResponse(error.message || 'Gagal mengubah lokasi kerja');
+  if (!hasPermission(user.role, 'LOCATION_READ')) {
+    throw AppError.forbidden('Anda tidak memiliki akses untuk melihat lokasi kerja');
   }
-}
 
-export async function DELETE(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  try {
-    const user = await requireAuth(request);
-    
-    if (!hasPermission(user.role, 'LOCATION_DELETE')) {
-      return forbiddenResponse('Anda tidak memiliki akses untuk menghapus lokasi kerja');
-    }
-    
-    const { id } = await context.params;
-    const oldLocation = await workLocationService.getWorkLocationById(id);
-    const result = await workLocationService.deleteWorkLocation(id);
-    await logAudit(user.userId, 'DELETE', 'WorkLocation', id, oldLocation, undefined, request);
-    
-    return successResponse(result, result.message);
-  } catch (error: any) {
-    if (error.message === 'Unauthorized') {
-      return unauthorizedResponse();
-    }
-    if (error.message === 'Lokasi kerja tidak ditemukan') {
-      return notFoundResponse(error.message);
-    }
-    return errorResponse(error.message || 'Gagal menghapus lokasi kerja');
+  const { id } = await params;
+  const location = await workLocationService.getWorkLocationById(id);
+
+  return successResponse(location);
+});
+
+export const PUT = withApiHandler<{ id: string }>(async (request: NextRequest, { params }) => {
+  const user = await requireAuth(request);
+
+  if (!hasPermission(user.role, 'LOCATION_UPDATE')) {
+    throw AppError.forbidden('Anda tidak memiliki akses untuk mengubah lokasi kerja');
   }
-}
+
+  const data = await parseJsonBody(request, updateLocationSchema);
+  const { id } = await params;
+  const oldLocation = await workLocationService.getWorkLocationById(id);
+  const location = await workLocationService.updateWorkLocation(id, data);
+  await logAudit(user.userId, 'UPDATE', 'WorkLocation', id, oldLocation, location, request);
+
+  return successResponse(location, 'Lokasi kerja berhasil diubah');
+});
+
+export const DELETE = withApiHandler<{ id: string }>(async (request: NextRequest, { params }) => {
+  const user = await requireAuth(request);
+
+  if (!hasPermission(user.role, 'LOCATION_DELETE')) {
+    throw AppError.forbidden('Anda tidak memiliki akses untuk menghapus lokasi kerja');
+  }
+
+  const { id } = await params;
+  const oldLocation = await workLocationService.getWorkLocationById(id);
+  const result = await workLocationService.deleteWorkLocation(id);
+  await logAudit(user.userId, 'DELETE', 'WorkLocation', id, oldLocation, undefined, request);
+
+  return successResponse(result, result.message);
+});

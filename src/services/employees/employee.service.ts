@@ -7,10 +7,12 @@ import { hashPassword } from '@/lib/auth';
 import { cacheManager } from '@/lib/cache/cache-manager';
 import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
 import { CacheStrategy } from '@/lib/cache/cache-strategies';
+import { BaseService } from '@/lib/core/base-service';
+import { AppError } from '@/lib/core/app-error';
 
 export type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
-export class EmployeeService {
+export class EmployeeService extends BaseService {
   async createEmployee(data: {
     email: string;
     username: string;
@@ -23,7 +25,7 @@ export class EmployeeService {
     supervisorId?: string;
     defaultShiftId?: string;
     defaultLocationId?: string;
-    joinDate?: Date;
+    joinDate?: Date | string;
   }) {
     // Check if email already exists
     const [existingEmail] = await db
@@ -33,7 +35,7 @@ export class EmployeeService {
       .limit(1);
 
     if (existingEmail) {
-      throw new Error('Email sudah terdaftar');
+      throw new AppError('VALIDATION_ERROR', 'Email sudah terdaftar', 400);
     }
 
     // Check if username already exists
@@ -44,7 +46,7 @@ export class EmployeeService {
       .limit(1);
 
     if (existingUsername) {
-      throw new Error('Username sudah terdaftar');
+      throw new AppError('VALIDATION_ERROR', 'Username sudah terdaftar', 400);
     }
 
     // Get all existing NIPs
@@ -52,7 +54,7 @@ export class EmployeeService {
     const existingNIPs = allEmployees.map(e => e.nip);
 
     // Generate NIP
-    const joinDate = data.joinDate || new Date();
+    const joinDate = data.joinDate ? new Date(data.joinDate) : new Date();
     const nip = await getNextNIP(joinDate, existingNIPs);
 
     // Hash password
@@ -233,7 +235,7 @@ export class EmployeeService {
           .limit(1);
 
         if (!employee) {
-          throw new Error('Karyawan tidak ditemukan');
+          throw AppError.notFound('Karyawan tidak ditemukan');
         }
 
         // Get related data
@@ -301,7 +303,7 @@ export class EmployeeService {
       .limit(1);
 
     if (!employee) {
-      throw new Error('Karyawan tidak ditemukan');
+      throw AppError.notFound('Karyawan tidak ditemukan');
     }
 
     const [updated] = await db
@@ -327,7 +329,7 @@ export class EmployeeService {
       .limit(1);
 
     if (!employee) {
-      throw new Error('Karyawan tidak ditemukan');
+      throw AppError.notFound('Karyawan tidak ditemukan');
     }
 
     // Delete employee (will cascade to user due to FK)
