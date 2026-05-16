@@ -48,7 +48,8 @@ ENV HOST=0.0.0.0
 ENV HOSTNAME=0.0.0.0
 
 # Create unprivileged user
-RUN addgroup --system --gid 1001 nodejs && \
+RUN apk add --no-cache curl su-exec && \
+    addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy standalone build output
@@ -74,11 +75,9 @@ RUN chmod +x ./docker-entrypoint.sh
 # Persistent upload volume
 RUN mkdir -p /app/uploads && chown -R nextjs:nodejs /app
 
-USER nextjs
-
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"
+  CMD curl -fsS http://localhost:3000/api/health >/dev/null || exit 1
 
 ENTRYPOINT ["./docker-entrypoint.sh"]

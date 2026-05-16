@@ -34,7 +34,11 @@ if ! mkdir -p "$UPLOAD_DIR" 2>/dev/null; then
   exit 1
 fi
 
-if ! [ -w "$UPLOAD_DIR" ]; then
+if [ "$(id -u)" = "0" ]; then
+  chown -R nextjs:nodejs "$UPLOAD_DIR" 2>/dev/null || log "WARNING: UPLOAD_DIR ownership could not be changed; checking runtime write access"
+fi
+
+if ! su-exec nextjs:nodejs sh -c 'test -w "$UPLOAD_DIR"'; then
   log "ERROR: UPLOAD_DIR is not writable by runtime user"
   exit 1
 fi
@@ -50,7 +54,7 @@ if [ ${#NEXTAUTH_SECRET} -lt 32 ]; then
 fi
 
 log "Waiting for PostgreSQL connection"
-node <<'NODE'
+su-exec nextjs:nodejs node <<'NODE'
 const postgres = require('postgres');
 
 const timeoutSeconds = Number(process.env.DB_WAIT_TIMEOUT_SECONDS || 60);
@@ -98,12 +102,12 @@ probe().catch((error) => {
 NODE
 
 log "Running database migrations"
-node scripts/run-migrations.mjs
+su-exec nextjs:nodejs node scripts/run-migrations.mjs
 log "Database migrations complete"
 
 if [ -n "${SUPERADMIN_EMAIL:-}" ] && [ -n "${SUPERADMIN_PASSWORD:-}" ]; then
   log "Bootstrapping superadmin from provided environment"
-  node scripts/bootstrap-superadmin.mjs
+  su-exec nextjs:nodejs node scripts/bootstrap-superadmin.mjs
   log "Superadmin bootstrap complete"
 else
   log "Skipping superadmin bootstrap; SUPERADMIN_EMAIL or SUPERADMIN_PASSWORD not set"
@@ -120,4 +124,4 @@ if ! [ -f "$SERVER_FILE" ]; then
 fi
 
 log "Starting Next.js on ${HOST}:${PORT}"
-exec node "$SERVER_FILE"
+exec su-exec nextjs:nodejs node "$SERVER_FILE"
