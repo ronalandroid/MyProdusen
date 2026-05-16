@@ -1,19 +1,13 @@
 import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/middleware';
 import { notificationService } from '@/features/notifications/notification.service';
-import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
+import { successResponse } from '@/utils/response';
+import { withApiHandler } from '@/lib/core/route-handler';
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const user = await requireAuth(request);
-    const { id } = await params;
-    
-    const deleted = await notificationService.deleteNotification(id, user.userId);
+export const DELETE = withApiHandler<{ id: string }>(async (request: NextRequest, { params }) => {
+  const user = await requireAuth(request);
+  const { id } = await params;
+  const deleted = await notificationService.deleteNotification(id, user.userId);
 
-    return successResponse(deleted, 'Notifikasi berhasil dihapus');
-  } catch (error: any) {
-    if (error.message === 'Unauthorized') return unauthorizedResponse();
-    if (error.message.includes('tidak memiliki akses')) return forbiddenResponse(error.message);
-    return errorResponse(error.message || 'Gagal menghapus notifikasi');
-  }
-}
+  return successResponse(deleted, 'Notifikasi berhasil dihapus');
+});

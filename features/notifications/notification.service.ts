@@ -1,58 +1,48 @@
-import { db, notifications } from '@/lib/db';
-import { eq, and } from 'drizzle-orm';
+import { AppError } from '@/lib/core/app-error';
+import { BaseService } from '@/lib/core/base-service';
+import { notificationRepository, NotificationRepository } from '@/server/repositories/notifications.repository';
 
-export class NotificationService {
+export class NotificationService extends BaseService {
+  constructor(private readonly repository: NotificationRepository = notificationRepository) {
+    super();
+  }
+
+  async listForUser(userId: string, options: { unreadOnly?: boolean; limit: number; offset: number }) {
+    return this.repository.listForUser(userId, options);
+  }
+
+  async markAsRead(id: string, userId: string) {
+    const notification = await this.repository.findForUser(id, userId);
+
+    if (!notification) {
+      throw AppError.notFound('Notifikasi tidak ditemukan');
+    }
+
+    const updated = await this.repository.markAsRead(id, userId);
+
+    if (!updated) {
+      throw AppError.notFound('Notifikasi tidak ditemukan');
+    }
+
+    return updated;
+  }
+
   async markAllAsRead(userId: string) {
-    const result = await db
-      .update(notifications)
-      .set({ 
-        isRead: true
-      })
-      .where(
-        and(
-          eq(notifications.userId, userId),
-          eq(notifications.isRead, false)
-        )
-      )
-      .returning();
-
-    return result.length;
+    return this.repository.markAllAsRead(userId);
   }
 
   async deleteNotification(id: string, userId: string) {
-    const [notification] = await db
-      .select()
-      .from(notifications)
-      .where(eq(notifications.id, id))
-      .limit(1);
+    const deleted = await this.repository.deleteForUser(id, userId);
 
-    if (!notification) {
-      throw new Error('Notifikasi tidak ditemukan');
+    if (!deleted) {
+      throw AppError.notFound('Notifikasi tidak ditemukan');
     }
 
-    if (notification.userId !== userId) {
-      throw new Error('Anda tidak memiliki akses untuk menghapus notifikasi ini');
-    }
-
-    await db
-      .delete(notifications)
-      .where(eq(notifications.id, id));
-
-    return notification;
+    return deleted;
   }
 
   async getUnreadCount(userId: string) {
-    const result = await db
-      .select()
-      .from(notifications)
-      .where(
-        and(
-          eq(notifications.userId, userId),
-          eq(notifications.isRead, false)
-        )
-      );
-
-    return result.length;
+    return this.repository.getUnreadCount(userId);
   }
 }
 

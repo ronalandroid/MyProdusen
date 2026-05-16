@@ -1,10 +1,15 @@
-import { db, shifts } from '@/lib/db';
-import { eq } from 'drizzle-orm';
 import { cacheManager } from '@/lib/cache/cache-manager';
 import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
 import { CacheStrategy } from '@/lib/cache/cache-strategies';
+import { BaseService } from '@/lib/core/base-service';
+import { AppError } from '@/lib/core/app-error';
+import { shiftRepository, ShiftRepository } from '@/server/repositories/shifts.repository';
 
-export class ShiftService {
+export class ShiftService extends BaseService {
+  constructor(private readonly repository: ShiftRepository = shiftRepository) {
+    super();
+  }
+
   async createShift(data: {
     name: string;
     startTime: string;
@@ -12,60 +17,42 @@ export class ShiftService {
   }) {
     const shiftId = `shift_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    const [shift] = await db
-      .insert(shifts)
-      .values({
-        id: shiftId,
-        name: data.name,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        isActive: true,
-      })
-      .returning();
+    const shift = await this.repository.create({
+      id: shiftId,
+      name: data.name,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      isActive: true,
+    });
 
-    // Invalidate shift caches
     await this.invalidateShiftCaches();
 
     return shift;
   }
 
   async getShifts(filters?: { isActive?: boolean }) {
-    const cacheKey = filters?.isActive 
-      ? CacheKeys.shifts.active() 
-      : CacheKeys.shifts.list();
+    const cacheKey = filters?.isActive ? CacheKeys.shifts.active() : CacheKeys.shifts.list();
 
-    return await cacheManager.wrap(
+    return cacheManager.wrap(
       cacheKey,
-      async () => {
-        let query = db.select().from(shifts);
-
-        if (filters?.isActive !== undefined) {
-          query = query.where(eq(shifts.isActive, filters.isActive)) as any;
-        }
-
-        return await query;
-      },
+      () => this.repository.list(filters),
       {
         ttl: CacheStrategy.shiftList,
         tags: [CacheTags.shifts],
-      }
+      },
     );
   }
 
   async getShiftById(id: string) {
     const cacheKey = CacheKeys.shifts.detail(id);
 
-    return await cacheManager.wrap(
+    return cacheManager.wrap(
       cacheKey,
       async () => {
-        const [shift] = await db
-          .select()
-          .from(shifts)
-          .where(eq(shifts.id, id))
-          .limit(1);
+        const shift = await this.repository.findById(id);
 
         if (!shift) {
-          throw new Error('Shift tidak ditemukan');
+          throw AppError.notFound('Shift tidak ditemukan');
         }
 
         return shift;
@@ -73,7 +60,7 @@ export class ShiftService {
       {
         ttl: CacheStrategy.shiftDetail,
         tags: [CacheTags.shifts],
-      }
+      },
     );
   }
 
@@ -83,47 +70,34 @@ export class ShiftService {
     endTime: string;
     isActive: boolean;
   }>) {
-    const [shift] = await db
-      .select()
-      .from(shifts)
-      .where(eq(shifts.id, id))
-      .limit(1);
+    const shift = await this.repository.findById(id);
 
     if (!shift) {
-      throw new Error('Shift tidak ditemukan');
+      throw AppError.notFound('Shift tidak ditemukan');
     }
 
-    const [updated] = await db
-      .update(shifts)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
-      .where(eq(shifts.id, id))
-      .returning();
+    const updated = await this.repository.update(id, {
+      ...data,
+      updatedAt: new Date(),
+    });
 
-    // Invalidate shift caches
+    if (!updated) {
+      throw AppError.notFound('Shift tidak ditemukan');
+    }
+
     await this.invalidateShiftCaches(id);
 
     return updated;
   }
 
   async deleteShift(id: string) {
-    const [shift] = await db
-      .select()
-      .from(shifts)
-      .where(eq(shifts.id, id))
-      .limit(1);
+    const shift = await this.repository.findById(id);
 
     if (!shift) {
-      throw new Error('Shift tidak ditemukan');
+      throw AppError.notFound('Shift tidak ditemukan');
     }
 
-    await db
-      .delete(shifts)
-      .where(eq(shifts.id, id));
-
-    // Invalidate shift caches
+    await this.repository.delete(id);
     await this.invalidateShiftCaches(id);
 
     return { message: 'Shift berhasil dihapus' };
@@ -131,11 +105,11 @@ export class ShiftService {
 
   private async invalidateShiftCaches(shiftId?: string): Promise<void> {
     await cacheManager.invalidateByTag(CacheTags.shifts);
-    
+
     if (shiftId) {
       await cacheManager.delete(CacheKeys.shifts.detail(shiftId));
     }
-    
+
     await cacheManager.delete(CacheKeys.shifts.active());
     await cacheManager.delete(CacheKeys.shifts.list());
   }
