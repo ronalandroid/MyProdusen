@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   typescript: {
     // Run `npm run lint` separately for type checking.
     ignoreBuildErrors: true,
@@ -16,7 +17,11 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: '*.netlify.app',
+        hostname: 'myprodusen.online',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.myprodusen.online',
       },
     ],
     unoptimized: true,

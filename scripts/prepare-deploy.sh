@@ -1,111 +1,81 @@
 #!/bin/bash
+# ============================================================
+# MyProdusen — Deployment Script for VPS + Coolify
+# ============================================================
 
-# Deployment Preparation Script for Netlify
-# This script prepares your project for deployment
+set -e
 
-echo "🚀 Preparing MyProdusen for Netlify Deployment..."
+echo "🚀 Preparing MyProdusen for Coolify Deployment..."
 echo ""
 
 # Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+CYAN='\033[0;36m'
+NC='\033[0m'
 
-# Check if git is initialized
+# ── 1. Check git ──
 if [ ! -d .git ]; then
     echo -e "${RED}❌ Git repository not initialized${NC}"
-    echo "Run: git init"
+    echo "Run: git init && git remote add origin <your-repo-url>"
     exit 1
 fi
-
 echo -e "${GREEN}✅ Git repository found${NC}"
 
-# Check if node_modules exists
-if [ ! -d node_modules ]; then
-    echo -e "${YELLOW}⚠️  node_modules not found. Installing dependencies...${NC}"
-    npm install
-fi
-
-echo -e "${GREEN}✅ Dependencies installed${NC}"
-
-# Check if .env.example exists
-if [ ! -f .env.example ]; then
-    echo -e "${YELLOW}⚠️  Creating .env.example...${NC}"
-    cat > .env.example << 'ENVEOF'
-# Database
-DATABASE_URL=postgresql://user:password@host:5432/database
-
-# Authentication
-JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-nextauth-secret-key-minimum-32-chars
-
-# Environment
-NODE_ENV=development
-
-# Optional: Redis
-REDIS_URL=redis://localhost:6379
-
-# Optional: File Upload
-MAX_FILE_SIZE=10485760
-ALLOWED_FILE_TYPES=image/jpeg,image/png,image/webp
-ENVEOF
-fi
-
-echo -e "${GREEN}✅ .env.example exists${NC}"
-
-# Test build
+# ── 2. Check required files ──
 echo ""
-echo "🔨 Testing production build..."
-npm run build
-
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Build successful!${NC}"
-else
-    echo -e "${RED}❌ Build failed. Fix errors before deploying.${NC}"
-    exit 1
-fi
-
-# Check required files
-echo ""
-echo "📋 Checking required files..."
-
-files=("netlify.toml" "next.config.js" "package.json" ".gitignore")
-for file in "${files[@]}"; do
+echo -e "${CYAN}📋 Checking deployment files...${NC}"
+required_files=("Dockerfile" "docker-entrypoint.sh" "nixpacks.toml" "next.config.js" "package.json" ".dockerignore" ".env.example" "drizzle/schema.ts" "drizzle.config.ts")
+for file in "${required_files[@]}"; do
     if [ -f "$file" ]; then
-        echo -e "${GREEN}✅ $file${NC}"
+        echo -e "  ${GREEN}✅ $file${NC}"
     else
-        echo -e "${RED}❌ $file missing${NC}"
+        echo -e "  ${RED}❌ $file missing${NC}"
     fi
 done
 
-# Git status
+# ── 3. Check .env not committed ──
 echo ""
-echo "📝 Git status:"
+if git ls-files --error-unmatch .env 2>/dev/null; then
+    echo -e "${RED}❌ WARNING: .env is tracked by git! Remove it:${NC}"
+    echo "   git rm --cached .env"
+else
+    echo -e "${GREEN}✅ .env is not tracked by git${NC}"
+fi
+
+# ── 4. Check docker-entrypoint.sh is executable ──
+if [ -x "docker-entrypoint.sh" ]; then
+    echo -e "${GREEN}✅ docker-entrypoint.sh is executable${NC}"
+else
+    chmod +x docker-entrypoint.sh
+    echo -e "${YELLOW}⚠️  Fixed: docker-entrypoint.sh permissions${NC}"
+fi
+
+# ── 5. Git status ──
+echo ""
+echo -e "${CYAN}📝 Git status:${NC}"
 git status --short
 
-# Summary
+# ── Summary ──
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🎉 Deployment Preparation Complete!"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "Next steps:"
-echo "1. Commit your changes:"
-echo "   git add ."
-echo "   git commit -m 'feat: prepare for Netlify deployment'"
-echo "   git push origin main"
 echo ""
-echo "2. Go to https://app.netlify.com"
-echo "3. Click 'Add new site' → 'Import an existing project'"
-echo "4. Connect your repository"
-echo "5. Configure build settings:"
-echo "   - Build command: npm run build"
-echo "   - Publish directory: .next"
-echo "6. Add environment variables (see .env.example)"
-echo "7. Deploy!"
+echo "  1. Commit & push:"
+echo "     git add ."
+echo "     git commit -m 'feat: production deployment for Coolify'"
+echo "     git push origin main"
 echo ""
-echo "📖 Full guide: NETLIFY_DEPLOYMENT_GUIDE.md"
+echo "  2. In Coolify (http://YOUR_VPS_IP:8000):"
+echo "     → Create PostgreSQL + Redis databases"
+echo "     → Create new project from Git repo"
+echo "     → Add environment variables (see .env.example)"
+echo "     → Set domain: myprodusen.online"
+echo "     → Deploy!"
 echo ""
-
+echo "  📖 Full guide: docs/COOLIFY_DEPLOYMENT.md"
+echo ""

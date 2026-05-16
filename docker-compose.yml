@@ -1,3 +1,8 @@
+# ============================================================
+# MyProdusen — Docker Compose (local development & testing)
+# For production, deploy via Coolify (see docs/COOLIFY_DEPLOYMENT.md)
+# ============================================================
+
 services:
   app:
     build: .
@@ -5,15 +10,16 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://myprodusen:myprodusen@postgres:5432/myprodusen?schema=public
+      DATABASE_URL: postgresql://myprodusen:myprodusen@postgres:5432/myprodusen
       REDIS_URL: redis://redis:6379
       REDIS_PASSWORD: ""
       REDIS_DB: 0
       REDIS_MAX_RETRIES: 3
       CACHE_ENABLED: true
       CACHE_DEFAULT_TTL: 300
-      JWT_SECRET: change-this-to-a-strong-random-32-plus-character-secret-for-production
+      JWT_SECRET: local-dev-only-change-this-to-a-strong-random-32-plus-character-secret
       NEXT_PUBLIC_APP_URL: http://localhost:3000
+      APP_URL: http://localhost:3000
       UPLOAD_DIR: /app/uploads
       MAX_UPLOAD_SIZE: 5242880
       DEFAULT_GEOFENCE_RADIUS: 100
@@ -31,7 +37,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
 
   postgres:
     image: postgres:16-alpine

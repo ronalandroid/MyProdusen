@@ -8,3 +8,13 @@ coverage
 public/uploads
 *.tsbuildinfo
 .DS_Store
+docs
+tests
+*.md
+!README.md
+*.zip
+*.tar.gz
+.idea
+.vscode
+myprodusen-netlify.zip
+

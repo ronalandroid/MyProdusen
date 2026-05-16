@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  DATABASE_URL: z.string().url('DATABASE_URL must be a valid PostgreSQL URL'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   NEXT_PUBLIC_APP_URL: z.string().url('NEXT_PUBLIC_APP_URL must be a valid URL'),
   UPLOAD_DIR: z.string().min(1, 'UPLOAD_DIR is required').default('./public/uploads'),
@@ -44,4 +44,12 @@ export function validateEnv() {
   return cachedEnv;
 }
 
-export const env = validateEnv();
+// Lazy-loaded: don't crash at import time during build phase.
+// In production the real env vars are available at runtime.
+let _env: AppEnv | undefined;
+export const env = new Proxy({} as AppEnv, {
+  get(_target, prop: string) {
+    if (!_env) _env = validateEnv();
+    return (_env as Record<string, unknown>)[prop];
+  },
+});
