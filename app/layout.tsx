@@ -4,6 +4,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.APP_URL || "https://myprodusen.online"),
   title: "MyProdusen - Aplikasi HRIS Mobile",
   description: "Aplikasi HRIS mobile untuk memudahkan pengelolaan karyawan, kehadiran, cuti, penggajian untuk Produsen Dimsum Medan.",
   keywords: ["hris", "mobile app", "employee management", "attendance", "dimsum medan", "hr system"],

@@ -124,7 +124,7 @@ Opens at `https://local.drizzle.studio`
 Required in Coolify:
 
 ```env
-DATABASE_URL="postgresql://user:password@host:5432/dbname?schema=public"
+DATABASE_URL="postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>?schema=public"
 JWT_SECRET="your-super-secret-jwt-key-min-32-chars"
 NODE_ENV="production"
 NEXT_PUBLIC_APP_URL="https://yourdomain.com"

@@ -286,7 +286,7 @@ Tests should be run in CI/CD pipeline before deployment:
 Ensure `DATABASE_URL` or `TEST_DATABASE_URL` is set correctly:
 
 ```bash
-export TEST_DATABASE_URL="postgresql://user:password@localhost:5432/myprodusen_test"
+export TEST_DATABASE_URL="postgresql://<DB_USER>:<DB_PASSWORD>@localhost:5432/myprodusen_test"
 ```
 
 ### Tests Timing Out

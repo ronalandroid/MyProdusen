@@ -1,5 +1,5 @@
 import { db, leaveBalanceLedger } from '@/lib/db';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { calculateLeaveDays, summarizeLeaveLedger, type LeaveBalanceTransactionType } from '@/lib/leave/balance-ledger';
 
@@ -96,6 +96,21 @@ export class LeaveBalanceService {
       .where(and(eq(leaveBalanceLedger.employeeId, employeeId), eq(leaveBalanceLedger.balanceYear, year)));
 
     return { year, ...summarizeLeaveLedger(entries as Array<{ transactionType: LeaveBalanceTransactionType; amount: number }>) };
+  }
+
+  async getBalanceHistory(employeeId: string, year = new Date().getFullYear()) {
+    await this.ensureAnnualEntitlement(employeeId, year);
+    
+    const history = await db
+      .select()
+      .from(leaveBalanceLedger)
+      .where(and(
+        eq(leaveBalanceLedger.employeeId, employeeId),
+        eq(leaveBalanceLedger.balanceYear, year)
+      ))
+      .orderBy(desc(leaveBalanceLedger.createdAt));
+
+    return history;
   }
 }
 

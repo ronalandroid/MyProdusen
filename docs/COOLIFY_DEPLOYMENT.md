@@ -1,431 +1,210 @@
-# 🚀 Panduan Deploy MyProdusen ke VPS + Coolify
+# Coolify Deployment — MyProdusen
 
-**Domain:** `myprodusen.online`  
-**Stack:** Next.js 16 + Drizzle ORM + PostgreSQL + Redis + Docker  
-**Last Updated:** 2026-05-16
+## Production Architecture
 
----
-
-## Arsitektur Deployment
-
-```
-┌─────────────────────────────────────────────────────┐
-│                     VPS Server                       │
-│                                                      │
-│  ┌──────────────────────────────────────────────┐   │
-│  │              Coolify (Port 8000)              │   │
-│  │                                               │   │
-│  │  ┌─────────────┐  ┌──────────┐  ┌─────────┐ │   │
-│  │  │ MyProdusen   │  │PostgreSQL│  │  Redis  │ │   │
-│  │  │ (Next.js)    │→ │  (DB)    │  │ (Cache) │ │   │
-│  │  │ Port 3000    │  │ Port 5432│  │Port 6379│ │   │
-│  │  └─────────────┘  └──────────┘  └─────────┘ │   │
-│  │                                               │   │
-│  │  ┌─────────────────────────────────────────┐ │   │
-│  │  │ Traefik Reverse Proxy (Auto SSL)        │ │   │
-│  │  │ myprodusen.online → MyProdusen:3000     │ │   │
-│  │  └─────────────────────────────────────────┘ │   │
-│  └──────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────┘
+```txt
+Browser
+  ↓ HTTPS
+myprodusen.online
+  ↓ Coolify / Traefik SSL proxy
+myprodusen-web-app container :3000
+  ↓ Docker network: coolify
+PostgreSQL: myprodusen-db / myprodusen_production
+Redis: myprodusen-redis
+Persistent uploads: /app/uploads
 ```
 
----
+Production is hosted on a Contabo VPS through Coolify. KaffePOS is a separate project and must not share MyProdusen database, Redis, app settings, or deployment commands.
 
-## Prerequisites
+## Production Target
 
-- [x] VPS dengan minimal **2 vCPU, 4GB RAM, 50GB SSD**
-- [x] Ubuntu 22.04+ atau Debian 12+
-- [x] Domain `myprodusen.online` sudah dibeli
-- [x] Akses SSH ke VPS (`ssh root@IP_VPS`)
-- [x] Repo GitHub: `ronalandroid/MyProdusen`
+- App name: `myprodusen-web-app`
+- App UUID: `llj9s86rrpnnq06a0dyq1aq1`
+- Domain: `https://myprodusen.online`
+- App port: `3000`
+- Listen address: `0.0.0.0:3000`
+- Docker network: `coolify`
+- PostgreSQL host: `myprodusen-db`
+- PostgreSQL database: `myprodusen_production`
+- Redis host: `myprodusen-redis`
+- Upload directory: `/app/uploads`
 
----
+## Required Environment Variables
 
-## Step 1: Install Coolify di VPS
-
-SSH ke VPS:
-
-```bash
-ssh root@YOUR_VPS_IP
-```
-
-Install Coolify (one-command):
-
-```bash
-curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash
-```
-
-Tunggu selesai (~2-3 menit), lalu akses:
-
-```
-http://YOUR_VPS_IP:8000
-```
-
-Buat akun admin Coolify di sana.
-
----
-
-## Step 2: Setting DNS Domain
-
-Di panel DNS registrar kamu (Niagahoster/Namecheap/Cloudflare), tambahkan:
-
-| Type | Name | Value | TTL |
-|------|------|-------|-----|
-| **A** | `@` | `YOUR_VPS_IP` | 300 |
-| **A** | `www` | `YOUR_VPS_IP` | 300 |
-
-> Tunggu propagasi DNS 5-30 menit. Cek dengan: `ping myprodusen.online`
-
----
-
-## Step 3: Buat Database PostgreSQL di Coolify
-
-1. Login ke Coolify → **Databases** → **+ New**
-2. Pilih **PostgreSQL**
-3. Isi:
-   - **Name:** `myprodusen-db`
-   - **Database:** `myprodusen`
-   - **Username:** `myprodusen_user`
-   - **Password:** *(generate password kuat)*
-4. Klik **Deploy**
-5. Catat **Internal URL**-nya:
-   ```
-   postgresql://myprodusen_user:PASSWORD@myprodusen-db:5432/myprodusen
-   ```
-
----
-
-## Step 4: Buat Database Redis di Coolify
-
-1. **Databases** → **+ New** → **Redis**
-2. Isi:
-   - **Name:** `myprodusen-redis`
-   - **Password:** *(kosong atau generate)*
-3. Klik **Deploy**
-4. Catat **Internal URL**-nya:
-   ```
-   redis://myprodusen-redis:6379
-   ```
-
----
-
-## Step 5: Deploy Aplikasi MyProdusen
-
-### 5a. Connect GitHub Repository
-
-1. Di Coolify → **Projects** → **+ New Project** → beri nama `MyProdusen`
-2. Di project, klik **+ New Resource** → **Application**
-3. Pilih **GitHub** → connect akun GitHub kamu
-4. Pilih repo: **`ronalandroid/MyProdusen`**
-5. Branch: **`main`**
-
-### 5b. Build Configuration
-
-Di tab **General**:
-
-| Setting | Value |
-|---------|-------|
-| **Build Pack** | Dockerfile |
-| **Dockerfile Location** | `/Dockerfile` |
-| **Port** | `3000` |
-
-> ⚠️ **Pilih "Dockerfile"**, bukan Nixpacks. Dockerfile kita sudah dioptimasi dengan entrypoint yang otomatis push schema ke database.
-
-### 5c. Environment Variables
-
-Di tab **Environment Variables**, tambahkan SEMUA ini:
+Use real secret values only in Coolify. Keep repository files placeholder-only.
 
 ```env
-# Database — ganti dengan Internal URL dari Step 3
-DATABASE_URL=postgresql://myprodusen_user:PASSWORD@myprodusen-db:5432/myprodusen
+NODE_ENV=production
+PORT=3000
+HOST=0.0.0.0
+HOSTNAME=0.0.0.0
+NEXT_TELEMETRY_DISABLED=1
 
-# Redis — ganti dengan Internal URL dari Step 4
-REDIS_URL=redis://myprodusen-redis:6379
-REDIS_PASSWORD=
+DATABASE_URL=postgresql://postgres:<POSTGRES_PASSWORD>@myprodusen-db:5432/myprodusen_production
+
+APP_URL=https://myprodusen.online
+NEXT_PUBLIC_APP_URL=https://myprodusen.online
+NEXTAUTH_URL=https://myprodusen.online
+CORS_ORIGIN=https://myprodusen.online
+
+JWT_SECRET=<RANDOM_32_PLUS_CHARACTER_SECRET>
+NEXTAUTH_SECRET=<RANDOM_32_PLUS_CHARACTER_SECRET>
+
+REDIS_URL=redis://:<REDIS_PASSWORD>@myprodusen-redis:6379
+REDIS_PASSWORD=<REDIS_PASSWORD>
 REDIS_DB=0
 REDIS_MAX_RETRIES=3
 CACHE_ENABLED=true
 CACHE_DEFAULT_TTL=300
 
-# JWT Secret — WAJIB GANTI! Generate dengan:
-# openssl rand -base64 48
-JWT_SECRET=GANTI_INI_DENGAN_SECRET_KUAT_MINIMAL_32_KARAKTER
-
-# App
-NODE_ENV=production
-NEXT_PUBLIC_APP_URL=https://myprodusen.online
-APP_URL=https://myprodusen.online
-
-# Upload
 UPLOAD_DIR=/app/uploads
 MAX_UPLOAD_SIZE=5242880
-
-# Geo-fencing
 DEFAULT_GEOFENCE_RADIUS=100
-
-# Session
+DEFAULT_GEOFENCE_RADIUS_METERS=100
+GPS_MAX_ACCURACY_METERS=100
 SESSION_TIMEOUT_HOURS=8
 
-# Superadmin (hanya untuk pertama kali)
-SUPERADMIN_EMAIL=produsendimsumm@gmail.com
+SUPERADMIN_EMAIL=<SUPERADMIN_EMAIL>
 SUPERADMIN_USERNAME=superadmin
-SUPERADMIN_PASSWORD=GANTI_PASSWORD_KUAT_12_KARAKTER
-
-# Email
-RESEND_API_KEY=re_YOUR_REAL_API_KEY
-RESEND_FROM_EMAIL=MyProdusen <noreply@myprodusen.online>
+SUPERADMIN_PASSWORD=<STRONG_SUPERADMIN_PASSWORD>
 ```
 
-### 5d. Persistent Storage (Upload Selfie)
+`SUPERADMIN_*` variables are optional after first bootstrap. Remove or rotate `SUPERADMIN_PASSWORD` after first successful Superadmin login.
 
-Di tab **Storages** → **+ Add**:
+## Coolify App Settings
 
-| Setting | Value |
-|---------|-------|
-| **Name** | `uploads` |
-| **Source Path** | `/var/lib/coolify/volumes/myprodusen-uploads` |
-| **Destination Path** | `/app/uploads` |
+- Build mode: `Dockerfile`
+- Exposed port: `3000`
+- Domain: `https://myprodusen.online`
+- Network: `coolify`
+- Health endpoint: `/api/health`
+- Persistent volume: mount app upload storage to `/app/uploads`
+- Build command override: none
+- Start command override: none; Docker entrypoint handles startup
 
-### 5e. Set Domain
+## DNS and SSL
 
-Di tab **Domains**:
+- DNS `A` record for `myprodusen.online` points to the Contabo VPS IP.
+- Coolify/Traefik manages HTTPS certificate issuance and renewal.
+- Keep `APP_URL`, `NEXT_PUBLIC_APP_URL`, `NEXTAUTH_URL`, and `CORS_ORIGIN` aligned with `https://myprodusen.online`.
 
-| Setting | Value |
-|---------|-------|
-| **Domain** | `myprodusen.online` |
 
-Coolify akan otomatis:
-- Konfigurasi Traefik reverse proxy
-- Generate SSL certificate via Let's Encrypt
-- Redirect HTTP → HTTPS
+## Realtime Settings
 
-### 5f. Deploy! 🚀
+- Realtime endpoint: `/api/realtime`
+- Transport: Server-Sent Events (SSE)
+- Redis pub/sub channel: `myprodusen:realtime`
+- No extra WebSocket process or manual server is required.
+- If Redis is unavailable, SSE heartbeat remains active and UI falls back to normal refresh.
 
-Klik tombol **Deploy**. Tunggu build selesai (~3-5 menit).
+## Database Migration Strategy
 
----
+Startup uses committed SQL migrations, not `drizzle-kit`, so runtime containers do not need manual package installation.
 
-## Step 6: Verifikasi Deployment
+1. `docker-entrypoint.sh` validates required runtime env vars without printing secret values.
+2. Startup verifies `UPLOAD_DIR` exists and is writable.
+3. Startup waits for PostgreSQL with a timeout.
+4. Startup runs `node scripts/run-migrations.mjs`.
+5. Migration runner creates `_myprodusen_migrations` if missing.
+6. Migration runner reads `drizzle/migrations/*.sql` in sorted order.
+7. Migration runner skips files already tracked in `_myprodusen_migrations`.
+8. Migration runner baselines files whose objects already exist in a manually-created production DB.
+9. Migration runner applies missing migrations inside transactions when possible.
+10. Startup bootstraps Superadmin only when all `SUPERADMIN_*` env vars exist.
+11. Startup launches Next.js standalone server on `0.0.0.0:3000`.
 
-### Health Check
+Rules:
+
+- Never run destructive schema reset in production.
+- Never run `npm install` inside a running production container.
+- Never run `drizzle-kit push` manually after deploy.
+- Add new schema changes as committed SQL migrations.
+- Keep `npm run db:generate` clean before release.
+
+## Deploy Checklist
+
+1. Confirm GitHub branch contains latest Dockerfile, entrypoint, migrations, and docs.
+2. Confirm Coolify env vars use production values and no placeholders.
+3. Confirm app is attached to Docker network `coolify`.
+4. Confirm PostgreSQL alias is `myprodusen-db`.
+5. Confirm Redis alias is `myprodusen-redis`.
+6. Confirm persistent upload volume targets `/app/uploads`.
+7. Trigger Coolify deploy for `myprodusen-web-app`.
+8. Watch logs for migration and startup messages.
+9. Verify `/api/health` and main page return HTTP `200`.
+
+## Verification Commands
 
 ```bash
-curl https://myprodusen.online/api/health
+docker ps
 ```
-
-Response yang diharapkan:
-```json
-{
-  "status": "ok",
-  "timestamp": "2026-05-16T...",
-  "checks": {
-    "database": { "status": "ok" },
-    "redis": { "status": "ok" },
-    "disk": { "status": "ok" }
-  }
-}
-```
-
-### Test Login
-
-Buka browser: **https://myprodusen.online**
-
-Login dengan:
-- Email: `produsendimsumm@gmail.com`
-- Password: *(password yang kamu set di SUPERADMIN_PASSWORD)*
-
-> ⚠️ **SEGERA GANTI PASSWORD** setelah login pertama!
-
----
-
-## Step 7: Auto-Deploy (Opsional tapi Direkomendasikan)
-
-Di Coolify → Settings aplikasi:
-
-1. Enable **Auto Deploy on Push**
-2. Sekarang setiap `git push origin main` akan otomatis deploy
-
-Workflow development:
 
 ```bash
-# Buat perubahan...
-git add .
-git commit -m "feat: fitur baru"
-git push origin main
-# → Coolify otomatis build & deploy!
+docker logs <container> --tail=200
 ```
-
----
-
-## Step 8: Security Checklist
-
-Setelah deploy, pastikan:
-
-- [ ] JWT_SECRET sudah diganti (bukan default)
-- [ ] SUPERADMIN_PASSWORD sudah diganti (min 12 karakter)
-- [ ] Password superadmin sudah diganti di web setelah login
-- [ ] HTTPS aktif (cek gembok di browser)
-- [ ] Firewall VPS aktif:
-  ```bash
-  ufw allow 22/tcp    # SSH
-  ufw allow 80/tcp    # HTTP
-  ufw allow 443/tcp   # HTTPS
-  ufw allow 8000/tcp  # Coolify Dashboard
-  ufw enable
-  ```
-- [ ] Database backup terjadwal
-
----
-
-## Database Backup Otomatis
-
-SSH ke VPS dan buat script backup:
 
 ```bash
-cat > /root/backup-myprodusen.sh << 'EOF'
-#!/bin/bash
-DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="/var/backups/myprodusen"
-mkdir -p $BACKUP_DIR
-
-# Ganti container name sesuai di Coolify
-docker exec myprodusen-db pg_dump -U myprodusen_user myprodusen > $BACKUP_DIR/backup_$DATE.sql
-
-# Compress
-gzip $BACKUP_DIR/backup_$DATE.sql
-
-# Hapus backup > 14 hari
-find $BACKUP_DIR -name "backup_*.sql.gz" -mtime +14 -delete
-
-echo "✅ Backup selesai: $BACKUP_DIR/backup_$DATE.sql.gz"
-EOF
-
-chmod +x /root/backup-myprodusen.sh
+curl -I https://myprodusen.online/api/health
 ```
-
-Jadwalkan di crontab:
 
 ```bash
-crontab -e
-# Tambahkan:
-0 2 * * * /root/backup-myprodusen.sh
+curl -I https://myprodusen.online
 ```
-
----
-
-## Restore Database
 
 ```bash
-# Decompress
-gunzip backup_YYYYMMDD_HHMMSS.sql.gz
-
-# Restore
-cat backup_YYYYMMDD_HHMMSS.sql | docker exec -i myprodusen-db psql -U myprodusen_user -d myprodusen
+psql -c "\dt"
 ```
 
----
+Expected results:
 
-## Monitoring & Logs
+- App container is running and healthy.
+- Logs show `PostgreSQL connection ready`, `Database migrations complete`, and `Starting Next.js on 0.0.0.0:3000`.
+- Health endpoint returns HTTP `200`.
+- Main page returns HTTP `200`.
+- Database contains MyProdusen tables and `_myprodusen_migrations`.
 
-### Lihat Logs di Coolify
-- Klik aplikasi → tab **Logs**
-- Filter: error / warning / info
+## Rollback Steps
 
-### Lihat Logs via SSH
-```bash
-# Logs aplikasi
-docker logs myprodusen-app --tail 100 -f
-
-# Logs database
-docker logs myprodusen-db --tail 50
-
-# Logs Redis
-docker logs myprodusen-redis --tail 50
-```
-
-### Cek Resource
-```bash
-docker stats --no-stream
-```
-
-### Cek Database Size
-```bash
-docker exec myprodusen-db psql -U myprodusen_user -d myprodusen -c "SELECT pg_size_pretty(pg_database_size('myprodusen'));"
-```
-
----
+1. In Coolify, redeploy the previous successful image or previous Git commit.
+2. Do not reset or drop PostgreSQL data.
+3. If a migration failed before tracking, inspect logs and fix forward with a new migration.
+4. If app boot fails from env validation, restore the previous Coolify env values.
+5. Re-run health and database verification commands after rollback.
 
 ## Troubleshooting
 
-### Build Gagal
+### `drizzle-kit: not found`
 
-**Cek build logs di Coolify.** Masalah umum:
+The production entrypoint no longer calls `drizzle-kit`. If this appears, Coolify is running an old image. Redeploy with fresh build cache.
 
-1. **npm install error** → pastikan `package.json` dan `package-lock.json` ter-commit
-2. **TypeScript error** → `ignoreBuildErrors: true` sudah di-set, tapi cek jika ada error fatal
-3. **Out of memory** → tambah RAM VPS atau set `NODE_OPTIONS=--max-old-space-size=2048`
+### Empty Database Tables
 
-### Database Connection Error
+Check logs for `Migration applying:` and `Migration applied:`. Confirm `DATABASE_URL` points to `myprodusen-db:5432/myprodusen_production`. Confirm `drizzle/migrations/*.sql` exists in the image.
 
-```bash
-# Cek apakah DB container running
-docker ps | grep postgres
+### Existing Tables But No Migration Tracking
 
-# Test koneksi manual
-docker exec myprodusen-db psql -U myprodusen_user -d myprodusen -c "SELECT 1;"
+Runner baselines migration files when all objects in a file already exist. After successful startup, `_myprodusen_migrations` should contain applied or baselined filenames.
 
-# Cek env var di container app
-docker exec myprodusen-app printenv DATABASE_URL
-```
+### Migration Failure
 
-### Upload Tidak Bisa
+Read the first `ERROR: Database migration failed` block in app logs. The runner redacts database URLs. Fix SQL in a new commit and redeploy. Do not drop production data automatically.
 
-```bash
-# Cek volume mount
-docker inspect myprodusen-app | grep -A5 "Mounts"
+### `DATABASE_URL` Connection Failure
 
-# Fix permissions
-docker exec -u root myprodusen-app chown -R nextjs:nodejs /app/uploads
-```
+Confirm PostgreSQL alias is `myprodusen-db`, database is `myprodusen_production`, credentials are correct, and both services are on `coolify` network.
 
-### App Crash Loop
+### Redis Auth Failure
 
-```bash
-# Lihat error terakhir
-docker logs myprodusen-app --tail 200
+Confirm `REDIS_URL=redis://:<REDIS_PASSWORD>@myprodusen-redis:6379`. Redis is treated as optional for health; cache features may degrade until Redis is fixed.
 
-# Masalah umum:
-# - Missing env vars → cek semua env di Coolify
-# - DB belum ready → Coolify mungkin perlu restart urutan service
-```
+### Upload Directory Not Writable
 
----
+Confirm Coolify persistent volume mounts to `/app/uploads` and allows the container runtime user to write. Startup fails clearly if the directory cannot be created or written.
 
-## Rollback
+### Long Next.js Build On VPS
 
-### Via Coolify
-1. Tab **Deployments**
-2. Cari deployment sebelumnya yang sukses
-3. Klik **Redeploy**
+Keep `NEXT_TELEMETRY_DISABLED=1`. If VPS memory is tight, set `NODE_OPTIONS=--max-old-space-size=2048` in Coolify. Docker build uses a dummy `DATABASE_URL` and must not contact production PostgreSQL.
 
-### Via Git
-```bash
-git revert HEAD
-git push origin main
-# → Coolify otomatis deploy versi reverted
-```
+### Middleware / Proxy Warning
 
----
-
-## Rekomendasi VPS
-
-| Skala | vCPU | RAM | SSD | Biaya/bulan |
-|-------|------|-----|-----|-------------|
-| 10-20 karyawan | 2 | 4 GB | 50 GB | ~$10-20 |
-| 50-100 karyawan | 4 | 8 GB | 100 GB | ~$40-60 |
-
-Provider recommended: **Hetzner, DigitalOcean, Vultr, IDCloudhost**
-
----
-
-**✅ Deployment Guide Complete — MyProdusen siap di-deploy ke myprodusen.online!**
+Next.js 16 warns that `middleware` is deprecated in favor of `proxy`. Do not rename middleware during deployment cleanup unless auth routing is tested end-to-end. Current warning is non-blocking.

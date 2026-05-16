@@ -5,7 +5,22 @@ async function main() {
   console.log('🌱 Starting seed...');
 
   // Create Superadmin
-  const superadminPassword = await bcrypt.hash('admin123', 10);
+  const seedPassword = process.env.SEED_SUPERADMIN_PASSWORD;
+  const seedHrPassword = process.env.SEED_ADMIN_HR_PASSWORD;
+  const seedSupervisorPassword = process.env.SEED_SUPERVISOR_PASSWORD;
+  const seedEmployeePassword = process.env.SEED_EMPLOYEE_PASSWORD;
+
+  if (
+    !seedPassword ||
+    !seedHrPassword ||
+    !seedSupervisorPassword ||
+    !seedEmployeePassword ||
+    [seedPassword, seedHrPassword, seedSupervisorPassword, seedEmployeePassword].some((value) => value.length < 12)
+  ) {
+    throw new Error('Seed passwords must be set and at least 12 characters');
+  }
+
+  const superadminPassword = await bcrypt.hash(seedPassword, 10);
   const superadminId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   const [superadmin] = await db
@@ -36,7 +51,7 @@ async function main() {
   console.log('✅ Superadmin created:', superadmin.email);
 
   // Create Admin HR
-  const hrPassword = await bcrypt.hash('hr123', 10);
+  const hrPassword = await bcrypt.hash(seedHrPassword, 10);
   const hrId = `user_${Date.now() + 1}_${Math.random().toString(36).substr(2, 9)}`;
   
   const [adminHR] = await db
@@ -110,7 +125,7 @@ async function main() {
   console.log('✅ Afternoon shift created:', afternoonShift.name);
 
   // Create Supervisor
-  const supervisorPassword = await bcrypt.hash('supervisor123', 10);
+  const supervisorPassword = await bcrypt.hash(seedSupervisorPassword, 10);
   const supervisorId = `user_${Date.now() + 2}_${Math.random().toString(36).substr(2, 9)}`;
   
   const [supervisor] = await db
@@ -143,7 +158,7 @@ async function main() {
   console.log('✅ Supervisor created:', supervisor.email);
 
   // Create Employees
-  const employeePassword = await bcrypt.hash('employee123', 10);
+  const employeePassword = await bcrypt.hash(seedEmployeePassword, 10);
   
   const employee1Id = `user_${Date.now() + 3}_${Math.random().toString(36).substr(2, 9)}`;
   const [employee1] = await db
@@ -273,12 +288,12 @@ async function main() {
   console.log('✅ KPI Template created:', kpiTemplate.name);
 
   console.log('🎉 Seed completed successfully!');
-  console.log('\n📝 Login credentials:');
-  console.log('Superadmin: admin@myprodusen.com / admin123');
-  console.log('Admin HR: hr@myprodusen.com / hr123');
-  console.log('Supervisor: supervisor@myprodusen.com / supervisor123');
-  console.log('Employee 1: employee1@myprodusen.com / employee123');
-  console.log('Employee 2: employee2@myprodusen.com / employee123');
+  console.log('\n📝 Login credentials use seed password environment variables.');
+  console.log('Superadmin: admin@myprodusen.com / <SEED_SUPERADMIN_PASSWORD>');
+  console.log('Admin HR: hr@myprodusen.com / <SEED_ADMIN_HR_PASSWORD>');
+  console.log('Supervisor: supervisor@myprodusen.com / <SEED_SUPERVISOR_PASSWORD>');
+  console.log('Employee 1: employee1@myprodusen.com / <SEED_EMPLOYEE_PASSWORD>');
+  console.log('Employee 2: employee2@myprodusen.com / <SEED_EMPLOYEE_PASSWORD>');
 }
 
 main()

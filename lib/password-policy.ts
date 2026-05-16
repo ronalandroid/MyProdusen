@@ -78,13 +78,6 @@ export function validatePassword(
       errors.push('Password terlalu umum, gunakan password yang lebih unik');
     }
 
-    // Check if password contains common words
-    for (const common of COMMON_PASSWORDS) {
-      if (lowerPassword.includes(common)) {
-        errors.push('Password mengandung kata yang terlalu umum');
-        break;
-      }
-    }
   }
 
   return {

@@ -48,7 +48,7 @@
 Copy these to Coolify Environment Variables section:
 
 ```env
-DATABASE_URL=postgresql://user:password@postgres:5432/myprodusen
+DATABASE_URL=postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>
 JWT_SECRET=<generate-32-char-secret>
 NODE_ENV=production
 NEXT_PUBLIC_APP_URL=https://yourdomain.com

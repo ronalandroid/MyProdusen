@@ -10,8 +10,55 @@ export enum LogLevel {
   DEBUG = 'debug',
 }
 
+type LogContextValue = unknown;
+
 interface LogContext {
-  [key: string]: any;
+  [key: string]: LogContextValue;
+}
+
+const SECRET_KEY_PATTERN = /(password|secret|token|authorization|cookie|database_url|redis_url|jwt|nextauth)/i;
+const SECRET_VALUE_PATTERNS = [
+  /postgresql:\/\/[^\s@]+@/gi,
+  /redis:\/\/[^\s@]+@/gi,
+  /Bearer\s+[A-Za-z0-9._~+\/-]+=*/gi,
+];
+
+function redactValue(value: LogContextValue): unknown {
+  if (value instanceof Error) {
+    return { message: redactString(value.message) };
+  }
+
+  if (typeof value === 'string') {
+    return redactString(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => redactValue(item));
+  }
+
+  if (value && typeof value === 'object') {
+    return sanitizeContext(value as LogContext);
+  }
+
+  return value;
+}
+
+function redactString(value: string): string {
+  return SECRET_VALUE_PATTERNS.reduce(
+    (current, pattern) => current.replace(pattern, (match) => match.startsWith('Bearer') ? 'Bearer [REDACTED]' : match.split('://')[0] + '://[REDACTED]@'),
+    value,
+  );
+}
+
+function sanitizeContext(context?: LogContext): Record<string, unknown> | undefined {
+  if (!context) return undefined;
+
+  return Object.fromEntries(
+    Object.entries(context).map(([key, value]) => [
+      key,
+      SECRET_KEY_PATTERN.test(key) ? '[REDACTED]' : redactValue(value),
+    ]),
+  );
 }
 
 class Logger {
@@ -19,7 +66,8 @@ class Logger {
 
   private formatMessage(level: LogLevel, message: string, context?: LogContext): string {
     const timestamp = new Date().toISOString();
-    const contextStr = context ? ` ${JSON.stringify(context)}` : '';
+    const safeContext = sanitizeContext(context);
+    const contextStr = safeContext ? ` ${JSON.stringify(safeContext)}` : '';
     return `[${timestamp}] [${level.toUpperCase()}] ${message}${contextStr}`;
   }
 

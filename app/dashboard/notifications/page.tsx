@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bell, CheckCircle2, RefreshCcw } from "lucide-react";
+import { ArrowLeft, Bell, CheckCircle2, RefreshCcw, Trash2, CheckCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders } from "@/lib/auth-client";
+import { useRealtime } from "@/hooks/useRealtime";
 
 interface NotificationItem {
   id: string;
@@ -20,24 +21,32 @@ export default function NotificationsPage() {
   const router = useRouter();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
+  const [filter, setFilter] = useState<"all" | "unread">("all");
 
   useEffect(() => {
     loadNotifications();
-  }, []);
+  }, [filter]);
+
+  useRealtime({
+    eventTypes: ["notification.created", "notification.read"],
+    onEvent: () => loadNotifications(),
+  });
 
   const loadNotifications = async () => {
     try {
       setLoading(true);
       setError("");
-      const response = await fetch("/api/notifications", { headers: getAuthHeaders() });
+      const url = filter === "unread" ? "/api/notifications?unread=true" : "/api/notifications";
+      const response = await fetch(url, { headers: getAuthHeaders() });
       const payload = await response.json();
 
       if (!response.ok || !payload.success) {
         throw new Error(payload.error || "Notifikasi gagal dimuat");
       }
 
-      setItems(payload.data || []);
+      setItems(Array.isArray(payload.data) ? payload.data : payload.data?.items || []);
     } catch (notificationError) {
       setError(notificationError instanceof Error ? notificationError.message : "Notifikasi gagal dimuat");
     } finally {
@@ -46,60 +55,195 @@ export default function NotificationsPage() {
   };
 
   const markAsRead = async (id: string) => {
-    const response = await fetch(`/api/notifications/${id}/read`, {
-      method: "PATCH",
-      headers: getAuthHeaders(),
-    });
+    try {
+      const response = await fetch(`/api/notifications/${id}/read`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+      });
 
-    if (response.ok) {
-      setItems((current) => current.map((item) => item.id === id ? { ...item, isRead: true } : item));
+      if (response.ok) {
+        setItems((current) => current.map((item) => item.id === id ? { ...item, isRead: true } : item));
+      }
+    } catch (err) {
+      console.error("Failed to mark as read:", err);
     }
   };
 
+  const markAllAsRead = async () => {
+    try {
+      setProcessing(true);
+      const response = await fetch("/api/notifications/mark-all-read", {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+
+      const payload = await response.json();
+
+      if (response.ok && payload.success) {
+        setItems((current) => current.map((item) => ({ ...item, isRead: true })));
+      } else {
+        throw new Error(payload.error || "Gagal menandai semua sebagai dibaca");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menandai semua sebagai dibaca");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const deleteNotification = async (id: string) => {
+    if (!confirm("Hapus notifikasi ini?")) return;
+
+    try {
+      const response = await fetch(`/api/notifications/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+
+      const payload = await response.json();
+
+      if (response.ok && payload.success) {
+        setItems((current) => current.filter((item) => item.id !== id));
+      } else {
+        throw new Error(payload.error || "Gagal menghapus notifikasi");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menghapus notifikasi");
+    }
+  };
+
+  const unreadCount = items.filter((item) => !item.isRead).length;
+
   return (
     <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <button type="button" onClick={() => router.back()} className="flex items-center gap-3 text-[var(--text-primary)]">
           <ArrowLeft size={24} />
           <span className="text-xl font-bold">Notifikasi</span>
         </button>
-        <Button variant="secondary" onClick={loadNotifications} disabled={loading}>
-          <RefreshCcw size={16} className="mr-2" />
-          Refresh
-        </Button>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+          {unreadCount > 0 && (
+            <Button variant="primary" size="sm" onClick={markAllAsRead} disabled={processing || loading}>
+              <CheckCheck size={16} className="mr-2" />
+              Tandai Semua Dibaca ({unreadCount})
+            </Button>
+          )}
+          <Button variant="secondary" onClick={loadNotifications} disabled={loading}>
+            <RefreshCcw size={16} />
+          </Button>
+        </div>
       </header>
+
+      {/* Filter Tabs */}
+      <div style={{ display: "flex", gap: "8px", borderBottom: "1px solid var(--border-color)", paddingBottom: "8px" }}>
+        <button
+          type="button"
+          onClick={() => setFilter("all")}
+          style={{
+            padding: "8px 16px",
+            borderRadius: "6px",
+            border: "none",
+            background: filter === "all" ? "var(--warning-bg)" : "transparent",
+            color: filter === "all" ? "var(--primary)" : "var(--text-secondary)",
+            fontWeight: filter === "all" ? 600 : 400,
+            cursor: "pointer",
+            fontSize: "14px",
+          }}
+        >
+          Semua ({items.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilter("unread")}
+          style={{
+            padding: "8px 16px",
+            borderRadius: "6px",
+            border: "none",
+            background: filter === "unread" ? "var(--warning-bg)" : "transparent",
+            color: filter === "unread" ? "var(--primary)" : "var(--text-secondary)",
+            fontWeight: filter === "unread" ? 600 : 400,
+            cursor: "pointer",
+            fontSize: "14px",
+          }}
+        >
+          Belum Dibaca ({unreadCount})
+        </button>
+      </div>
+
+      {error && (
+        <div className="card" role="alert" style={{ padding: "16px", borderColor: "var(--danger)", backgroundColor: "var(--danger-bg)" }}>
+          <p className="text-sm" style={{ color: "var(--danger)" }}>{error}</p>
+        </div>
+      )}
 
       {loading ? (
         <div className="min-h-[320px] flex items-center justify-center">
           <LoadingSpinner message="Memuat notifikasi..." />
         </div>
-      ) : error ? (
-        <div className="card" role="alert" style={{ padding: "16px", borderColor: "var(--danger)" }}>
-          <p className="font-semibold text-[var(--danger)]">{error}</p>
-        </div>
       ) : items.length === 0 ? (
-        <div className="card empty-state-card" style={{ padding: "24px", textAlign: "center" }}>
-          <Bell size={36} className="mx-auto mb-3 text-[var(--text-muted)]" />
-          <h2 className="text-lg font-semibold">Belum ada notifikasi</h2>
-          <p className="text-sm text-[var(--text-secondary)]">Update approval, KPI, dan operasional akan muncul di sini.</p>
+        <div className="card empty-state-card" style={{ padding: "40px 24px", textAlign: "center" }}>
+          <Bell size={48} className="mx-auto mb-3 text-[var(--text-muted)]" />
+          <h2 className="text-lg font-semibold">
+            {filter === "unread" ? "Tidak ada notifikasi belum dibaca" : "Belum ada notifikasi"}
+          </h2>
+          <p className="text-sm text-[var(--text-secondary)] mt-2">
+            {filter === "unread" 
+              ? "Semua notifikasi sudah dibaca."
+              : "Update approval, KPI, dan operasional akan muncul di sini."}
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           {items.map((item) => (
-            <article key={item.id} className="card" style={{ padding: "16px", borderColor: item.isRead ? "var(--border-color)" : "var(--primary)" }}>
+            <article 
+              key={item.id} 
+              className="card" 
+              style={{ 
+                padding: "16px", 
+                borderLeft: `4px solid ${item.isRead ? "var(--border-color)" : "var(--primary)"}`,
+                backgroundColor: item.isRead ? "var(--bg-primary)" : "var(--warning-bg)",
+              }}
+            >
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{item.type}</p>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                    <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{item.type}</p>
+                    {!item.isRead && (
+                      <span style={{ 
+                        width: "8px", 
+                        height: "8px", 
+                        borderRadius: "50%", 
+                        backgroundColor: "var(--primary)" 
+                      }} />
+                    )}
+                  </div>
                   <h2 className="text-base font-semibold">{item.title}</h2>
                   <p className="text-sm text-[var(--text-secondary)] mt-1">{item.message}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-2">{new Date(item.createdAt).toLocaleString("id-ID")}</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-2">
+                    {new Date(item.createdAt).toLocaleString("id-ID", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
                 </div>
-                {!item.isRead && (
-                  <Button variant="secondary" size="sm" onClick={() => markAsRead(item.id)}>
-                    <CheckCircle2 size={14} className="mr-1" />
-                    Dibaca
+                <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                  {!item.isRead && (
+                    <Button variant="secondary" size="sm" onClick={() => markAsRead(item.id)}>
+                      <CheckCircle2 size={14} />
+                    </Button>
+                  )}
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    onClick={() => deleteNotification(item.id)}
+                    style={{ color: "var(--danger)" }}
+                  >
+                    <Trash2 size={14} />
                   </Button>
-                )}
+                </div>
               </div>
             </article>
           ))}

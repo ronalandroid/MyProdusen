@@ -3,6 +3,9 @@ import { db, employees, attendances, leaveRequests, kpiResults, notifications, p
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse } from '@/utils/response';
 import { eq, and, gte, lte, sql, desc, inArray } from 'drizzle-orm';
+import { cacheManager } from '@/lib/cache/cache-manager';
+import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
+import { CacheStrategy } from '@/lib/cache/cache-strategies';
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,6 +38,12 @@ export async function GET(request: NextRequest) {
     const scopedEmployeeFilter = scopedEmployeeIds
       ? inArray(employees.id, scopedEmployeeIds)
       : undefined;
+
+    const cacheKey = `${CacheKeys.dashboard.stats(today.toISOString().slice(0, 10))}:role:${user.role}:user:${user.userId}`;
+    const cached = await cacheManager.get(cacheKey);
+    if (cached) {
+      return successResponse(cached);
+    }
 
     // Total active employees
     const [totalEmployeesResult] = await db
@@ -131,7 +140,7 @@ export async function GET(request: NextRequest) {
     // Absent today (employees not checked in and not on leave)
     const absentToday = totalEmployees - todayAttendance - onLeaveToday;
 
-    return successResponse({
+    const dashboardStats = {
       totalEmployees,
       activeEmployees: totalEmployees,
       todayAttendance: {
@@ -150,7 +159,14 @@ export async function GET(request: NextRequest) {
       payrollPeriodStatus: latestPayrollRun || null,
       date: today.toISOString(),
       role: user.role,
+    };
+
+    await cacheManager.set(cacheKey, dashboardStats, {
+      ttl: CacheStrategy.dashboardStats,
+      tags: [CacheTags.dashboard],
     });
+
+    return successResponse(dashboardStats);
   } catch (error: any) {
     if (error.message === 'Unauthorized') {
       return unauthorizedResponse();

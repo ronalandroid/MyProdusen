@@ -22,7 +22,7 @@ export class CacheManager {
 
       return JSON.parse(value) as T;
     } catch (error) {
-      logger.error('Cache get error', { key, error });
+      logger.warn('Cache get error', { key, error: error instanceof Error ? error.message : 'Unknown cache error' });
       return null;
     }
   }
@@ -43,7 +43,7 @@ export class CacheManager {
 
       return true;
     } catch (error) {
-      logger.error('Cache set error', { key, error });
+      logger.warn('Cache set error', { key, error: error instanceof Error ? error.message : 'Unknown cache error' });
       return false;
     }
   }
@@ -56,7 +56,7 @@ export class CacheManager {
       await redis.del(key);
       return true;
     } catch (error) {
-      logger.error('Cache delete error', { key, error });
+      logger.warn('Cache delete error', { key, error: error instanceof Error ? error.message : 'Unknown cache error' });
       return false;
     }
   }
@@ -66,7 +66,14 @@ export class CacheManager {
 
     try {
       const redis = getRedisClient();
-      const keys = await redis.keys(pattern);
+      const keys: string[] = [];
+      let cursor = '0';
+
+      do {
+        const [nextCursor, batch] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+        cursor = nextCursor;
+        keys.push(...batch);
+      } while (cursor !== '0');
       
       if (keys.length === 0) {
         return 0;
@@ -75,7 +82,7 @@ export class CacheManager {
       await redis.del(...keys);
       return keys.length;
     } catch (error) {
-      logger.error('Cache delete pattern error', { pattern, error });
+      logger.warn('Cache delete pattern error', { pattern, error: error instanceof Error ? error.message : 'Unknown cache error' });
       return 0;
     }
   }

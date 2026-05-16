@@ -1,5 +1,7 @@
 import { db, employees, users, shifts, workLocations } from '@/lib/db';
-import { eq, and, or, like, sql } from 'drizzle-orm';
+import { eq, and, or, like, sql, asc } from 'drizzle-orm';
+import type { PaginationParams } from '@/lib/api/pagination';
+import { paginated } from '@/lib/api/pagination';
 import { getNextNIP } from '@/utils/nip-generator';
 import { hashPassword } from '@/lib/auth';
 import { cacheManager } from '@/lib/cache/cache-manager';
@@ -127,6 +129,47 @@ export class EmployeeService {
     return await this.fetchEmployees(filters);
   }
 
+  async getEmployeesPaginated(filters: {
+    search?: string;
+    status?: EmployeeStatus;
+    division?: string;
+    supervisorId?: string;
+  }, pagination: PaginationParams) {
+    const conditions = this.buildEmployeeConditions(filters);
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(employees)
+      .where(whereClause);
+
+    const rows = await db
+      .select({
+        id: employees.id,
+        nip: employees.nip,
+        userId: employees.userId,
+        fullName: employees.fullName,
+        email: employees.email,
+        phone: employees.phone,
+        division: employees.division,
+        position: employees.position,
+        supervisorId: employees.supervisorId,
+        status: employees.status,
+        defaultShiftId: employees.defaultShiftId,
+        defaultLocationId: employees.defaultLocationId,
+        joinDate: employees.joinDate,
+        createdAt: employees.createdAt,
+        updatedAt: employees.updatedAt,
+      })
+      .from(employees)
+      .where(whereClause)
+      .orderBy(asc(employees.fullName))
+      .limit(pagination.limit)
+      .offset(pagination.offset);
+
+    return paginated(rows, totalResult?.count || 0, pagination);
+  }
+
   private async fetchEmployees(filters?: {
     search?: string;
     status?: EmployeeStatus;
@@ -135,6 +178,21 @@ export class EmployeeService {
   }) {
     let query = db.select().from(employees);
 
+    const conditions = this.buildEmployeeConditions(filters);
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    return await query;
+  }
+
+  private buildEmployeeConditions(filters?: {
+    search?: string;
+    status?: EmployeeStatus;
+    division?: string;
+    supervisorId?: string;
+  }) {
     const conditions = [];
 
     if (filters?.search) {
@@ -159,11 +217,7 @@ export class EmployeeService {
       conditions.push(eq(employees.supervisorId, filters.supervisorId));
     }
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as any;
-    }
-
-    return await query;
+    return conditions;
   }
 
   async getEmployeeById(id: string) {

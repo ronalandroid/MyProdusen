@@ -16,7 +16,7 @@ Create a `.env` file with the following variables:
 
 ```bash
 # Database (REQUIRED)
-DATABASE_URL="postgresql://user:password@host:5432/myprodusen?schema=public"
+DATABASE_URL="postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>?schema=public"
 
 # JWT Secret (REQUIRED - minimum 32 characters)
 JWT_SECRET="your-super-secret-jwt-key-minimum-32-characters-long"
@@ -47,7 +47,7 @@ CACHE_DEFAULT_TTL="300"
 # Initial Superadmin (Only for first deployment)
 # REMOVE AFTER FIRST DEPLOYMENT
 SUPERADMIN_EMAIL="admin@yourdomain.com"
-SUPERADMIN_PASSWORD="ChangeThisStrongPassword123!"
+SUPERADMIN_PASSWORD=<STRONG_SUPERADMIN_PASSWORD>
 ```
 
 ## Security Checklist

@@ -1,16 +1,18 @@
 import { db, users, employees } from '@/lib/db';
 import { hashPassword, verifyPassword, generateToken } from '@/lib/auth';
 import { validatePassword } from '@/lib/password-policy';
-import { eq } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
+import jwt from 'jsonwebtoken';
 
 export type UserRole = 'SUPERADMIN' | 'ADMIN_HR' | 'SUPERVISOR' | 'EMPLOYEE';
 
 export class AuthService {
   async login(email: string, password: string) {
+    const identifier = email.trim();
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.email, email))
+      .where(or(eq(users.email, identifier), eq(users.username, identifier)))
       .limit(1);
 
     if (!user) {
@@ -56,6 +58,7 @@ export class AuthService {
     username: string;
     password: string;
     role: UserRole;
+    isActive?: boolean;
   }) {
     // Validate password policy
     const passwordValidation = validatePassword(data.password);
@@ -98,6 +101,7 @@ export class AuthService {
         username: data.username,
         password: hashedPassword,
         role: data.role,
+        isActive: data.isActive ?? true,
       })
       .returning();
 
@@ -106,7 +110,79 @@ export class AuthService {
       email: user.email,
       username: user.username,
       role: user.role,
+      isActive: user.isActive,
     };
+  }
+
+  async listUsers() {
+    return db
+      .select({
+        id: users.id,
+        email: users.email,
+        username: users.username,
+        role: users.role,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
+      .from(users);
+  }
+
+  async updateUserRole(userId: string, role: UserRole, isActive?: boolean) {
+    const [user] = await db
+      .update(users)
+      .set({ role, ...(typeof isActive === 'boolean' ? { isActive } : {}), updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning({
+        id: users.id,
+        email: users.email,
+        username: users.username,
+        role: users.role,
+        isActive: users.isActive,
+      });
+
+    if (!user) {
+      throw new Error('User tidak ditemukan');
+    }
+
+    return user;
+  }
+
+  async createPasswordResetToken(email: string) {
+    const [user] = await db
+      .select({ id: users.id, email: users.email, isActive: users.isActive })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    if (!user || !user.isActive) {
+      return null;
+    }
+
+    const secret = process.env.JWT_SECRET || 'dev-only-secret-change-me';
+    return jwt.sign({ userId: user.id, email: user.email, purpose: 'password-reset' }, secret, { expiresIn: '30m' });
+  }
+
+  async resetPassword(token: string, password: string) {
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      throw new Error(passwordValidation.errors[0]);
+    }
+
+    const secret = process.env.JWT_SECRET || 'dev-only-secret-change-me';
+    const payload = jwt.verify(token, secret) as { userId: string; email: string; purpose?: string };
+
+    if (payload.purpose !== 'password-reset') {
+      throw new Error('Token reset password tidak valid');
+    }
+
+    const hashedPassword = await hashPassword(password);
+    await db
+      .update(users)
+      .set({ password: hashedPassword, updatedAt: new Date() })
+      .where(eq(users.id, payload.userId));
+
+    return { success: true, userId: payload.userId, email: payload.email };
   }
 
   async changePassword(userId: string, oldPassword: string, newPassword: string) {

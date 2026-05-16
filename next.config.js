@@ -30,6 +30,10 @@ const nextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
+      allowedOrigins: [
+        'myprodusen.online',
+        'https://myprodusen.online',
+      ],
     },
     cpus: 2,
   },

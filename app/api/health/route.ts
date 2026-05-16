@@ -3,13 +3,23 @@ import { NextRequest } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { env } from '@/lib/env';
-import { pingRedis } from '@/lib/cache/redis';
+import { isRedisConfigured, pingRedis } from '@/lib/cache/redis';
 import { cacheMetrics } from '@/lib/cache/cache-metrics';
 import { getAllCircuitBreakers } from '@/lib/resilience/circuit-breaker';
 
 export const runtime = 'nodejs';
 
 type CheckStatus = 'ok' | 'error';
+const OPTIONAL_REDIS_TIMEOUT_MS = 1500;
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_resolve, reject) => {
+      setTimeout(() => reject(new Error(`Timed out after ${timeoutMs}ms`)), timeoutMs);
+    }),
+  ]);
+}
 
 async function checkDatabase() {
   const startedAt = Date.now();
@@ -33,17 +43,32 @@ async function checkDatabase() {
 async function checkRedis() {
   const startedAt = Date.now();
 
+  if (!isRedisConfigured()) {
+    return {
+      status: 'ok' as CheckStatus,
+      responseTimeMs: Date.now() - startedAt,
+      optional: true,
+      configured: false,
+    };
+  }
+
   try {
-    const isHealthy = await pingRedis();
+    const isHealthy = await withTimeout(pingRedis(), OPTIONAL_REDIS_TIMEOUT_MS);
 
     return {
-      status: (isHealthy ? 'ok' : 'error') as CheckStatus,
+      status: 'ok' as CheckStatus,
       responseTimeMs: Date.now() - startedAt,
+      optional: true,
+      configured: true,
+      reachable: isHealthy,
     };
   } catch (error) {
     return {
-      status: 'error' as CheckStatus,
+      status: 'ok' as CheckStatus,
       responseTimeMs: Date.now() - startedAt,
+      optional: true,
+      configured: true,
+      reachable: false,
       error: error instanceof Error ? error.message : 'Unknown Redis error',
     };
   }
@@ -70,6 +95,19 @@ async function checkDisk() {
       error: error instanceof Error ? error.message : 'Unknown disk error',
     };
   }
+}
+
+function publicCheck(check: { status: CheckStatus }) {
+  return { status: check.status };
+}
+
+function publicRedisCheck(check: { status: CheckStatus; optional?: boolean; configured?: boolean; reachable?: boolean }) {
+  return {
+    status: check.status,
+    optional: true,
+    configured: Boolean(check.configured),
+    reachable: check.reachable === true,
+  };
 }
 
 function checkMemory() {
@@ -121,13 +159,20 @@ export async function GET(_request: NextRequest) {
       timestamp: new Date().toISOString(),
       responseTimeMs: Date.now() - startedAt,
       checks: {
-        database,
-        redis,
-        disk,
-        memory,
+        database: publicCheck(database),
+        redis: publicRedisCheck(redis),
+        disk: publicCheck(disk),
+        memory: publicCheck(memory),
       },
-      cache,
-      circuitBreakers,
+      cache: {
+        status: cache.errors > 0 ? 'error' : 'ok',
+      },
+      circuitBreakers: Object.fromEntries(
+        Object.entries(circuitBreakers).map(([name, breaker]) => [
+          name,
+          { status: breaker.state === 'OPEN' ? 'error' : 'ok' },
+        ])
+      ),
     },
     { status: status === 'ok' ? 200 : 503 }
   );

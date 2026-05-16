@@ -6,6 +6,7 @@ import { hasPermission } from '@/lib/permissions';
 import { employeeService } from '@/services/employees/employee.service';
 import { z } from 'zod';
 import { logAudit } from '@/lib/audit';
+import { payrollPeriodService } from '@/features/payroll/payroll-period.service';
 
 async function canRejectLeave(user: Awaited<ReturnType<typeof requireAuth>>, employeeId: string) {
   if (user.role === 'SUPERADMIN' || user.role === 'ADMIN_HR') {
@@ -19,6 +20,7 @@ async function canRejectLeave(user: Awaited<ReturnType<typeof requireAuth>>, emp
 
 const rejectLeaveSchema = z.object({
   reason: z.string().min(10, 'Alasan penolakan minimal 10 karakter'),
+  overrideReason: z.string().optional(),
 });
 
 export async function POST(
@@ -46,12 +48,41 @@ export async function POST(
       return forbiddenResponse('Anda hanya dapat menolak pengajuan tim Anda');
     }
 
+    // Check if the leave dates are in a locked period
+    try {
+      await payrollPeriodService.assertDateEditable(
+        existingLeaveRequest.startDate,
+        validation.data.overrideReason,
+        user.role === 'SUPERADMIN'
+      );
+      
+      await payrollPeriodService.assertDateEditable(
+        existingLeaveRequest.endDate,
+        validation.data.overrideReason,
+        user.role === 'SUPERADMIN'
+      );
+    } catch (error: any) {
+      return errorResponse(error.message, 403);
+    }
+
     const leaveRequest = await leaveService.rejectLeaveRequest(
       id,
       user.userId,
       validation.data.reason
     );
-    await logAudit(user.userId, 'REJECT', 'LeaveRequest', id, existingLeaveRequest, leaveRequest, request);
+    
+    await logAudit(
+      user.userId, 
+      'REJECT', 
+      'LeaveRequest', 
+      id, 
+      existingLeaveRequest, 
+      {
+        ...leaveRequest,
+        overrideReason: validation.data.overrideReason || null,
+      }, 
+      request
+    );
     
     return successResponse(leaveRequest, 'Pengajuan berhasil ditolak');
   } catch (error: any) {

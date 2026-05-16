@@ -6,12 +6,14 @@ import { hasPermission } from '@/lib/permissions';
 import { employeeService } from '@/services/employees/employee.service';
 import { z } from 'zod';
 import { logAudit } from '@/lib/audit';
+import { payrollPeriodService } from '@/features/payroll/payroll-period.service';
 
 const createLeaveSchema = z.object({
   type: z.enum(['LEAVE', 'SICK', 'PERMISSION']),
   startDate: z.string().or(z.date()),
   endDate: z.string().or(z.date()),
   reason: z.string().min(10, 'Alasan minimal 10 karakter'),
+  overrideReason: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -80,16 +82,49 @@ export async function POST(request: NextRequest) {
       return validationErrorResponse(validation.error.errors[0].message);
     }
     
-    const { type, startDate, endDate, reason } = validation.data;
+    const { type, startDate, endDate, reason, overrideReason } = validation.data;
+    
+    const parsedStartDate = typeof startDate === 'string' ? new Date(startDate) : startDate;
+    const parsedEndDate = typeof endDate === 'string' ? new Date(endDate) : endDate;
+    
+    // Check if any date in the leave range is in a locked period
+    // We check both start and end dates
+    try {
+      await payrollPeriodService.assertDateEditable(
+        parsedStartDate,
+        overrideReason,
+        user.role === 'SUPERADMIN'
+      );
+      
+      await payrollPeriodService.assertDateEditable(
+        parsedEndDate,
+        overrideReason,
+        user.role === 'SUPERADMIN'
+      );
+    } catch (error: any) {
+      return errorResponse(error.message, 403);
+    }
     
     const leaveRequest = await leaveService.createLeaveRequest({
       employeeId: employee.id,
       type,
-      startDate: typeof startDate === 'string' ? new Date(startDate) : startDate,
-      endDate: typeof endDate === 'string' ? new Date(endDate) : endDate,
+      startDate: parsedStartDate,
+      endDate: parsedEndDate,
       reason,
     });
-    await logAudit(user.userId, 'CREATE', 'LeaveRequest', leaveRequest.id, undefined, leaveRequest, request);
+    
+    await logAudit(
+      user.userId, 
+      'CREATE', 
+      'LeaveRequest', 
+      leaveRequest.id, 
+      undefined, 
+      {
+        ...leaveRequest,
+        overrideReason: overrideReason || null,
+      }, 
+      request
+    );
     
     return successResponse(leaveRequest, 'Pengajuan berhasil dibuat');
   } catch (error: any) {

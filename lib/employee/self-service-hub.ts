@@ -29,7 +29,7 @@ export function buildSelfServiceSections(input: SelfServiceInput): SelfServiceSe
       title: 'Saldo Cuti',
       value: `${input.leaveAvailable} hari`,
       description: 'Jatah cuti tersedia untuk tahun berjalan.',
-      href: '/dashboard/leave',
+      href: '/dashboard/leave/balance',
       tone: input.leaveAvailable > 0 ? 'success' : 'danger',
     },
     {

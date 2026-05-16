@@ -3,6 +3,7 @@ import { db, notifications } from '@/lib/db';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse, notFoundResponse } from '@/utils/response';
 import { and, eq } from 'drizzle-orm';
+import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -24,6 +25,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       .set({ isRead: true })
       .where(and(eq(notifications.id, id), eq(notifications.userId, user.userId)))
       .returning();
+
+    await publishRealtimeEvent(createRealtimeEvent({
+      type: 'notification.read',
+      scope: 'user',
+      target: user.userId,
+      payload: { id },
+    }));
 
     return successResponse(updated, 'Notifikasi ditandai sudah dibaca');
   } catch (error: any) {

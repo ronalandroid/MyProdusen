@@ -3,10 +3,14 @@ import { logger } from '../logger';
 
 let redisClient: Redis | null = null;
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_URL = process.env.REDIS_URL || '';
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD || undefined;
 const REDIS_DB = parseInt(process.env.REDIS_DB || '0', 10);
 const REDIS_MAX_RETRIES = parseInt(process.env.REDIS_MAX_RETRIES || '3', 10);
+
+export function isRedisConfigured(): boolean {
+  return REDIS_URL.length > 0;
+}
 
 const redisOptions: RedisOptions = {
   maxRetriesPerRequest: REDIS_MAX_RETRIES,
@@ -27,6 +31,10 @@ const redisOptions: RedisOptions = {
 };
 
 export function getRedisClient(): Redis {
+  if (!isRedisConfigured()) {
+    throw new Error('REDIS_URL is not configured');
+  }
+
   if (redisClient) {
     return redisClient;
   }

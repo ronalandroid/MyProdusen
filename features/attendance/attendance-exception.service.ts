@@ -2,6 +2,7 @@ import { db, attendanceExceptions, attendances, employees, notifications } from 
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import type { AttendanceExceptionType } from '@/lib/attendance/exception-policy';
+import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 
 export type AttendanceExceptionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
@@ -120,13 +121,23 @@ export class AttendanceExceptionService {
       .limit(1);
 
     if (employee?.userId) {
+      const notificationId = uuidv4();
+      const title = data.status === 'APPROVED' ? 'Exception absensi disetujui' : 'Exception absensi ditolak';
+
       await db.insert(notifications).values({
-        id: uuidv4(),
+        id: notificationId,
         userId: employee.userId,
-        title: data.status === 'APPROVED' ? 'Exception absensi disetujui' : 'Exception absensi ditolak',
+        title,
         message: data.reviewNote || existing.reason,
         type: 'ATTENDANCE_EXCEPTION',
       });
+
+      await publishRealtimeEvent(createRealtimeEvent({
+        type: 'notification.created',
+        scope: 'user',
+        target: employee.userId,
+        payload: { id: notificationId, title },
+      }));
     }
 
     return updated;

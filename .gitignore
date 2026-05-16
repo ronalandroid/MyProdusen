@@ -19,6 +19,7 @@ dist
 # Misc
 .DS_Store
 *.pem
+*.key
 
 # Debug
 npm-debug.log*
@@ -26,6 +27,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Local env files
+.env.*
+.env.staging
 .env
 .env*.local
 .env.local
@@ -41,6 +44,7 @@ yarn-error.log*
 next-env.d.ts
 
 # Uploads
+/uploads
 /public/uploads/*
 !/public/uploads/.gitkeep
 

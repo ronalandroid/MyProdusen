@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index, date, time, decimal } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
 // Enums
@@ -418,6 +418,29 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
 
 export const payrollComponentTypeEnum = pgEnum('PayrollComponentType', ['ALLOWANCE', 'DEDUCTION', 'BENEFIT']);
 export const payrollRunStatusEnum = pgEnum('PayrollRunStatus', ['DRAFT', 'CALCULATED', 'APPROVED', 'PAID']);
+export const payrollPeriodStatusEnum = pgEnum('PayrollPeriodStatus', ['OPEN', 'PREPARING', 'LOCKED', 'CLOSED']);
+
+// Payroll Period Lock
+export const payrollPeriods = pgTable('PayrollPeriod', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  startDate: timestamp('startDate', { mode: 'date' }).notNull(),
+  endDate: timestamp('endDate', { mode: 'date' }).notNull(),
+  status: payrollPeriodStatusEnum('status').default('OPEN').notNull(),
+  lockedBy: text('lockedBy'),
+  lockedAt: timestamp('lockedAt', { mode: 'date' }),
+  lockedReason: text('lockedReason'),
+  createdBy: text('createdBy').notNull(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  statusIdx: index('PayrollPeriod_status_idx').on(table.status),
+  startDateIdx: index('PayrollPeriod_startDate_idx').on(table.startDate),
+  endDateIdx: index('PayrollPeriod_endDate_idx').on(table.endDate),
+  createdByIdx: index('PayrollPeriod_createdBy_idx').on(table.createdBy),
+  dateRangeUnique: uniqueIndex('PayrollPeriod_date_range_unique').on(table.startDate, table.endDate),
+}));
+
 
 // Payroll Structure (Salary Templates)
 export const payrollStructures = pgTable('PayrollStructure', {
@@ -680,6 +703,17 @@ export const payrollRunsRelations = relations(payrollRuns, ({ many }) => ({
   items: many(payrollItems),
 }));
 
+
+export const payrollPeriodsRelations = relations(payrollPeriods, ({ one }) => ({
+  creator: one(users, {
+    fields: [payrollPeriods.createdBy],
+    references: [users.id],
+  }),
+  locker: one(users, {
+    fields: [payrollPeriods.lockedBy],
+    references: [users.id],
+  }),
+}));
 export const payrollItemsRelations = relations(payrollItems, ({ one }) => ({
   run: one(payrollRuns, {
     fields: [payrollItems.runId],
@@ -1017,3 +1051,5 @@ export const employeeDocumentsRelations = relations(employeeDocuments, ({ one })
     references: [users.id],
   }),
 }));
+
+// Phase 2: Payroll Period

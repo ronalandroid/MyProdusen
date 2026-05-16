@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { employeeService } from '@/services/employees/employee.service';
 import { logAudit } from '@/lib/audit';
+import { payrollPeriodService } from '@/features/payroll/payroll-period.service';
 
 async function canApproveLeave(user: Awaited<ReturnType<typeof requireAuth>>, employeeId: string) {
   if (user.role === 'SUPERADMIN' || user.role === 'ADMIN_HR') {
@@ -34,8 +35,41 @@ export async function POST(
       return forbiddenResponse('Anda hanya dapat menyetujui pengajuan tim Anda');
     }
 
+    // Get override reason from request body if provided
+    const body = await request.json().catch(() => ({}));
+    const overrideReason = body.overrideReason;
+
+    // Check if the leave dates are in a locked period
+    try {
+      await payrollPeriodService.assertDateEditable(
+        existingLeaveRequest.startDate,
+        overrideReason,
+        user.role === 'SUPERADMIN'
+      );
+      
+      await payrollPeriodService.assertDateEditable(
+        existingLeaveRequest.endDate,
+        overrideReason,
+        user.role === 'SUPERADMIN'
+      );
+    } catch (error: any) {
+      return errorResponse(error.message, 403);
+    }
+
     const leaveRequest = await leaveService.approveLeaveRequest(id, user.userId);
-    await logAudit(user.userId, 'APPROVE', 'LeaveRequest', id, existingLeaveRequest, leaveRequest, request);
+    
+    await logAudit(
+      user.userId, 
+      'APPROVE', 
+      'LeaveRequest', 
+      id, 
+      existingLeaveRequest, 
+      {
+        ...leaveRequest,
+        overrideReason: overrideReason || null,
+      }, 
+      request
+    );
     
     return successResponse(leaveRequest, 'Pengajuan berhasil disetujui');
   } catch (error: any) {

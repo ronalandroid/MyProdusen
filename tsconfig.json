@@ -44,6 +44,10 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "lib/**/*.ts",
+    "features/**/*.ts",
+    "features/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
     "middleware.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"

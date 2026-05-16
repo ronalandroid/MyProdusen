@@ -234,7 +234,7 @@ export default function LeavePage() {
               <p className="text-xs text-[var(--text-secondary)]">Saldo Cuti {leaveBalance.year}</p>
               <h2 className="text-lg font-bold">{leaveBalance.available} hari tersedia</h2>
             </div>
-            <Calendar size={24} color="var(--primary)" />
+            <button type="button" onClick={() => router.push("/dashboard/leave/balance")} style={{ display: "flex", alignItems: "center", gap: "4px", padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--border-color)", background: "white", cursor: "pointer", fontSize: "12px", fontWeight: 500 }}><Calendar size={16} />Detail</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
             <div style={{ backgroundColor: "var(--bg-main)", borderRadius: "8px", padding: "10px", textAlign: "center" }}>

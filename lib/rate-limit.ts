@@ -31,8 +31,13 @@ export async function rateLimit(
   config: typeof RATE_LIMITS[keyof typeof RATE_LIMITS],
   identifier?: string
 ): Promise<RateLimitResult> {
+  if (process.env.NODE_ENV === 'test') {
+    return { limited: false, remaining: 999, resetAt: Date.now() + 60_000, headers: {} };
+  }
+
   const ip = getClientIp(request);
-  const key = getRateLimitKey(ip, identifier || request.nextUrl.pathname);
+  const pathname = request.nextUrl?.pathname || new URL(request.url).pathname || 'api';
+  const key = getRateLimitKey(ip, identifier || pathname);
   
   const result = checkRateLimit(key, config);
   

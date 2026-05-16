@@ -43,6 +43,13 @@
       "when": 1778869988170,
       "tag": "0005_leave_balance_ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778940057639,
+      "tag": "0006_payroll_period",
+      "breakpoints": true
     }
   ]
 }

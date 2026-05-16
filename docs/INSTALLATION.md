@@ -122,7 +122,7 @@ cp .env.example .env
 
 ```env
 # Database
-DATABASE_URL="postgresql://myprodusen_user:your_password_here@localhost:5432/myprodusen?schema=public"
+DATABASE_URL="postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>?schema=public"
 
 # JWT Secret (generate a strong secret)
 JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"

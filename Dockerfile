@@ -7,18 +7,21 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOST=0.0.0.0
+ENV HOSTNAME=0.0.0.0
 
-# Dummy DATABASE_URL so drizzle-kit generate succeeds at build time
+# Dummy DATABASE_URL keeps build-time imports safe.
 # The real value is injected at runtime via Coolify env vars.
-ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
+ENV DATABASE_URL="postgresql://build@localhost:5432/build"
 
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
 
-# Generate Drizzle client & build Next.js
-RUN npm run db:generate
+# Build Next.js. Drizzle schema sync runs at runtime, not during image build.
 RUN npm run build:next
 
 # ---------- Stage 2: Production image -------------------------
@@ -28,6 +31,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
+ENV HOST=0.0.0.0
+ENV HOSTNAME=0.0.0.0
 
 # Create unprivileged user
 RUN addgroup --system --gid 1001 nodejs && \
@@ -38,15 +43,17 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy drizzle schema + migrations so db:push works at runtime
+# Copy drizzle migrations and startup scripts for runtime schema setup
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/package-lock.json ./package-lock.json
+COPY --from=builder /app/scripts ./scripts
 
-# Install only drizzle-kit + postgres driver for runtime migrations
-RUN npm install --no-save drizzle-kit drizzle-orm postgres
+# Install production dependencies required by startup scripts; no startup npm install needed.
+RUN npm ci --omit=dev --ignore-scripts
 
-# Entrypoint script: run schema push then start server
+# Entrypoint script: run SQL migrations then start server
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 

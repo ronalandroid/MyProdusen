@@ -60,7 +60,7 @@ Ensure these files exist:
    
    Required variables:
    ```
-   DATABASE_URL=postgresql://user:password@host:5432/database
+   DATABASE_URL=postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>
    JWT_SECRET=your-super-secret-jwt-key-min-32-chars
    NEXTAUTH_URL=https://your-site.netlify.app
    NEXTAUTH_SECRET=your-nextauth-secret-key
@@ -166,7 +166,7 @@ npm run db:push
 
 ```env
 # Database
-DATABASE_URL=postgresql://user:password@host:5432/database
+DATABASE_URL=postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>
 
 # Authentication
 JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long

@@ -380,7 +380,7 @@ Required for production:
 
 ```bash
 # Database
-DATABASE_URL=postgresql://user:pass@host:5432/myprodusen
+DATABASE_URL=postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>
 
 # Redis
 REDIS_URL=redis://host:6379

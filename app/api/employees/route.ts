@@ -5,6 +5,7 @@ import { successResponse, errorResponse, validationErrorResponse, forbiddenRespo
 import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { logAudit } from '@/lib/audit';
+import { parsePagination } from '@/lib/api/pagination';
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,9 +30,11 @@ export async function GET(request: NextRequest) {
       return forbiddenResponse('Anda tidak memiliki akses untuk melihat daftar karyawan');
     }
     
-    const employees = await employeeService.getEmployees(filters);
-    
-    return successResponse(employees);
+    const pagination = parsePagination(searchParams);
+    const employees = await employeeService.getEmployeesPaginated(filters, pagination);
+    const response = successResponse(employees.items);
+    response.headers.set('X-Pagination', JSON.stringify(employees.pagination));
+    return response;
   } catch (error: any) {
     if (error.message === 'Unauthorized') {
       return unauthorizedResponse();

@@ -10,7 +10,7 @@ const strongPasswordSchema = z
   .regex(/[^A-Za-z0-9]/, 'Password harus mengandung minimal 1 karakter khusus');
 
 export const loginSchema = z.object({
-  email: z.string().email('Email tidak valid'),
+  email: z.string().min(1, 'Email atau username wajib diisi'),
   password: z.string().min(1, 'Password wajib diisi'),
 });
 

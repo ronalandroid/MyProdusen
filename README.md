@@ -217,7 +217,7 @@ MyProdusen/
 
 ```env
 # Database
-DATABASE_URL=postgresql://user:password@host:5432/database
+DATABASE_URL=postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>
 
 # Authentication
 JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
