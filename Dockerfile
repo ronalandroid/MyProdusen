@@ -1,8 +1,21 @@
+# syntax=docker/dockerfile:1.7
 # ============================================================
 # MyProdusen — Production Dockerfile for Coolify / VPS
 # ============================================================
 
-# ---------- Stage 1: Install all deps + build -----------------
+# ---------- Stage 1: Dependency cache ------------------------
+FROM node:22-alpine AS deps
+WORKDIR /app
+
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV npm_config_audit=false
+ENV npm_config_fund=false
+
+COPY package*.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline --no-audit --fund=false
+
+# ---------- Stage 2: Build standalone Next.js ----------------
 FROM node:22-alpine AS builder
 WORKDIR /app
 
@@ -18,15 +31,13 @@ ENV BUILD_HEARTBEAT_MS=15000
 # The real value is injected at runtime via Coolify env vars.
 ENV DATABASE_URL="postgresql://build@localhost:5432/build"
 
-COPY package*.json ./
-RUN npm ci
-
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build Next.js. Drizzle schema sync runs at runtime, not during image build.
+# Build Next.js only. Drizzle schema sync runs at runtime, not during image build.
 RUN npm run build:next
 
-# ---------- Stage 2: Production image -------------------------
+# ---------- Stage 3: Production runtime ----------------------
 FROM node:22-alpine AS runner
 WORKDIR /app
 
@@ -45,15 +56,16 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy only runtime packages needed by startup scripts outside Next.js standalone tracing.
+# Avoids a second `npm ci` in the runner image and makes Coolify builds much faster.
+COPY --from=deps /app/node_modules/postgres ./node_modules/postgres
+COPY --from=deps /app/node_modules/bcryptjs ./node_modules/bcryptjs
+
 # Copy drizzle migrations and startup scripts for runtime schema setup
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/package-lock.json ./package-lock.json
 COPY --from=builder /app/scripts ./scripts
-
-# Install production dependencies required by startup scripts; no startup npm install needed.
-RUN npm ci --omit=dev --ignore-scripts
 
 # Entrypoint script: run SQL migrations then start server
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh

@@ -3,9 +3,13 @@
 node_modules
 npm-debug.log*
 .env
-.env*.local
+.env.*
+!.env.example
 coverage
 public/uploads
+uploads
+tmp
+temp
 *.tsbuildinfo
 .DS_Store
 docs
@@ -14,7 +18,9 @@ tests
 !README.md
 *.zip
 *.tar.gz
+*.bak
+*.bak2
+*.orig
 .idea
 .vscode
 myprodusen-netlify.zip
-
