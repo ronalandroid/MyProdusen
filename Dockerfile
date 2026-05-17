@@ -24,8 +24,9 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
 ENV HOSTNAME=0.0.0.0
-ENV NODE_OPTIONS=--max-old-space-size=1536
-ENV BUILD_HEARTBEAT_MS=15000
+ENV NODE_OPTIONS=--max-old-space-size=1024
+ENV BUILD_HEARTBEAT_MS=5000
+ENV NEXT_PRIVATE_BUILD_WORKER=1
 
 # Dummy DATABASE_URL keeps build-time imports safe.
 # The real value is injected at runtime via Coolify env vars.
@@ -35,7 +36,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build Next.js only. Drizzle schema sync runs at runtime, not during image build.
-RUN npm run build:next
+# Cache Next build artifacts so Coolify rebuilds are faster and less likely to hit resource limits.
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build:next
 
 # ---------- Stage 3: Production runtime ----------------------
 FROM node:22-alpine AS runner
