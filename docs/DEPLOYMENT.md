@@ -34,11 +34,13 @@ must never be committed.
 The project's `Dockerfile` builds the Next.js standalone output. The
 `docker-entrypoint.sh` script:
 
-1. Validates `DATABASE_URL`.
-2. Waits up to 60 seconds for PostgreSQL.
-3. Runs `npm run db:deploy` (idempotent migration runner).
-4. Optionally bootstraps the superadmin if `SUPERADMIN_*` env vars exist.
-5. Boots Next.js on `0.0.0.0:3000`.
+1. Runs the production environment validator and fails fast on missing or unsafe
+   required env vars.
+2. Validates `NEXTAUTH_SECRET` for runtime session compatibility.
+3. Waits up to 60 seconds for PostgreSQL.
+4. Runs `npm run db:deploy` (idempotent migration runner).
+5. Optionally bootstraps the superadmin if `SUPERADMIN_*` env vars exist.
+6. Boots Next.js on `0.0.0.0:3000`.
 
 `.dockerignore` excludes secrets, dependencies, build output, and uploads.
 

@@ -20,8 +20,11 @@ export UPLOAD_DIR="${UPLOAD_DIR:-/app/uploads}"
 
 log "MyProdusen startup: production container initializing"
 
-required_env="DATABASE_URL APP_URL NEXT_PUBLIC_APP_URL NEXTAUTH_URL NEXTAUTH_SECRET JWT_SECRET"
-for name in $required_env; do
+log "Validating production environment"
+node scripts/check-production-env.mjs
+
+required_secret_env="NEXTAUTH_SECRET"
+for name in $required_secret_env; do
   eval "value=\${$name:-}"
   if [ -z "$value" ]; then
     log "ERROR: $name is required at runtime"
@@ -40,11 +43,6 @@ fi
 
 if ! su-exec nextjs:nodejs sh -c 'test -w "$UPLOAD_DIR"'; then
   log "ERROR: UPLOAD_DIR is not writable by runtime user"
-  exit 1
-fi
-
-if [ ${#JWT_SECRET} -lt 32 ]; then
-  log "ERROR: JWT_SECRET must be at least 32 characters"
   exit 1
 fi
 
