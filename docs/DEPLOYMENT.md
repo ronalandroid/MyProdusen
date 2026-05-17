@@ -169,20 +169,21 @@ Run these commands in order. Each gate must pass before moving to the next.
 ```bash
 # 1. Code health gate (run on the developer machine before pushing).
 npm run release:check
-#    ↳ runs lint, full vitest suite, next build, then the production env
-#      static check via scripts/check-production-env.mjs.
+#    ↳ runs lint, full vitest suite, and next build.
 
-# 2. Apply database migrations on the target environment.
+# 2. (On the deploy target) full gate including production env validation.
+npm run release:check:full
+#    ↳ same as above plus scripts/check-production-env.mjs. Only passes
+#      when every documented production env key is set and well-formed.
+
+# 3. Apply database migrations on the target environment.
 DATABASE_URL=postgresql://… npm run db:deploy
 
-# 3. (One-time) bootstrap the superadmin if SUPERADMIN_* env keys are set.
+# 4. (One-time) bootstrap the superadmin if SUPERADMIN_* env keys are set.
 SUPERADMIN_EMAIL=… SUPERADMIN_PASSWORD=… npm run bootstrap:superadmin
 
-# 4. Validate index usage on the populated staging database.
+# 5. Validate index usage on the populated staging database.
 DATABASE_URL=postgresql://staging:… npm run perf:explain
-
-# 5. Sanity check Coolify env (run inside the container or in Coolify shell).
-node scripts/check-production-env.mjs
 
 # 6. Walk the 13-step end-to-end smoke test from docs/FINAL_CHECKLIST.md.
 
