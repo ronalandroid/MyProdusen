@@ -48,7 +48,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#FFFCF2] relative overflow-hidden">
+    <main className="auth-page relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -right-24 top-0 h-72 w-72 rounded-full bg-[var(--primary)]/25 blur-3xl" />
         <div className="absolute -left-20 bottom-12 h-64 w-64 rounded-full bg-[var(--primary)]/15 blur-3xl" />
@@ -65,7 +65,7 @@ export default function LoginPage() {
         </Link>
       </div>
 
-      <section className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+      <section className="auth-shell relative z-10">
         <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left Side - Branding (Desktop Only) */}
           <div className="hidden lg:flex flex-col justify-center space-y-8 animate-fade-in">
@@ -113,8 +113,8 @@ export default function LoginPage() {
           </div>
 
           {/* Right Side - Login Form */}
-          <div className="w-full max-w-md mx-auto lg:mx-0 animate-scale-in">
-            <div className="bg-white/90 rounded-[2rem] shadow-[0_24px_70px_rgba(17,24,39,0.12)] border border-white p-6 sm:p-8 lg:p-10 backdrop-blur">
+          <div className="auth-panel lg:mx-0 animate-scale-in">
+            <div className="auth-card">
               {/* Mobile Logo */}
               <div className="lg:hidden mb-8 text-center">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-[1.35rem] bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] flex items-center justify-center shadow-lg">
@@ -180,7 +180,7 @@ export default function LoginPage() {
                         disabled:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-60
                         border-[var(--border-color)] focus:border-[var(--primary)] focus:ring-[var(--primary-light)]
                       "
-                      placeholder="nama@perusahaan.com"
+                      placeholder="email@perusahaan.com"
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       autoComplete="email"
@@ -215,7 +215,7 @@ export default function LoginPage() {
                         disabled:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-60
                         border-[var(--border-color)] focus:border-[var(--primary)] focus:ring-[var(--primary-light)]
                       "
-                      placeholder="Masukkan kata sandi"
+                      placeholder="Kata sandi"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       autoComplete="current-password"

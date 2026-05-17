@@ -45,7 +45,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FFFCF2] relative overflow-hidden">
+    <main className="auth-page relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -right-24 top-0 h-72 w-72 rounded-full bg-[var(--primary)]/25 blur-3xl" />
         <div className="absolute -left-20 bottom-12 h-64 w-64 rounded-full bg-[var(--primary)]/15 blur-3xl" />
@@ -58,9 +58,9 @@ export default function RegisterPage() {
         </Link>
       </div>
 
-      <section className="relative z-10 min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md animate-scale-in">
-          <div className="bg-white/90 rounded-[2rem] shadow-[0_24px_70px_rgba(17,24,39,0.12)] border border-white p-6 sm:p-8 lg:p-10 backdrop-blur">
+      <section className="auth-shell relative z-10 !min-h-[calc(100dvh-64px)]">
+        <div className="auth-panel animate-scale-in">
+          <div className="auth-card">
             <div className="mb-8 text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-[1.35rem] bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] flex items-center justify-center shadow-lg">
                 <img src="/logo.png" alt="" className="w-10 h-10" />
@@ -84,7 +84,7 @@ export default function RegisterPage() {
 
             <form onSubmit={handleRegister} className="space-y-5" noValidate>
               <Field icon={<User size={20} aria-hidden="true" />} id="register-username" label="Username" name="username" placeholder="nama pengguna" autoComplete="username" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} />
-              <Field icon={<Mail size={20} aria-hidden="true" />} id="register-email" label="Email Perusahaan" name="email" type="email" placeholder="nama@perusahaan.com" autoComplete="email" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} />
+              <Field icon={<Mail size={20} aria-hidden="true" />} id="register-email" label="Email Perusahaan" name="email" type="email" placeholder="email@perusahaan.com" autoComplete="email" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} />
 
               <div>
                 <label htmlFor="register-password" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">Kata Sandi</label>
@@ -95,7 +95,7 @@ export default function RegisterPage() {
                     name="password"
                     type={showPassword ? "text" : "password"}
                     className="w-full pl-12 pr-12 py-3.5 text-sm font-medium bg-[var(--bg-input)] text-[var(--text-primary)] border-2 rounded-2xl transition-all duration-200 placeholder:text-[var(--text-muted)] placeholder:font-normal focus:outline-none focus:ring-4 disabled:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-60 border-[var(--border-color)] focus:border-[var(--primary)] focus:ring-[var(--primary-light)]"
-                    placeholder="Minimal 8 karakter kuat"
+                    placeholder="Password kuat"
                     autoComplete="new-password"
                     required
                     disabled={isSubmitting}
