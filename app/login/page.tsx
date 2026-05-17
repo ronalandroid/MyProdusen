@@ -282,8 +282,11 @@ export default function LoginPage() {
               <div className="mt-8 pt-6 border-t border-[var(--border-color)] text-center">
                 <p className="text-sm text-[var(--text-secondary)]">
                   Belum punya akun?{" "}
-                  <span className="font-semibold text-[var(--text-primary)]">Hubungi HRD</span>
+                  <Link href="/register" className="font-bold text-[var(--text-primary)] hover:text-[var(--primary-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded-md">
+                    Daftar di sini
+                  </Link>
                 </p>
+                <p className="mt-2 text-xs text-[var(--text-muted)]">Akun baru perlu aktivasi Superadmin atau HRD.</p>
               </div>
             </div>
 
