@@ -161,3 +161,34 @@ host). All times are server local time.
   `SELFIE_VIEW`, `INVALID_SELFIE_ACCESS`, `EXPORT`, `APPROVE`, `REJECT`,
   `LEAVE_*`, `KPI_*`, `ATTENDANCE_REJECTED_*`.
 - Logs: see `lib/logger`. Secrets and connection strings are redacted.
+
+## 10. Release runbook
+
+Run these commands in order. Each gate must pass before moving to the next.
+
+```bash
+# 1. Code health gate (run on the developer machine before pushing).
+npm run release:check
+#    ↳ runs lint, full vitest suite, next build, then the production env
+#      static check via scripts/check-production-env.mjs.
+
+# 2. Apply database migrations on the target environment.
+DATABASE_URL=postgresql://… npm run db:deploy
+
+# 3. (One-time) bootstrap the superadmin if SUPERADMIN_* env keys are set.
+SUPERADMIN_EMAIL=… SUPERADMIN_PASSWORD=… npm run bootstrap:superadmin
+
+# 4. Validate index usage on the populated staging database.
+DATABASE_URL=postgresql://staging:… npm run perf:explain
+
+# 5. Sanity check Coolify env (run inside the container or in Coolify shell).
+node scripts/check-production-env.mjs
+
+# 6. Walk the 13-step end-to-end smoke test from docs/FINAL_CHECKLIST.md.
+
+# 7. Promote: `coolify deploy …` (or via the Coolify dashboard).
+```
+
+If any step fails, **do not proceed** until the failure is fixed. The
+audit log and the env preflight script are the canonical guards against
+silent regressions.

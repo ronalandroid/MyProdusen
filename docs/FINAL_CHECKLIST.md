@@ -18,9 +18,9 @@ verification step, not a wish.
 
 ## 2. Build & verification
 
-- [ ] `npm run lint` exits 0.
-- [ ] `npm run test` exits 0 and reports 35 files / 206 passing.
-- [ ] `npm run build` exits 0.
+- [ ] `npm run release:check` exits 0. This is the canonical gate — it runs
+      `lint`, the full `test` suite, the production `build`, and the env
+      preflight (`scripts/check-production-env.mjs`) in one command.
 - [ ] `npm run db:deploy` ran successfully in production order (no skipped migrations after `0011`).
 - [ ] `npm run bootstrap:superadmin` ran once after migrations.
 - [ ] `npm run perf:explain` (against staging) shows index usage on
