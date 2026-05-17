@@ -40,6 +40,8 @@ verification step, not a wish.
 ## 4. Selfie / GPS hardening
 
 - [ ] `/dashboard/attendance` uses the realtime camera (no file picker, no gallery).
+- [ ] Attendance selfie capture uses live camera preview + canvas capture + `FormData` blob only.
+- [ ] Attendance UI contains no upload button, gallery picker, `<input type="file">`, or `accept="image/*"` fallback.
 - [ ] Backend rejects missing selfie, invalid MIME, oversized selfie.
 - [ ] Selfie filenames are server-generated and stored under
       `attendance-selfies/<year>/<month>/<employeeId>/...`.
@@ -51,6 +53,15 @@ verification step, not a wish.
       accuracy, stale timestamp, and inactive locations.
 - [ ] Outside-radius behaviour matches `REJECT_OUTSIDE_GEOFENCE`. Pending
       entries appear at `/dashboard/attendance/exceptions`.
+
+## 4.1 UI/UX upgrade
+
+- [ ] `UI_UX_GUIDE.md` remains aligned with `prd.md` and this checklist.
+- [ ] Mobile-first employee flow uses rounded cards, readable spacing, clear status chips, and bottom navigation.
+- [ ] Onboarding, login, dashboard, attendance, employees, leave, KPI, profile, and reports screens follow the approved yellow HRIS style.
+- [ ] Yellow `#FDC704` remains primary accent; red `#B51B19` appears only for danger, reject, late, or critical states.
+- [ ] Loading, empty, error, and success states are present for forms, tables, dashboards, attendance, and reports.
+- [ ] UI hides unauthorized actions, while backend RBAC still enforces every protected action.
 
 ## 5. RBAC end-to-end
 

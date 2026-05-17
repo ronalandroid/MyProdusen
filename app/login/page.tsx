@@ -48,9 +48,14 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 lg:bg-gradient-to-br lg:from-[var(--primary-light)] lg:via-white lg:to-gray-50">
+    <main className="min-h-screen bg-[#FFFCF2] relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -right-24 top-0 h-72 w-72 rounded-full bg-[var(--primary)]/25 blur-3xl" />
+        <div className="absolute -left-20 bottom-12 h-64 w-64 rounded-full bg-[var(--primary)]/15 blur-3xl" />
+      </div>
+
       {/* Back Button - Mobile Only */}
-      <div className="lg:hidden p-4">
+      <div className="relative z-10 lg:hidden p-4">
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
@@ -60,13 +65,13 @@ export default function LoginPage() {
         </Link>
       </div>
 
-      <section className="min-h-screen flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+      <section className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
         <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left Side - Branding (Desktop Only) */}
           <div className="hidden lg:flex flex-col justify-center space-y-8 animate-fade-in">
             {/* Logo */}
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 rounded-[1.35rem] bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] flex items-center justify-center shadow-lg">
                 <img src="/logo.png" alt="" className="w-10 h-10" />
               </div>
               <div>
@@ -109,10 +114,10 @@ export default function LoginPage() {
 
           {/* Right Side - Login Form */}
           <div className="w-full max-w-md mx-auto lg:mx-0 animate-scale-in">
-            <div className="bg-white rounded-3xl shadow-2xl border border-[var(--border-color)] p-6 sm:p-8 lg:p-10">
+            <div className="bg-white/90 rounded-[2rem] shadow-[0_24px_70px_rgba(17,24,39,0.12)] border border-white p-6 sm:p-8 lg:p-10 backdrop-blur">
               {/* Mobile Logo */}
               <div className="lg:hidden mb-8 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-[1.35rem] bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] flex items-center justify-center shadow-lg">
                   <img src="/logo.png" alt="" className="w-10 h-10" />
                 </div>
                 <div className="flex items-center justify-center gap-1 mb-2">
@@ -137,7 +142,7 @@ export default function LoginPage() {
                 <div
                   id="login-error"
                   role="alert"
-                  className="mb-6 p-4 rounded-xl bg-red-50 border-2 border-red-200 flex items-start gap-3 animate-fade-in"
+                  className="mb-6 p-4 rounded-2xl bg-red-50 border-2 border-red-200 flex items-start gap-3 animate-fade-in"
                 >
                   <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -168,7 +173,7 @@ export default function LoginPage() {
                         w-full pl-12 pr-4 py-3.5
                         text-sm font-medium
                         bg-[var(--bg-input)] text-[var(--text-primary)]
-                        border-2 rounded-xl
+                        border-2 rounded-2xl
                         transition-all duration-200
                         placeholder:text-[var(--text-muted)] placeholder:font-normal
                         focus:outline-none focus:ring-4
@@ -203,7 +208,7 @@ export default function LoginPage() {
                         w-full pl-12 pr-12 py-3.5
                         text-sm font-medium
                         bg-[var(--bg-input)] text-[var(--text-primary)]
-                        border-2 rounded-xl
+                        border-2 rounded-2xl
                         transition-all duration-200
                         placeholder:text-[var(--text-muted)] placeholder:font-normal
                         focus:outline-none focus:ring-4
@@ -247,9 +252,9 @@ export default function LoginPage() {
                     bg-[var(--primary)] hover:bg-[var(--primary-hover)]
                     text-[var(--text-primary)]
                     px-6 py-4
-                    rounded-xl
+                    rounded-2xl
                     font-bold text-base
-                    shadow-lg hover:shadow-xl
+                    shadow-lg shadow-yellow-300/30 hover:shadow-xl
                     transition-all duration-200
                     hover:scale-[1.02]
                     active:scale-[0.98]

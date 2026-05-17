@@ -16,6 +16,7 @@
 - ✅ Live work-location admin, paginated employee admin, employee-facing exception submission.
 - ✅ Daily / weekly / monthly preset chips on the attendance report.
 - ✅ EXPLAIN ANALYZE runbook (`npm run perf:explain`).
+- ✅ Approved UI/UX direction documented in `UI_UX_GUIDE.md`: mobile-first yellow HRIS app, rounded cards, bottom navigation, and required screen patterns.
 
 ## 2. Phases
 
@@ -47,6 +48,7 @@
 - GPS validator (`lib/attendance/gps-validation.ts`) is the only authoritative source for distance / radius / accuracy / timestamp freshness.
 - Manual adjustment route + admin review surface for outside-radius pending entries.
 - Employee → manager pre-validation: location and shift assignment must exist.
+- Attendance UI must continue using realtime camera capture only; no upload, gallery, or manual file fallback may be added during UI polish.
 
 ### Phase 6 — KPI + Reports (done)
 - KPI service + `/api/kpi/*` routes with audit-logged approval and notifications.
@@ -73,6 +75,14 @@
 - `npm run db:deploy` runs in the entrypoint.
 - Backup + restore documented; daily `pg_dump` + `rsync` cron schedules listed in `COOLIFY.md`.
 - `npm run perf:explain` runbook for index validation on staging.
+
+### Phase 10 — UI/UX Upgrade Alignment (approved docs scope)
+- Preserve stack: Next.js App Router, TypeScript, Drizzle ORM, PostgreSQL, Tailwind CSS.
+- Follow `UI_UX_GUIDE.md` for onboarding, login, dashboard, attendance, employees, leave, KPI, profile, and reports screens.
+- Keep brand colors and existing logo unchanged; use yellow as primary accent, red only for danger/rejection/late states.
+- Use mobile-first rounded cards and bottom navigation for employee flows, with responsive admin dashboards for desktop.
+- Preserve backend RBAC, GPS, geofence, private selfie storage, and audit requirements as non-negotiable security gates.
+- Confirm attendance UI has realtime camera selfie only: no upload button, no gallery picker, no `<input type="file">`, no `accept="image/*"` fallback.
 
 ## 3. Workstream summaries (delivered)
 

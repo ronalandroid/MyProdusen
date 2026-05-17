@@ -8,10 +8,11 @@
 
 :root {
   /* Brand Colors */
-  --primary: #FFC107;
-  --primary-hover: #FFB300;
-  --primary-light: #FFECB3;
-  --primary-dark: #FFA000;
+  --primary: #FDC704;
+  --primary-hover: #F4B900;
+  --primary-light: #FFF3BF;
+  --primary-dark: #D99A00;
+  --accent-red: #B51B19;
   
   /* Text Colors */
   --text-primary: #111827;
@@ -20,22 +21,22 @@
   --text-inverse: #FFFFFF;
   
   /* Background Colors */
-  --bg-main: #F9FAFB;
+  --bg-main: #F8F6EF;
   --bg-card: #FFFFFF;
   --bg-input: #FFFFFF;
   --bg-hover: #F3F4F6;
   --bg-overlay: rgba(0, 0, 0, 0.5);
   
   /* Border Colors */
-  --border-color: #E5E7EB;
-  --border-focus: #FFC107;
+  --border-color: #E5E3E6;
+  --border-focus: #FDC704;
   
   /* Status Colors */
   --success: #10B981;
   --success-bg: #D1FAE5;
   --success-border: #6EE7B7;
   
-  --danger: #EF4444;
+  --danger: #B51B19;
   --danger-bg: #FEE2E2;
   --danger-border: #FCA5A5;
   
@@ -104,10 +105,23 @@ html {
 
 body {
   font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-  background-color: var(--bg-main);
+  background:
+    radial-gradient(circle at top left, rgba(253, 199, 4, 0.16), transparent 32rem),
+    linear-gradient(180deg, #FFFCF2 0%, var(--bg-main) 45%, #FFFFFF 100%);
   color: var(--text-primary);
   line-height: 1.6;
   overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 90% 8%, rgba(253, 199, 4, 0.22), transparent 18rem),
+    radial-gradient(circle at 12% 88%, rgba(181, 27, 25, 0.06), transparent 14rem);
+  z-index: -1;
 }
 
 /* ============================================
@@ -227,7 +241,7 @@ p, .body-text {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: var(--bg-main);
+  background: transparent;
 }
 
 /* Desktop Layout */
@@ -246,14 +260,27 @@ p, .body-text {
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: var(--bg-card);
+  background-color: rgba(255, 255, 255, 0.94);
   border-top: 1px solid var(--border-color);
-  padding: 0.5rem 0;
+  padding: 0.5rem max(0.75rem, env(safe-area-inset-left)) calc(0.5rem + env(safe-area-inset-bottom));
   display: flex;
   justify-content: space-around;
   align-items: center;
   z-index: var(--z-fixed);
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 -10px 30px rgba(17, 24, 39, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+@media (max-width: 767px) {
+  .nav-container {
+    width: min(100%, 430px);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    border: 1px solid rgba(229, 227, 230, 0.9);
+    border-bottom: 0;
+    border-radius: 24px 24px 0 0;
+  }
 }
 
 /* Tablet - Keep bottom nav */
@@ -305,7 +332,7 @@ p, .body-text {
   border: none;
   cursor: pointer;
   transition: all var(--transition-base);
-  border-radius: var(--radius-lg);
+  border-radius: 18px;
   text-decoration: none;
   color: var(--text-muted);
   min-width: 60px;
@@ -317,8 +344,9 @@ p, .body-text {
 }
 
 .nav-item.active {
-  color: var(--primary);
-  background-color: var(--primary-light);
+  color: var(--text-primary);
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-hover) 100%);
+  box-shadow: 0 10px 20px rgba(253, 199, 4, 0.28);
 }
 
 .nav-item.active .nav-icon {
@@ -371,8 +399,15 @@ p, .body-text {
 .mobile-content {
   flex: 1;
   padding: 1rem;
-  padding-bottom: 5rem;
+  padding-bottom: 6rem;
   overflow-y: auto;
+}
+
+@media (max-width: 767px) {
+  .mobile-content {
+    width: min(100%, 430px);
+    margin: 0 auto;
+  }
 }
 
 /* Tablet */
@@ -402,14 +437,14 @@ p, .body-text {
 .card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
+  border-radius: 22px;
   padding: 1rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 14px 40px rgba(17, 24, 39, 0.06);
   transition: all var(--transition-base);
 }
 
 .card:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 18px 48px rgba(17, 24, 39, 0.1);
 }
 
 /* Tablet & Desktop */
@@ -1767,4 +1802,61 @@ html {
 
 @media (prefers-color-scheme: dark) {
   /* Add dark mode styles here if needed */
+}
+
+/* MyProdusen HRIS mobile reference refinements */
+.phone-screen {
+  width: 100%;
+}
+
+.hris-card-highlight {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFFCF0 100%);
+  border-color: rgba(253, 199, 4, 0.35);
+}
+
+.attendance-screen h1,
+.dashboard-page h1 {
+  letter-spacing: -0.04em;
+}
+
+.attendance-action-row .btn {
+  min-height: 48px;
+}
+
+.status-pill,
+.badge {
+  border-radius: 999px;
+}
+
+@media (max-width: 767px) {
+  .dashboard-page,
+  .attendance-screen {
+    padding-top: 0.25rem;
+  }
+
+  .stats-grid,
+  .quick-actions-grid {
+    gap: 0.85rem;
+  }
+}
+
+.feature-screen > .card,
+.feature-screen form.card,
+.feature-screen section.card {
+  border-radius: 24px;
+}
+
+.feature-screen input,
+.feature-screen select,
+.feature-screen textarea {
+  border-radius: 16px !important;
+}
+
+.feature-screen .btn,
+.feature-screen button.btn {
+  border-radius: 16px;
+}
+
+.feature-screen [style*="borderRadius: \"var(--radius-md)\""] {
+  border-radius: 20px !important;
 }

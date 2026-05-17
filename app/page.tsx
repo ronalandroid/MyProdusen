@@ -1,115 +1,86 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { ArrowRight, CheckCircle, Clock, Users, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, CheckCircle, Clock, ShieldCheck, Users } from "lucide-react";
 
 export default function SplashPage() {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
 
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
+  useEffect(() => setIsVisible(true), []);
 
   const features = [
-    { icon: Clock, text: "Absensi Real-time" },
-    { icon: Users, text: "Manajemen Karyawan" },
-    { icon: CheckCircle, text: "Cuti & Izin" },
-    { icon: TrendingUp, text: "Laporan KPI" },
+    { icon: Users, title: "Terintegrasi", text: "Kelola data dan proses HR dalam satu sistem." },
+    { icon: Clock, title: "Praktis", text: "Akses cepat, kapan saja dan di mana saja." },
+    { icon: ShieldCheck, title: "Aman", text: "Data karyawan terlindungi dengan kontrol akses." },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--primary)] via-[var(--primary-hover)] to-[var(--primary-dark)] relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-      </div>
-
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-between p-6 sm:p-8 lg:p-12">
-        {/* Header */}
-        <div className={`w-full max-w-6xl transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-              <img src="/logo.png" alt="" className="w-8 h-8 sm:w-9 sm:h-9" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1">
-                <span className="text-2xl sm:text-3xl font-extrabold text-white">My</span>
-                <span className="text-2xl sm:text-3xl font-extrabold text-[var(--text-primary)]">Produsen</span>
-              </div>
-              <p className="text-xs sm:text-sm text-white/80 font-medium">Produsen Dimsum Medan</p>
-            </div>
-          </div>
+    <main className="min-h-screen overflow-hidden bg-[#FFFCF2] text-[var(--text-primary)]">
+      <section className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-10 lg:px-14">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -right-20 top-0 h-80 w-80 rounded-full bg-[var(--primary)]/20 blur-3xl" />
+          <div className="absolute -left-20 bottom-16 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl" />
         </div>
 
-        {/* Main Content */}
-        <div className={`flex-1 flex flex-col items-center justify-center text-center max-w-4xl transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          {/* Logo */}
-          <div className="mb-8 sm:mb-12">
-            <div className="w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 mx-auto mb-6 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-2xl animate-scale-in">
-              <img src="/logo.png" alt="MyProdusen Logo" className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 object-contain" />
+        <div className={`relative z-10 grid flex-1 items-center gap-10 lg:grid-cols-[1fr_0.9fr] transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+          <div className="space-y-8">
+            <div className="flex items-center gap-4">
+              <img src="/logo.png" alt="MyProdusen" className="h-16 w-16 object-contain sm:h-20 sm:w-20" />
+              <div>
+                <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl">
+                  My<span className="text-[var(--primary)]">Produsen</span>
+                </h1>
+                <p className="mt-2 text-lg font-medium text-[var(--text-muted)] sm:text-2xl">Produsen Dimsum Medan</p>
+              </div>
             </div>
-          </div>
 
-          {/* Heading */}
-          <h1 className="text-3xl sm:text-4xl lg:text-6xl font-extrabold text-white mb-4 sm:mb-6 leading-tight">
-            Kelola HR,<br className="sm:hidden" /> Lebih Mudah<br />
-            Lebih Cepat, Lebih Baik
-          </h1>
-          
-          <p className="text-base sm:text-lg lg:text-xl text-white/90 mb-8 sm:mb-12 max-w-2xl font-medium">
-            Satu sistem untuk semua kebutuhan manajemen karyawan. Absensi, cuti, penggajian, dan laporan dalam satu aplikasi.
-          </p>
+            <p className="max-w-xl text-lg font-medium leading-relaxed text-[var(--text-secondary)] sm:text-2xl">
+              Aplikasi HRIS mobile untuk memudahkan pengelolaan karyawan, kehadiran, cuti, KPI, penggajian, dan informasi penting dalam satu genggaman.
+            </p>
 
-          {/* Features Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-12 w-full max-w-3xl">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-6 flex flex-col items-center gap-2 sm:gap-3 hover:bg-white/20 transition-all duration-300 hover:scale-105 animate-fade-in"
-                style={{ animationDelay: `${index * 100 + 600}ms` }}
-              >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <div className="grid gap-4 sm:grid-cols-3">
+              {features.map((feature) => (
+                <div key={feature.title} className="rounded-[24px] bg-white/80 p-4 shadow-[0_14px_40px_rgba(17,24,39,0.07)] ring-1 ring-black/5 backdrop-blur">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--primary)] text-black shadow-lg shadow-yellow-300/30">
+                    <feature.icon size={22} strokeWidth={2.6} />
+                  </div>
+                  <h2 className="text-sm font-extrabold">{feature.title}</h2>
+                  <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">{feature.text}</p>
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-white text-center">{feature.text}</span>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            <button
+              onClick={() => router.push("/login")}
+              className="inline-flex items-center gap-3 rounded-2xl bg-black px-7 py-4 text-sm font-bold text-white shadow-2xl transition hover:-translate-y-0.5 hover:bg-neutral-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--primary-light)]"
+            >
+              Mulai Sekarang
+              <ArrowRight size={18} />
+            </button>
           </div>
 
-          {/* CTA Button */}
-          <button
-            onClick={() => router.push("/login")}
-            className="
-              group
-              bg-[var(--text-primary)] hover:bg-gray-900
-              text-white
-              px-8 sm:px-12 py-4 sm:py-5
-              rounded-2xl
-              font-bold text-base sm:text-lg
-              shadow-2xl hover:shadow-3xl
-              transition-all duration-300
-              hover:scale-105
-              active:scale-95
-              flex items-center gap-3
-              animate-fade-in
-            "
-            style={{ animationDelay: '1000ms' }}
-          >
-            <span>Mulai Sekarang</span>
-            <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-1 transition-transform" />
-          </button>
+          <div className="relative mx-auto w-full max-w-sm lg:max-w-md">
+            <div className="absolute -inset-6 rounded-[3rem] bg-[var(--primary)]/25 blur-3xl" />
+            <div className="relative overflow-hidden rounded-[3rem] border-[10px] border-neutral-950 bg-[var(--primary)] p-6 shadow-2xl">
+              <div className="mx-auto mb-8 h-6 w-28 rounded-full bg-black" />
+              <div className="flex items-center gap-3">
+                <img src="/logo.png" alt="" className="h-12 w-12 object-contain" />
+                <div className="text-lg font-extrabold">My<span className="text-white">Produsen</span></div>
+              </div>
+              <div className="my-12 flex justify-center">
+                <img src="/logo.png" alt="MyProdusen mascot" className="h-44 w-44 object-contain drop-shadow-2xl" />
+              </div>
+              <div className="rounded-[2rem] bg-white/80 p-5 text-center shadow-xl backdrop-blur">
+                <CheckCircle className="mx-auto mb-3 text-[var(--success)]" size={34} />
+                <h2 className="text-2xl font-extrabold">Selamat Datang Kembali</h2>
+                <p className="mt-2 text-sm font-medium text-[var(--text-secondary)]">Mari bekerja lebih produktif hari ini.</p>
+              </div>
+            </div>
+          </div>
         </div>
-
-        {/* Footer */}
-        <div className={`w-full max-w-6xl text-center transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <p className="text-sm text-white/70">
-            © 2026 MyProdusen. Sistem HRIS untuk Produsen Dimsum Medan.
-          </p>
-        </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

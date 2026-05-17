@@ -6,6 +6,10 @@
 **Version:** 1.0  
 **Status:** Draft untuk Development  
 
+**UI/UX Guide:** [`UI_UX_GUIDE.md`](./UI_UX_GUIDE.md) defines the approved
+mobile-first yellow HRIS style and must be followed without changing this PRD's
+business scope.
+
 ---
 
 ## 1. Executive Summary
@@ -902,6 +906,7 @@ Requirements:
 - Backend tetap menghitung jarak ke lokasi kerja.
 - Gunakan batas maksimal GPS accuracy.
 - Simpan device info/user agent/IP untuk audit.
+- Selfie absensi wajib realtime dari kamera perangkat (`getUserMedia`), bukan upload/gallery picker.
 - Selfie upload wajib divalidasi mime type dan ukuran file.
 - File selfie disimpan dengan nama aman, bukan nama asli user.
 - Data selfie hanya dapat diakses role berwenang.
@@ -930,6 +935,8 @@ Requirements:
 ### NFR-006 Usability
 
 - UI sederhana untuk karyawan non-teknis.
+- Mobile-first dengan aksen kuning brand, rounded cards, bottom navigation untuk flow karyawan, dan layout dashboard responsif untuk admin.
+- Screen wajib mengikuti panduan `UI_UX_GUIDE.md`: onboarding, login, dashboard, attendance, employees, leave, KPI, profile, dan reports.
 - Dashboard mudah dibaca.
 - Form memiliki validasi dan helper text.
 - Empty state informatif.
@@ -1331,13 +1338,13 @@ Pilihan recommended fullstack:
 
 - Next.js App Router.
 - API Routes / Server Actions.
-- Prisma ORM.
+- Drizzle ORM.
 - PostgreSQL.
 
 Pilihan backend terpisah:
 
 - Node.js + NestJS/Express.
-- Prisma ORM.
+- Drizzle ORM.
 - PostgreSQL.
 - Redis untuk cache/rate limit/job queue jika diperlukan.
 
@@ -1690,12 +1697,14 @@ Responsibilities:
 3. Simpan latitude, longitude, accuracy, dan distance_meters.
 4. Batasi GPS accuracy maksimal sesuai konfigurasi.
 5. Simpan IP, user agent, dan device info.
-6. Upload selfie harus validasi file type.
-7. Maksimum ukuran selfie harus dibatasi.
-8. Selfie URL tidak boleh public tanpa authorization.
-9. Optional: face matching.
-10. Optional: liveness detection.
-11. Optional: anti-fake GPS detection.
+6. Selfie wajib ditangkap realtime dari kamera perangkat; file picker, gallery upload, dan base64 JSON dilarang untuk absensi.
+7. Backend wajib validasi MIME, ukuran file, tanda tangan biner, dan path containment.
+8. File selfie wajib disimpan di private persistent storage dengan server-generated filename.
+9. PostgreSQL hanya menyimpan metadata/path, bukan binary atau base64.
+10. Selfie hanya boleh diakses melalui endpoint terotentikasi dengan RBAC dan audit log.
+11. Optional: face matching.
+12. Optional: liveness detection.
+13. Optional: anti-fake GPS detection.
 
 ## 13.3 Sensitive Actions
 

@@ -227,7 +227,7 @@ export default function AttendancePage() {
   useEffect(() => () => clearSelfie(), []);
 
   return (
-    <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+    <div className="phone-screen attendance-screen" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={() => router.back()}>
           <ArrowLeft size={24} />
@@ -246,8 +246,8 @@ export default function AttendancePage() {
         <Info size={18} color="var(--text-muted)" />
       </div>
 
-      <div style={{ backgroundColor: "var(--warning-bg)", borderRadius: "var(--radius-lg)", padding: "16px", display: "flex", gap: "12px", alignItems: "flex-start", border: "1px solid rgba(255, 193, 7, 0.3)" }}>
-        <div style={{ backgroundColor: "rgba(255, 193, 7, 0.2)", padding: "8px", borderRadius: "8px" }}>
+      <div className="card" style={{ background: "linear-gradient(135deg, #fff 0%, var(--primary-light) 100%)", padding: "16px", display: "flex", gap: "12px", alignItems: "flex-start", border: "1px solid rgba(253, 199, 4, 0.35)" }}>
+        <div style={{ backgroundColor: "var(--primary)", padding: "8px", borderRadius: "14px", boxShadow: "0 10px 20px rgba(253,199,4,.25)" }}>
           <span style={{ fontSize: "20px" }}>📋</span>
         </div>
         <div>
