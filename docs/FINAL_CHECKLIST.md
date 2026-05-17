@@ -19,7 +19,8 @@ verification step, not a wish.
 ## 2. Build & verification
 
 - [ ] `npm run release:check` exits 0. This is the local code-readiness gate
-      — it runs `lint`, the full `test` suite, and the production `build`.
+      — it runs `lint`, the full `test` suite, the production `build`, and
+      the migration-coverage check (`scripts/check-migrations-coverage.mjs`).
 - [ ] `npm run release:check:full` exits 0 on the deploy target. Same as
       above plus the env preflight (`scripts/check-production-env.mjs`),
       so it only passes when production env vars are wired in.
