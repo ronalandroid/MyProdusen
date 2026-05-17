@@ -105,6 +105,7 @@ docker ps                                         # container running
 docker logs <myprodusen-web-app-container> --tail=200
 curl -s https://myprodusen.online/api/health      # returns { status: "ok" }
 DATABASE_URL=... npm run perf:explain              # index usage check (run on staging)
+docker exec <container> node scripts/check-production-env.mjs   # env preflight
 ```
 
 Then walk the 13-step end-to-end smoke test in
