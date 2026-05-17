@@ -145,8 +145,6 @@
 ## 4. Deferred / next
 
 ### P1 — pick when planned
-- Lazy-loaded Leaflet / OpenStreetMap preview on the work-location detail
-  card. Use `next/dynamic` with `ssr: false` and budget ≤ 80 KB gzipped.
 - Employee XLSX import with Zod dry-run preview + per-row errors +
   audit-logged commit.
 - Optional `pg_trgm` index on `Employee.fullName` / `Employee.nip` if search

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Search, Plus, Edit, Trash2 } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth-client";
+import { WorkLocationMap } from "@/components/locations/WorkLocationMap";
 
 interface WorkLocationItem {
   id: string;
@@ -258,6 +259,15 @@ export default function LocationsPage() {
                   {loc.isActive ? "Aktif" : "Nonaktif"}
                 </span>
               </div>
+              <div style={{ marginBottom: "12px" }}>
+                <WorkLocationMap
+                  latitude={loc.latitude}
+                  longitude={loc.longitude}
+                  radiusMeters={loc.radius}
+                  label={loc.name}
+                  height={140}
+                />
+              </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "12px" }}>
                 <div style={{ padding: "10px", background: "var(--bg-input)", borderRadius: "var(--radius-sm)" }}>
                   <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "2px" }}>Koordinat</div>
@@ -348,6 +358,20 @@ export default function LocationsPage() {
                   />
                 </div>
               </div>
+              {Number.isFinite(Number(form.latitude)) && Number.isFinite(Number(form.longitude)) && Math.abs(Number(form.latitude)) <= 90 && Math.abs(Number(form.longitude)) <= 180 && (
+                <div style={{ marginBottom: "16px" }}>
+                  <label className="label">Pratinjau peta</label>
+                  <WorkLocationMap
+                    latitude={Number(form.latitude)}
+                    longitude={Number(form.longitude)}
+                    radiusMeters={Math.max(10, Math.min(1000, Number(form.radius) || 100))}
+                    height={180}
+                  />
+                  <p className="text-xs" style={{ color: "var(--text-muted)", marginTop: "4px" }}>
+                    Pratinjau menggunakan ubin OpenStreetMap. Lingkaran kuning menunjukkan radius geo-fence.
+                  </p>
+                </div>
+              )}
               {editing && (
                 <label className="flex items-center gap-2 text-sm" style={{ marginBottom: "16px" }}>
                   <input
