@@ -18,9 +18,11 @@ verification step, not a wish.
 
 ## 2. Build & verification
 
-- [ ] `npm run release:check` exits 0. This is the canonical gate — it runs
-      `lint`, the full `test` suite, the production `build`, and the env
-      preflight (`scripts/check-production-env.mjs`) in one command.
+- [ ] `npm run release:check` exits 0. This is the local code-readiness gate
+      — it runs `lint`, the full `test` suite, and the production `build`.
+- [ ] `npm run release:check:full` exits 0 on the deploy target. Same as
+      above plus the env preflight (`scripts/check-production-env.mjs`),
+      so it only passes when production env vars are wired in.
 - [ ] `npm run db:deploy` ran successfully in production order (no skipped migrations after `0011`).
 - [ ] `npm run bootstrap:superadmin` ran once after migrations.
 - [ ] `npm run perf:explain` (against staging) shows index usage on
