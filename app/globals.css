@@ -241,6 +241,7 @@ p, .body-text {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 0;
   background: transparent;
 }
 
@@ -248,6 +249,9 @@ p, .body-text {
 @media (min-width: 1024px) {
   .layout-wrapper {
     flex-direction: row;
+  }
+  .layout-wrapper > main.mobile-content {
+    min-width: 0;
   }
 }
 
@@ -273,20 +277,27 @@ p, .body-text {
 
 @media (max-width: 767px) {
   .nav-container {
-    width: min(100%, 430px);
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
+    width: 100%;
+    left: 0;
+    right: 0;
+    transform: none;
     border: 1px solid rgba(229, 227, 230, 0.9);
     border-bottom: 0;
     border-radius: 24px 24px 0 0;
   }
 }
 
-/* Tablet - Keep bottom nav */
-@media (min-width: 768px) {
+/* Tablet - Keep bottom nav, full-width */
+@media (min-width: 768px) and (max-width: 1023px) {
   .nav-container {
-    padding: 0.75rem 0;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+    width: 100%;
+    left: 0;
+    right: 0;
+    transform: none;
+    border-radius: 0;
+    border: 1px solid rgba(229, 227, 230, 0.9);
+    border-bottom: 0;
   }
 }
 
@@ -327,7 +338,7 @@ p, .body-text {
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.625rem 0.875rem;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -336,6 +347,14 @@ p, .body-text {
   text-decoration: none;
   color: var(--text-muted);
   min-width: 60px;
+  min-height: 56px;
+}
+
+@media (min-width: 1024px) {
+  .nav-item {
+    min-height: 48px;
+    min-width: 0;
+  }
 }
 
 .nav-item:hover {
@@ -399,13 +418,16 @@ p, .body-text {
 .mobile-content {
   flex: 1;
   padding: 1rem;
-  padding-bottom: 6rem;
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
   overflow-y: auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 @media (max-width: 767px) {
   .mobile-content {
-    width: min(100%, 430px);
+    width: 100%;
     margin: 0 auto;
   }
 }
@@ -414,7 +436,7 @@ p, .body-text {
 @media (min-width: 768px) {
   .mobile-content {
     padding: 1.5rem;
-    padding-bottom: 6rem;
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
   }
 }
 
@@ -441,6 +463,13 @@ p, .body-text {
   padding: 1rem;
   box-shadow: 0 14px 40px rgba(17, 24, 39, 0.06);
   transition: all var(--transition-base);
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.card > * {
+  min-width: 0;
 }
 
 .card:hover {
@@ -475,6 +504,7 @@ p, .body-text {
   text-decoration: none;
   white-space: nowrap;
   user-select: none;
+  min-height: 44px;
 }
 
 .btn:disabled {
@@ -531,11 +561,13 @@ p, .body-text {
 .btn-sm {
   padding: 0.5rem 1rem;
   font-size: 0.75rem;
+  min-height: 36px;
 }
 
 .btn-lg {
   padding: 1rem 1.5rem;
   font-size: 1rem;
+  min-height: 52px;
 }
 
 /* Tablet & Desktop */
@@ -571,6 +603,7 @@ p, .body-text {
   border-radius: var(--radius-lg);
   transition: all var(--transition-base);
   outline: none;
+  min-height: 44px;
 }
 
 .input:focus,
@@ -1713,7 +1746,7 @@ html {
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
 }
 
@@ -1859,4 +1892,69 @@ html {
 
 .feature-screen [style*="borderRadius: \"var(--radius-md)\""] {
   border-radius: 20px !important;
+}
+
+
+/* ============================================
+   RESPONSIVE SAFETY NETS (audit fixes)
+   ============================================ */
+
+/* Prevent any inline-style grid card from blowing past a 320px viewport. */
+[style*="grid-template-columns"],
+[style*="gridTemplateColumns"] {
+  min-width: 0;
+}
+
+[style*="grid-template-columns"] > *,
+[style*="gridTemplateColumns"] > * {
+  min-width: 0;
+}
+
+/* Cards on the locations / employees pages used inline padding only.
+   This guarantees their inputs and search rows stretch full width on mobile. */
+.card .input,
+.card .textarea,
+.card .select,
+.card input[type="search"],
+.card input[type="text"],
+.card input[type="number"],
+.card input[type="email"],
+.card input[type="date"],
+.card input[type="password"] {
+  max-width: 100%;
+}
+
+/* Ensure inline-styled tables in dashboards always allow horizontal scroll. */
+.card > table,
+.card table {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Block the report table from breaking the page when it overflows. */
+@media (max-width: 1023px) {
+  .card > div[style*="overflowX"],
+  .card > div[style*="overflow-x"] {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Honour reduced-motion preferences for non-essential transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Bigger touch radius for icon-only ghost buttons. */
+.btn-ghost.btn-icon,
+.btn.btn-icon {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.5rem;
 }

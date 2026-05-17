@@ -108,3 +108,32 @@ as an SVG circle. Implementation lives in
   env to a paid provider (MapTiler/Mapbox) without touching the code.
 - Render is automatically suppressed if the user supplies invalid lat/lon.
 - Failed tile loads degrade to a coordinate-only placeholder.
+
+
+## Responsive UI/UX audit (delivered)
+
+Audit baseline taken on 2026-05-17. Skills `superpowers` and `ui ux promax`
+were not installed in this environment, so the audit followed the manual
+rules from `AGENTS.md` instead.
+
+### Findings and fixes
+
+| # | Finding | Fix | Where |
+| - | ------- | --- | ----- |
+| 1 | `.mobile-content` and `.nav-container` were clamped to `min(100%, 430px)` even on tablets, leaving a thin column at 768–1023 px. | Removed the 430 px clamp. Tablets now use full viewport width with full-width bottom nav. Desktop sidebar unchanged. | `app/globals.css` |
+| 2 | iOS safe-area inset only applied to the bottom-nav padding, content could sit under the nav on devices with home indicators. | Applied `env(safe-area-inset-bottom)` to `.mobile-content` padding-bottom on every breakpoint. | `app/globals.css` |
+| 3 | Bottom-nav tap targets were ~36 px tall, below WCAG 2.5.5 minimum of 44 px. | Bumped `.nav-item` to `min-height: 56px` on mobile and `48 px` on desktop. | `app/globals.css` |
+| 4 | `.btn` and `.btn-sm` had no minimum tap height; some screens had buttons ~32 px tall. | `.btn` → `min-height: 44px`, `.btn-sm` → `36 px`, `.btn-lg` → `52 px`. Inputs/selects also bumped to ≥ 44 px. | `app/globals.css` |
+| 5 | Long employee names / addresses could push a 320 px viewport horizontally. | Added `.card { min-width: 0; word-break: break-word; overflow-wrap: anywhere; }` and `.card > * { min-width: 0; }` plus a global guard for inline-styled grids. | `app/globals.css` |
+| 6 | Reports/locations tables with horizontal overflow trapped page scroll. | `.table-container` and inline-styled overflow containers now allow `-webkit-overflow-scrolling: touch` and degrade with a visible border. | `app/globals.css` |
+| 7 | Animations played even with `prefers-reduced-motion: reduce`. | Added a global `@media (prefers-reduced-motion: reduce)` rule that flattens transitions and animations. | `app/globals.css` |
+| 8 | Icon-only ghost buttons (close-modal `✕`) had no minimum hit area. | Added `.btn-icon` minimum 44×44 with consistent padding. | `app/globals.css` |
+
+### Verification
+
+- `npm run lint` clean.
+- `npm run test` — 36 files / **218 / 218 passing**.
+- `npm run build` succeeds.
+- Manual viewport spot-checks at 320 / 375 / 768 / 1024 / 1440 px all
+  render without horizontal scroll, with bottom nav respecting safe-area
+  insets, with selfie modal scrollable on small devices.
