@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useId } from 'react';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -10,10 +10,15 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, leftIcon, rightIcon, className = '', ...props }, ref) => {
+    const generatedId = useId();
+    const inputId = props.id || generatedId;
+    const helperId = helperText ? `${inputId}-helper` : undefined;
+    const errorId = error ? `${inputId}-error` : undefined;
+
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">
+          <label htmlFor={inputId} className="block text-sm font-medium text-[var(--text-primary)] mb-1.5">
             {label}
           </label>
         )}
@@ -25,6 +30,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
           <input
             ref={ref}
+            id={inputId}
+            aria-invalid={error ? 'true' : undefined}
+            aria-describedby={[errorId, helperId].filter(Boolean).join(' ') || undefined}
             className={`
               w-full px-4 py-2.5 text-sm
               bg-white border rounded-lg
@@ -46,10 +54,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error && (
-          <p className="mt-1 text-xs text-[var(--danger)]">{error}</p>
+          <p id={errorId} className="mt-1 text-xs text-[var(--danger)]">{error}</p>
         )}
         {helperText && !error && (
-          <p className="mt-1 text-xs text-[var(--text-secondary)]">{helperText}</p>
+          <p id={helperId} className="mt-1 text-xs text-[var(--text-secondary)]">{helperText}</p>
         )}
       </div>
     );

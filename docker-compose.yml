@@ -1,6 +1,6 @@
 # ============================================================
 # MyProdusen — Docker Compose (local development & testing)
-# For production, deploy via Coolify (see docs/COOLIFY_DEPLOYMENT.md)
+# For production, deploy via Coolify (see docs/COOLIFY.md)
 # ============================================================
 
 services:
@@ -20,9 +20,22 @@ services:
       JWT_SECRET: local-dev-only-change-this-to-a-strong-random-32-plus-character-secret
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       APP_URL: http://localhost:3000
+      NEXTAUTH_SECRET: local-dev-only-nextauth-secret-32-plus-characters
       UPLOAD_DIR: /app/uploads
+      ATTENDANCE_SELFIE_DIR: attendance-selfies
       MAX_UPLOAD_SIZE: 5242880
+      MAX_SELFIE_SIZE_MB: 1
       DEFAULT_GEOFENCE_RADIUS: 100
+      GPS_MAX_ACCURACY_METERS: 100
+      DEFAULT_GEOFENCE_RADIUS_METERS: 100
+      REJECT_OUTSIDE_GEOFENCE: "true"
+      GPS_TIMESTAMP_MAX_AGE_SECONDS: 120
+      ATTENDANCE_EXPORT_MAX_ROWS: 5000
+      NEXT_PUBLIC_SELFIE_MAX_WIDTH: 720
+      NEXT_PUBLIC_SELFIE_MAX_HEIGHT: 720
+      NEXT_PUBLIC_SELFIE_IMAGE_QUALITY: 0.75
+      NEXT_PUBLIC_SELFIE_TARGET_SIZE_KB: 300
+      NEXT_PUBLIC_OSM_TILE_URL: https://tile.openstreetmap.org/{z}/{x}/{y}.png
       SESSION_TIMEOUT_HOURS: 8
     volumes:
       - uploads:/app/uploads

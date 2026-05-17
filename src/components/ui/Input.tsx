@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useId } from 'react';
 import { AlertCircle } from 'lucide-react';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -31,10 +31,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const inputId = id || generatedId;
     const hasError = Boolean(error);
+    const helperId = helperText ? `${inputId}-helper` : undefined;
+    const errorId = hasError ? `${inputId}-error` : undefined;
 
-    // Support both leftIcon/rightIcon shorthand and icon/iconPosition pattern
     const resolvedLeftIcon = leftIcon || (icon && iconPosition === 'left' ? icon : undefined);
     const resolvedRightIcon = rightIcon || (icon && iconPosition === 'right' ? icon : undefined);
 
@@ -62,10 +64,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             disabled={disabled}
             required={required}
-            aria-invalid={hasError}
-            aria-describedby={
-              hasError ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
-            }
+            aria-invalid={hasError ? 'true' : undefined}
+            aria-describedby={[errorId, helperId].filter(Boolean).join(' ') || undefined}
             className={`
               w-full px-4 py-3 text-sm font-medium
               bg-[var(--bg-input)] text-[var(--text-primary)]
@@ -79,13 +79,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 : 'border-[var(--border-color)] focus:border-[var(--primary)] focus:ring-[var(--primary-light)]'
               }
               ${resolvedLeftIcon ? 'pl-10' : ''}
-              ${resolvedRightIcon ? 'pr-10' : ''}
+              ${resolvedRightIcon || hasError ? 'pr-10' : ''}
               ${className}
             `}
             {...props}
           />
           
-          {resolvedRightIcon && (
+          {resolvedRightIcon && !hasError && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
               {resolvedRightIcon}
             </div>
@@ -100,7 +100,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         
         {hasError && (
           <p
-            id={`${inputId}-error`}
+            id={errorId}
             className="mt-2 text-xs font-medium text-[var(--danger)] flex items-center gap-1"
             role="alert"
           >
@@ -111,7 +111,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         
         {helperText && !hasError && (
           <p
-            id={`${inputId}-helper`}
+            id={helperId}
             className="mt-2 text-xs text-[var(--text-muted)]"
           >
             {helperText}

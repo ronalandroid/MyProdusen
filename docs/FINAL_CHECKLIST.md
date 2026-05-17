@@ -65,6 +65,8 @@ verification step, not a wish.
 - [ ] Yellow `#FDC704` remains primary accent; red `#B51B19` appears only for danger, reject, late, or critical states.
 - [ ] Loading, empty, error, and success states are present for forms, tables, dashboards, attendance, and reports.
 - [ ] UI hides unauthorized actions, while backend RBAC still enforces every protected action.
+- [ ] Profile settings pages are non-empty and reachable: personal info, password, notifications, and about app.
+- [ ] Form labels are programmatically bound to inputs and include clear helper/error text where needed.
 
 ## 5. RBAC end-to-end
 
@@ -74,6 +76,7 @@ verification step, not a wish.
 - [ ] Superadmin has full access plus role management.
 - [ ] Superadmin new-user form separates system role from division/position placement.
 - [ ] New-user role assignment is enforced server-side with `canManageRole`.
+- [ ] User activation / role updates send account-approved or role-changed email only on relevant transitions.
 - [ ] Inactive users cannot log in.
 - [ ] Cross-employee `/api/attendances/:id/selfie/...` returns 403.
 

@@ -130,6 +130,26 @@ export class AuthService extends BaseService {
       .from(users);
   }
 
+  async getUserSummary(userId: string) {
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        username: users.username,
+        role: users.role,
+        isActive: users.isActive,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) {
+      throw AppError.notFound('User tidak ditemukan');
+    }
+
+    return user;
+  }
+
   async updateUserRole(userId: string, role: UserRole, isActive?: boolean) {
     const [user] = await db
       .update(users)

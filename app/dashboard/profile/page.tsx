@@ -3,6 +3,7 @@
 import { ArrowLeft, Settings, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ClientUserProfile, fetchProfile, logout } from "@/lib/auth-client";
 
 export default function ProfilePage() {
@@ -71,18 +72,18 @@ export default function ProfilePage() {
 
       {/* Menu Options */}
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+        <Link href="/dashboard/profile/password" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: "44px" }}>
           <span style={{ fontSize: "14px", fontWeight: 600 }}>Ubah Kata Sandi</span>
           <ChevronRight size={18} color="var(--text-muted)" />
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+        </Link>
+        <Link href="/dashboard/profile/notifications" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: "44px" }}>
           <span style={{ fontSize: "14px", fontWeight: 600 }}>Notifikasi</span>
           <ChevronRight size={18} color="var(--text-muted)" />
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+        </Link>
+        <Link href="/dashboard/profile/about" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: "44px" }}>
           <span style={{ fontSize: "14px", fontWeight: 600 }}>Tentang Aplikasi</span>
           <ChevronRight size={18} color="var(--text-muted)" />
-        </div>
+        </Link>
       </div>
 
       {/* Logout Button */}

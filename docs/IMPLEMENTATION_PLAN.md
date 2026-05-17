@@ -160,6 +160,11 @@
 ### Tech debt
 - Two parallel attendance / leave / KPI service trees (`src/services/...`
   and `features/...`) still exist. Consolidating to one removes drift risk.
+- Full email verification lifecycle from the master prompt is deferred until DB
+  fields/tables are planned (`emailVerifiedAt`, durable verification tokens,
+  email logs). Current safe scope covers activation and role-change emails.
+- Profile/settings UI has baseline non-empty pages; deeper preference editing is
+  deferred until notification preference storage is added.
 
 ## 5. Working rules for new agents
 
