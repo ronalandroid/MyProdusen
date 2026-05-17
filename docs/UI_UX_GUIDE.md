@@ -25,10 +25,10 @@ Use existing brand colors consistently:
 
 | Token | Value | Usage |
 | --- | --- | --- |
-| Primary Yellow | `#FDC704` | Primary CTA, active bottom-nav item, key highlights |
-| Accent Red | `#B51B19` | Danger, reject, late, failed validation, critical alerts |
-| Black | `#000000` | Primary text, high-contrast icons, strong labels |
-| Soft Gray | `#E5E3E6` | Page background, borders, neutral surfaces |
+| Primary Yellow | `#FFC107` | Primary CTA, active bottom-nav item, key highlights |
+| Accent Red | `#E53935` | Danger, rejection, late status |
+| Base Black | `#111111` | Primary text |
+| Soft Gray | `#F5F5F5` | Backgrounds, borders, neutral areas |
 | White | `#FFFFFF` | Cards, panels, form surfaces |
 
 Guidelines:

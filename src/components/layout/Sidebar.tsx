@@ -101,10 +101,10 @@ export default function Sidebar() {
               onClick={() => router.push(item.path)}
               aria-current={isActive ? "page" : undefined}
             >
-              <div className={`nav-icon-wrapper ${isActive ? "bg-[var(--primary)] text-[var(--text-primary)]" : "bg-transparent text-[var(--text-muted)]"} group-hover:bg-[var(--primary-light)] group-hover:text-[var(--primary-dark)] transition-all duration-200`}>
+              <div className={`nav-icon-wrapper ${isActive ? "text-[var(--primary)]" : "bg-transparent text-[var(--text-muted)]"} group-hover:text-[var(--primary-dark)] transition-all duration-200`}>
                 <Icon className="nav-icon" strokeWidth={isActive ? 2.5 : 2} aria-hidden="true" />
               </div>
-              <span className={`nav-label ${isActive ? "text-[var(--text-primary)] font-semibold" : "text-[var(--text-muted)]"} group-hover:text-[var(--text-primary)]`}>
+              <span className={`nav-label ${isActive ? "text-[var(--primary)] font-semibold" : "text-[var(--text-muted)]"} group-hover:text-[var(--primary)]`}>
                 {item.name}
               </span>
               {isActive && <div className="hidden lg:block absolute left-0 w-1 h-8 bg-[var(--primary)] rounded-r-full" aria-hidden="true" />}

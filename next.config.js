@@ -16,6 +16,11 @@ const nextConfig = {
         hostname: 'localhost',
       },
       {
+        // Allow local network IP for mobile device preview (e.g. 192.168.x.x)
+        protocol: 'http',
+        hostname: '192.168.*.*',
+      },
+      {
         protocol: 'https',
         hostname: 'myprodusen.online',
       },
@@ -31,8 +36,20 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
       allowedOrigins: [
+        'localhost:3000',
         'myprodusen.online',
         'https://myprodusen.online',
+        // Local network strings for mobile device preview (add your IP if different)
+        '192.168.1.1:3000',
+        '192.168.1.2:3000',
+        '192.168.1.3:3000',
+        '192.168.1.4:3000',
+        '192.168.1.5:3000',
+        '192.168.0.1:3000',
+        '192.168.0.100:3000',
+        '10.0.0.1:3000',
+        '10.0.0.2:3000',
+        '10.0.0.3:3000',
       ],
     },
     cpus: 1,

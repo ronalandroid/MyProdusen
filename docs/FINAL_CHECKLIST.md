@@ -62,7 +62,7 @@ verification step, not a wish.
 - [ ] `UI_UX_GUIDE.md` remains aligned with `prd.md` and this checklist.
 - [ ] Mobile-first employee flow uses rounded cards, readable spacing, clear status chips, and bottom navigation.
 - [ ] Onboarding, login, dashboard, attendance, employees, leave, KPI, profile, and reports screens follow the approved yellow HRIS style.
-- [ ] Yellow `#FDC704` remains primary accent; red `#B51B19` appears only for danger, reject, late, or critical states.
+- [x] Yellow `#FFC107` remains primary accent; red `#E53935` appears only for danger, reject, late, or critical states.
 - [ ] Loading, empty, error, and success states are present for forms, tables, dashboards, attendance, and reports.
 - [ ] UI hides unauthorized actions, while backend RBAC still enforces every protected action.
 - [ ] Profile settings pages are non-empty and reachable: personal info, password, notifications, and about app.

@@ -72,7 +72,7 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
   },
   {
     key: 'locations',
-    name: 'Lokasi Kerja',
+    name: 'Cabang',
     path: '/dashboard/locations',
     primaryFor: [],
     allowedRoles: ['SUPERADMIN', 'ADMIN_HR'],

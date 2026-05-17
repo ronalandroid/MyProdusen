@@ -5,8 +5,8 @@ import { ToastProvider } from "@/components/ui/Toast";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || "https://myprodusen.online"),
-  title: "MyProdusen - Aplikasi HRIS Mobile",
-  description: "Aplikasi HRIS mobile untuk memudahkan pengelolaan karyawan, kehadiran, cuti, penggajian untuk Produsen Dimsum Medan.",
+  title: "MyProdusen — Sistem Internal Produsen Dimsum Medan",
+  description: "MyProdusen adalah sistem internal Produsen Dimsum Medan by TBM Group untuk absensi, cuti, payroll, KPI produksi, dan koordinasi tim.",
   keywords: ["hris", "mobile app", "employee management", "attendance", "dimsum medan", "hr system"],
   authors: [{ name: "MyProdusen Team" }],
   creator: "MyProdusen",
@@ -17,8 +17,8 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: "MyProdusen - Aplikasi HRIS Mobile",
-    description: "Sistem HRIS lengkap untuk manajemen karyawan, absensi, dan operasional",
+    title: "MyProdusen — Sistem Internal Produsen Dimsum Medan",
+    description: "MyProdusen adalah sistem internal Produsen Dimsum Medan by TBM Group untuk absensi, cuti, payroll, KPI produksi, dan koordinasi tim.",
     type: "website",
     locale: "id_ID",
     images: ["/logo.png"],

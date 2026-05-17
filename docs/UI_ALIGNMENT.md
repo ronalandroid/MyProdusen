@@ -8,10 +8,11 @@
 
 | Token | Value | Use |
 | ----- | ----- | --- |
-| Primary yellow | `#FDC704` | CTA, active nav, hero highlight |
-| Accent red | `#B51B19` | Danger, late, destructive actions |
-| Black | `#000000` / `#111111` | Primary text |
-| Soft gray | `#E5E3E6` | Borders, neutral surfaces |
+| Primary yellow | `#FFC107` | CTA, active nav, hero highlight |
+| Accent red | `#E53935` | Danger, late, destructive actions |
+| Black | `#111111` | Primary text |
+| Soft gray | `#F5F5F5` | Borders, neutral surfaces |
+| Success green | `#22C55E` | Active, approved, success states |
 
 These are defined in `app/globals.css` under `:root`. Do not change without
 updating both designs.
@@ -23,7 +24,7 @@ The mobile bottom navigation must hold five tabs per role, exactly as drawn.
 | Role | Primary tabs (left → right) | Source |
 | ---- | --------------------------- | ------ |
 | EMPLOYEE | Beranda · Kehadiran · Cuti · KPI · Akun | gambar 1 |
-| SUPERADMIN | Beranda · Approval · Karyawan · Laporan · Akun | gambar 2 |
+| SUPERADMIN | Beranda · Cabang · Approval · Laporan · Akun | gambar 2 |
 | ADMIN_HR | Beranda · Kehadiran · Karyawan · Cuti · Akun | extends gambar 1 |
 | SUPERVISOR | Beranda · Kehadiran · Karyawan · Cuti · Akun | mirrors EMPLOYEE + team |
 
@@ -50,8 +51,10 @@ tokens; never hard-code hex values in components.
 ## Typography & layout discipline
 
 - Primary font: Poppins (loaded by `app/layout.tsx`).
-- Section header: 16–18px, weight 700.
-- Body: 13–14px, weight 400–500.
+- Heading 1 / Bold: 24px (1.5rem), weight 700.
+- Heading 2 / Semibold: 18px (1.125rem), weight 600.
+- Body / Regular: 14px (0.875rem), weight 400.
+- Caption / Medium: 12px (0.75rem), weight 500.
 - Card padding: 16–20px. Border radius via `var(--radius-md)` /
   `var(--radius-lg)`.
 - Mobile target: ≥ 44×44 px tap target on all buttons / icons.

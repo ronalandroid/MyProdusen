@@ -118,31 +118,57 @@ export default function DashboardPage() {
   return (
     <div className="dashboard-page animate-fade-in">
       {/* Header */}
-      <header className="dashboard-header animate-slide-up">
-        <div className="dashboard-greeting">
-          <p className="eyebrow">{roleExperience.eyebrow}</p>
-          <h1 className="text-2xl sm:text-3xl">{greeting}, {displayName}</h1>
-          <p className="text-sm sm:text-base">{roleExperience.subtitle}</p>
-          {lastUpdated && (
-            <span className="last-updated">
-              Diperbarui {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
-            </span>
-          )}
-        </div>
-        <div className="dashboard-header-actions">
-          <Link href="/dashboard/notifications" className="icon-button" aria-label="Lihat notifikasi">
-            <Bell size={20} aria-hidden="true" />
-            {stats.unreadNotifications > 0 && <span className="notification-dot" aria-hidden="true" />}
-          </Link>
-          <Link href="/dashboard/profile" className="avatar avatar-link" aria-label="Buka profil pengguna">
-            {profile?.employee?.profilePhoto ? (
-              <img src={profile.employee.profilePhoto} alt="" />
-            ) : (
-              initials
+      {stats.role === 'SUPERADMIN' ? (
+        <header className="dashboard-header superadmin-header animate-slide-up" style={{ backgroundColor: 'var(--primary)', color: 'var(--text-primary)', backgroundImage: 'url(/logo.png)', backgroundSize: '150px', backgroundPosition: 'calc(100% + 50px) center', backgroundRepeat: 'no-repeat' }}>
+          <div className="dashboard-greeting relative z-10">
+            <h1 className="text-2xl sm:text-3xl font-bold">Selamat Datang,<br/>Super Admin! 👑</h1>
+            <p className="text-sm sm:text-base mt-2 max-w-[80%] font-medium">Kontrol penuh, informasi akurat, keputusan lebih tepat.</p>
+            {lastUpdated && (
+              <span className="last-updated mt-4 text-black/70">
+                Diperbarui {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+              </span>
             )}
-          </Link>
-        </div>
-      </header>
+          </div>
+          <div className="dashboard-header-actions relative z-10">
+            <Link href="/dashboard/notifications" className="icon-button bg-white/30 hover:bg-white/50 border-none" aria-label="Lihat notifikasi">
+              <Bell size={20} aria-hidden="true" />
+              {stats.unreadNotifications > 0 && <span className="notification-dot" aria-hidden="true" />}
+            </Link>
+            <Link href="/dashboard/profile" className="avatar avatar-link border-2 border-white" aria-label="Buka profil pengguna">
+              {profile?.employee?.profilePhoto ? (
+                <img src={profile.employee.profilePhoto} alt="" />
+              ) : (
+                initials
+              )}
+            </Link>
+          </div>
+        </header>
+      ) : (
+        <header className="dashboard-header employee-header animate-slide-up">
+          <div className="dashboard-greeting">
+            <h1 className="text-2xl sm:text-3xl font-bold">Halo, {displayName}! 👋</h1>
+            <p className="text-sm sm:text-base text-[var(--text-secondary)] mt-1">Semangat bekerja hari ini!</p>
+            {lastUpdated && (
+              <span className="last-updated">
+                Diperbarui {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+          </div>
+          <div className="dashboard-header-actions">
+            <Link href="/dashboard/notifications" className="icon-button" aria-label="Lihat notifikasi">
+              <Bell size={20} aria-hidden="true" />
+              {stats.unreadNotifications > 0 && <span className="notification-dot" aria-hidden="true" />}
+            </Link>
+            <Link href="/dashboard/profile" className="avatar avatar-link" aria-label="Buka profil pengguna">
+              {profile?.employee?.profilePhoto ? (
+                <img src={profile.employee.profilePhoto} alt="" />
+              ) : (
+                initials
+              )}
+            </Link>
+          </div>
+        </header>
+      )}
 
       {/* Error Alert */}
       {error && (
@@ -198,38 +224,35 @@ export default function DashboardPage() {
         <div className="stats-grid">
           <StatCard 
             icon={<Users size={22} aria-hidden="true" />} 
-            label="Total Karyawan" 
+            label="Karyawan" 
             value={stats.totalEmployees} 
+            subtitle={`${stats.activeEmployees} Total aktif`}
             tone="info"
             delay="400ms"
-          />
-          <StatCard 
-            icon={<CheckCircle size={22} aria-hidden="true" />} 
-            label="Karyawan Aktif" 
-            value={stats.activeEmployees} 
-            tone="success"
-            delay="450ms"
           />
           <StatCard 
             icon={<Clock size={22} aria-hidden="true" />} 
             label="Hadir Hari Ini" 
             value={`${stats.todayAttendance.percentage}%`} 
-            tone="primary"
-            delay="500ms"
+            subtitle={`${stats.todayAttendance.present}/${stats.totalEmployees} Hadir`}
+            tone="success"
+            delay="450ms"
           />
           <StatCard 
             icon={<CalendarDays size={22} aria-hidden="true" />} 
-            label="Cuti Pending" 
+            label="Cuti Pengajuan" 
             value={stats.pendingLeave} 
+            subtitle="Menunggu"
             tone="warning"
-            delay="550ms"
+            delay="500ms"
           />
           <StatCard 
             icon={<Bell size={22} aria-hidden="true" />} 
             label="Notifikasi" 
             value={stats.unreadNotifications} 
-            tone="info"
-            delay="600ms"
+            subtitle="Belum dibaca"
+            tone="primary"
+            delay="550ms"
           />
         </div>
       </section>
@@ -337,14 +360,14 @@ function SuperadminMonitoring({ insights }: { insights: SuperadminInsights }) {
 
 function ManagementCard({ card, delay }: { card: SuperadminInsights['managementCards'][number]; delay?: string }) {
   return (
-    <Link href={card.href} className={`card quick-action-card group animate-scale-in action-card-${card.tone}`} style={{ animationDelay: delay }}>
-      <span>
-        <strong className="text-sm sm:text-base">{card.label}</strong>
-        <small className="text-xs sm:text-sm">{card.detail}</small>
+    <Link href={card.href} className={`card group animate-scale-in action-card-${card.tone} flex flex-col gap-2 p-4 transition-transform hover:-translate-y-1 hover:shadow-lg`} style={{ animationDelay: delay, borderColor: mapToneToColor(card.tone) }}>
+      <span className="flex flex-col">
+        <strong className="text-xs sm:text-sm text-[var(--text-secondary)] font-semibold uppercase tracking-wide">{card.label}</strong>
+        <strong className="text-2xl sm:text-3xl mt-1 text-[var(--text-primary)]">
+          {numberFormatter.format(card.value)}
+        </strong>
       </span>
-      <strong className="text-xl sm:text-2xl" style={{ color: mapToneToColor(card.tone) }}>
-        {numberFormatter.format(card.value)}
-      </strong>
+      <small className="text-xs sm:text-sm font-medium mt-auto" style={{ color: mapToneToColor(card.tone) }}>{card.detail}</small>
     </Link>
   );
 }
@@ -540,12 +563,14 @@ function StatCard({
   icon, 
   label, 
   value, 
+  subtitle,
   tone,
   delay 
 }: { 
   icon: ReactNode; 
   label: string; 
   value: number | string; 
+  subtitle?: string;
   tone: "primary" | "success" | "warning" | "info";
   delay?: string;
 }) {
@@ -555,9 +580,10 @@ function StatCard({
       style={{ animationDelay: delay }}
     >
       <div className="stat-icon">{icon}</div>
-      <div>
-        <p className="text-xs sm:text-sm">{label}</p>
-        <strong className="text-xl sm:text-2xl">{typeof value === "number" ? numberFormatter.format(value) : value}</strong>
+      <div className="flex flex-col min-w-0 flex-1">
+        <p className="text-xs sm:text-sm text-[var(--text-secondary)] font-semibold truncate">{label}</p>
+        <strong className="text-xl sm:text-2xl text-[var(--text-primary)] my-0.5">{typeof value === "number" ? numberFormatter.format(value) : value}</strong>
+        {subtitle && <small className="text-[10px] sm:text-xs text-[var(--text-muted)] truncate" style={{ color: tone === 'warning' ? 'var(--warning)' : tone === 'success' ? 'var(--success)' : tone === 'info' ? 'var(--info)' : 'var(--primary)' }}>{subtitle}</small>}
       </div>
     </article>
   );

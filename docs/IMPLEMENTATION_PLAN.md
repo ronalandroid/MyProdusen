@@ -26,7 +26,7 @@
 ### Phase 2 — Auth + RBAC (done)
 - Strict `JWT_SECRET` validation (production aborts on missing / short secret).
 - `requireAuth` fetches active user/role from the database.
-- Root middleware protects `/dashboard/*`.
+- Root Next.js proxy protects `/dashboard/*`.
 - Role hierarchy enforced during user creation and role changes.
 - Login rate-limit + strong password policy.
 - Password-reset signing now uses the same `getProductionJwtSecret` helper as session signing — no fallback secret in production.

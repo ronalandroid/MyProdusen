@@ -165,10 +165,11 @@ Preserve:
 Brand colors:
 
 ```txt
-Primary Yellow: #FDC704
-Accent Red:    #B51B19
-Black:         #000000
-Soft Gray:     #E5E3E6
+Primary Yellow: #FFC107
+Accent Red:    #E53935
+Black:         #111111
+Soft Gray:     #F5F5F5
+Success Green: #22C55E
 ```
 
 UI/UX direction:

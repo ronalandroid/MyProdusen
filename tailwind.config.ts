@@ -10,13 +10,13 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          yellow: "#FDC704",
+          yellow: "#FFC107",
         },
         accent: {
-          red: "#B51B19",
+          red: "#E53935",
         },
         neutral: {
-          gray: "#E5E3E6",
+          gray: "#F5F5F5",
         },
       },
     },

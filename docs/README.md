@@ -39,7 +39,7 @@
 
 ## Brand guardrails
 
-- Yellow `#FDC704`, red `#B51B19`, black `#000000`, soft gray `#E5E3E6`.
+- Yellow `#FFC107`, red `#E53935`, black `#111111`, soft gray `#F5F5F5`.
 - No design-system swap, no Bootstrap/Tabler, no jQuery.
 - No Prisma, no Eloquent, no Laravel migrations. Drizzle only.
 - No public uploads folder. All selfies live behind authenticated API routes.

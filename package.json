@@ -24,7 +24,13 @@
     "start:prod": "HOSTNAME=0.0.0.0 PORT=${PORT:-3000} sh -c 'if [ -f server.js ]; then exec node server.js; fi; exec node .next/standalone/server.js'",
     "dev:safe": "next dev --webpack",
     "clean": "rm -rf .next tsconfig.tsbuildinfo node_modules/.cache",
-    "build:next": "node scripts/build-next-with-heartbeat.mjs"
+    "build:next": "node scripts/build-next-with-heartbeat.mjs",
+    "dev:mobile": "next dev -H 0.0.0.0 -p 3000",
+    "cap:sync": "cap sync android",
+    "cap:open": "cap open android",
+    "android:live": "bash scripts/android-live-preview.sh",
+    "android:install-live": "bash scripts/android-install-live.sh",
+    "android:realtime": "bash scripts/sync-android-realtime.sh"
   },
   "keywords": [
     "attendance",
@@ -34,6 +40,9 @@
   "author": "Produsen Dimsum Medan",
   "license": "ISC",
   "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "@hookform/resolvers": "^3.9.1",
     "@tanstack/react-query": "^5.64.2",
     "@types/bcryptjs": "^2.4.6",

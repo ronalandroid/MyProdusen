@@ -40,9 +40,15 @@ Required flow:
 8. PostgreSQL stores only path + size + MIME + uploaded_at. Never the binary,
    never base64.
 
-## Brand & UI
+## Brand colors:
 
-- Yellow `#FDC704`, red `#B51B19`, black `#000000`, soft gray `#E5E3E6`.
+```txt
+Primary Yellow: #FFC107
+Accent Red:    #E53935
+Black:         #111111
+Soft Gray:     #F5F5F5
+Success Green: #22C55E
+```
 - No design-system swap, no colour rebrand, no logo change.
 - UI is clean, minimal, and not "AI-looking". Indonesian copy in user-facing
   strings; English copy in docs.
