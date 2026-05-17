@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { getNavigationForRole, canAccessNavigationPath } from '@/lib/navigation/role-navigation';
+import {
+  canAccessNavigationPath,
+  getNavigationForRole,
+  getPrimaryNavigationForRole,
+} from '@/lib/navigation/role-navigation';
 
 describe('Role Navigation Policy', () => {
   it('SUPERADMIN sees all navigation items', () => {
@@ -56,5 +60,23 @@ describe('Role Navigation Policy', () => {
     expect(canAccessNavigationPath('SUPERVISOR', '/dashboard/employees')).toBe(true);
     expect(canAccessNavigationPath('SUPERVISOR', '/dashboard/audit')).toBe(false);
     expect(canAccessNavigationPath('SUPERADMIN', '/dashboard/audit')).toBe(true);
+  });
+
+  it('Each role exposes at most 5 primary tabs to match the mobile design', () => {
+    for (const role of ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE'] as const) {
+      const primary = getPrimaryNavigationForRole(role);
+      expect(primary.length).toBeGreaterThan(0);
+      expect(primary.length).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it('EMPLOYEE primary tabs match the design (Beranda · Kehadiran · Cuti · KPI · Akun)', () => {
+    const keys = getPrimaryNavigationForRole('EMPLOYEE').map((item) => item.key);
+    expect(keys).toEqual(['dashboard', 'attendance', 'leave', 'kpi', 'profile']);
+  });
+
+  it('SUPERADMIN primary tabs match the design (Beranda · Approval · Karyawan · Laporan · Akun)', () => {
+    const keys = getPrimaryNavigationForRole('SUPERADMIN').map((item) => item.key);
+    expect(keys).toEqual(['dashboard', 'attendance-exceptions', 'employees', 'reports', 'profile']);
   });
 });
