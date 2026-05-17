@@ -89,7 +89,22 @@ tokens; never hard-code hex values in components.
 - The reference shows Manajemen Cabang screens. We treat work locations as
   branches today; no separate "branch" entity is added — `WorkLocation`
   covers it, per `prd.md`.
-- The reference's hand-drawn map background is illustrative only. The
-  Leaflet preview remains P1 stretch in `REFERENCE_REPO_ANALYSIS.md`.
 - The "Penggajian" mock is high-fidelity but our payroll module is
   intentionally read-only for MVP; full payroll integration is Phase 2.
+
+## Map preview (P1, shipped)
+
+The work-location admin (`/dashboard/locations`) and its create/edit modal
+both render a small OpenStreetMap preview with the geo-fence radius drawn
+as an SVG circle. Implementation lives in
+`src/components/locations/WorkLocationMap.tsx` with pure helpers in
+`lib/maps/osm-tile-math.ts`.
+
+- Zero JS dependency: the component uses native `<img>` tiles + an
+  `IntersectionObserver` lazy-load.
+- No bundle bloat: no Leaflet, no Mapbox.
+- Tile source defaults to public OSM but is configurable through
+  `NEXT_PUBLIC_OSM_TILE_URL`. When traffic outgrows OSM fair-use, swap the
+  env to a paid provider (MapTiler/Mapbox) without touching the code.
+- Render is automatically suppressed if the user supplies invalid lat/lon.
+- Failed tile loads degrade to a coordinate-only placeholder.

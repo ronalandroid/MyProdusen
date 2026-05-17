@@ -84,7 +84,7 @@ These are **feature ideas worth adopting**. None require stack changes.
 | 4 | Daily / weekly / monthly attendance presets | absensi-* | Partially: report has filter range. Add quick-range tabs. | **P1** |
 | 5 | Employee XLSX import + export | absensi-* | Export done (CSV + UTF-8-BOM XLSX). Import not done. | **P1** |
 | 6 | Live search across employee/location tables | o-present | Not done yet. Should be server-side `?search=` for paginated tables. | **P1** |
-| 7 | Leaflet/OSM map preview of work location | both | Not done yet. Lightweight, no API key. | **P1** |
+| 7 | OSM map preview of work location | both | Shipped: zero-dep tiled preview in `src/components/locations/WorkLocationMap.tsx` + `lib/maps/osm-tile-math.ts`. Tile URL configurable via `NEXT_PUBLIC_OSM_TILE_URL`. | done |
 | 8 | Attendance request flow when employee missed check-in/out | absensi-* | Backend exists via `AttendanceException` + admin review page. UI for employee submission needs polish. | **P1** |
 | 9 | Multi-role auth (employee / admin / superadmin) | both | We already have SUPERADMIN, ADMIN_HR, SUPERVISOR, EMPLOYEE. | done |
 | 10 | Filterable/sortable master data tables | both | Partial: list pages exist, filters need server-side. | **P1** |
@@ -141,9 +141,6 @@ Reference repos validated this scope but contributed no missing P0 items.
    audit-logged commit. Export already exists.
 3. Server-side `?search=` parameter on employee, work location, and shift
    list endpoints, with debounced UI input.
-4. Leaflet + OpenStreetMap map preview (P1 stretch). Sub-200KB optional
-   bundle, lazy-loaded only on the work-location detail page and the
-   attendance review modal.
 5. Employee-facing UI for `AttendanceException` submission (manual
    adjustment / missed checkout) reusing our existing exception API.
 6. Profile self-service hardening: change email confirmation, avatar upload
@@ -214,9 +211,12 @@ If we ever adopt P2 face-match or liveness, that becomes a new table
    - `app/api/attendance/exceptions/*` for the employee-submitted exception
      flow.
    - Existing `Notification` writer for any approval/rejection UX.
-4. For Leaflet, lazy-load via `dynamic(() => import(...), { ssr: false })`
-   so the map JS does not bloat the main bundle. Reject before adopting if
-   the bundle increase exceeds 80KB gzipped.
+4. The work-location map preview ships in
+   `src/components/locations/WorkLocationMap.tsx`. It is a zero-dependency
+   tiled preview (3×3 OSM tiles + an SVG radius overlay) rather than a
+   full Leaflet runtime, which keeps the bundle untouched and side-steps
+   the OSM client-policy risks. Tile URL is configurable via
+   `NEXT_PUBLIC_OSM_TILE_URL` for paid providers.
 5. For XLSX import, use a streaming reader (`exceljs` worksheet stream) so
    memory stays low on the VPS. Cap at a configurable
    `EMPLOYEE_IMPORT_MAX_ROWS`.
@@ -227,7 +227,7 @@ If we ever adopt P2 face-match or liveness, that becomes a new table
 
 | # | Risk | Mitigation |
 | - | ---- | ---------- |
-| 1 | Bundle bloat from Leaflet | Lazy-load, audit gzipped size before merging. |
+| 1 | Bundle bloat from a future map library | Avoided altogether by using static OSM tiles. If we adopt Leaflet later, lazy-load and audit gzipped size before merging. |
 | 2 | Excel import edge cases (encoding, quoting, dates) | Dry-run preview + per-row Zod errors before committing. |
 | 3 | Live search hot path overload | Server-side debounce, full-text or trigram index, pagination kept. |
 | 4 | Scope creep into P2 (QR, face matching) | Defer to Phase 2 per `/docs/prd.md`. |
