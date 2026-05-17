@@ -17,14 +17,14 @@ must never be committed.
 | `NEXT_PUBLIC_APP_URL` / `APP_URL` | The public domain. |
 | `STORAGE_DRIVER=local` | Future S3 driver shares the same key layout. |
 | `UPLOAD_DIR=/app/uploads` | Mount point of the persistent volume. |
-| `ATTENDANCE_SELFIE_DIR=attendance-selfies` | Subdirectory under `UPLOAD_DIR`. |
-| `MAX_SELFIE_SIZE_MB=1` | Backend hard cap. |
-| `NEXT_PUBLIC_SELFIE_MAX_WIDTH=720` / `MAX_HEIGHT=720` / `IMAGE_QUALITY=0.75` / `TARGET_SIZE_KB=300` | Client-side compression knobs. |
-| `GPS_MAX_ACCURACY_METERS=100` | Reject any fix above this. |
-| `DEFAULT_GEOFENCE_RADIUS_METERS=100` | Fallback radius. |
-| `REJECT_OUTSIDE_GEOFENCE=true` | Set to `false` to send outside-radius attempts to the pending-review queue. |
-| `GPS_TIMESTAMP_MAX_AGE_SECONDS=120` | Set to `0` to disable freshness check. |
-| `ATTENDANCE_EXPORT_MAX_ROWS=5000` | Cap on CSV/XLSX export rows. |
+| `ATTENDANCE_SELFIE_DIR=attendance-selfies` | Subdirectory under `UPLOAD_DIR`. Runtime defaults to this value if omitted. |
+| `MAX_SELFIE_SIZE_MB=1` | Backend hard cap. Runtime defaults to this value if omitted. |
+| `NEXT_PUBLIC_SELFIE_MAX_WIDTH=720` / `MAX_HEIGHT=720` / `IMAGE_QUALITY=0.75` / `TARGET_SIZE_KB=300` | Client-side compression knobs. Runtime defaults exist, but set them in Coolify for explicit config. |
+| `GPS_MAX_ACCURACY_METERS=100` | Reject any fix above this. Runtime defaults to this value if omitted. |
+| `DEFAULT_GEOFENCE_RADIUS_METERS=100` | Fallback radius. Runtime defaults to this value if omitted. |
+| `REJECT_OUTSIDE_GEOFENCE=true` | Set to `false` to send outside-radius attempts to the pending-review queue. Runtime defaults to `true`. |
+| `GPS_TIMESTAMP_MAX_AGE_SECONDS=120` | Set to `0` to disable freshness check. Runtime defaults to `120`. |
+| `ATTENDANCE_EXPORT_MAX_ROWS=5000` | Cap on CSV/XLSX export rows. Runtime defaults to this value if omitted. |
 | `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | secret — email delivery. |
 | `REDIS_URL` / `REDIS_PASSWORD` | secret, optional. App degrades gracefully if Redis is unavailable. |
 | `SUPERADMIN_EMAIL` / `SUPERADMIN_USERNAME` / `SUPERADMIN_PASSWORD` | secret — first-deploy bootstrap only. Rotate or remove after first login. |
