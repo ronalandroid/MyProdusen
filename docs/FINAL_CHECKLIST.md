@@ -72,6 +72,8 @@ verification step, not a wish.
 - [ ] Supervisor can only view direct reports.
 - [ ] Admin HR can view all employees, all selfies, export reports, approve leave / KPI.
 - [ ] Superadmin has full access plus role management.
+- [ ] Superadmin new-user form separates system role from division/position placement.
+- [ ] New-user role assignment is enforced server-side with `canManageRole`.
 - [ ] Inactive users cannot log in.
 - [ ] Cross-employee `/api/attendances/:id/selfie/...` returns 403.
 

@@ -3,6 +3,8 @@ import { ZodSchema } from 'zod';
 import { AppError } from './app-error';
 import { errorResponse, validationErrorResponse } from '@/utils/response';
 import { logger } from '@/lib/logger';
+import { TOKEN_COOKIE_NAME } from '@/lib/auth-response';
+import { isTrustedMutationOrigin } from '@/lib/security/csrf-origin';
 
 export type RouteContext<TParams = unknown> = TParams extends undefined
   ? undefined
@@ -27,6 +29,18 @@ export function withApiHandler<TParams = unknown>(
 ) {
   return async (request: NextRequest, context: RouteContext<TParams>) => {
     try {
+      const usesCookieAuth = request.cookies?.has?.(TOKEN_COOKIE_NAME) || request.headers.get('cookie')?.includes(`${TOKEN_COOKIE_NAME}=`);
+      const usesBearerAuth = request.headers.get('authorization')?.startsWith('Bearer ');
+
+      if (usesCookieAuth && !usesBearerAuth && !isTrustedMutationOrigin({
+        method: request.method,
+        requestUrl: request.url,
+        origin: request.headers.get('origin'),
+        referer: request.headers.get('referer'),
+      })) {
+        throw AppError.forbidden('Permintaan tidak valid');
+      }
+
       return await handler(request, context);
     } catch (error) {
       return handleApiError(error);

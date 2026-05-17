@@ -26,6 +26,7 @@ export class EmployeeService extends BaseService {
     defaultShiftId?: string;
     defaultLocationId?: string;
     joinDate?: Date | string;
+    role?: 'SUPERADMIN' | 'ADMIN_HR' | 'SUPERVISOR' | 'EMPLOYEE';
   }) {
     // Check if email already exists
     const [existingEmail] = await db
@@ -72,7 +73,7 @@ export class EmployeeService extends BaseService {
         email: data.email,
         username: data.username,
         password: hashedPassword,
-        role: 'EMPLOYEE',
+        role: data.role ?? 'EMPLOYEE',
       })
       .returning();
 

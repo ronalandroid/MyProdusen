@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { db, employees, attendances, leaveRequests, kpiResults, notifications, payrollRuns, attendanceExceptions } from '@/lib/db';
+import { db, users, employees, attendances, leaveRequests, kpiResults, notifications, payrollRuns, attendanceExceptions } from '@/lib/db';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse } from '@/utils/response';
 import { eq, and, gte, lte, sql, desc, inArray } from 'drizzle-orm';
@@ -137,6 +137,10 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(payrollRuns.period))
       .limit(1);
 
+    const superadminInsights = user.role === 'SUPERADMIN'
+      ? await getSuperadminInsights({ today, tomorrow, currentMonth, pendingLeaves, pendingKpiApprovals, pendingAttendanceExceptions })
+      : undefined;
+
     // Absent today (employees not checked in and not on leave)
     const absentToday = totalEmployees - todayAttendance - onLeaveToday;
 
@@ -159,6 +163,7 @@ export async function GET(request: NextRequest) {
       payrollPeriodStatus: latestPayrollRun || null,
       date: today.toISOString(),
       role: user.role,
+      ...(superadminInsights ? { superadminInsights } : {}),
     };
 
     await cacheManager.set(cacheKey, dashboardStats, {
@@ -173,6 +178,186 @@ export async function GET(request: NextRequest) {
     }
     return errorResponse(error.message || 'Gagal mengambil statistik dashboard');
   }
+}
+
+async function getSuperadminInsights(input: {
+  today: Date;
+  tomorrow: Date;
+  currentMonth: string;
+  pendingLeaves: number;
+  pendingKpiApprovals: number;
+  pendingAttendanceExceptions: number;
+}) {
+  const trendStart = new Date(input.today);
+  trendStart.setDate(trendStart.getDate() - 6);
+
+  const trendRows = await db
+    .select({
+      day: sql<string>`to_char(${attendances.checkInTime}, 'YYYY-MM-DD')`,
+      present: sql<number>`count(*) filter (where ${attendances.status} = 'PRESENT')::int`,
+      late: sql<number>`count(*) filter (where ${attendances.status} = 'LATE')::int`,
+      absent: sql<number>`count(*) filter (where ${attendances.status} = 'ABSENT')::int`,
+    })
+    .from(attendances)
+    .where(gte(attendances.checkInTime, trendStart))
+    .groupBy(sql`to_char(${attendances.checkInTime}, 'YYYY-MM-DD')`)
+    .orderBy(sql`to_char(${attendances.checkInTime}, 'YYYY-MM-DD')`);
+
+  const trendByDay = new Map(trendRows.map((row) => [row.day, row]));
+  const attendanceTrend = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(trendStart);
+    date.setDate(trendStart.getDate() + index);
+    const key = date.toISOString().slice(0, 10);
+    const row = trendByDay.get(key);
+    return {
+      date: key,
+      label: date.toLocaleDateString('id-ID', { weekday: 'short' }),
+      present: row?.present || 0,
+      late: row?.late || 0,
+      absent: row?.absent || 0,
+    };
+  });
+
+  const activeEmployeeRows = await db
+    .select({ id: employees.id, division: employees.division })
+    .from(employees)
+    .where(eq(employees.status, 'ACTIVE'));
+
+  const todayAttendanceRows = await db
+    .select({ employeeId: attendances.employeeId })
+    .from(attendances)
+    .where(and(gte(attendances.checkInTime, input.today), lte(attendances.checkInTime, input.tomorrow)));
+
+  const presentEmployeeIds = new Set(todayAttendanceRows.map((row) => row.employeeId));
+  const divisions = new Map<string, { division: string; employeeCount: number; presentToday: number }>();
+  for (const employee of activeEmployeeRows) {
+    const division = employee.division || 'Belum Diisi';
+    const current = divisions.get(division) || { division, employeeCount: 0, presentToday: 0 };
+    current.employeeCount += 1;
+    if (presentEmployeeIds.has(employee.id)) current.presentToday += 1;
+    divisions.set(division, current);
+  }
+
+  const divisionMonitoring = Array.from(divisions.values())
+    .sort((left, right) => right.employeeCount - left.employeeCount)
+    .slice(0, 6)
+    .map((row) => ({
+      division: row.division,
+      employeeCount: row.employeeCount,
+      attendanceRate: row.employeeCount > 0 ? Math.round((row.presentToday / row.employeeCount) * 100) : 0,
+    }));
+
+  const [kpiAggregate] = await db
+    .select({
+      averageScore: sql<number>`coalesce(round(avg(${kpiResults.score}))::int, 0)`,
+      approvedCount: sql<number>`count(*) filter (where ${kpiResults.isApproved} = true)::int`,
+      pendingCount: sql<number>`count(*) filter (where ${kpiResults.isApproved} = false)::int`,
+    })
+    .from(kpiResults)
+    .where(eq(kpiResults.period, input.currentMonth));
+
+  const topPerformers = await db
+    .select({
+      employeeId: employees.id,
+      name: employees.fullName,
+      division: employees.division,
+      score: sql<number>`round(avg(${kpiResults.score}))::int`,
+    })
+    .from(kpiResults)
+    .innerJoin(employees, eq(employees.id, kpiResults.employeeId))
+    .where(eq(kpiResults.period, input.currentMonth))
+    .groupBy(employees.id, employees.fullName, employees.division)
+    .orderBy(sql`avg(${kpiResults.score}) desc`)
+    .limit(3);
+
+  const lowPerformers = await db
+    .select({
+      employeeId: employees.id,
+      name: employees.fullName,
+      division: employees.division,
+      score: sql<number>`round(avg(${kpiResults.score}))::int`,
+    })
+    .from(kpiResults)
+    .innerJoin(employees, eq(employees.id, kpiResults.employeeId))
+    .where(eq(kpiResults.period, input.currentMonth))
+    .groupBy(employees.id, employees.fullName, employees.division)
+    .orderBy(sql`avg(${kpiResults.score}) asc`)
+    .limit(3);
+
+  const employeeRiskRows = await db
+    .select({
+      employeeId: employees.id,
+      name: employees.fullName,
+      division: employees.division,
+      lateCount: sql<number>`count(${attendances.id}) filter (where ${attendances.status} = 'LATE')::int`,
+      absentCount: sql<number>`count(${attendances.id}) filter (where ${attendances.status} = 'ABSENT')::int`,
+      averageKpi: sql<number>`coalesce(round(avg(${kpiResults.score}))::int, 0)`,
+    })
+    .from(employees)
+    .leftJoin(attendances, and(eq(attendances.employeeId, employees.id), gte(attendances.checkInTime, trendStart)))
+    .leftJoin(kpiResults, and(eq(kpiResults.employeeId, employees.id), eq(kpiResults.period, input.currentMonth)))
+    .where(eq(employees.status, 'ACTIVE'))
+    .groupBy(employees.id, employees.fullName, employees.division)
+    .orderBy(sql`(count(${attendances.id}) filter (where ${attendances.status} = 'LATE') + count(${attendances.id}) filter (where ${attendances.status} = 'ABSENT')) desc`, sql`avg(${kpiResults.score}) asc nulls last`)
+    .limit(5);
+
+  const employeeRisks = employeeRiskRows
+    .map((row) => ({
+      employeeId: row.employeeId,
+      name: row.name,
+      division: row.division || 'Belum Diisi',
+      lateCount: row.lateCount,
+      absentCount: row.absentCount,
+      averageKpi: row.averageKpi,
+      riskScore: row.lateCount * 2 + row.absentCount * 3 + (row.averageKpi > 0 && row.averageKpi < 70 ? 2 : 0),
+    }))
+    .filter((row) => row.riskScore > 0);
+
+  const roleRows = await db
+    .select({ role: users.role, count: sql<number>`count(*)::int` })
+    .from(users)
+    .where(eq(users.isActive, true))
+    .groupBy(users.role);
+  const activeUsersByRole = roleRows.reduce<Record<string, number>>((accumulator, row) => {
+    accumulator[row.role] = row.count;
+    return accumulator;
+  }, {});
+
+  return {
+    attendanceTrend,
+    divisionMonitoring,
+    kpiOverview: {
+      averageScore: kpiAggregate?.averageScore || 0,
+      approvedCount: kpiAggregate?.approvedCount || 0,
+      pendingCount: kpiAggregate?.pendingCount || 0,
+      topPerformers,
+      lowPerformers,
+    },
+    employeeRisks,
+    managementCards: [
+      {
+        label: 'Management User & Role',
+        value: Object.values(activeUsersByRole).reduce((total, count) => total + count, 0),
+        detail: `${activeUsersByRole.SUPERADMIN || 0} Superadmin · ${activeUsersByRole.ADMIN_HR || 0} HR · ${activeUsersByRole.SUPERVISOR || 0} Leader`,
+        href: '/dashboard/employees',
+        tone: 'primary',
+      },
+      {
+        label: 'Approval Center',
+        value: input.pendingLeaves + input.pendingKpiApprovals + input.pendingAttendanceExceptions,
+        detail: `${input.pendingLeaves} cuti · ${input.pendingKpiApprovals} KPI · ${input.pendingAttendanceExceptions} absensi`,
+        href: '/dashboard/attendance/exceptions',
+        tone: input.pendingLeaves + input.pendingKpiApprovals + input.pendingAttendanceExceptions > 0 ? 'warning' : 'success',
+      },
+      {
+        label: 'Reports & Export',
+        value: attendanceTrend.reduce((total, day) => total + day.present + day.late + day.absent, 0),
+        detail: 'Siap ekspor laporan kehadiran, KPI, cuti, dan karyawan.',
+        href: '/dashboard/reports',
+        tone: 'info',
+      },
+    ],
+  };
 }
 
 async function getScopedEmployeeIds(role: string, employeeId?: string): Promise<string[] | undefined> {

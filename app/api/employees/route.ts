@@ -3,7 +3,7 @@ import { employeeService } from '@/services/employees/employee.service';
 import { createEmployeeSchema } from '@/utils/validation/employee';
 import { successResponse } from '@/utils/response';
 import { requireAuth } from '@/lib/middleware';
-import { hasPermission } from '@/lib/permissions';
+import { canManageRole, hasPermission } from '@/lib/permissions';
 import { logAudit } from '@/lib/audit';
 import { parsePagination } from '@/lib/api/pagination';
 import { AppError } from '@/lib/core/app-error';
@@ -47,7 +47,13 @@ export const POST = withApiHandler(async (request: NextRequest) => {
   }
 
   const data = await parseJsonBody(request, createEmployeeSchema);
-  const employee = await employeeService.createEmployee(data);
+  const assignedRole = data.role ?? 'EMPLOYEE';
+
+  if (!canManageRole(user.role, assignedRole)) {
+    throw AppError.forbidden('Anda tidak memiliki akses untuk membuat role tersebut');
+  }
+
+  const employee = await employeeService.createEmployee({ ...data, role: assignedRole });
   await logAudit(user.userId, 'CREATE', 'Employee', employee.id, undefined, employee, request);
 
   return successResponse(employee, 'Karyawan berhasil dibuat');

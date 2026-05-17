@@ -22,6 +22,16 @@ interface Employee {
   profilePhoto?: string | null;
 }
 
+const accessRoleOptions = [
+  { value: "EMPLOYEE", label: "Karyawan", description: "Akses pribadi: absensi, cuti, KPI sendiri" },
+  { value: "SUPERVISOR", label: "Leader / Supervisor", description: "Akses tim: approval cuti, KPI tim, data bawahan" },
+  { value: "ADMIN_HR", label: "Admin HR", description: "Akses HR: karyawan, absensi, cuti, laporan HR" },
+  { value: "SUPERADMIN", label: "Superadmin", description: "Akses penuh owner/superadmin" },
+] as const;
+
+const divisionOptions = ["HR", "Produksi", "Packing", "Sales", "Expedition", "Finance", "Operational"];
+const positionOptions = ["Admin", "Leader", "Staff", "Driver", "Manager", "Supervisor"];
+
 export default function EmployeesPage() {
   const router = useRouter();
   const { success, error: showError } = useToast();
@@ -37,9 +47,11 @@ export default function EmployeesPage() {
     nip: "",
     fullName: "",
     email: "",
+    username: "",
     phone: "",
     division: "",
     position: "",
+    role: "EMPLOYEE",
     password: "",
   });
   const [submitting, setSubmitting] = useState(false);
@@ -87,9 +99,11 @@ export default function EmployeesPage() {
       nip: "",
       fullName: "",
       email: "",
+      username: "",
       phone: "",
       division: "",
       position: "",
+      role: "EMPLOYEE",
       password: "",
     });
     setIsModalOpen(true);
@@ -101,9 +115,11 @@ export default function EmployeesPage() {
       nip: employee.nip,
       fullName: employee.fullName,
       email: employee.email,
+      username: "",
       phone: employee.phone || "",
       division: employee.division || "",
       position: employee.position || "",
+      role: "EMPLOYEE",
       password: "",
     });
     setIsModalOpen(true);
@@ -314,12 +330,19 @@ export default function EmployeesPage() {
         }
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input
-            label="NIP"
-            value={formData.nip}
-            onChange={(e) => setFormData({ ...formData, nip: e.target.value })}
-            required
-          />
+          {selectedEmployee ? (
+            <Input
+              label="NIP"
+              value={formData.nip}
+              onChange={(e) => setFormData({ ...formData, nip: e.target.value })}
+              disabled
+            />
+          ) : (
+            <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3">
+              <p className="text-xs font-semibold text-[var(--text-primary)]">NIP dibuat otomatis</p>
+              <p className="mt-1 text-xs text-[var(--text-secondary)]">Format mengikuti aturan perusahaan, misalnya MPD-2026-PRD-0001.</p>
+            </div>
+          )}
           <Input
             label="Nama Lengkap"
             value={formData.fullName}
@@ -333,21 +356,66 @@ export default function EmployeesPage() {
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
           />
+          {!selectedEmployee && (
+            <Input
+              label="Username"
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              placeholder="contoh: deni.leader"
+              required
+            />
+          )}
           <Input
             label="Telepon"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           />
-          <Input
-            label="Divisi"
-            value={formData.division}
-            onChange={(e) => setFormData({ ...formData, division: e.target.value })}
-          />
-          <Input
-            label="Posisi"
-            value={formData.position}
-            onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-          />
+          {!selectedEmployee && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-semibold text-[var(--text-primary)]">Role Akses Sistem</label>
+              <select
+                className="input"
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                required
+              >
+                {accessRoleOptions.map((role) => (
+                  <option key={role.value} value={role.value}>{role.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-[var(--text-secondary)]">
+                {accessRoleOptions.find((role) => role.value === formData.role)?.description}
+              </p>
+            </div>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-semibold text-[var(--text-primary)]">Divisi / Bagian</label>
+              <input
+                className="input"
+                list="division-options"
+                value={formData.division}
+                onChange={(e) => setFormData({ ...formData, division: e.target.value })}
+                placeholder="contoh: Expedition"
+              />
+              <datalist id="division-options">
+                {divisionOptions.map((division) => <option key={division} value={division} />)}
+              </datalist>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-semibold text-[var(--text-primary)]">Jabatan / Posisi</label>
+              <input
+                className="input"
+                list="position-options"
+                value={formData.position}
+                onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                placeholder="contoh: Leader"
+              />
+              <datalist id="position-options">
+                {positionOptions.map((position) => <option key={position} value={position} />)}
+              </datalist>
+            </div>
+          </div>
           <Input
             label={selectedEmployee ? "Password (kosongkan jika tidak diubah)" : "Password"}
             type="password"

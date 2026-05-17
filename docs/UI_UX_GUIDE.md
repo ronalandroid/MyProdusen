@@ -138,6 +138,19 @@ Admin/Superadmin dashboard shows:
 - KPI summary and risk indicators.
 - Reports shortcuts.
 
+Superadmin monitoring dashboard additionally shows:
+
+- Management cards for `Management User & Role`, `Approval Center`, and
+  `Reports & Export`.
+- 7-day attendance bar diagram using brand-safe CSS bars.
+- Division monitoring bars for active employee count and attendance rate.
+- KPI overview with average score, approval counts, top performers, and low
+  performers.
+- Employee risk list for repeated late/absent/low KPI signals.
+- All cards keep the same MyProdusen visual system: yellow for primary
+  highlight, red for risk only, white rounded cards, soft gray surfaces, and
+  concise Indonesian labels.
+
 ### Attendance
 
 Requirements:
@@ -187,6 +200,30 @@ Requirements:
 - Employee identity, role, division, position, supervisor, work location, and shift summary.
 - Account status and notification preferences where supported.
 - No sensitive data beyond authenticated user's scope.
+
+### Email Templates
+
+Purpose: make authentication emails feel like the same MyProdusen product,
+not generic system mail.
+
+Requirements:
+
+- Use the same brand direction as the app: yellow header, black primary text,
+  white rounded card, soft gray background, and concise Indonesian copy.
+- Header shows `MyProdusen` and `Produsen Dimsum Medan`.
+- Footer explains the email is automatic and directs users to HRD/Superadmin.
+- Primary action uses one yellow CTA button with black text.
+- Security-sensitive emails include clear expiry or warning copy.
+- Copy may be warm and motivating, but must stay professional and easy for
+  non-technical staff.
+- Templates live in `lib/email.ts` and are sent through Resend.
+
+Approved copy tone examples:
+
+- “Semangat kerja dimulai dari langkah kecil yang rapi.”
+- “Satu sistem, banyak manfaat: data lebih tertata, kerja lebih tenang, tim
+  lebih kompak.”
+- “Kerja lancar dimulai dari akun yang aman.”
 
 ### Reports
 

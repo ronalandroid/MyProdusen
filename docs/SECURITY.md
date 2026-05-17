@@ -10,6 +10,9 @@
 - Passwords hashed with bcrypt.
 - Strict `getProductionJwtSecret()` is the single signing helper for sessions and password-reset tokens.
 - HTTPS terminated by Coolify. Geolocation requires HTTPS by browser policy; do not work around it.
+- Cookie-authenticated mutating API requests are protected by an Origin/Referer
+  guard in `lib/core/route-handler.ts`; bearer-token API clients remain usable
+  for trusted server-to-server calls.
 
 ## Roles & access
 
@@ -22,6 +25,26 @@
 
 Inactive users cannot log in. Disabled accounts lose access on the next auth
 revalidation.
+
+System `role` controls access only. Operational labels such as HR, Admin,
+Leader, Expedition, Driver, or Staff belong in employee `division` and
+`position`, not in the RBAC role list. Superadmin may assign any role when
+creating a new employee account. Admin HR may create lower-ranked accounts
+only; attempts to create or promote Superadmin are blocked server-side.
+
+## Auth email delivery
+
+Authentication email uses Resend through `lib/email.ts`.
+
+- Required production env: `RESEND_API_KEY` and `RESEND_FROM_EMAIL`.
+- Registration and public registration send the `register` template.
+- Forgot password sends a 30-minute reset link using the `forgot-password`
+  template.
+- Successful password reset sends the `reset-password` confirmation template.
+- Role changes and account activation send `role-changed` and
+  `account-approved` templates where applicable.
+- If Resend env is missing outside production, email is logged as skipped for
+  developer convenience. Production must configure Resend in Coolify.
 
 ## Attendance security
 
@@ -94,6 +117,6 @@ Triggered by:
 
 - [ ] `npm run lint` and `npm run test` clean before merge.
 - [ ] Login rate limit verified end-to-end (5 attempts / 15 minutes per IP+username).
-- [ ] CSRF tokens on state-changing routes verified during pen-test.
+- [x] Cookie-authenticated state-changing routes have Origin/Referer CSRF guard.
 - [ ] No PII or secret in logs; `lib/logger` redacts known keys.
 - [ ] Periodic restore drill on staging (quarterly).

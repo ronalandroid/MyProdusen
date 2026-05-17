@@ -50,6 +50,48 @@
       "when": 1778940057639,
       "tag": "0006_payroll_period",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1778940057640,
+      "tag": "0007_realtime_attendance_selfie",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1778940057641,
+      "tag": "0008_attendance_selfie_metadata",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778940057642,
+      "tag": "0009_attendance_selfie_path",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1778940057643,
+      "tag": "0010_attendance_report_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1778940057644,
+      "tag": "0011_attendance_geo_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1778940057645,
+      "tag": "0012_attendance_employee_date_unique",
+      "breakpoints": true
     }
   ]
 }

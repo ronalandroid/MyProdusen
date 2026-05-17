@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Bell, CheckCircle, Clock, TrendingUp, Users, AlertTriangle, CalendarDays, RefreshCcw, ArrowRight } from "lucide-react";
+import { Bell, CheckCircle, Clock, TrendingUp, Users, AlertTriangle, CalendarDays, RefreshCcw, ArrowRight, ShieldCheck, BarChart3 } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders, fetchProfile } from "@/lib/auth-client";
 import { buildDashboardActions, type DashboardActionTone } from "@/lib/dashboard/action-cards";
@@ -26,6 +26,21 @@ interface DashboardStats {
   pendingAttendanceExceptions: number;
   payrollPeriodStatus: { period: string; status: string } | null;
   role: UserRole;
+  superadminInsights?: SuperadminInsights;
+}
+
+interface SuperadminInsights {
+  attendanceTrend: Array<{ date: string; label: string; present: number; late: number; absent: number }>;
+  divisionMonitoring: Array<{ division: string; employeeCount: number; attendanceRate: number }>;
+  kpiOverview: {
+    averageScore: number;
+    approvedCount: number;
+    pendingCount: number;
+    topPerformers: Array<{ employeeId: string; name: string; division: string | null; score: number }>;
+    lowPerformers: Array<{ employeeId: string; name: string; division: string | null; score: number }>;
+  };
+  employeeRisks: Array<{ employeeId: string; name: string; division: string; lateCount: number; absentCount: number; averageKpi: number; riskScore: number }>;
+  managementCards: Array<{ label: string; value: number; detail: string; href: string; tone: DashboardActionTone }>;
 }
 
 const numberFormatter = new Intl.NumberFormat("id-ID");
@@ -260,8 +275,12 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      {stats.role === "SUPERADMIN" && stats.superadminInsights && (
+        <SuperadminMonitoring insights={stats.superadminInsights} />
+      )}
+
       {/* Insights Grid */}
-      <section className="insights-grid animate-slide-up" aria-labelledby="insights-title" style={{ animationDelay: '850ms' }}>
+      {stats.role !== "SUPERADMIN" && <section className="insights-grid animate-slide-up" aria-labelledby="insights-title" style={{ animationDelay: '850ms' }}>
         <div className="section-heading full-span">
           <h2 id="insights-title">Insight Operasional</h2>
         </div>
@@ -281,7 +300,212 @@ export default function DashboardPage() {
           <p className="text-xs sm:text-sm">Grafik mingguan menunggu endpoint historis agar data produksi tidak memakai mock.</p>
           <Link href="/dashboard/reports" className="text-link text-sm">Buka Laporan →</Link>
         </div>
-      </section>
+      </section>}
+    </div>
+  );
+}
+
+function SuperadminMonitoring({ insights }: { insights: SuperadminInsights }) {
+  return (
+    <section className="animate-slide-up" aria-labelledby="superadmin-monitoring-title" style={{ animationDelay: '820ms' }}>
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">Superadmin Control Center</p>
+          <h2 id="superadmin-monitoring-title">Monitoring Perusahaan</h2>
+        </div>
+        <Link href="/dashboard/reports" className="text-link text-sm">Laporan lengkap →</Link>
+      </div>
+
+      <div className="quick-actions-grid mb-5">
+        {insights.managementCards.map((card, index) => (
+          <ManagementCard key={card.label} card={card} delay={`${850 + index * 50}ms`} />
+        ))}
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr] mb-5">
+        <AttendanceTrendChart trend={insights.attendanceTrend} />
+        <KpiOverviewCard overview={insights.kpiOverview} />
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
+        <DivisionMonitoringChart divisions={insights.divisionMonitoring} />
+        <EmployeeRiskPanel risks={insights.employeeRisks} />
+      </div>
+    </section>
+  );
+}
+
+function ManagementCard({ card, delay }: { card: SuperadminInsights['managementCards'][number]; delay?: string }) {
+  return (
+    <Link href={card.href} className={`card quick-action-card group animate-scale-in action-card-${card.tone}`} style={{ animationDelay: delay }}>
+      <span>
+        <strong className="text-sm sm:text-base">{card.label}</strong>
+        <small className="text-xs sm:text-sm">{card.detail}</small>
+      </span>
+      <strong className="text-xl sm:text-2xl" style={{ color: mapToneToColor(card.tone) }}>
+        {numberFormatter.format(card.value)}
+      </strong>
+    </Link>
+  );
+}
+
+function AttendanceTrendChart({ trend }: { trend: SuperadminInsights['attendanceTrend'] }) {
+  const maxValue = Math.max(1, ...trend.map((day) => day.present + day.late + day.absent));
+  return (
+    <div className="card">
+      <div className="flex items-start justify-between gap-3 mb-5">
+        <div>
+          <p className="eyebrow">7 Hari Terakhir</p>
+          <h3 className="text-base sm:text-lg">Tren Kehadiran</h3>
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)]">Hadir, terlambat, dan absen per hari.</p>
+        </div>
+        <div className="w-11 h-11 rounded-xl bg-[var(--primary-light)] flex items-center justify-center">
+          <BarChart3 size={22} className="text-[var(--primary-dark)]" aria-hidden="true" />
+        </div>
+      </div>
+      <div className="flex items-end gap-3 h-52" role="img" aria-label="Diagram batang tren kehadiran 7 hari terakhir">
+        {trend.map((day) => {
+          const presentHeight = Math.max(6, (day.present / maxValue) * 100);
+          const lateHeight = Math.max(day.late ? 6 : 0, (day.late / maxValue) * 100);
+          const absentHeight = Math.max(day.absent ? 6 : 0, (day.absent / maxValue) * 100);
+          return (
+            <div key={day.date} className="flex-1 flex flex-col items-center justify-end gap-2 min-w-0">
+              <div className="w-full max-w-10 h-40 flex flex-col justify-end rounded-xl bg-[var(--bg-secondary)] overflow-hidden border border-[var(--border-color)]">
+                <span style={{ height: `${absentHeight}%`, background: 'var(--danger)' }} />
+                <span style={{ height: `${lateHeight}%`, background: 'var(--warning)' }} />
+                <span style={{ height: `${presentHeight}%`, background: 'var(--success)' }} />
+              </div>
+              <span className="text-[11px] font-semibold text-[var(--text-secondary)] truncate">{day.label}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-4 flex flex-wrap gap-3 text-xs text-[var(--text-secondary)]">
+        <Legend color="var(--success)" label="Hadir" />
+        <Legend color="var(--warning)" label="Telat" />
+        <Legend color="var(--danger)" label="Absen" />
+      </div>
+    </div>
+  );
+}
+
+function DivisionMonitoringChart({ divisions }: { divisions: SuperadminInsights['divisionMonitoring'] }) {
+  return (
+    <div className="card">
+      <div className="flex items-start justify-between gap-3 mb-5">
+        <div>
+          <p className="eyebrow">Divisi</p>
+          <h3 className="text-base sm:text-lg">Monitoring Karyawan</h3>
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)]">Kehadiran hari ini per divisi.</p>
+        </div>
+        <Users size={22} className="text-[var(--primary-dark)]" aria-hidden="true" />
+      </div>
+      <div className="space-y-4">
+        {divisions.length ? divisions.map((division) => (
+          <div key={division.division}>
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <span className="text-sm font-semibold text-[var(--text-primary)]">{division.division}</span>
+              <span className="text-xs text-[var(--text-secondary)]">{division.employeeCount} orang · {division.attendanceRate}% hadir</span>
+            </div>
+            <div className="h-3 rounded-full bg-[var(--bg-secondary)] overflow-hidden border border-[var(--border-color)]">
+              <div className="h-full rounded-full bg-[var(--primary)]" style={{ width: `${Math.min(100, division.attendanceRate)}%` }} />
+            </div>
+          </div>
+        )) : <EmptyMiniState title="Belum ada divisi" description="Data divisi muncul setelah karyawan aktif memiliki divisi." />}
+      </div>
+    </div>
+  );
+}
+
+function KpiOverviewCard({ overview }: { overview: SuperadminInsights['kpiOverview'] }) {
+  return (
+    <div className="card">
+      <div className="flex items-start justify-between gap-3 mb-5">
+        <div>
+          <p className="eyebrow">KPI Bulan Ini</p>
+          <h3 className="text-base sm:text-lg">Performa Karyawan</h3>
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)]">Rata-rata skor dan status approval.</p>
+        </div>
+        <div className="text-right">
+          <strong className="text-3xl text-[var(--success)]">{overview.averageScore}</strong>
+          <p className="text-[11px] text-[var(--text-secondary)]">Avg score</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="rounded-xl bg-[var(--success-bg)] p-3">
+          <p className="text-xs text-[var(--text-secondary)]">Disetujui</p>
+          <strong className="text-xl text-[var(--success)]">{numberFormatter.format(overview.approvedCount)}</strong>
+        </div>
+        <div className="rounded-xl bg-[var(--warning-bg)] p-3">
+          <p className="text-xs text-[var(--text-secondary)]">Menunggu</p>
+          <strong className="text-xl text-[var(--warning)]">{numberFormatter.format(overview.pendingCount)}</strong>
+        </div>
+      </div>
+      <PerformerList title="Top Performer" rows={overview.topPerformers} empty="Belum ada skor KPI." />
+      <div className="mt-4">
+        <PerformerList title="Perlu Dibantu" rows={overview.lowPerformers} empty="Belum ada data risiko KPI." />
+      </div>
+    </div>
+  );
+}
+
+function EmployeeRiskPanel({ risks }: { risks: SuperadminInsights['employeeRisks'] }) {
+  return (
+    <div className="card">
+      <div className="flex items-start justify-between gap-3 mb-5">
+        <div>
+          <p className="eyebrow">Risk Alert</p>
+          <h3 className="text-base sm:text-lg">Karyawan Perlu Perhatian</h3>
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)]">Telat, absen, dan KPI rendah.</p>
+        </div>
+        <ShieldCheck size={22} className="text-[var(--danger)]" aria-hidden="true" />
+      </div>
+      <div className="space-y-3">
+        {risks.length ? risks.map((risk) => (
+          <Link key={risk.employeeId} href={`/dashboard/employees/${risk.employeeId}`} className="block rounded-xl border border-[var(--border-color)] p-3 hover:border-[var(--primary)] transition-colors">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">{risk.name}</p>
+                <p className="text-xs text-[var(--text-secondary)]">{risk.division}</p>
+              </div>
+              <span className="badge badge-danger">Risk {risk.riskScore}</span>
+            </div>
+            <p className="mt-2 text-xs text-[var(--text-secondary)]">{risk.lateCount} telat · {risk.absentCount} absen · KPI {risk.averageKpi || '-'}</p>
+          </Link>
+        )) : <EmptyMiniState title="Risiko rendah" description="Belum ada karyawan dengan sinyal risiko tinggi." />}
+      </div>
+    </div>
+  );
+}
+
+function PerformerList({ title, rows, empty }: { title: string; rows: SuperadminInsights['kpiOverview']['topPerformers']; empty: string }) {
+  return (
+    <div>
+      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">{title}</p>
+      <div className="space-y-2">
+        {rows.length ? rows.map((row) => (
+          <div key={`${title}-${row.employeeId}`} className="flex items-center justify-between gap-3 rounded-xl bg-[var(--bg-secondary)] px-3 py-2">
+            <span className="min-w-0">
+              <strong className="block truncate text-sm text-[var(--text-primary)]">{row.name}</strong>
+              <small className="text-xs text-[var(--text-secondary)]">{row.division || 'Belum Diisi'}</small>
+            </span>
+            <strong className="text-sm text-[var(--text-primary)]">{row.score}</strong>
+          </div>
+        )) : <p className="text-xs text-[var(--text-secondary)]">{empty}</p>}
+      </div>
+    </div>
+  );
+}
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return <span className="inline-flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />{label}</span>;
+}
+
+function EmptyMiniState({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="rounded-xl border border-dashed border-[var(--border-color)] p-4 text-center">
+      <p className="text-sm font-semibold text-[var(--text-primary)]">{title}</p>
+      <p className="mt-1 text-xs text-[var(--text-secondary)]">{description}</p>
     </div>
   );
 }

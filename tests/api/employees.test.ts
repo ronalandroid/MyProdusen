@@ -2,6 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { GET as employeesGET, POST as employeesPOST } from '@/app/api/employees/route';
 import { DELETE as employeeDELETE, GET as employeeGET } from '@/app/api/employees/[id]/route';
 import { createTestUser, createTestEmployee, createMockRequest, cleanupTestData } from '../helpers/test-utils';
+import { db, users } from '@/lib/db';
+import { eq } from 'drizzle-orm';
 
 describe('Employees API', () => {
   const testUserIds: string[] = [];
@@ -128,6 +130,74 @@ describe('Employees API', () => {
       if (data.data.userId) {
         testUserIds.push(data.data.userId);
       }
+    });
+
+    it('should create employee account with selected access role and placement', async () => {
+      const superadmin = await createTestUser('SUPERADMIN');
+      testUserIds.push(superadmin.id);
+      const unique = Date.now().toString(36);
+
+      const request = createMockRequest('POST', 'http://localhost:3000/api/employees', {
+        token: superadmin.token,
+        body: {
+          email: `leader-expedition-${unique}@test.com`,
+          username: `leaderexpedition${unique}`,
+          password: 'password123',
+          fullName: 'Leader Expedition',
+          phone: '081234567891',
+          division: 'Expedition',
+          position: 'Leader',
+          role: 'SUPERVISOR',
+        },
+      });
+
+      const response = await employeesPOST(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.data.division).toBe('Expedition');
+      expect(data.data.position).toBe('Leader');
+
+      const [createdUser] = await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.id, data.data.userId))
+        .limit(1);
+
+      expect(createdUser.role).toBe('SUPERVISOR');
+
+      if (data.data.id) {
+        testEmployeeIds.push(data.data.id);
+      }
+      if (data.data.userId) {
+        testUserIds.push(data.data.userId);
+      }
+    });
+
+    it('should reject employee creation when actor cannot assign selected role', async () => {
+      const adminHr = await createTestUser('ADMIN_HR');
+      testUserIds.push(adminHr.id);
+      const unique = Date.now().toString(36);
+
+      const request = createMockRequest('POST', 'http://localhost:3000/api/employees', {
+        token: adminHr.token,
+        body: {
+          email: `blocked-superadmin-${unique}@test.com`,
+          username: `blockedsuperadmin${unique}`,
+          password: 'password123',
+          fullName: 'Blocked Superadmin',
+          division: 'HR',
+          position: 'Admin',
+          role: 'SUPERADMIN',
+        },
+      });
+
+      const response = await employeesPOST(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(403);
+      expect(data.success).toBe(false);
     });
 
     it('should fail without permission', async () => {
