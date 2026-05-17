@@ -13,7 +13,7 @@ LAN_IP="$(ipconfig getifaddr en0 2>/dev/null || true)"
 cd "$PROJECT_DIR"
 
 echo "========================================"
-echo "MyProdusen realtime device preview"
+echo "MyProdusen realtime lightweight preview"
 echo "========================================"
 echo "Local: ${APP_URL}"
 if [ -n "$LAN_IP" ]; then
@@ -43,118 +43,158 @@ for i in {1..90}; do
   fi
 done
 
-CACHE_BUST="$(date +%s)"
 cat > "$PREVIEW_FILE" <<HTML
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MyProdusen Device Preview</title>
+  <title>MyProdusen Lightweight Preview</title>
   <style>
-    :root { color-scheme: light; --yellow:#FDC704; --black:#111111; --muted:#687083; --line:#E5E3E6; }
+    :root { color-scheme: light; --yellow:#FDC704; --black:#111111; --muted:#687083; --line:#E5E3E6; --bg:#f6f4ee; }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f4ee; color: var(--black); }
-    header { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; background: rgba(255,255,255,.92); border-bottom: 1px solid var(--line); backdrop-filter: blur(16px); }
+    body { margin: 0; min-height: 100vh; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--black); }
+    header { position: sticky; top: 0; z-index: 10; display: grid; gap: 12px; padding: 14px 18px; background: rgba(255,255,255,.94); border-bottom: 1px solid var(--line); backdrop-filter: blur(16px); }
+    .top { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
     h1 { margin: 0; font-size: 18px; line-height: 1.1; }
     p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
-    .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    button, a { min-height: 38px; border-radius: 12px; border: 1px solid var(--line); padding: 0 12px; background: white; color: var(--black); font-weight: 800; text-decoration: none; cursor: pointer; }
-    button.primary, a.primary { background: var(--yellow); border-color: #edb900; }
-    main { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; padding: 18px; align-items: start; }
-    .device-card { min-width: 0; border-radius: 22px; background: white; border: 1px solid var(--line); box-shadow: 0 16px 44px rgba(17,24,39,.08); overflow: hidden; }
-    .device-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
-    .device-head strong { display: block; font-size: 13px; }
-    .device-head span { color: var(--muted); font-size: 11px; font-weight: 700; }
-    .stage { overflow: auto; padding: 14px; background: linear-gradient(135deg,#fffdf7,#f5f3ed); }
-    .frame-wrap { transform-origin: top left; }
-    iframe { display: block; border: 1px solid #d8d6da; border-radius: 24px; background: white; box-shadow: 0 18px 42px rgba(17,24,39,.18); }
-    .desktop iframe { border-radius: 16px; }
-    .note { padding: 0 18px 18px; color: var(--muted); font-size: 12px; }
+    .controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    button, a, select { min-height: 38px; border-radius: 12px; border: 1px solid var(--line); padding: 0 12px; background: white; color: var(--black); font-weight: 800; text-decoration: none; cursor: pointer; }
+    button.active, button.primary { background: var(--yellow); border-color: #edb900; }
+    select { min-width: 160px; }
+    main { display:grid; place-items:start center; padding:18px; }
+    .device-shell { width:100%; max-width: calc(100vw - 36px); display:grid; justify-items:center; gap:12px; }
+    .device-meta { width:min(100%, 960px); display:flex; justify-content:space-between; gap:10px; color:var(--muted); font-size:12px; font-weight:800; }
+    .stage { width:min(100%, 960px); height:calc(100vh - 190px); min-height:520px; overflow:auto; display:grid; place-items:start center; padding:14px; border-radius:22px; background:linear-gradient(135deg,#fffdf7,#f0eee8); border:1px solid var(--line); box-shadow:0 16px 44px rgba(17,24,39,.08); }
+    .frame-wrap { transform-origin: top center; }
+    iframe { display:block; border:1px solid #d8d6da; border-radius:24px; background:white; box-shadow:0 18px 42px rgba(17,24,39,.18); }
+    .desktop iframe { border-radius:16px; }
+    .hint { width:min(100%, 960px); color:var(--muted); font-size:12px; text-align:center; }
   </style>
 </head>
 <body>
   <header>
-    <div>
-      <h1>MyProdusen Device Preview</h1>
-      <p>Realtime via Next dev server. Refresh board kalau iframe masih compiling.</p>
-      <p>Local: ${APP_URL}$( [ -n "$LAN_IP" ] && printf ' · HP: http://%s:%s' "$LAN_IP" "$PORT" )</p>
+    <div class="top">
+      <div>
+        <h1>MyProdusen Lightweight Preview</h1>
+        <p>Satu iframe aktif supaya lebih cepat. Ganti device/route pakai tombol.</p>
+        <p>Local: ${APP_URL}$( [ -n "$LAN_IP" ] && printf ' · HP: http://%s:%s' "$LAN_IP" "$PORT" )</p>
+      </div>
+      <div class="controls">
+        <button class="primary" onclick="reloadFrame()">Reload</button>
+        <a id="openLive" href="${APP_URL}/login" target="_blank">Open live</a>
+      </div>
     </div>
-    <div class="actions">
-      <button class="primary" onclick="reloadFrames()">Reload semua frame</button>
-      <a href="${APP_URL}" target="_blank">Open app</a>
-      <a href="${APP_URL}/login" target="_blank">Open login</a>
+    <div class="controls" id="deviceControls"></div>
+    <div class="controls">
+      <select id="routeSelect" onchange="setRoute(this.value)">
+        <option value="/login">Login</option>
+        <option value="/register">Register</option>
+        <option value="/">Landing</option>
+        <option value="/dashboard">Dashboard</option>
+        <option value="/dashboard/attendance">Attendance</option>
+        <option value="/dashboard/employees">Employees</option>
+        <option value="/dashboard/leave">Leave</option>
+        <option value="/dashboard/profile">Profile</option>
+      </select>
+      <button onclick="setRoute('/')">Landing</button>
+      <button onclick="setRoute('/login')">Login</button>
+      <button onclick="setRoute('/register')">Register</button>
+      <button onclick="setRoute('/dashboard')">Dashboard</button>
     </div>
   </header>
-  <main id="devices"></main>
+
+  <main>
+    <section class="device-shell">
+      <div class="device-meta"><span id="deviceLabel"></span><span id="routeLabel"></span></div>
+      <div class="stage" id="stage">
+        <div class="frame-wrap" id="frameWrap">
+          <iframe id="previewFrame" title="Device preview"></iframe>
+        </div>
+      </div>
+      <div class="hint">Kalau blank sebentar, Next lagi compile route. Tunggu lalu klik Reload. Dashboard butuh login.</div>
+    </section>
+  </main>
+
   <script>
     const base = '${APP_URL}';
-    const cache = '${CACHE_BUST}';
     const devices = [
-      { name: 'Mobile 320', size: '320 × 900', w: 320, h: 900, path: '/' },
-      { name: 'iPhone 390', size: '390 × 844', w: 390, h: 844, path: '/login' },
-      { name: 'Large Mobile 430', size: '430 × 932', w: 430, h: 932, path: '/register' },
-      { name: 'Tablet 768', size: '768 × 1024', w: 768, h: 1024, path: '/' },
-      { name: 'Desktop 1440', size: '1440 × 900', w: 1440, h: 900, path: '/', desktop: true },
+      { key:'320', name:'Mobile 320', w:320, h:900 },
+      { key:'390', name:'iPhone 390', w:390, h:844 },
+      { key:'430', name:'Large Mobile 430', w:430, h:932 },
+      { key:'768', name:'Tablet 768', w:768, h:1024 },
+      { key:'1440', name:'Desktop 1440', w:1440, h:900, desktop:true },
     ];
-
-    function frameSrc(device) {
-      return base + device.path + '?devicePreview=' + encodeURIComponent(device.name) + '&t=' + Date.now();
-    }
+    let currentDevice = devices[1];
+    let currentRoute = '/login';
 
     function scaleFor(width) {
-      const available = Math.max(280, Math.min(window.innerWidth - 72, 720));
+      const stage = document.getElementById('stage');
+      const available = Math.max(280, stage.clientWidth - 28);
       return Math.min(1, available / width);
     }
 
-    function render() {
-      const root = document.getElementById('devices');
+    function src() {
+      return base + currentRoute + '?devicePreview=' + encodeURIComponent(currentDevice.name) + '&t=' + Date.now();
+    }
+
+    function renderDeviceButtons() {
+      const root = document.getElementById('deviceControls');
       root.innerHTML = '';
       for (const device of devices) {
-        const scale = scaleFor(device.w);
-        const card = document.createElement('article');
-        card.className = 'device-card' + (device.desktop ? ' desktop' : '');
-        card.innerHTML = `
-          <div class="device-head">
-            <div><strong>${device.name}</strong><span>${device.size} · ${device.path}</span></div>
-            <a href="${base}${device.path}" target="_blank">Open</a>
-          </div>
-          <div class="stage" style="height:${Math.round(device.h * scale + 28)}px">
-            <div class="frame-wrap" style="width:${device.w}px;height:${device.h}px;transform:scale(${scale})">
-              <iframe title="${device.name}" src="${frameSrc(device)}" width="${device.w}" height="${device.h}"></iframe>
-            </div>
-          </div>
-          <div class="note">Kalau blank sebentar, Next sedang compile route. Klik Reload semua frame.</div>
-        `;
-        root.appendChild(card);
+        const btn = document.createElement('button');
+        btn.textContent = device.name;
+        btn.className = device.key === currentDevice.key ? 'active' : '';
+        btn.onclick = () => { currentDevice = device; updateFrame(); renderDeviceButtons(); };
+        root.appendChild(btn);
       }
     }
 
-    function reloadFrames() {
-      document.querySelectorAll('iframe').forEach((frame) => {
-        const url = new URL(frame.src);
-        url.searchParams.set('t', Date.now().toString());
-        frame.src = url.toString();
-      });
+    function updateFrame() {
+      const scale = scaleFor(currentDevice.w);
+      const wrap = document.getElementById('frameWrap');
+      const frame = document.getElementById('previewFrame');
+      const stage = document.getElementById('stage');
+      wrap.style.width = currentDevice.w + 'px';
+      wrap.style.height = currentDevice.h + 'px';
+      wrap.style.transform = 'scale(' + scale + ')';
+      frame.width = currentDevice.w;
+      frame.height = currentDevice.h;
+      frame.src = src();
+      stage.style.minHeight = Math.max(520, Math.min(window.innerHeight - 190, currentDevice.h * scale + 28)) + 'px';
+      stage.className = 'stage' + (currentDevice.desktop ? ' desktop' : '');
+      document.getElementById('deviceLabel').textContent = currentDevice.name + ' · ' + currentDevice.w + ' × ' + currentDevice.h;
+      document.getElementById('routeLabel').textContent = currentRoute;
+      document.getElementById('openLive').href = base + currentRoute;
+      document.getElementById('routeSelect').value = currentRoute;
     }
 
-    window.addEventListener('resize', render);
-    render();
+    function setRoute(route) {
+      currentRoute = route;
+      updateFrame();
+    }
+
+    function reloadFrame() {
+      updateFrame();
+    }
+
+    window.addEventListener('resize', updateFrame);
+    renderDeviceButtons();
+    updateFrame();
   </script>
 </body>
 </html>
 HTML
 
-echo "Opening one stable preview board ..."
+echo "Opening lightweight preview board ..."
 if [ -x "$CHROME" ]; then
-  "$CHROME" --new-window --window-size="1500,980" "file://${PREVIEW_FILE}" >/dev/null 2>&1 &
+  "$CHROME" --new-window --window-size="1180,940" "file://${PREVIEW_FILE}" >/dev/null 2>&1 &
 else
   open "file://${PREVIEW_FILE}"
 fi
 
 echo ""
-echo "Preview board opened."
-echo "This is more stable than many separate Chrome windows."
-echo "If a frame is empty, wait for Next compile then click Reload semua frame."
+echo "Lightweight preview opened. Only one device iframe loads at a time."
+echo "If a frame is empty, wait for Next compile then click Reload."
 echo "Press Enter to close this terminal window. Dev server keeps running."
 read -r _
