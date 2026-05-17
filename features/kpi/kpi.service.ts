@@ -1,6 +1,7 @@
 import { db, kpiTemplates, kpiItems, kpiAssignments, kpiResults, employees } from '@/lib/db';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { notifyUser } from '@/lib/notifications/dispatch';
 
 export type KpiScoringType = 'HIGHER_IS_BETTER' | 'LOWER_IS_BETTER' | 'BOOLEAN';
 
@@ -461,6 +462,13 @@ export class KpiService {
     if (!result) {
       throw new Error('Hasil KPI tidak ditemukan');
     }
+
+    await notifyUser({
+      employeeId: result.employeeId,
+      title: 'Hasil KPI disetujui',
+      message: `Hasil KPI periode ${result.period} telah disetujui.`,
+      type: 'KPI_APPROVED',
+    });
 
     return result;
   }

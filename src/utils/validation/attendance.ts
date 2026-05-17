@@ -7,6 +7,7 @@ export const checkInSchema = z.object({
   longitude: z.number().min(-180).max(180),
   accuracy: z.number().positive(),
   deviceInfo: z.string().optional(),
+  gpsTimestamp: z.string().optional(),
 });
 
 export const checkOutSchema = z.object({
@@ -15,6 +16,7 @@ export const checkOutSchema = z.object({
   longitude: z.number().min(-180).max(180),
   accuracy: z.number().positive(),
   deviceInfo: z.string().optional(),
+  gpsTimestamp: z.string().optional(),
 });
 
 export const manualAttendanceSchema = z.object({

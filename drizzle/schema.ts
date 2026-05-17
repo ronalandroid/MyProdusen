@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index, date, time, decimal } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, index, date, time, decimal, jsonb } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
 // Enums
@@ -92,10 +92,14 @@ export const attendances = pgTable('Attendance', {
   checkInDistance: real('checkInDistance'),
   checkInSelfie: text('checkInSelfie').notNull(),
   checkInSelfieUrl: text('check_in_selfie_url'),
+  checkInSelfiePath: text('check_in_selfie_path'),
   checkInSelfieUploadedAt: timestamp('check_in_selfie_uploaded_at', { mode: 'date' }),
+  checkInSelfieSizeBytes: integer('check_in_selfie_size_bytes'),
+  checkInSelfieMimeType: text('check_in_selfie_mime_type'),
   checkInDeviceInfo: text('checkInDeviceInfo'),
   checkInIp: text('checkInIp'),
   checkInUserAgent: text('checkInUserAgent'),
+  checkInGeoStatus: text('check_in_geo_status'),
   checkOutTime: timestamp('checkOutTime', { mode: 'date' }),
   checkOutLatitude: real('checkOutLatitude'),
   checkOutLongitude: real('checkOutLongitude'),
@@ -103,10 +107,15 @@ export const attendances = pgTable('Attendance', {
   checkOutDistance: real('checkOutDistance'),
   checkOutSelfie: text('checkOutSelfie'),
   checkOutSelfieUrl: text('check_out_selfie_url'),
+  checkOutSelfiePath: text('check_out_selfie_path'),
   checkOutSelfieUploadedAt: timestamp('check_out_selfie_uploaded_at', { mode: 'date' }),
+  checkOutSelfieSizeBytes: integer('check_out_selfie_size_bytes'),
+  checkOutSelfieMimeType: text('check_out_selfie_mime_type'),
   checkOutDeviceInfo: text('checkOutDeviceInfo'),
   checkOutIp: text('checkOutIp'),
   checkOutUserAgent: text('checkOutUserAgent'),
+  checkOutGeoStatus: text('check_out_geo_status'),
+  geoValidationMetadata: jsonb('geo_validation_metadata').$type<Record<string, unknown>>(),
   status: attendanceStatusEnum('status').default('PRESENT').notNull(),
   lateMinutes: integer('lateMinutes').default(0).notNull(),
   earlyLeaveMinutes: integer('earlyLeaveMinutes').default(0).notNull(),

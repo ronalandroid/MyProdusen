@@ -45,8 +45,11 @@ export default function EmployeesPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchEmployees();
-  }, [statusFilter]);
+    const handle = setTimeout(() => {
+      fetchEmployees();
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [statusFilter, searchTerm]);
 
   const fetchEmployees = async () => {
     try {
@@ -54,6 +57,10 @@ export default function EmployeesPage() {
       const params = new URLSearchParams();
       if (statusFilter !== "all") {
         params.append("status", statusFilter);
+      }
+      const trimmedSearch = searchTerm.trim();
+      if (trimmedSearch.length >= 2) {
+        params.append("search", trimmedSearch);
       }
       
       const response = await fetch(`/api/employees?${params.toString()}`, {

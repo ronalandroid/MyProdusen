@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
+import { readFile, stat } from 'fs/promises';
+import { eq, or } from 'drizzle-orm';
 import path from 'path';
-import { and, eq, or } from 'drizzle-orm';
 import { attendances, db, employees } from '@/lib/db';
 import { requireAuth } from '@/lib/middleware';
-import { errorResponse, forbiddenResponse, notFoundResponse, unauthorizedResponse } from '@/utils/response';
+import {
+  errorResponse,
+  forbiddenResponse,
+  notFoundResponse,
+  unauthorizedResponse,
+} from '@/utils/response';
 import { hasPermission } from '@/lib/permissions';
 import { employeeService } from '@/services/employees/employee.service';
+import { resolveSelfieStoragePath } from '@/lib/upload';
+import { logAudit } from '@/lib/audit';
 
 const SELFIE_ROUTE_PREFIX = '/api/attendance/selfie/';
 const MIME_BY_EXTENSION: Record<string, string> = {
@@ -15,27 +22,53 @@ const MIME_BY_EXTENSION: Record<string, string> = {
   png: 'image/png',
   webp: 'image/webp',
 };
+const SAFE_FILENAME = /^[a-z0-9_-]+\.(jpg|jpeg|png|webp)$/i;
+const SAFE_DIR_SEGMENT = /^[A-Za-z0-9_-]+$/;
 
-function getSelfiePath(filename: string) {
-  if (!/^[a-f0-9-]+\.(jpg|jpeg|png|webp)$/i.test(filename)) {
+function buildSelfieKey(segments: string[]): string | null {
+  if (!segments.length) {
     return null;
   }
 
-  const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads');
-  return path.join(uploadDir, 'selfies', filename);
+  const filename = segments[segments.length - 1];
+  if (!SAFE_FILENAME.test(filename)) {
+    return null;
+  }
+
+  for (let i = 0; i < segments.length - 1; i += 1) {
+    const segment = segments[i];
+    if (!SAFE_DIR_SEGMENT.test(segment)) {
+      return null;
+    }
+  }
+
+  return segments.join('/');
 }
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ filename: string }> }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
+) {
   try {
     const user = await requireAuth(request);
-    const { filename } = await params;
-    const filePath = getSelfiePath(filename);
+    const resolvedParams = await params;
+    const segments = (resolvedParams.path || []).filter(Boolean);
+    const key = buildSelfieKey(segments);
 
-    if (!filePath) {
+    if (!key) {
       return notFoundResponse('Selfie tidak ditemukan');
     }
 
-    const selfieUrl = `${SELFIE_ROUTE_PREFIX}${filename}`;
+    const filePath = resolveSelfieStoragePath(key);
+
+    if (!filePath) {
+      await logAudit(user.userId, 'INVALID_SELFIE_ACCESS', 'Attendance', undefined, undefined, {
+        path: key,
+      }, request);
+      return notFoundResponse('Selfie tidak ditemukan');
+    }
+
+    const selfieUrl = `${SELFIE_ROUTE_PREFIX}${key}`;
     const [attendance] = await db
       .select({ attendance: attendances, employee: employees })
       .from(attendances)
@@ -65,24 +98,32 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
-    if (!['EMPLOYEE', 'SUPERVISOR', 'SUPERADMIN', 'ADMIN_HR'].includes(user.role) && !hasPermission(user.role, 'ATTENDANCE_READ')) {
+    const allowedRoles = ['EMPLOYEE', 'SUPERVISOR', 'SUPERADMIN', 'ADMIN_HR'];
+    if (!allowedRoles.includes(user.role) && !hasPermission(user.role, 'ATTENDANCE_READ')) {
       return forbiddenResponse('Anda tidak memiliki akses melihat selfie absensi');
     }
 
+    const stats = await stat(filePath).catch(() => null);
+    if (!stats || !stats.isFile()) {
+      return notFoundResponse('Selfie tidak ditemukan');
+    }
+
     const file = await readFile(filePath);
-    const extension = filename.split('.').pop()?.toLowerCase() || 'jpg';
+    const extension = (path.extname(filePath).slice(1) || 'jpg').toLowerCase();
 
     return new NextResponse(file, {
       headers: {
         'Content-Type': MIME_BY_EXTENSION[extension] || 'application/octet-stream',
-        'Cache-Control': 'private, max-age=300',
+        'Cache-Control': 'private, max-age=300, must-revalidate',
+        'Content-Length': String(stats.size),
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (error: any) {
-    if (error.message === 'Unauthorized') {
+    if (error?.message === 'Unauthorized') {
       return unauthorizedResponse();
     }
-    if (error.code === 'ENOENT') {
+    if (error?.code === 'ENOENT') {
       return notFoundResponse('Selfie tidak ditemukan');
     }
     return errorResponse('Gagal mengambil selfie absensi', 500);

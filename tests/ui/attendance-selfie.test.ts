@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 
 const attendancePageSource = readFileSync('app/dashboard/attendance/page.tsx', 'utf8');
 const realtimeCameraSource = readFileSync('src/components/attendance/RealtimeSelfieCamera.tsx', 'utf8');
+const selfieCompressorSource = readFileSync('lib/attendance/selfie-compressor.ts', 'utf8');
 
 describe('Realtime attendance selfie UI', () => {
   it('does not expose manual file upload or gallery picker in attendance flow', () => {
@@ -16,6 +17,14 @@ describe('Realtime attendance selfie UI', () => {
   it('uses realtime camera and canvas capture', () => {
     expect(realtimeCameraSource).toContain('navigator.mediaDevices.getUserMedia');
     expect(realtimeCameraSource).toContain('facingMode: "user"');
-    expect(realtimeCameraSource).toContain('canvas.toBlob');
+    expect(realtimeCameraSource).toContain('captureSelfieFromVideo');
+    expect(selfieCompressorSource).toContain('canvas.toBlob');
+  });
+
+  it('compresses selfies client-side before submitting', () => {
+    expect(selfieCompressorSource).toContain('image/webp');
+    expect(selfieCompressorSource).toContain('image/jpeg');
+    expect(selfieCompressorSource).toMatch(/MAX_WIDTH/);
+    expect(selfieCompressorSource).toMatch(/TARGET_BYTES/);
   });
 });

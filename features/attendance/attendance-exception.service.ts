@@ -109,8 +109,20 @@ export class AttendanceExceptionService {
           isManualAdjustment: true,
           adjustmentReason: data.reviewNote || existing.reason,
           adjustedBy: data.reviewerUserId,
+          checkInGeoStatus:
+            existing.type === 'OUTSIDE_GEOFENCE' ? 'APPROVED_MANUAL' : undefined,
           updatedAt: new Date(),
-        })
+        } as any)
+        .where(eq(attendances.id, existing.attendanceId));
+    }
+
+    if (data.status === 'REJECTED' && existing.attendanceId && existing.type === 'OUTSIDE_GEOFENCE') {
+      await db
+        .update(attendances)
+        .set({
+          checkInGeoStatus: 'REJECTED',
+          updatedAt: new Date(),
+        } as any)
         .where(eq(attendances.id, existing.attendanceId));
     }
 

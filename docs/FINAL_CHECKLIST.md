@@ -1,51 +1,107 @@
-# Final Checklist — MyProdusen
+# Final Checklist
 
-## Required Before Production
+Run through this before declaring a release ready. Every box is a real
+verification step, not a wish.
 
-- [ ] Configure `DATABASE_URL` in Coolify.
-- [ ] Configure `JWT_SECRET` with 32+ random characters.
-- [ ] Configure `NEXT_PUBLIC_APP_URL` and `APP_URL` with production domain.
-- [ ] Configure `SUPERADMIN_EMAIL=<SUPERADMIN_EMAIL>` in Coolify only.
-- [ ] Configure `SUPERADMIN_USERNAME=superadmin`.
-- [ ] Configure `SUPERADMIN_PASSWORD=<STRONG_SUPERADMIN_PASSWORD>` in Coolify only, then rotate or remove bootstrap env after first login.
-- [ ] Configure `RESEND_API_KEY` from Resend.
-- [ ] Configure `RESEND_FROM_EMAIL` with verified Resend sender/domain.
-- [ ] Run `npm run bootstrap:superadmin` after database migration.
-- [ ] Run `npm run lint`.
-- [ ] Run `npm run test`.
-- [ ] Run `npm run build`.
+## 1. Required environment variables
 
-## Superadmin
+- [ ] `DATABASE_URL` set in Coolify.
+- [ ] `JWT_SECRET` set with at least 32 random chars (production aborts otherwise).
+- [ ] `NEXT_PUBLIC_APP_URL` and `APP_URL` point to the production domain.
+- [ ] `SUPERADMIN_EMAIL` / `SUPERADMIN_USERNAME` / `SUPERADMIN_PASSWORD` set for first-deploy bootstrap (rotate after).
+- [ ] `RESEND_API_KEY` and `RESEND_FROM_EMAIL` configured.
+- [ ] `STORAGE_DRIVER=local`, `UPLOAD_DIR=/app/uploads`, `ATTENDANCE_SELFIE_DIR=attendance-selfies`, `MAX_SELFIE_SIZE_MB=1`.
+- [ ] `NEXT_PUBLIC_SELFIE_*` (max width / height / quality / target KB) set.
+- [ ] `GPS_MAX_ACCURACY_METERS=100`, `DEFAULT_GEOFENCE_RADIUS_METERS=100`, `REJECT_OUTSIDE_GEOFENCE=true`, `GPS_TIMESTAMP_MAX_AGE_SECONDS=120`.
+- [ ] `ATTENDANCE_EXPORT_MAX_ROWS=5000`.
+- [ ] `REDIS_URL` configured if cache is desired (optional; app runs without it).
 
-- [ ] Login works for configured `SUPERADMIN_EMAIL`.
-- [ ] Superadmin can see dashboard.
-- [ ] Superadmin can view users from `/api/users`.
-- [ ] Superadmin can change user role through `/api/users/:id/role`.
-- [ ] Superadmin can activate/deactivate registered users.
+## 2. Build & verification
 
-## Email
+- [ ] `npm run lint` exits 0.
+- [ ] `npm run test` exits 0 and reports 35 files / 206 passing.
+- [ ] `npm run build` exits 0.
+- [ ] `npm run db:deploy` ran successfully in production order (no skipped migrations after `0011`).
+- [ ] `npm run bootstrap:superadmin` ran once after migrations.
+- [ ] `npm run perf:explain` (against staging) shows index usage on
+      `Attendance_employeeId_checkInTime_idx`,
+      `Attendance_status_checkInTime_idx`, `Employee_division_idx`,
+      and the geo-status indexes from `0011`.
 
-- [ ] Registration email sends through Resend.
-- [ ] Forgot password email sends reset link.
-- [ ] Reset password confirmation email sends.
-- [ ] Role changed email sends.
-- [ ] Account approved email sends.
+## 3. Coolify
 
-## Coolify
+- [ ] Build command `npm run build`. Start command `npm run start`.
+- [ ] Persistent volume mounted at `/app/uploads`.
+- [ ] Healthcheck `/api/health` returns 200.
+- [ ] Daily PostgreSQL `pg_dump` schedule active.
+- [ ] Daily `/app/uploads` rsync schedule active.
+- [ ] Weekly retention sweep (`find /backups -mtime +30 -delete`) active.
 
-- [ ] Build command: `npm run build`.
-- [ ] Start command: `npm run start`.
-- [ ] Persistent upload volume configured for `UPLOAD_DIR`.
-- [ ] PostgreSQL backup schedule configured.
+## 4. Selfie / GPS hardening
 
-## Realtime Attendance Selfie Checklist
+- [ ] `/dashboard/attendance` uses the realtime camera (no file picker, no gallery).
+- [ ] Backend rejects missing selfie, invalid MIME, oversized selfie.
+- [ ] Selfie filenames are server-generated and stored under
+      `attendance-selfies/<year>/<month>/<employeeId>/...`.
+- [ ] `/api/attendances/:id/selfie/check-in` and `.../check-out` enforce RBAC
+      (employee-self, supervisor-team, admin-all) and audit-log non-owner
+      views.
+- [ ] Path traversal returns 404 with `INVALID_SELFIE_ACCESS` audit row.
+- [ ] GPS validator rejects missing / out-of-range lat-lon, oversized
+      accuracy, stale timestamp, and inactive locations.
+- [ ] Outside-radius behaviour matches `REJECT_OUTSIDE_GEOFENCE`. Pending
+      entries appear at `/dashboard/attendance/exceptions`.
 
-- [ ] Attendance page uses realtime camera, not file input.
-- [ ] Check-in requires selfie `FormData` blob.
-- [ ] Check-out requires selfie `FormData` blob.
-- [ ] Backend rejects missing selfie.
-- [ ] Backend rejects invalid image MIME type.
-- [ ] Backend rejects oversized selfie.
-- [ ] Selfie filenames are generated server-side.
-- [ ] Selfie proof route checks authorization.
-- [ ] Drizzle migration is safe and non-destructive.
+## 5. RBAC end-to-end
+
+- [ ] Employee can only view own attendance, own selfies, own exceptions.
+- [ ] Supervisor can only view direct reports.
+- [ ] Admin HR can view all employees, all selfies, export reports, approve leave / KPI.
+- [ ] Superadmin has full access plus role management.
+- [ ] Inactive users cannot log in.
+- [ ] Cross-employee `/api/attendances/:id/selfie/...` returns 403.
+
+## 6. Reporting & export
+
+- [ ] `/dashboard/reports/attendance` renders summary cards, paginated table, and preset chips (today / this week / this month).
+- [ ] CSV export requires `from` + `to` (422 otherwise).
+- [ ] Export rows capped at `ATTENDANCE_EXPORT_MAX_ROWS`.
+- [ ] CSV contains only YES/NO selfie flags — no path, URL, or binary.
+- [ ] Export writes an `EXPORT / AttendanceReport` audit row with filters, scope, row count, and `truncated` flag.
+
+## 7. Notifications
+
+- [ ] Leave approval / rejection notifies the employee.
+- [ ] KPI approval notifies the employee.
+- [ ] Pending geo attendance notifies SUPERADMIN + ADMIN_HR.
+- [ ] Geo approve / reject notifies the employee.
+- [ ] Notification failures never block the original mutation.
+
+## 8. End-to-end smoke test (the 13-step scenario)
+
+Run this manually before declaring a release ready.
+
+1. Login as Superadmin, create an employee with auto-NIP.
+2. Assign work location and shift to the employee.
+3. Login as the employee, perform realtime selfie + GPS check-in.
+4. Perform realtime selfie + GPS check-out.
+5. Login as Admin HR, view the selfies via the protected endpoint.
+6. If any pending geo exception was created, approve it from
+   `/dashboard/attendance/exceptions` and confirm the employee receives a
+   notification and `check_in_geo_status` flips to `APPROVED_MANUAL`.
+7. Submit a leave request as the employee.
+8. Approve the leave as Supervisor or Admin HR — confirm employee notification.
+9. Input + approve KPI as Supervisor / Admin HR — confirm employee notification.
+10. Open Superadmin dashboard, verify counts.
+11. Export attendance CSV from `/dashboard/reports/attendance` — confirm audit row.
+12. Inspect `AuditLog` for `CHECK_IN`, `CHECK_OUT`, `EXPORT`, `SELFIE_VIEW`,
+    `APPROVE`, `REJECT`, `CHECK_IN_GPS_*`.
+13. Attempt cross-employee selfie access — confirm 403 + `SELFIE_VIEW` audit
+    rows only when the viewer is allowed.
+
+## 9. Reference repo guardrail
+
+- [ ] No code copied from `ikhsan3adi/absensi-karyawan-gps-barcode` or
+      `josephines1/o-present` (research-only per `REFERENCE_REPO_ANALYSIS.md`).
+- [ ] No public uploads folder, no base64 selfies, no default password
+      `123456`, no Tabler / Bootstrap UI kit added.

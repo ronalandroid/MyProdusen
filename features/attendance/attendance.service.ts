@@ -5,7 +5,8 @@ import { eq, and, gte, lt, desc } from 'drizzle-orm';
 import { cacheManager } from '@/lib/cache/cache-manager';
 import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
 import { CacheStrategy } from '@/lib/cache/cache-strategies';
-import { saveUploadedImage } from '@/lib/upload';
+import { saveAttendanceSelfie } from '@/lib/upload';
+import { validateGpsAttendance } from '@/lib/attendance/gps-validation';
 import { payrollPeriodLockService } from '@/features/payroll/payroll-period-lock.service';
 
 export type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'SICK' | 'PERMISSION';
@@ -22,6 +23,7 @@ export class AttendanceService {
     deviceInfo?: string;
     ipAddress?: string;
     userAgent?: string;
+    capturedAt?: Date | string | number | null;
   }) {
     // Get employee data
     const [employee] = await db
@@ -93,33 +95,29 @@ export class AttendanceService {
       throw new Error('Lokasi kerja tidak aktif');
     }
 
-    // Validate GPS accuracy
-    if (!isGpsAccuracyAcceptable(data.accuracy)) {
-      throw new Error('Akurasi GPS tidak memadai. Pastikan GPS aktif dan sinyal kuat.');
-    }
-
-    // Calculate distance from work location
-    const distance = calculateDistance(
-      data.latitude,
-      data.longitude,
-      workLocation.latitude,
-      workLocation.longitude
+    // Hardened GPS + geo-fence validation. Server is the only source of truth.
+    const validation = validateGpsAttendance(
+      {
+        latitude: data.latitude,
+        longitude: data.longitude,
+        accuracy: data.accuracy,
+        capturedAt: data.capturedAt,
+      },
+      {
+        id: workLocation.id,
+        latitude: workLocation.latitude,
+        longitude: workLocation.longitude,
+        radius: workLocation.radius,
+        isActive: workLocation.isActive,
+      },
     );
 
-    // Validate geo-fencing
-    const isWithinRadius = isWithinGeofence(
-      data.latitude,
-      data.longitude,
-      workLocation.latitude,
-      workLocation.longitude,
-      workLocation.radius
-    );
-
-    if (!isWithinRadius) {
-      throw new Error(
-        `Anda berada di luar radius lokasi kerja (${Math.round(distance)}m dari lokasi). Radius maksimal: ${workLocation.radius}m`
-      );
+    if (validation.decision === 'reject') {
+      throw new Error(validation.reason);
     }
+
+    const distance = validation.distanceMeters ?? 0;
+    const checkInGeoStatus = validation.geoStatus;
 
     // Get shift
     const shiftId = employee.defaultShiftId;
@@ -155,7 +153,12 @@ export class AttendanceService {
 
     // Generate attendance ID
     const attendanceId = `att_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const selfieUpload = await saveUploadedImage(data.selfie);
+    const selfieUpload = await saveAttendanceSelfie({
+      file: data.selfie,
+      employeeId: data.employeeId,
+      attendanceId,
+      type: 'check-in',
+    });
 
     // Create attendance record
     const [attendance] = await db
@@ -170,9 +173,14 @@ export class AttendanceService {
         checkInLongitude: data.longitude,
         checkInAccuracy: data.accuracy,
         checkInDistance: distance,
+        checkInGeoStatus,
+        geoValidationMetadata: { checkIn: validation.metadata },
         checkInSelfie: selfieUpload.path,
         checkInSelfieUrl: selfieUpload.path,
+        checkInSelfiePath: selfieUpload.storageKey,
         checkInSelfieUploadedAt: new Date(),
+        checkInSelfieSizeBytes: selfieUpload.size,
+        checkInSelfieMimeType: selfieUpload.mimeType,
         checkInDeviceInfo: data.deviceInfo,
         checkInIp: data.ipAddress,
         checkInUserAgent: data.userAgent,
@@ -184,7 +192,12 @@ export class AttendanceService {
     // Invalidate attendance caches
     await this.invalidateAttendanceCaches(data.employeeId);
 
-    return attendance;
+    return {
+      ...attendance,
+      checkInGeoStatus,
+      geoValidation: validation,
+      isPendingGeoReview: validation.decision === 'pending',
+    };
   }
 
   async checkOut(data: {
@@ -196,6 +209,7 @@ export class AttendanceService {
     deviceInfo?: string;
     ipAddress?: string;
     userAgent?: string;
+    capturedAt?: Date | string | number | null;
   }) {
     // Get today's attendance
     const today = new Date();
@@ -236,33 +250,29 @@ export class AttendanceService {
       throw new Error('Lokasi kerja tidak ditemukan');
     }
 
-    // Validate GPS accuracy
-    if (!isGpsAccuracyAcceptable(data.accuracy)) {
-      throw new Error('Akurasi GPS tidak memadai. Pastikan GPS aktif dan sinyal kuat.');
-    }
-
-    // Calculate distance from work location
-    const distance = calculateDistance(
-      data.latitude,
-      data.longitude,
-      workLocation.latitude,
-      workLocation.longitude
+    // Hardened GPS + geo-fence validation. Server is the only source of truth.
+    const validation = validateGpsAttendance(
+      {
+        latitude: data.latitude,
+        longitude: data.longitude,
+        accuracy: data.accuracy,
+        capturedAt: data.capturedAt,
+      },
+      {
+        id: workLocation.id,
+        latitude: workLocation.latitude,
+        longitude: workLocation.longitude,
+        radius: workLocation.radius,
+        isActive: workLocation.isActive,
+      },
     );
 
-    // Validate geo-fencing
-    const isWithinRadius = isWithinGeofence(
-      data.latitude,
-      data.longitude,
-      workLocation.latitude,
-      workLocation.longitude,
-      workLocation.radius
-    );
-
-    if (!isWithinRadius) {
-      throw new Error(
-        `Anda berada di luar radius lokasi kerja (${Math.round(distance)}m dari lokasi). Radius maksimal: ${workLocation.radius}m`
-      );
+    if (validation.decision === 'reject') {
+      throw new Error(validation.reason);
     }
+
+    const distance = validation.distanceMeters ?? 0;
+    const checkOutGeoStatus = validation.geoStatus;
 
     const checkOutTime = new Date();
 
@@ -285,7 +295,12 @@ export class AttendanceService {
       attendance.checkInTime,
       checkOutTime
     );
-    const selfieUpload = await saveUploadedImage(data.selfie);
+    const selfieUpload = await saveAttendanceSelfie({
+      file: data.selfie,
+      employeeId: data.employeeId,
+      attendanceId: attendance.id,
+      type: 'check-out',
+    });
 
     // Update attendance record
     const [updated] = await db
@@ -296,9 +311,17 @@ export class AttendanceService {
         checkOutLongitude: data.longitude,
         checkOutAccuracy: data.accuracy,
         checkOutDistance: distance,
+        checkOutGeoStatus,
+        geoValidationMetadata: {
+          ...((attendance as any).geoValidationMetadata ?? {}),
+          checkOut: validation.metadata,
+        },
         checkOutSelfie: selfieUpload.path,
         checkOutSelfieUrl: selfieUpload.path,
+        checkOutSelfiePath: selfieUpload.storageKey,
         checkOutSelfieUploadedAt: new Date(),
+        checkOutSelfieSizeBytes: selfieUpload.size,
+        checkOutSelfieMimeType: selfieUpload.mimeType,
         checkOutDeviceInfo: data.deviceInfo,
         checkOutIp: data.ipAddress,
         checkOutUserAgent: data.userAgent,
@@ -312,7 +335,12 @@ export class AttendanceService {
     // Invalidate attendance caches
     await this.invalidateAttendanceCaches(data.employeeId);
 
-    return updated;
+    return {
+      ...updated,
+      checkOutGeoStatus,
+      geoValidation: validation,
+      isPendingGeoReview: validation.decision === 'pending',
+    };
   }
 
   async getTodayAttendance(employeeId: string) {

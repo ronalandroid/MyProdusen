@@ -1,5 +1,5 @@
 import { db, users, employees } from '@/lib/db';
-import { hashPassword, verifyPassword, generateToken } from '@/lib/auth';
+import { hashPassword, verifyPassword, generateToken, getProductionJwtSecret } from '@/lib/auth';
 import { validatePassword } from '@/lib/password-policy';
 import { eq, or } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
@@ -161,7 +161,7 @@ export class AuthService extends BaseService {
       return null;
     }
 
-    const secret = process.env.JWT_SECRET || 'dev-only-secret-change-me';
+    const secret = getProductionJwtSecret();
     return jwt.sign({ userId: user.id, email: user.email, purpose: 'password-reset' }, secret, { expiresIn: '30m' });
   }
 
@@ -171,7 +171,7 @@ export class AuthService extends BaseService {
       throw new Error(passwordValidation.errors[0]);
     }
 
-    const secret = process.env.JWT_SECRET || 'dev-only-secret-change-me';
+    const secret = getProductionJwtSecret();
     const payload = jwt.verify(token, secret) as { userId: string; email: string; purpose?: string };
 
     if (payload.purpose !== 'password-reset') {

@@ -1,5 +1,5 @@
 import { db, employees, users, shifts, workLocations } from '@/lib/db';
-import { eq, and, or, like, sql, asc } from 'drizzle-orm';
+import { eq, and, or, ilike, sql, asc } from 'drizzle-orm';
 import type { PaginationParams } from '@/lib/api/pagination';
 import { paginated } from '@/lib/api/pagination';
 import { getNextNIP } from '@/utils/nip-generator';
@@ -200,9 +200,9 @@ export class EmployeeService extends BaseService {
     if (filters?.search) {
       conditions.push(
         or(
-          like(employees.fullName, `%${filters.search}%`),
-          like(employees.nip, `%${filters.search}%`),
-          like(employees.email, `%${filters.search}%`)
+          ilike(employees.fullName, `%${filters.search}%`),
+          ilike(employees.nip, `%${filters.search}%`),
+          ilike(employees.email, `%${filters.search}%`)
         )
       );
     }

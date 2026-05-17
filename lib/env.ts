@@ -5,7 +5,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   NEXT_PUBLIC_APP_URL: z.string().url('NEXT_PUBLIC_APP_URL must be a valid URL'),
-  UPLOAD_DIR: z.string().min(1, 'UPLOAD_DIR is required').default('./public/uploads'),
+  UPLOAD_DIR: z.string().min(1, 'UPLOAD_DIR is required').default('./uploads'),
   MAX_UPLOAD_SIZE: z.coerce.number().int().positive().default(5 * 1024 * 1024),
   DEFAULT_GEOFENCE_RADIUS: z.coerce.number().int().positive().default(100),
   SESSION_TIMEOUT_HOURS: z.coerce.number().int().positive().default(8),

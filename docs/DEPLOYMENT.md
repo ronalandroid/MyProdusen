@@ -1,32 +1,163 @@
 # Deployment Guide — VPS + Coolify
 
-## Required Environment Variables
-- `NODE_ENV=production`
-- `DATABASE_URL=postgresql://...`
-- `JWT_SECRET=<strong 32+ character secret>`
-- `NEXT_PUBLIC_APP_URL=https://your-domain`
-- `UPLOAD_DIR=/app/uploads`
-- `MAX_UPLOAD_SIZE=5242880`
+> Production hosting target: a Linux VPS (Ubuntu 22.04 LTS or newer) running
+> Docker + Coolify. PostgreSQL and (optionally) Redis run as Coolify-managed
+> services on the same network.
 
-## Docker
-- `Dockerfile` builds Next.js standalone output.
-- `.dockerignore` excludes secrets, dependencies, build output, and uploads.
-- `docker-compose.yml` is for local validation, not final production secrets.
+## 1. Required environment variables
 
-## Coolify Setup
-- Create app from GitHub repo.
-- Attach PostgreSQL service.
-- Set env vars in Coolify secrets panel.
-- Mount persistent volume: `/app/uploads`.
-- Healthcheck path: `/api/health`.
-- Run migrations with `npx prisma migrate deploy` before production traffic.
+Configure these in the Coolify app environment. Anything tagged "secret"
+must never be committed.
 
-## Database Safety
-- Never run `prisma migrate reset` in production.
-- Commit `prisma/migrations/**` before deploy.
-- Test migrations against a staging database first.
+| Key | Notes |
+| --- | ----- |
+| `NODE_ENV=production` | Required. Triggers strict `JWT_SECRET` validation in `lib/auth.ts`. |
+| `DATABASE_URL` | secret — `postgresql://user:pass@host:5432/db`. Coolify alias `myprodusen-db`. |
+| `JWT_SECRET` | secret, ≥ 32 chars. Production startup throws if missing. |
+| `NEXT_PUBLIC_APP_URL` / `APP_URL` | The public domain. |
+| `STORAGE_DRIVER=local` | Future S3 driver shares the same key layout. |
+| `UPLOAD_DIR=/app/uploads` | Mount point of the persistent volume. |
+| `ATTENDANCE_SELFIE_DIR=attendance-selfies` | Subdirectory under `UPLOAD_DIR`. |
+| `MAX_SELFIE_SIZE_MB=1` | Backend hard cap. |
+| `NEXT_PUBLIC_SELFIE_MAX_WIDTH=720` / `MAX_HEIGHT=720` / `IMAGE_QUALITY=0.75` / `TARGET_SIZE_KB=300` | Client-side compression knobs. |
+| `GPS_MAX_ACCURACY_METERS=100` | Reject any fix above this. |
+| `DEFAULT_GEOFENCE_RADIUS_METERS=100` | Fallback radius. |
+| `REJECT_OUTSIDE_GEOFENCE=true` | Set to `false` to send outside-radius attempts to the pending-review queue. |
+| `GPS_TIMESTAMP_MAX_AGE_SECONDS=120` | Set to `0` to disable freshness check. |
+| `ATTENDANCE_EXPORT_MAX_ROWS=5000` | Cap on CSV/XLSX export rows. |
+| `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | secret — email delivery. |
+| `REDIS_URL` / `REDIS_PASSWORD` | secret, optional. App degrades gracefully if Redis is unavailable. |
+| `SUPERADMIN_EMAIL` / `SUPERADMIN_USERNAME` / `SUPERADMIN_PASSWORD` | secret — first-deploy bootstrap only. Rotate or remove after first login. |
 
-## Backup
-- Schedule PostgreSQL backups with `pg_dump`.
-- Back up upload volume `/app/uploads`.
-- Test restore before launch.
+## 2. Docker
+
+The project's `Dockerfile` builds the Next.js standalone output. The
+`docker-entrypoint.sh` script:
+
+1. Validates `DATABASE_URL`.
+2. Waits up to 60 seconds for PostgreSQL.
+3. Runs `npm run db:deploy` (idempotent migration runner).
+4. Optionally bootstraps the superadmin if `SUPERADMIN_*` env vars exist.
+5. Boots Next.js on `0.0.0.0:3000`.
+
+`.dockerignore` excludes secrets, dependencies, build output, and uploads.
+
+## 3. Coolify setup
+
+1. Create a new Coolify app from the GitHub repo.
+2. Attach a managed PostgreSQL service. Use a dedicated database name
+   (e.g. `myprodusen_production`) — never share a DB with other Coolify apps.
+3. Configure the env vars from section 1.
+4. Mount a persistent volume at `/app/uploads`. Selfies live under
+   `/app/uploads/attendance-selfies/<year>/<month>/<employeeId>/<attendanceId>-{checkin|checkout}.<ext>`.
+5. Healthcheck path: `/api/health`.
+6. Build command: `npm run build`. Start command: `npm run start`.
+
+## 4. Storage layout
+
+```
+/app/uploads/
+└── attendance-selfies/
+    └── 2026/
+        └── 05/
+            └── <employeeId>/
+                ├── <attendanceId>-checkin.webp
+                └── <attendanceId>-checkout.webp
+```
+
+Selfies are compressed in the browser (≤ 720×720, quality 0.75, target ≤ 300
+KB) before they ever reach the server. PostgreSQL stores only the URL path,
+size, and MIME metadata. Migrating to S3-compatible storage later requires
+swapping the driver in `lib/upload.ts` and keeping the same key layout.
+
+## 5. Database safety
+
+- Never run destructive Drizzle commands in production.
+- Commit `drizzle/migrations/**` before deploy.
+- `npm run db:deploy` is idempotent; it tracks every applied SQL file in the
+  `_myprodusen_migrations` table with a SHA-256 checksum.
+- For a brand-new database, the script also baselines existing-object
+  migrations so `0004_attendance_exceptions.sql` does not double-run.
+- Test every migration on staging before production.
+
+## 6. Performance verification
+
+Run on staging immediately after a deploy:
+
+```bash
+DATABASE_URL=postgresql://staging:... npm run perf:explain
+```
+
+The script outputs `EXPLAIN (ANALYZE, BUFFERS)` for the canonical dashboard,
+report, and search queries. Confirm:
+
+- Report queries use `Attendance_employeeId_checkInTime_idx` and
+  `Attendance_status_checkInTime_idx`.
+- Search queries hit `Employee_division_idx` and the new
+  `WorkLocation_*` indexes (or the trigram extension if added).
+- No sequential scans on tables larger than ~10k rows.
+
+## 7. Backup & restore
+
+### What to back up
+
+1. PostgreSQL database (selfie path + GPS metadata).
+2. Persistent volume `/app/uploads` (the actual selfie image files).
+3. Coolify environment variables (separately, in a password manager).
+
+### Daily PostgreSQL backup
+
+```bash
+docker exec myprodusen-db pg_dump \
+  -U postgres -d myprodusen_production -Fc \
+  -f /backups/myprodusen-$(date +%Y%m%d).dump
+```
+
+Retention: 7 daily, 4 weekly, 12 monthly snapshots, off-host.
+
+### Daily uploads backup
+
+```bash
+rsync -a --delete /app/uploads/ /backups/uploads-$(date +%Y%m%d)/
+```
+
+Or sync to S3-compatible storage:
+
+```bash
+aws s3 sync /app/uploads/ s3://myprodusen-backups/uploads/
+```
+
+### Restore drill
+
+1. Provision a fresh PostgreSQL container with the same major version.
+2. `docker exec -i myprodusen-db pg_restore -U postgres -d myprodusen_production -c < backup.dump`
+3. Restore `/app/uploads/` from the matching dated snapshot.
+4. Run `npm run db:deploy` to apply any newer migrations.
+5. Smoke-test:
+   - Login as Superadmin.
+   - Open `/dashboard/attendance` history for an employee with selfies.
+   - Confirm `GET /api/attendances/:id/selfie/check-in` returns the image.
+6. Switch traffic only after the smoke test passes.
+
+Run a restore drill on staging at least once per quarter.
+
+## 8. Scheduled jobs
+
+Set these up in Coolify's "Scheduled Tasks" panel (or as cron entries on the
+host). All times are server local time.
+
+| Schedule | Command | Purpose |
+| -------- | ------- | ------- |
+| Daily 02:00 | `pg_dump -U postgres -d myprodusen_production -Fc -f /backups/myprodusen-$(date +%Y%m%d).dump` | DB backup |
+| Daily 02:30 | `rsync -a --delete /app/uploads/ /backups/uploads-$(date +%Y%m%d)/` | Uploads backup |
+| Weekly Mon 03:00 | `find /backups -mtime +30 -delete` | Retention sweep |
+| Monthly 1st 04:00 | (Future) selfie retention sweep older than 24 months | Storage hygiene |
+
+## 9. Observability
+
+- Healthcheck: `GET /api/health` returns `{ status: "ok" }` and basic DB ping.
+- Audit log: query `AuditLog` for forensics. Sensitive actions logged today:
+  `CHECK_IN`, `CHECK_OUT`, `CHECK_IN_GPS_*`, `CHECK_OUT_GPS_*`,
+  `SELFIE_VIEW`, `INVALID_SELFIE_ACCESS`, `EXPORT`, `APPROVE`, `REJECT`,
+  `LEAVE_*`, `KPI_*`, `ATTENDANCE_REJECTED_*`.
+- Logs: see `lib/logger`. Secrets and connection strings are redacted.

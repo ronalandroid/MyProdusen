@@ -1,5 +1,5 @@
 import { db, workLocations } from '@/lib/db';
-import { eq } from 'drizzle-orm';
+import { and, eq, ilike, or, type SQL } from 'drizzle-orm';
 
 export type WorkLocationRecord = typeof workLocations.$inferSelect;
 export type CreateWorkLocationInput = Pick<typeof workLocations.$inferInsert, 'id' | 'name' | 'address' | 'latitude' | 'longitude' | 'radius' | 'isActive'>;
@@ -11,12 +11,23 @@ export class WorkLocationRepository {
     return location;
   }
 
-  async list(filters?: { isActive?: boolean }) {
-    if (filters?.isActive === undefined) {
+  async list(filters?: { isActive?: boolean; search?: string }) {
+    const conditions: SQL[] = [];
+    if (filters?.isActive !== undefined) {
+      conditions.push(eq(workLocations.isActive, filters.isActive));
+    }
+    if (filters?.search) {
+      const term = `%${filters.search}%`;
+      conditions.push(
+        or(ilike(workLocations.name, term), ilike(workLocations.address, term))!,
+      );
+    }
+
+    if (conditions.length === 0) {
       return db.select().from(workLocations);
     }
 
-    return db.select().from(workLocations).where(eq(workLocations.isActive, filters.isActive));
+    return db.select().from(workLocations).where(and(...conditions));
   }
 
   async findById(id: string) {

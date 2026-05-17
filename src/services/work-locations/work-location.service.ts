@@ -34,7 +34,11 @@ export class WorkLocationService extends BaseService {
     return location;
   }
 
-  async getWorkLocations(filters?: { isActive?: boolean }) {
+  async getWorkLocations(filters?: { isActive?: boolean; search?: string }) {
+    if (filters?.search) {
+      // Skip cache for search queries — small variance space, low cache value.
+      return this.repository.list(filters);
+    }
     const cacheKey = filters?.isActive ? CacheKeys.workLocations.active() : CacheKeys.workLocations.list();
 
     return cacheManager.wrap(

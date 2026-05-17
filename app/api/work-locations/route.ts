@@ -25,7 +25,14 @@ export const GET = withApiHandler(async (request: NextRequest) => {
 
   const { searchParams } = new URL(request.url);
   const isActiveParam = searchParams.get('isActive');
-  const filters = isActiveParam !== null ? { isActive: isActiveParam === 'true' } : undefined;
+  const search = searchParams.get('search')?.trim() || undefined;
+  const filters: { isActive?: boolean; search?: string } | undefined =
+    isActiveParam !== null || search
+      ? {
+          isActive: isActiveParam !== null ? isActiveParam === 'true' : undefined,
+          search,
+        }
+      : undefined;
   const locations = await workLocationService.getWorkLocations(filters);
 
   return successResponse(locations);

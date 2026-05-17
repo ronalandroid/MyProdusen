@@ -3,6 +3,7 @@ import { eq, and, gte, lte, desc, inArray } from 'drizzle-orm';
 import { cacheManager } from '@/lib/cache/cache-manager';
 import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
 import { CacheStrategy } from '@/lib/cache/cache-strategies';
+import { notifyUser } from '@/lib/notifications/dispatch';
 
 export type LeaveType = 'LEAVE' | 'SICK' | 'PERMISSION';
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -190,6 +191,13 @@ export class LeaveService {
     // Invalidate leave caches
     await this.invalidateLeaveCaches(leave.employeeId, id);
 
+    await notifyUser({
+      employeeId: leave.employeeId,
+      title: 'Pengajuan izin disetujui',
+      message: `Pengajuan ${leave.type.toLowerCase()} ${leave.startDate.toISOString().split('T')[0]} – ${leave.endDate.toISOString().split('T')[0]} telah disetujui.`,
+      type: 'LEAVE_APPROVED',
+    });
+
     return updated;
   }
 
@@ -222,6 +230,13 @@ export class LeaveService {
 
     // Invalidate leave caches
     await this.invalidateLeaveCaches(leave.employeeId, id);
+
+    await notifyUser({
+      employeeId: leave.employeeId,
+      title: 'Pengajuan izin ditolak',
+      message: rejectionReason || 'Pengajuan izin Anda ditolak. Silakan hubungi HR untuk detail.',
+      type: 'LEAVE_REJECTED',
+    });
 
     return updated;
   }

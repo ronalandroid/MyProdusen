@@ -2,11 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Camera, RefreshCcw, XCircle } from "lucide-react";
+import {
+  SELFIE_COMPRESSOR_LIMITS,
+  captureSelfieFromVideo,
+  type CompressedSelfie,
+} from "@/lib/attendance/selfie-compressor";
 
 type RealtimeSelfieCameraProps = {
   capturedPreviewUrl: string;
   disabled?: boolean;
-  onCapture: (selfie: { blob: Blob; previewUrl: string }) => void;
+  onCapture: (selfie: { blob: Blob; previewUrl: string; meta: CompressedSelfie }) => void;
   onClear: () => void;
 };
 
@@ -14,14 +19,26 @@ const CAMERA_NOT_SUPPORTED = "Browser tidak mendukung akses kamera realtime.";
 const CAMERA_PERMISSION_ERROR = "Kamera tidak dapat diakses. Izinkan akses kamera untuk absensi.";
 const CAMERA_NOT_FOUND = "Perangkat tidak memiliki kamera yang tersedia.";
 const CAPTURE_FAILED = "Gagal mengambil selfie. Silakan coba lagi.";
+const SELFIE_TOO_LARGE_HARD = "Ukuran selfie masih terlalu besar. Coba ambil ulang dengan pencahayaan lebih baik.";
 
-export function RealtimeSelfieCamera({ capturedPreviewUrl, disabled, onCapture, onClear }: RealtimeSelfieCameraProps) {
+function formatKb(bytes: number) {
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+export function RealtimeSelfieCamera({
+  capturedPreviewUrl,
+  disabled,
+  onCapture,
+  onClear,
+}: RealtimeSelfieCameraProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
   const [cameraError, setCameraError] = useState("");
+  const [captureInfo, setCaptureInfo] = useState<CompressedSelfie | null>(null);
 
   function stopCamera() {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -43,8 +60,8 @@ export function RealtimeSelfieCamera({ capturedPreviewUrl, disabled, onCapture, 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: "user",
-          width: { ideal: 720 },
-          height: { ideal: 720 },
+          width: { ideal: SELFIE_COMPRESSOR_LIMITS.maxWidth },
+          height: { ideal: SELFIE_COMPRESSOR_LIMITS.maxHeight },
         },
         audio: false,
       });
@@ -70,7 +87,7 @@ export function RealtimeSelfieCamera({ capturedPreviewUrl, disabled, onCapture, 
     }
   }
 
-  function captureSelfie() {
+  async function captureSelfie() {
     setCameraError("");
 
     const video = videoRef.current;
@@ -81,33 +98,28 @@ export function RealtimeSelfieCamera({ capturedPreviewUrl, disabled, onCapture, 
       return;
     }
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const context = canvas.getContext("2d");
+    setIsCapturing(true);
+    try {
+      const result = await captureSelfieFromVideo(video);
 
-    if (!context) {
-      setCameraError(CAPTURE_FAILED);
-      return;
+      if (result.exceedsHardLimit) {
+        setCameraError(SELFIE_TOO_LARGE_HARD);
+        return;
+      }
+
+      setCaptureInfo(result);
+      const previewUrl = URL.createObjectURL(result.blob);
+      stopCamera();
+      onCapture({ blob: result.blob, previewUrl, meta: result });
+    } catch (error) {
+      setCameraError(error instanceof Error ? error.message : CAPTURE_FAILED);
+    } finally {
+      setIsCapturing(false);
     }
-
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          setCameraError(CAPTURE_FAILED);
-          return;
-        }
-
-        stopCamera();
-        onCapture({ blob, previewUrl: URL.createObjectURL(blob) });
-      },
-      "image/jpeg",
-      0.86,
-    );
   }
 
   function retakeSelfie() {
+    setCaptureInfo(null);
     onClear();
     void openCamera();
   }
@@ -119,7 +131,7 @@ export function RealtimeSelfieCamera({ capturedPreviewUrl, disabled, onCapture, 
       <div>
         <h2 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "4px" }}>Selfie Realtime Kehadiran</h2>
         <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-          Selfie realtime wajib diambil untuk melanjutkan absensi.
+          Selfie realtime wajib diambil untuk melanjutkan absensi. Foto akan dikompres otomatis di perangkat agar ringan untuk diunggah.
         </p>
       </div>
 
@@ -129,16 +141,36 @@ export function RealtimeSelfieCamera({ capturedPreviewUrl, disabled, onCapture, 
         </div>
       )}
 
-      <div style={{ borderRadius: "16px", overflow: "hidden", border: "1px solid var(--border-color)", background: "var(--bg-secondary)", minHeight: "220px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div
+        style={{
+          borderRadius: "16px",
+          overflow: "hidden",
+          border: "1px solid var(--border-color)",
+          background: "var(--bg-secondary)",
+          minHeight: "220px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         {capturedPreviewUrl ? (
-          <img src={capturedPreviewUrl} alt="Preview selfie realtime" style={{ width: "100%", maxHeight: "320px", objectFit: "cover" }} />
+          <img
+            src={capturedPreviewUrl}
+            alt="Preview selfie realtime"
+            style={{ width: "100%", maxHeight: "320px", objectFit: "cover" }}
+          />
         ) : (
           <video
             ref={videoRef}
             playsInline
             muted
             autoPlay
-            style={{ width: "100%", maxHeight: "320px", objectFit: "cover", display: isCameraOpen ? "block" : "none" }}
+            style={{
+              width: "100%",
+              maxHeight: "320px",
+              objectFit: "cover",
+              display: isCameraOpen ? "block" : "none",
+            }}
           />
         )}
         {!capturedPreviewUrl && !isCameraOpen && (
@@ -151,24 +183,63 @@ export function RealtimeSelfieCamera({ capturedPreviewUrl, disabled, onCapture, 
 
       <canvas ref={canvasRef} style={{ display: "none" }} />
 
+      {capturedPreviewUrl && captureInfo && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{ fontSize: "12px", color: "var(--text-secondary)" }}
+        >
+          Selfie {captureInfo.width}×{captureInfo.height}px · {formatKb(captureInfo.size)} · format {captureInfo.mimeType.replace("image/", "").toUpperCase()}
+          {captureInfo.exceedsTarget && (
+            <span style={{ color: "var(--warning)", marginLeft: "6px", fontWeight: 600 }}>
+              · sedikit di atas target 300KB
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-col gap-2 sm:flex-row">
         {!capturedPreviewUrl && !isCameraOpen && (
-          <button type="button" className="btn btn-primary" onClick={openCamera} disabled={disabled || isStarting} style={{ flex: 1 }}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={openCamera}
+            disabled={disabled || isStarting}
+            style={{ flex: 1 }}
+          >
             {isStarting ? "Membuka kamera..." : "Buka Kamera"}
           </button>
         )}
         {!capturedPreviewUrl && isCameraOpen && (
           <>
-            <button type="button" className="btn btn-primary" onClick={captureSelfie} disabled={disabled} style={{ flex: 1 }}>
-              Ambil Selfie
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={captureSelfie}
+              disabled={disabled || isCapturing}
+              style={{ flex: 1 }}
+            >
+              {isCapturing ? "Memproses..." : "Ambil Selfie"}
             </button>
-            <button type="button" className="btn btn-secondary" onClick={stopCamera} disabled={disabled} style={{ flex: 1 }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={stopCamera}
+              disabled={disabled || isCapturing}
+              style={{ flex: 1 }}
+            >
               <XCircle size={16} /> Tutup Kamera
             </button>
           </>
         )}
         {capturedPreviewUrl && (
-          <button type="button" className="btn btn-secondary" onClick={retakeSelfie} disabled={disabled} style={{ flex: 1 }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={retakeSelfie}
+            disabled={disabled}
+            style={{ flex: 1 }}
+          >
             <RefreshCcw size={16} /> Ambil Ulang Selfie
           </button>
         )}

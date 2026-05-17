@@ -5,6 +5,8 @@ import { Bell, ArrowLeft, Info, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ClientUserProfile, fetchProfile, getAuthHeaders } from "@/lib/auth-client";
 import { RealtimeSelfieCamera } from "@/components/attendance/RealtimeSelfieCamera";
+import { SelfieViewer } from "@/components/attendance/SelfieViewer";
+import { MyExceptionPanel } from "@/components/attendance/MyExceptionPanel";
 
 type AttendanceRecord = {
   id: string;
@@ -15,6 +17,12 @@ type AttendanceRecord = {
     name: string;
     address: string;
   } | null;
+  checkInSelfieUploadedAt?: string | null;
+  checkInSelfieSizeBytes?: number | null;
+  checkInSelfieMimeType?: string | null;
+  checkOutSelfieUploadedAt?: string | null;
+  checkOutSelfieSizeBytes?: number | null;
+  checkOutSelfieMimeType?: string | null;
 };
 
 type ApiResponse<T> = {
@@ -76,6 +84,11 @@ export default function AttendancePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selfieBlob, setSelfieBlob] = useState<Blob | null>(null);
   const [selfiePreviewUrl, setSelfiePreviewUrl] = useState("");
+  const [selfieFilename, setSelfieFilename] = useState("attendance-selfie.webp");
+  const [viewerState, setViewerState] = useState<{
+    record: AttendanceRecord;
+    kind: "check-in" | "check-out";
+  } | null>(null);
 
   const employee = profile?.employee;
   const locationName = todayAttendance?.workLocation?.name || employee?.defaultLocation?.name || "Lokasi kerja belum tersedia";
@@ -168,8 +181,9 @@ export default function AttendancePage() {
       formData.set("latitude", String(position.coords.latitude));
       formData.set("longitude", String(position.coords.longitude));
       formData.set("accuracy", String(position.coords.accuracy));
+      formData.set("gpsTimestamp", new Date(position.timestamp || Date.now()).toISOString());
       formData.set("deviceInfo", navigator.userAgent);
-      formData.set("selfie", selfieBlob, `attendance-${type}.jpg`);
+      formData.set("selfie", selfieBlob, selfieFilename);
 
       if (type === "check-in") {
         formData.set("workLocationId", employee.defaultLocation.id);
@@ -248,15 +262,48 @@ export default function AttendancePage() {
         </div>
       )}
 
+      {todayAttendance && (todayAttendance as any).checkInGeoStatus && (
+        <div className="card" style={{ padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+          <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Status geo masuk</div>
+          <span
+            className="text-xs font-semibold"
+            style={{
+              padding: "2px 10px",
+              borderRadius: "999px",
+              background:
+                (todayAttendance as any).checkInGeoStatus === "INSIDE_RADIUS"
+                  ? "rgba(34,197,94,0.12)"
+                  : (todayAttendance as any).checkInGeoStatus === "PENDING_REVIEW"
+                  ? "rgba(245,158,11,0.16)"
+                  : (todayAttendance as any).checkInGeoStatus === "APPROVED_MANUAL"
+                  ? "rgba(34,197,94,0.12)"
+                  : "rgba(220,38,38,0.12)",
+              color:
+                (todayAttendance as any).checkInGeoStatus === "INSIDE_RADIUS"
+                  ? "var(--success)"
+                  : (todayAttendance as any).checkInGeoStatus === "PENDING_REVIEW"
+                  ? "var(--warning)"
+                  : (todayAttendance as any).checkInGeoStatus === "APPROVED_MANUAL"
+                  ? "var(--success)"
+                  : "var(--danger)",
+            }}
+          >
+            {String((todayAttendance as any).checkInGeoStatus).replace(/_/g, " ")}
+          </span>
+        </div>
+      )}
+
       <RealtimeSelfieCamera
         capturedPreviewUrl={selfiePreviewUrl}
         disabled={isSubmitting}
-        onCapture={({ blob, previewUrl }) => {
+        onCapture={({ blob, previewUrl, meta }) => {
           if (selfiePreviewUrl) {
             URL.revokeObjectURL(selfiePreviewUrl);
           }
           setSelfieBlob(blob);
           setSelfiePreviewUrl(previewUrl);
+          const ext = meta.mimeType.split("/")[1] || "webp";
+          setSelfieFilename(`attendance-selfie.${ext === "jpeg" ? "jpg" : ext}`);
         }}
         onClear={clearSelfie}
       />
@@ -319,11 +366,59 @@ export default function AttendancePage() {
                     <div style={{ fontSize: "14px", fontWeight: 600 }}>{formatTime(record.checkOutTime)}</div>
                   </div>
                 </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "10px" }}>
+                  {record.checkInTime && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setViewerState({ record, kind: "check-in" })}
+                      style={{ fontSize: "12px" }}
+                    >
+                      Lihat Selfie Masuk
+                    </button>
+                  )}
+                  {record.checkOutTime && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setViewerState({ record, kind: "check-out" })}
+                      style={{ fontSize: "12px" }}
+                    >
+                      Lihat Selfie Pulang
+                    </button>
+                  )}
+                </div>
               </div>
             ))
           )}
         </div>
       </div>
+
+      {viewerState && (
+        <SelfieViewer
+          attendanceId={viewerState.record.id}
+          kind={viewerState.kind}
+          open
+          onClose={() => setViewerState(null)}
+          takenAt={
+            viewerState.kind === "check-in"
+              ? viewerState.record.checkInSelfieUploadedAt || viewerState.record.checkInTime
+              : viewerState.record.checkOutSelfieUploadedAt || viewerState.record.checkOutTime
+          }
+          sizeBytes={
+            viewerState.kind === "check-in"
+              ? viewerState.record.checkInSelfieSizeBytes
+              : viewerState.record.checkOutSelfieSizeBytes
+          }
+          mimeType={
+            viewerState.kind === "check-in"
+              ? viewerState.record.checkInSelfieMimeType
+              : viewerState.record.checkOutSelfieMimeType
+          }
+        />
+      )}
+
+      <MyExceptionPanel todayAttendanceId={todayAttendance?.id || null} />
     </div>
   );
 }

@@ -15,6 +15,7 @@
     "db:push:prod": "drizzle-kit push --force",
     "db:studio": "drizzle-kit studio",
     "db:seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} drizzle/seed.ts",
+    "perf:explain": "node scripts/explain-attendance-queries.mjs",
     "bootstrap:superadmin": "node scripts/bootstrap-superadmin.mjs",
     "start:prod": "HOSTNAME=0.0.0.0 PORT=${PORT:-3000} sh -c 'if [ -f server.js ]; then exec node server.js; fi; exec node .next/standalone/server.js'",
     "dev:safe": "next dev --webpack",

@@ -573,6 +573,20 @@ Dashboard utama untuk memantau seluruh operasional karyawan.
 - Export harus sesuai filter yang dipilih.
 - Data report tidak boleh berbeda dengan data dashboard.
 
+## Implementation Notes
+
+- Sumber tunggal query: `lib/reports/attendance-history.ts` dipakai oleh halaman `/dashboard/reports/attendance` maupun export CSV. Tidak boleh ada query report yang menduplikasi logika ini.
+- Endpoint:
+  - `GET /api/reports/attendance` — list paginasi (default 25/halaman, maks 200).
+  - `GET /api/reports/attendance/summary` — kartu ringkasan.
+  - `GET /api/reports/attendance?format=csv` — export CSV.
+  - `GET /api/reports/attendance?format=xlsx` — CSV dengan UTF-8 BOM agar terbuka rapi di Microsoft Excel.
+- Filter wajib didukung server-side: tanggal, employee, division, work location, status, geo status, late only, missing checkout only.
+- Export wajib memiliki rentang tanggal dan dibatasi `ATTENDANCE_EXPORT_MAX_ROWS` (default 5000).
+- Setiap export menulis audit log `EXPORT / AttendanceReport` dengan filter, scope role, jumlah baris, status truncation.
+- Selfie tidak pernah diekspor sebagai biner. Hanya flag YES/NO.
+- Lihat detail di `/docs/REPORTS.md`.
+
 ---
 
 # 6K. Notification System
@@ -1336,6 +1350,22 @@ Pilihan backend terpisah:
 
 - S3-compatible storage untuk foto profil, bukti sakit, dan selfie absensi.
 - Local storage hanya untuk development.
+
+### Selfie Storage Optimization
+
+- Selfie ditangkap realtime melalui kamera perangkat (`getUserMedia`), tanpa file picker/gallery.
+- Frontend mengompres dan resize selfie sebelum upload (maks 720×720, kualitas ≈ 0.75, target ≤ 300KB).
+- Format default WebP (fallback JPEG untuk browser tanpa dukungan WebP).
+- Backend menerapkan batas keras `MAX_SELFIE_SIZE_MB` (default 1MB), validasi MIME (jpeg/png/webp), dan validasi tanda tangan biner.
+- File disimpan di volume persisten `${UPLOAD_DIR}/${ATTENDANCE_SELFIE_DIR}/<year>/<month>/<employeeId>/<attendanceId>-{checkin|checkout}.<ext>`.
+- PostgreSQL hanya menyimpan path + size + MIME + timestamp; tidak pernah menyimpan base64/binary.
+- Akses selfie hanya melalui endpoint terotentikasi:
+  - `GET /api/attendances/:attendanceId/selfie/check-in`
+  - `GET /api/attendances/:attendanceId/selfie/check-out`
+- Otorisasi role: Karyawan → milik sendiri; Supervisor → tim sendiri; Admin HR & Superadmin → semua.
+- Akses selfie oleh non-pemilik (Supervisor/Admin HR/Superadmin) menulis audit log `SELFIE_VIEW`.
+- UI menampilkan tombol "Lihat Selfie Masuk" dan "Lihat Selfie Pulang" yang membuka modal lazy-loaded; daftar tidak memuat semua selfie sekaligus.
+- Konfigurasi siap pindah ke S3-compatible storage tanpa mengubah URL atau kode pemanggil.
 
 ### Deployment
 

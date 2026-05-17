@@ -20,6 +20,7 @@ dist
 .DS_Store
 *.pem
 *.key
+*.bak
 
 # Debug
 npm-debug.log*

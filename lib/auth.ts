@@ -25,6 +25,14 @@ function getJwtSecret(): string {
   return secret;
 }
 
+/**
+ * Strict variant exposed for auxiliary signing flows (e.g., password-reset
+ * tokens). Same rules as the main JWT secret resolver.
+ */
+export function getProductionJwtSecret(): string {
+  return getJwtSecret();
+}
+
 export interface JwtPayload {
   userId: string;
   email: string;

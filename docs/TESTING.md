@@ -1,331 +1,76 @@
-# Testing Documentation
+# Testing Guide
 
-## Overview
+MyProdusen uses **Vitest** for unit, integration, and database-constraint
+tests. The current state is `35 test files / 206 passing tests`.
 
-MyProdusen uses **Vitest** as the testing framework for unit, integration, and database constraint tests. This document outlines the testing strategy, how to run tests, and coverage goals.
+## Commands
 
-## Test Structure
+| Command | Purpose |
+| ------- | ------- |
+| `npm run lint` | Strict TypeScript check (`tsc --noEmit`). Acts as the typecheck gate. |
+| `npm run test` | Full test suite. |
+| `npm run build` | Production build smoke test. |
+| `npm run perf:explain` | `EXPLAIN ANALYZE` the dashboard / report / search queries against `$DATABASE_URL`. Run on staging. |
+
+There is no separate `typecheck` script — `lint` already does it.
+
+## Test layout
 
 ```
 tests/
-├── setup.ts                    # Global test setup and environment config
-├── helpers/
-│   └── test-utils.ts          # Test utilities and helper functions
+├── setup.ts                                 # Vitest bootstrap (loads .env, normalises DATABASE_URL)
+├── helpers/test-utils.ts                    # Reusable fixture builders
 ├── api/
-│   ├── auth.test.ts           # Authentication API tests
-│   ├── attendance.test.ts     # Attendance API tests
-│   ├── employees.test.ts      # Employee API tests
-│   └── leave.test.ts          # Leave request API tests
+│   ├── attendance.test.ts                   # Check-in/out, geofence, missing selfie
+│   ├── attendance-selfie-protected.test.ts  # /api/attendances/:id/selfie/{check-in|check-out}
+│   ├── attendance-report.test.ts            # /api/reports/attendance + summary + CSV
+│   ├── work-location-search.test.ts         # ?search= ilike on name + address
+│   └── ...
+├── attendance/
+│   ├── exception-policy.test.ts             # OUTSIDE_GEOFENCE / BAD_GPS_ACCURACY policy
+│   ├── gps-validation.test.ts               # 10 cases: lat/lon/accuracy/range/timestamp
+│   └── selfie-storage.test.ts               # MIME, size, traversal, base64-rejection
 ├── db/
-│   └── constraints.test.ts    # Database constraint tests
-└── rbac/
-    └── authorization.test.ts  # RBAC authorization tests
+│   └── constraints.test.ts                  # One attendance per employee per day
+├── rbac/
+│   └── ...                                  # Cross-employee / cross-team scope checks
+├── kpi/  leave/  payroll/  reports/  ui/    # Domain-specific tests
+└── offline/                                  # Sync queue tests
 ```
 
-## Running Tests
-
-### Run All Tests
-```bash
-npm test
-```
-
-### Run Tests in Watch Mode
-```bash
-npm run test:watch
-```
-
-### Run Tests with Coverage
-```bash
-npm run test:coverage
-```
-
-### Run Specific Test File
-```bash
-npx vitest run tests/api/auth.test.ts
-```
-
-### Run Tests Matching Pattern
-```bash
-npx vitest run -t "should login successfully"
-```
-
-## Test Categories
-
-### 1. API Integration Tests
-
-Test API routes end-to-end by calling route handlers directly with mock requests.
-
-**Coverage:**
-- `tests/api/auth.test.ts` - Login, register, profile, change password
-- `tests/api/attendance.test.ts` - Check-in, check-out, geofencing, duplicate prevention
-- `tests/api/employees.test.ts` - CRUD operations, RBAC enforcement
-- `tests/api/leave.test.ts` - Leave requests, approval workflow
-
-**Key Features:**
-- Direct route handler invocation
-- Mock JWT tokens for authentication
-- Database cleanup after each test
-- Real database interactions (not mocked)
-
-### 2. Database Constraint Tests
-
-Test database-level constraints to ensure data integrity.
-
-**Coverage:**
-- Attendance unique constraint (one check-in per employee per day)
-- NIP uniqueness
-- Email uniqueness
-- Username uniqueness
-
-**Location:** `tests/db/constraints.test.ts`
-
-### 3. RBAC Authorization Tests
-
-Test role-based access control and authorization rules.
-
-**Coverage:**
-- Supervisor can only see their team
-- Employee can only see own data
-- Role escalation prevention (ADMIN_HR cannot create SUPERADMIN)
-- Permission enforcement across roles
-
-**Location:** `tests/rbac/authorization.test.ts`
-
-### 4. Existing Unit Tests
-
-Existing unit tests for utility functions:
-- `lib/geofencing.test.ts` - Geofencing calculations
-- `lib/permissions.test.ts` - Permission checks
-- `lib/utils/date.test.ts` - Date utilities
-- `lib/utils/kpi.test.ts` - KPI scoring
-
-## Test Utilities
-
-### Helper Functions
-
-Located in `tests/helpers/test-utils.ts`:
-
-- `createTestUser(role, overrides?)` - Create test user with JWT token
-- `createTestEmployee(userId, overrides?)` - Create test employee record
-- `createTestWorkLocation(overrides?)` - Create test work location
-- `createTestShift(overrides?)` - Create test shift
-- `cleanupTestData(ids)` - Clean up test data after tests
-- `createMockRequest(method, url, options?)` - Create mock HTTP request
-
-### Example Usage
-
-```typescript
-import { createTestUser, createTestEmployee, cleanupTestData } from '../helpers/test-utils';
-
-describe('My Test Suite', () => {
-  const testUserIds: string[] = [];
-  const testEmployeeIds: string[] = [];
-
-  afterEach(async () => {
-    await cleanupTestData({
-      employeeIds: testEmployeeIds,
-      userIds: testUserIds,
-    });
-    testEmployeeIds.length = 0;
-    testUserIds.length = 0;
-  });
-
-  it('should do something', async () => {
-    const user = await createTestUser('EMPLOYEE');
-    testUserIds.push(user.id);
-
-    const employeeId = await createTestEmployee(user.id);
-    testEmployeeIds.push(employeeId);
-
-    // Your test logic here
-  });
-});
-```
-
-## Environment Setup
-
-Tests use the following environment variables (set in `tests/setup.ts`):
-
-- `NODE_ENV=test`
-- `JWT_SECRET=test-jwt-secret-key-for-testing-only-32chars`
-- `DATABASE_URL` - Uses `TEST_DATABASE_URL` if set, otherwise falls back to `DATABASE_URL`
-
-**Important:** Tests run against a real database. Use a separate test database to avoid affecting development or production data.
-
-## Coverage Goals
-
-### Current Coverage
-
-Run `npm run test:coverage` to see current coverage report.
-
-### Target Coverage
-
-- **API Routes:** 80%+ coverage
-- **Services:** 80%+ coverage
-- **Utilities:** 90%+ coverage
-- **Critical Business Logic:** 95%+ coverage
-
-### Critical Areas Requiring High Coverage
-
-1. **Authentication & Authorization**
-   - Login/logout flows
-   - JWT token validation
-   - Role-based access control
-   - Permission checks
-
-2. **Attendance System**
-   - Geofencing validation
-   - Duplicate check-in prevention
-   - Check-in/check-out workflow
-   - Late/early leave calculations
-
-3. **Leave Management**
-   - Leave request creation
-   - Approval workflow
-   - Supervisor team scoping
-
-4. **Employee Management**
-   - CRUD operations
-   - NIP generation
-   - Supervisor assignment
-
-## Best Practices
-
-### 1. Test Isolation
-
-Each test should be independent and not rely on other tests:
-
-```typescript
-afterEach(async () => {
-  await cleanupTestData({ userIds, employeeIds });
-  userIds.length = 0;
-  employeeIds.length = 0;
-});
-```
-
-### 2. Descriptive Test Names
-
-Use clear, descriptive test names:
-
-```typescript
-it('should fail when outside geofence', async () => {
-  // Test implementation
-});
-```
-
-### 3. Arrange-Act-Assert Pattern
-
-Structure tests clearly:
-
-```typescript
-it('should check in successfully', async () => {
-  // Arrange
-  const user = await createTestUser('EMPLOYEE');
-  const location = await createTestWorkLocation();
-
-  // Act
-  const response = await checkInPOST(request);
-
-  // Assert
-  expect(response.status).toBe(200);
-  expect(data.success).toBe(true);
-});
-```
-
-### 4. Test Both Success and Failure Cases
-
-Always test both happy path and error cases:
-
-```typescript
-it('should login successfully with valid credentials', async () => {
-  // Success case
-});
-
-it('should fail with invalid password', async () => {
-  // Failure case
-});
-```
-
-### 5. Clean Up Test Data
-
-Always clean up test data to prevent test pollution:
-
-```typescript
-afterEach(async () => {
-  await cleanupTestData({ userIds, employeeIds });
-});
-```
-
-## Known Limitations
-
-1. **No Rate Limiting Tests:** Rate limiting is not currently tested due to complexity of mocking time-based limits.
-
-2. **No File Upload Tests:** Selfie upload validation is tested with data URLs, not actual file uploads.
-
-3. **No Email/Notification Tests:** Email and notification services are not tested as they are not yet implemented.
-
-4. **Database Migrations:** Migration tests are not automated. Migrations should be tested manually before deployment.
-
-## Continuous Integration
-
-Tests should be run in CI/CD pipeline before deployment:
-
-```yaml
-# Example GitHub Actions workflow
-- name: Run tests
-  run: npm test
-
-- name: Check coverage
-  run: npm run test:coverage
-```
-
-## Troubleshooting
-
-### Tests Failing Due to Database Connection
-
-Ensure `DATABASE_URL` or `TEST_DATABASE_URL` is set correctly:
-
-```bash
-export TEST_DATABASE_URL="postgresql://<DB_USER>:<DB_PASSWORD>@localhost:5432/myprodusen_test"
-```
-
-### Tests Timing Out
-
-Increase test timeout in `vitest.config.ts`:
-
-```typescript
-export default defineConfig({
-  test: {
-    testTimeout: 10000, // 10 seconds
-  },
-});
-```
-
-### Cleanup Errors
-
-If cleanup fails, manually clean test data:
-
-```sql
-DELETE FROM "Attendance" WHERE id LIKE 'test_%';
-DELETE FROM "Employee" WHERE id LIKE 'test_%';
-DELETE FROM "User" WHERE id LIKE 'test_%';
-```
-
-## Future Improvements
-
-1. Add E2E tests using Playwright or Cypress
-2. Add performance tests for critical endpoints
-3. Add load testing for attendance check-in
-4. Add mutation testing to verify test quality
-5. Add visual regression tests for UI components
-6. Add API contract tests using Pact or similar
-7. Add security tests (SQL injection, XSS, etc.)
-
-## Contributing
-
-When adding new features:
-
-1. Write tests before or alongside implementation
-2. Ensure all tests pass before submitting PR
-3. Maintain or improve coverage percentage
-4. Update this documentation if adding new test categories
+## What the suite covers
+
+- **GPS hardening**: missing fields, out-of-range lat/lon, accuracy cap, stale
+  timestamps, inactive locations, reject vs pending behaviour.
+- **Selfie storage**: structured key path, MIME signature, oversized rejection,
+  traversal-safe storage path resolver, base64-never-in-DB.
+- **Protected selfie access**: owner allowed, peer denied, ADMIN_HR allowed,
+  unauthenticated 401, unknown ID 404, traversal 404.
+- **Attendance reports**: RBAC scoping (self/team/all), filter parity with
+  CSV, format=csv requires date range, audit log entry on export, row cap
+  honours `ATTENDANCE_EXPORT_MAX_ROWS`.
+- **Work-location search**: case-insensitive name + address match.
+- **DB constraints**: unique per-day attendance index.
+- **RBAC + permissions + NIP + leave + KPI + payroll period locks** all
+  exercised via dedicated test files.
+
+## Writing new tests
+
+1. Use `tests/helpers/test-utils.ts` to seed users, employees, locations, and
+   shifts. Always clean up via the returned IDs.
+2. Use `createMockRequest()` instead of constructing raw `Request` objects so
+   FormData/JSON encoding stays consistent.
+3. For DB-touching tests, scope assertions by employee/division to avoid
+   cross-test pollution from the shared dev DB.
+4. New unit tests can import via `@/lib/...`, `@/services/...`, etc. For
+   `src/server/...` imports, use a relative path from the test file (the
+   Vitest alias map omits that prefix).
+5. Run `npm run lint && npm run test` before committing.
+
+## Performance smoke test
+
+`npm run perf:explain` prints `EXPLAIN ANALYZE` for the canonical queries
+(report month range, single-employee window, outside-geo, employee `ilike`,
+work-location `ilike`, audit log by user). Look for index usage on
+`Attendance_employeeId_checkInTime_idx`, `Attendance_status_checkInTime_idx`,
+`Employee_division_idx`, and the geo-status indexes added in `0011`.

@@ -130,15 +130,12 @@ export default function ReportsPage() {
         </label>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
           <button
-            onClick={() => setReportType("attendance")}
-            className={`p-3 rounded-lg border transition-all ${
-              reportType === "attendance"
-                ? "border-[var(--primary)] bg-[var(--warning-bg)]"
-                : "border-[var(--border-color)] bg-white"
-            }`}
+            onClick={() => router.push("/dashboard/reports/attendance")}
+            className="p-3 rounded-lg border border-[var(--primary)] bg-[var(--warning-bg)] transition-all"
           >
-            <Clock size={20} className="mx-auto mb-1" color={reportType === "attendance" ? "var(--primary)" : "var(--text-muted)"} />
+            <Clock size={20} className="mx-auto mb-1" color="var(--primary)" />
             <p className="text-xs font-medium">Kehadiran</p>
+            <p className="text-[10px] text-[var(--text-secondary)] mt-1">Buka laporan lengkap</p>
           </button>
           <button
             onClick={() => setReportType("leave")}
