@@ -106,6 +106,8 @@ export default function DashboardPage() {
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? "Selamat Pagi" : currentHour < 18 ? "Selamat Siang" : "Selamat Malam";
   const roleExperience = getRoleExperience(stats.role);
+  const canOpenPayroll = stats.role === "SUPERADMIN" || stats.role === "ADMIN_HR";
+  const canOpenReports = stats.role === "SUPERADMIN" || stats.role === "ADMIN_HR" || stats.role === "SUPERVISOR";
   const actionCards = buildDashboardActions(stats.role, {
     pendingLeaves: stats.pendingLeave,
     pendingKpiApprovals: stats.pendingKpiApprovals,
@@ -294,7 +296,7 @@ export default function DashboardPage() {
               ? `${stats.payrollPeriodStatus.period} sedang ${stats.payrollPeriodStatus.status}.`
               : "Belum ada periode payroll berjalan."}
           </p>
-          <Link href="/dashboard/payroll" className="text-link text-sm">Buka Payroll →</Link>
+          {canOpenPayroll && <Link href="/dashboard/payroll" className="text-link text-sm">Buka Payroll →</Link>}
         </div>
       </section>
 
@@ -315,14 +317,14 @@ export default function DashboardPage() {
           <p className="text-xs sm:text-sm">Dashboard tidak menampilkan angka KPI sampai API agregasi Phase 6 siap.</p>
           <Link href="/dashboard/kpi" className="text-link text-sm">Kelola KPI →</Link>
         </div>
-        <div className="card empty-state-card">
+        {canOpenReports && <div className="card empty-state-card">
           <div className="w-12 h-12 rounded-xl bg-[var(--info-bg)] flex items-center justify-center mb-3">
             <Clock size={24} className="text-[var(--info)]" aria-hidden="true" />
           </div>
           <h3 className="text-base sm:text-lg">Tren mingguan belum tersedia</h3>
           <p className="text-xs sm:text-sm">Grafik mingguan menunggu endpoint historis agar data produksi tidak memakai mock.</p>
           <Link href="/dashboard/reports" className="text-link text-sm">Buka Laporan →</Link>
-        </div>
+        </div>}
       </section>}
     </div>
   );

@@ -246,7 +246,7 @@ export default function LocationsPage() {
           <p className="text-xs text-[var(--text-secondary)] mt-1">Tambahkan lokasi kerja untuk mengaktifkan absensi dengan geo-fence.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))", gap: "16px" }}>
           {locations.map((loc) => (
             <article key={loc.id} className="card" style={{ padding: "20px", position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: loc.isActive ? "var(--success)" : "var(--text-muted)" }} />

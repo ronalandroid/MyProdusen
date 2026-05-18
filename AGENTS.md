@@ -42,7 +42,7 @@ Canonical docs:
 /docs/IMPLEMENTATION_PLAN.md
 /docs/PARALLEL_AGENTS_PLAN.md
 /docs/FINAL_CHECKLIST.md
-/docs/COMPETITOR_RESEARCH.md
+/docs/REFERENCE_REPO_ANALYSIS.md
 ```
 
 Rules:
@@ -219,7 +219,7 @@ Allowed agents:
 
 Scope:
 - finalize `/docs/prd.md`
-- maintain `/docs/COMPETITOR_RESEARCH.md`
+- maintain `/docs/REFERENCE_REPO_ANALYSIS.md`
 - maintain `/docs/AGENTS.md`
 - maintain `/docs/IMPLEMENTATION_PLAN.md`
 - maintain `/docs/PARALLEL_AGENTS_PLAN.md`

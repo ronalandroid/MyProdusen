@@ -30,6 +30,8 @@ export default function Sidebar() {
     '/dashboard/leave': Calendar,
     '/dashboard/kpi': BarChart3,
     '/dashboard/reports': FileText,
+    '/dashboard/payroll': FileText,
+    '/dashboard/overtime': Clock3,
     '/dashboard/documents': FileText,
     '/dashboard/notifications': Bell,
     '/dashboard/audit': Shield,

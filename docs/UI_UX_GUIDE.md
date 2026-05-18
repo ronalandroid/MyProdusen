@@ -283,3 +283,125 @@ Avoid:
 - Do not add attendance upload/gallery fallback.
 - Do not bypass backend RBAC or business rules for UI convenience.
 - Keep docs updated when UI behavior changes.
+
+
+## 10. Reference design alignment
+
+Sources: the two MyProdusen design boards (Employee app shell, Super Admin
+shell) plus the live web app. This section records what the live UI is
+expected to match. Nothing here changes product scope.
+
+### App shells (per-role bottom navigation)
+
+The mobile bottom navigation must hold ≤ 5 tabs per role.
+
+| Role | Primary tabs (left → right) |
+| ---- | --------------------------- |
+| EMPLOYEE | Beranda · Kehadiran · Cuti · KPI · Akun |
+| SUPERADMIN | Beranda · Cabang · Approval · Laporan · Akun |
+| ADMIN_HR | Beranda · Kehadiran · Karyawan · Cuti · Akun |
+| SUPERVISOR | Beranda · Kehadiran · Karyawan · Cuti · Akun |
+
+`lib/navigation/role-navigation.ts` holds the policy.
+`getPrimaryNavigationForRole(role)` returns the ≤ 5 tabs for the bottom
+bar; remaining allowed items remain reachable from the secondary menu.
+`tests/rbac/role-navigation.test.ts` enforces the per-role primary set.
+
+### Status & geo badge palette
+
+Use these named tokens, never hard-code hex values in components:
+
+| State | Token | Surface |
+| ----- | ----- | ------- |
+| Aktif / approved / inside radius | `var(--success)` | filled green chip |
+| Menunggu / pending review | `var(--warning)` | yellow chip |
+| Disetujui (icon) | `var(--success)` | check icon |
+| Ditolak / outside radius | `var(--danger)` | red chip |
+
+Implementation: `STATUS_TONE` and `GEO_BADGE` palettes in
+`app/dashboard/reports/attendance/page.tsx` and
+`src/components/attendance/SelfieViewer.tsx`.
+
+### Typography rhythm
+
+- Primary font: Poppins (loaded by `app/layout.tsx`).
+- Heading 1: 24 px (1.5 rem), weight 700.
+- Heading 2: 18 px (1.125 rem), weight 600.
+- Body: 14 px (0.875 rem), weight 400.
+- Caption: 12 px (0.75 rem), weight 500.
+- Card padding: 16–20 px. Border radius via `var(--radius-md)` /
+  `var(--radius-lg)`.
+- Tap target: ≥ 44×44 px on every interactive element.
+
+### Surface → live module map
+
+| Design surface | Live module |
+| -------------- | ----------- |
+| Splash / onboarding | `app/page.tsx` redirect → `/login` if anonymous, `/dashboard` if authenticated |
+| Login form | `app/login/page.tsx` |
+| Dashboard (Beranda) | `app/dashboard/page.tsx` |
+| Kehadiran (check-in/out) | `app/dashboard/attendance/page.tsx` + `src/components/attendance/RealtimeSelfieCamera.tsx` |
+| Selfie viewer modal | `src/components/attendance/SelfieViewer.tsx` |
+| Karyawan list | `app/dashboard/employees/page.tsx` |
+| Cuti / leave | `app/dashboard/leave/page.tsx` |
+| Penggajian (payroll snapshot) | `app/dashboard/payroll/page.tsx` |
+| Approval (Super Admin) | `app/dashboard/attendance/exceptions/page.tsx` |
+| Manajemen Cabang | `app/dashboard/locations/page.tsx` (live API) |
+| Profil | `app/dashboard/profile/page.tsx` |
+| Notifikasi | `app/dashboard/notifications/page.tsx` |
+| Audit log | `app/dashboard/audit/page.tsx` |
+| Reports (Laporan) | `app/dashboard/reports/attendance/page.tsx` (canonical) + `app/dashboard/reports/page.tsx` (entry point) |
+
+### Map preview
+
+`/dashboard/locations` and its create/edit modal render a small OpenStreetMap
+preview with the geo-fence radius drawn as an SVG circle. Implementation in
+`src/components/locations/WorkLocationMap.tsx`, helpers in
+`lib/maps/osm-tile-math.ts`. Zero JS dependency, lazy-loaded via
+`IntersectionObserver`. Tile source overridable via `NEXT_PUBLIC_OSM_TILE_URL`.
+
+### Intentionally not adopted
+
+- The reference shows separate "Manajemen Cabang" screens. MyProdusen treats
+  work locations as branches; no extra `Branch` entity is added.
+- The high-fidelity Penggajian mock is illustrative only. Payroll module is
+  intentionally read-only for MVP; full payroll integration is Phase 2.
+
+## 11. Responsive audit log
+
+Last full audit: 2026-05-17. Skills like `superpowers` and `ui ux promax`
+were not installed; the audit followed the manual rules from `AGENTS.md`.
+
+### Audit findings and fixes
+
+| # | Finding | Fix | Where |
+| - | ------- | --- | ----- |
+| 1 | `.mobile-content` / `.nav-container` clamped to `min(100%, 430px)` on tablets | Removed clamp; tablets now full-width with full-width bottom nav | `app/globals.css` |
+| 2 | iOS safe-area inset only applied to the nav padding | Apply `env(safe-area-inset-bottom)` to content padding at every breakpoint | `app/globals.css` |
+| 3 | Bottom-nav tap targets ~36 px tall (below WCAG 2.5.5) | `.nav-item` 56 px mobile / 48 px desktop | `app/globals.css` |
+| 4 | `.btn` / `.btn-sm` / `.btn-lg` no minimum tap height | 44 / 36 / 52 px floors; inputs/selects ≥ 44 px | `app/globals.css` |
+| 5 | Long names could push 320 px viewport horizontally | `.card { min-width: 0; word-break }` + global inline-grid guard | `app/globals.css` |
+| 6 | Tables with overflow trapped page scroll | `.table-container` + inline overflow containers scroll inside | `app/globals.css` |
+| 7 | Animations ignored `prefers-reduced-motion: reduce` | Global media query flattens animation/transition durations | `app/globals.css` |
+| 8 | Icon-only buttons had no hit-area floor | `.btn-icon` minimum 44×44 | `app/globals.css` |
+
+### Production sweep 2026-05-18
+
+- BUG-001: `/dashboard/locations` card grid uses `minmax(min(100%, 340px), 1fr)` so cards stay inside 320 px mobile content.
+- BUG-002: `/dashboard/shifts` card grid uses `minmax(min(100%, 300px), 1fr)` so cards stay inside 320 px mobile content.
+- BUG-003: `/dashboard/overtime` no longer links to missing `/dashboard/overtime/rates`; the header shows active rate count from existing data.
+- BUG-004: `/dashboard` quick/insight links respect documented role access for payroll and reports.
+- BUG-005: Desktop/sidebar navigation includes existing payroll and overtime pages as non-primary items without changing the five-tab mobile shell.
+
+### Verification gate
+
+Every UI/UX merge must end with:
+
+```bash
+npm run release:check
+```
+
+The gate runs `lint`, `test`, `build`, and the migration-coverage check.
+Manual viewport checks at 320 / 375 / 768 / 1024 / 1440 px must show no
+horizontal scroll, the bottom nav respects safe-area insets, and selfie
+modals are scrollable on small devices.

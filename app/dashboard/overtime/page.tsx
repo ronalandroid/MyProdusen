@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 
 interface OvertimeRate {
   id: string;
@@ -38,7 +37,6 @@ interface OvertimeRequest {
 }
 
 export default function OvertimePage() {
-  const router = useRouter();
   const [requests, setRequests] = useState<OvertimeRequest[]>([]);
   const [rates, setRates] = useState<OvertimeRate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,12 +211,9 @@ export default function OvertimePage() {
             <p className="text-gray-600 mt-1">Kelola request lembur karyawan</p>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={() => router.push('/dashboard/overtime/rates')}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Kelola Rate
-            </button>
+            <span className="inline-flex min-h-[44px] items-center rounded-lg border border-[var(--border-color)] bg-white px-4 py-2 text-sm font-semibold text-[var(--text-secondary)]">
+              Rate aktif: {rates.length}
+            </span>
             <button
               onClick={() => setShowModal(true)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

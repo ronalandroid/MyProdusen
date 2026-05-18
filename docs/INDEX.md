@@ -21,7 +21,7 @@ Current canonical docs only. Historical docs are under `_archive/`.
 | [SECURITY.md](./SECURITY.md) | RBAC rules, audit log scope, GPS + selfie hardening |
 | [REPORTS.md](./REPORTS.md) | Attendance reports, exports, audit-logged CSV |
 | [TESTING.md](./TESTING.md) | How to run tests and what is covered |
-| [UI_ALIGNMENT.md](./UI_ALIGNMENT.md) | Mapping between the design boards and live components |
+| [UI_UX_GUIDE.md](./UI_UX_GUIDE.md) | Brand tokens, mobile-first patterns, design board ↔ live module map, responsive audit log |
 
 ## Setup & deployment
 
