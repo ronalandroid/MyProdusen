@@ -12,11 +12,32 @@ Next.js (App Router) · TypeScript · Drizzle ORM · PostgreSQL · Tailwind CSS
 Do not migrate the stack. Do not add Prisma, Eloquent, Laravel, or jQuery.
 Do not adopt Bootstrap or Tabler UI kits.
 
+## Reference-first rule (UI changes)
+
+Before touching any UI:
+
+1. Open `docs/references/screens/<screen>.png` for the screen you are
+   changing (Employee app shell, Super Admin shell, or Emailing system).
+2. Open `docs/references/design-checklist.md` and find the matching
+   section. The checklist is the authoritative contract.
+3. If something looks ambiguous, **stop and ask the operator**. Do not
+   improvise visuals, copy, or interactions that are not in the references.
+4. Cite the checklist line in your commit message, e.g.
+   `feat(ui): add greeting card per design-checklist.md §Beranda-Employee`.
+5. After the change, run `npm run release:check` and visually verify at
+   320 / 375 / 768 / 1024 / 1440 px.
+
+When the operator approves a new design board:
+
+- Drop the new image into `docs/references/screens/` with the existing
+  filename so refs stay stable.
+- Update the matching section in `docs/references/design-checklist.md`.
+- Use a `design/<short-desc>` branch so reviewers know to check the
+  screenshot diff.
+
 ## Selfie attendance rules
 
-Selfie proof is captured directly from the realtime device camera.
-
-Forbidden in the attendance flow:
+Selfie proof is captured directly from the realtime device camera.Forbidden in the attendance flow:
 
 - `<input type="file">`
 - gallery picker

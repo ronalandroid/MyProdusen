@@ -1,7 +1,7 @@
 # Testing Guide
 
 MyProdusen uses **Vitest** for unit, integration, and database-constraint
-tests. The current state is `35 test files / 206 passing tests`.
+tests. The canonical pre-deploy gate is `npm run release:check`.
 
 ## Commands
 
@@ -10,6 +10,11 @@ tests. The current state is `35 test files / 206 passing tests`.
 | `npm run lint` | Strict TypeScript check (`tsc --noEmit`). Acts as the typecheck gate. |
 | `npm run test` | Full test suite. |
 | `npm run build` | Production build smoke test. |
+| `npm run release:check` | Local pre-deploy gate: lint + tests + build + migration-coverage + reference contract. |
+| `npm run release:check:full` | Same as above plus production env preflight. Run on the deploy target. |
+| `npm run release:env` | Production env preflight only. |
+| `npm run release:migrations` | Migration-coverage check only. |
+| `npm run release:references` | Design-reference contract check only. |
 | `npm run perf:explain` | `EXPLAIN ANALYZE` the dashboard / report / search queries against `$DATABASE_URL`. Run on staging. |
 
 There is no separate `typecheck` script — `lint` already does it.

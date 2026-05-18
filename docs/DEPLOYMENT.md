@@ -171,8 +171,9 @@ Run these commands in order. Each gate must pass before moving to the next.
 ```bash
 # 1. Code health gate (run on the developer machine before pushing).
 npm run release:check
-#    ↳ runs lint, full vitest suite, next build, and the migration-coverage
-#      check (scripts/check-migrations-coverage.mjs).
+#    ↳ runs lint, full vitest suite, next build, the migration-coverage
+#      check, and the design-reference contract check
+#      (scripts/check-references.mjs).
 
 # 2. (On the deploy target) full gate including production env validation.
 npm run release:check:full
