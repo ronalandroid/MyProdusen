@@ -392,6 +392,13 @@ were not installed; the audit followed the manual rules from `AGENTS.md`.
 - BUG-003: `/dashboard/overtime` no longer links to missing `/dashboard/overtime/rates`; the header shows active rate count from existing data.
 - BUG-004: `/dashboard` quick/insight links respect documented role access for payroll and reports.
 - BUG-005: Desktop/sidebar navigation includes existing payroll and overtime pages as non-primary items without changing the five-tab mobile shell.
+- BUG-001-FINAL: Superadmin mobile primary tabs now match the reference order: Beranda, Cabang, Approval, Laporan, Akun; Laporan opens `/dashboard/reports/attendance` per `docs/references/design-checklist.md:114`.
+- BUG-002-FINAL: `/dashboard/locations` destructive delete uses an in-app confirmation modal instead of raw `confirm()` per `docs/references/design-checklist.md:102`.
+- BUG-003-FINAL: `/dashboard/locations` modal coordinate fields wrap with mobile-first grid columns and preserve ≥44 px inputs per `docs/references/design-checklist.md:96`.
+- BUG-004-FINAL: `/dashboard/reports` report-type controls wrap on 320 px instead of forcing three cramped columns per `docs/references/design-checklist.md:96`.
+- BUG-005-FINAL: `/dashboard/reports` PDF-unavailable feedback uses an inline status alert instead of raw `alert()` per `docs/references/design-checklist.md:102`.
+- BUG-006-FINAL: `/dashboard/notifications` destructive delete uses an in-app confirmation modal instead of raw `confirm()` per `docs/references/design-checklist.md:102`.
+- BUG-007-FINAL: `/dashboard/leave` balance/request controls use a wrapping mobile-first grid per `docs/references/design-checklist.md:96`.
 
 ### Verification gate
 
