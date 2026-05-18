@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
+import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 import "@/lib/init";
 import "./globals.css";
 
@@ -68,12 +69,18 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
         <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/manifest.webmanifest" />
       </head>
       <body className={`${poppins.variable} antialiased`} suppressHydrationWarning>
         <div className="mobile-container">
           {children}
         </div>
+        <PwaInstallPrompt />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); }); }`,
+          }}
+        />
       </body>
     </html>
   );

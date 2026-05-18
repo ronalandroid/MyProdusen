@@ -210,3 +210,17 @@ Manual steps still required:
 - Android GPS + realtime selfie.
 - Resend activation/reset emails.
 - TestSprite safe smoke after MCP/CLI/API key setup.
+
+## Mobile/PWA/Attendance Smoke Addendum — 2026-05-19
+
+Add these checks after redeploy:
+
+1. Open on Android 360px and iPhone 390px.
+2. Confirm bottom nav shows expected role items and `Akun`.
+3. Open `Akun` and confirm red `Keluar` button asks confirmation and redirects to `/login`.
+4. Confirm no logout button appears as a floating/random sidebar/header action on mobile.
+5. First access should show non-blocking “Install MyProdusen” prompt when supported.
+6. Tap “Install App”; browser must show native install prompt or manual instructions.
+7. Open Kehadiran; confirm GPS status/accuracy card appears before submit.
+8. Confirm check-in/check-out buttons are disabled until GPS and realtime selfie are ready.
+9. Confirm page scroll remains smooth and bottom nav does not cover content.

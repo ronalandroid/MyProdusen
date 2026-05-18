@@ -199,3 +199,154 @@ npm ls testsprite @testsprite/testsprite-mcp @testsprite/mcp testsprite-mcp --de
 3. Configure TestSprite MCP/CLI outside repo and rotate prior exposed TestSprite API key.
 4. Run Android real-device GPS + realtime selfie UAT.
 5. Run email activation/reset UAT with Resend.
+
+# Production UI/PWA/Attendance Fix Update — 2026-05-19
+
+## 1. Date/time
+
+- Date: 2026-05-19
+- Timezone: Asia/Jakarta
+- Scope: mobile responsiveness, logout placement, PWA install prompt, navigation delay/freeze, attendance GPS+selfie reliability, frontend-backend-database sync.
+
+## 2. Problem summary
+
+- Mobile bottom navigation needed stricter 5-slot role priority and stable Akun access.
+- Logout appeared in desktop sidebar as separate action; required only inside Akun/Profile flow.
+- Dashboard layout revalidated profile on every route change, adding navigation delay.
+- No first-access PWA install popup existed.
+- Attendance UX captured GPS only at submit time; user could not see GPS readiness/accuracy before submitting.
+
+## 3. Mobile UI bugs found
+
+- Superadmin primary nav prioritized Cabang/Approval over Absensi/Karyawan/Laporan.
+- Admin HR could exceed practical mobile bottom-nav slots if too many items were primary.
+- Main content used nested scroll behavior that can feel sticky in mobile/webview.
+
+## 4. Navigation/logout fixes
+
+- Mobile primary nav aligned by role:
+  - Superadmin/Admin HR: Beranda/Dashboard, Kehadiran/Absensi, Karyawan, Laporan, Akun.
+  - Employee: Beranda, Kehadiran, Cuti, KPI, Akun.
+  - Supervisor: Beranda, Kehadiran, Karyawan/Tim, Cuti, Akun.
+- Sidebar logout action removed; desktop now points user to Akun for logout.
+- `/dashboard/profile` keeps red `Keluar` button with confirmation dialog, loading state, and error state.
+- Dashboard session profile is cached in layout state to avoid repeated profile refetch on every internal navigation.
+
+## 5. Scroll/freeze fixes
+
+- Added route-level dashboard loading skeleton.
+- Main content now lets document scroll instead of forcing nested app-pane scrolling.
+- Added mobile bottom padding so bottom nav does not cover content.
+- Heavy realtime selfie camera is lazy-loaded with `next/dynamic` and `ssr: false`.
+
+## 6. PWA install popup implementation
+
+- Added `public/manifest.webmanifest` with MyProdusen identity, standalone display, yellow theme color, white background, and icons.
+- Added minimal `public/sw.js` for installability only; it does not cache private HR/payroll/attendance data.
+- Added `PwaInstallPrompt` using `beforeinstallprompt`.
+- Popup text:
+  - Title: “Install MyProdusen”
+  - Message: “Akses absensi, KPI, payroll, dan laporan lebih cepat dari perangkat Anda.”
+  - Buttons: “Install App” and “Nanti”
+- Popup respects installed state and 7-day dismissal in `localStorage`.
+- If browser does not support install prompt, app shows Android/iOS manual install instructions.
+
+## 7. Attendance GPS+selfie fixes
+
+- Attendance page now shows GPS status and GPS accuracy before submit.
+- Check-in/check-out buttons stay disabled until realtime selfie and GPS proof are ready.
+- GPS can be refreshed manually with “Ambil Ulang GPS”.
+- Realtime selfie camera stays realtime-only, uses `getUserMedia`, captures through canvas, compresses client-side, and stops stream on capture/unmount.
+- Backend remains source of truth: validates GPS, timestamp age, accuracy, selfie MIME/size/signature, Haversine distance, double check-in/out, private storage, and audit logs.
+
+## 8. Frontend-backend-database sync status
+
+- Logout: Akun/Profile UI -> `/api/auth/logout` -> httpOnly cookie clear -> redirect `/login`.
+- Attendance: UI GPS+selfie -> `FormData` -> `/api/attendance/check-in|check-out` -> service validation -> Drizzle writes attendance/selfie metadata -> UI refreshes data.
+- PWA: Root layout -> manifest + service worker + install prompt; no private data caching.
+- Navigation: role policy -> Sidebar -> protected dashboard layout -> server-side API/RBAC still enforced.
+
+## 9. Files changed
+
+- `app/layout.tsx`
+- `app/dashboard/layout.tsx`
+- `app/dashboard/loading.tsx`
+- `app/dashboard/profile/page.tsx`
+- `app/dashboard/attendance/page.tsx`
+- `app/globals.css`
+- `lib/auth-client.ts`
+- `src/api/client/auth-client.ts`
+- `lib/navigation/role-navigation.ts`
+- `src/components/layout/Sidebar.tsx`
+- `src/components/pwa/PwaInstallPrompt.tsx`
+- `public/manifest.webmanifest`
+- `public/sw.js`
+
+## 10. Docs updated
+
+- `docs/TEST_FIX_REPORT.md`
+- `docs/UI_UX_GUIDE.md`
+- `docs/PERFORMANCE.md`
+- `docs/SECURITY.md`
+- `docs/FINAL_CHECKLIST.md`
+- `docs/PRODUCTION_SMOKE_TEST.md`
+- `docs/LIVE_TEST_REPORT.md`
+
+## 11. Commands run
+
+- `npm run lint`: PASS after patch.
+- Full command results are listed in final assistant response after final verification.
+
+## 12. Playwright result
+
+- Pending final run after this docs update.
+
+## 13. TestSprite result if run
+
+- TestSprite remains unavailable locally unless external MCP/CLI/API key is configured.
+
+## 14. Remaining risks
+
+- Browser PWA install behavior depends on Chrome/Safari support and installability criteria.
+- Android GPS + selfie still requires real-device production UAT.
+- Superadmin credential/PDF download smoke requires credential env and login cooldown.
+
+## 15. Next deploy steps
+
+1. Run `npm run lint`, `npm run test`, `npm run build`, `npm run release:check`.
+2. Run Playwright local/live safe smoke.
+3. Commit and push.
+4. Redeploy Coolify latest commit with no-cache rebuild if needed.
+5. Verify `/api/health`, `/api/reports/pdf`, PWA install prompt, mobile nav, Akun logout, and Android attendance.
+
+## Final Verification Result — 2026-05-19
+
+Commands run after fixes:
+
+```bash
+npm run lint
+npm run test
+npm run build
+npm run release:check
+npm run e2e:public
+npm run e2e:staging
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+E2E_BASE_URL=https://myprodusen.online npm run e2e:public
+```
+
+Results:
+
+- `npm run lint`: PASS.
+- `npm run test`: PASS, 55 files, 297 tests.
+- `npm run build`: PASS, production build includes `manifest.webmanifest`, service worker, dashboard loading route, and all API routes.
+- `npm run release:check`: PASS.
+- `npm run e2e:public`: PASS, 12 passed.
+- `npm run e2e:staging`: PASS, 12 passed, 4 skipped because credential env was unavailable.
+- `BASE_URL=https://myprodusen.online npm run verify:live-routes`: PASS; live `/api/health` is `200`, live unauthenticated `/api/reports/pdf` is `401`.
+- `E2E_BASE_URL=https://myprodusen.online npm run e2e:public`: PASS, 12 passed.
+- TestSprite: skipped; no local CLI/dependency/API key found.
+
+Go/No-Go:
+
+- READY FOR REDEPLOY.
+- After redeploy, run Android real-device attendance and PWA install UAT before final production go-live.

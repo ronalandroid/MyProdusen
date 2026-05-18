@@ -1,12 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, ArrowLeft, Info, MapPin } from "lucide-react";
+import { Bell, ArrowLeft, Info, MapPin, Navigation } from "lucide-react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { ClientUserProfile, fetchProfile, getAuthHeaders } from "@/lib/auth-client";
-import { RealtimeSelfieCamera } from "@/components/attendance/RealtimeSelfieCamera";
 import { SelfieViewer } from "@/components/attendance/SelfieViewer";
 import { MyExceptionPanel } from "@/components/attendance/MyExceptionPanel";
+
+const RealtimeSelfieCamera = dynamic(
+  () => import("@/components/attendance/RealtimeSelfieCamera").then((mod) => mod.RealtimeSelfieCamera),
+  {
+    ssr: false,
+    loading: () => <div className="card" style={{ padding: "16px", fontSize: "13px", color: "var(--text-secondary)" }}>Menyiapkan kamera selfie...</div>,
+  },
+);
 
 type AttendanceRecord = {
   id: string;
@@ -85,6 +93,9 @@ export default function AttendancePage() {
   const [selfieBlob, setSelfieBlob] = useState<Blob | null>(null);
   const [selfiePreviewUrl, setSelfiePreviewUrl] = useState("");
   const [selfieFilename, setSelfieFilename] = useState("attendance-selfie.webp");
+  const [gpsPosition, setGpsPosition] = useState<GeolocationPosition | null>(null);
+  const [gpsError, setGpsError] = useState("");
+  const [isGettingGps, setIsGettingGps] = useState(false);
   const [viewerState, setViewerState] = useState<{
     record: AttendanceRecord;
     kind: "check-in" | "check-out";
@@ -162,6 +173,20 @@ export default function AttendancePage() {
     });
   }
 
+  async function refreshGps() {
+    setGpsError("");
+    setIsGettingGps(true);
+    try {
+      const position = await getBrowserPosition();
+      setGpsPosition(position);
+    } catch (err) {
+      setGpsPosition(null);
+      setGpsError(err instanceof Error ? err.message : "GPS tidak dapat diakses. Izinkan lokasi dan pastikan sinyal stabil.");
+    } finally {
+      setIsGettingGps(false);
+    }
+  }
+
   async function submitAttendance(type: "check-in" | "check-out") {
     setError("");
     setMessage("");
@@ -176,7 +201,7 @@ export default function AttendancePage() {
         throw new Error("Selfie realtime wajib diambil untuk melanjutkan absensi.");
       }
 
-      const position = await getBrowserPosition();
+      const position = gpsPosition || await getBrowserPosition();
       const formData = new FormData();
       formData.set("latitude", String(position.coords.latitude));
       formData.set("longitude", String(position.coords.longitude));
@@ -212,6 +237,7 @@ export default function AttendancePage() {
 
       setMessage(type === "check-in" ? "Check-in berhasil disimpan" : "Check-out berhasil disimpan");
       clearSelfie();
+      setGpsPosition(null);
       await loadAttendance();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menyimpan absensi");
@@ -225,6 +251,9 @@ export default function AttendancePage() {
   }, []);
 
   useEffect(() => () => clearSelfie(), []);
+  useEffect(() => {
+    void refreshGps();
+  }, []);
 
   return (
     <div className="phone-screen attendance-screen" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -308,19 +337,45 @@ export default function AttendancePage() {
         onClear={clearSelfie}
       />
 
+      <section className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }} aria-labelledby="gps-proof-title">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+          <div>
+            <h2 id="gps-proof-title" style={{ fontSize: "16px", fontWeight: 700, marginBottom: "4px" }}>Bukti Lokasi GPS</h2>
+            <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+              Server tetap menghitung jarak resmi dari lokasi kerja. Data frontend hanya bukti awal.
+            </p>
+          </div>
+          <Navigation size={22} color="var(--primary)" aria-hidden="true" />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px" }}>
+          <div className="hris-card-highlight" style={{ border: "1px solid var(--border-color)", borderRadius: "16px", padding: "12px" }}>
+            <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Status</span>
+            <strong style={{ fontSize: "13px", color: gpsPosition ? "var(--success)" : "var(--danger)" }}>{gpsPosition ? "GPS siap" : "GPS belum siap"}</strong>
+          </div>
+          <div className="hris-card-highlight" style={{ border: "1px solid var(--border-color)", borderRadius: "16px", padding: "12px" }}>
+            <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Akurasi</span>
+            <strong style={{ fontSize: "13px" }}>{gpsPosition ? `${Math.round(gpsPosition.coords.accuracy)} meter` : "-"}</strong>
+          </div>
+        </div>
+        {gpsError && <div role="alert" style={{ color: "var(--danger)", fontSize: "12px", fontWeight: 600 }}>{gpsError}</div>}
+        <button type="button" className="btn btn-secondary" onClick={refreshGps} disabled={isGettingGps || isSubmitting}>
+          {isGettingGps ? "Mengambil GPS..." : "Ambil Ulang GPS"}
+        </button>
+      </section>
+
       <div className="flex flex-col gap-3 sm:flex-row">
         <button
           className="btn btn-success"
-          style={{ flex: 1, padding: "16px", opacity: todayAttendance || isSubmitting ? 0.6 : 1 }}
-          disabled={Boolean(todayAttendance) || isSubmitting || !selfieBlob}
+          style={{ flex: 1, padding: "16px", opacity: todayAttendance || isSubmitting || !selfieBlob || !gpsPosition ? 0.6 : 1 }}
+          disabled={Boolean(todayAttendance) || isSubmitting || !selfieBlob || !gpsPosition}
           onClick={() => submitAttendance("check-in")}
         >
           {isSubmitting ? "Memproses..." : "Check-In"}
         </button>
         <button
           className="btn btn-danger-outline"
-          style={{ flex: 1, padding: "16px", backgroundColor: "white", opacity: !todayAttendance || todayAttendance.checkOutTime || isSubmitting ? 0.6 : 1 }}
-          disabled={!todayAttendance || Boolean(todayAttendance.checkOutTime) || isSubmitting || !selfieBlob}
+          style={{ flex: 1, padding: "16px", backgroundColor: "white", opacity: !todayAttendance || todayAttendance.checkOutTime || isSubmitting || !selfieBlob || !gpsPosition ? 0.6 : 1 }}
+          disabled={!todayAttendance || Boolean(todayAttendance.checkOutTime) || isSubmitting || !selfieBlob || !gpsPosition}
           onClick={() => submitAttendance("check-out")}
         >
           {isSubmitting ? "Memproses..." : "Check-Out"}

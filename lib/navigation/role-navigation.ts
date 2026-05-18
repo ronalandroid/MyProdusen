@@ -57,21 +57,21 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
     key: 'attendance',
     name: 'Kehadiran',
     path: '/dashboard/attendance',
-    primaryFor: ['EMPLOYEE', 'SUPERVISOR', 'ADMIN_HR'],
+    primaryFor: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE'],
     allowedRoles: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE'],
   },
   {
     key: 'locations',
     name: 'Cabang',
     path: '/dashboard/locations',
-    primaryFor: ['SUPERADMIN'],
+    primaryFor: [],
     allowedRoles: ['SUPERADMIN', 'ADMIN_HR'],
   },
   {
     key: 'attendance-exceptions',
     name: 'Approval',
     path: '/dashboard/attendance/exceptions',
-    primaryFor: ['SUPERADMIN'],
+    primaryFor: [],
     allowedRoles: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'],
   },
   {
@@ -85,7 +85,7 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
     key: 'employees',
     name: 'Karyawan',
     path: '/dashboard/employees',
-    primaryFor: ['ADMIN_HR', 'SUPERVISOR'],
+    primaryFor: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'],
     allowedRoles: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'],
   },
   {
@@ -99,7 +99,7 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
     key: 'leave',
     name: 'Cuti',
     path: '/dashboard/leave',
-    primaryFor: ['EMPLOYEE', 'SUPERVISOR', 'ADMIN_HR'],
+    primaryFor: ['EMPLOYEE', 'SUPERVISOR'],
     allowedRoles: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE'],
   },
   {
@@ -113,7 +113,7 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
     key: 'reports',
     name: 'Laporan',
     path: '/dashboard/reports/attendance',
-    primaryFor: ['SUPERADMIN'],
+    primaryFor: ['SUPERADMIN', 'ADMIN_HR'],
     allowedRoles: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'],
   },
   {

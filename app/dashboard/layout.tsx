@@ -8,6 +8,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { ToastProvider } from "@/components/ui/Toast";
 import { canAccessNavigationPath } from "@/lib/navigation/role-navigation";
 import type { UserRole } from "@/lib/permissions";
+import type { ClientUserProfile } from "@/lib/auth-client";
 
 export default function DashboardLayout({
   children,
@@ -17,10 +18,19 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [profile, setProfile] = useState<ClientUserProfile | null>(null);
 
   useEffect(() => {
+    if (profile) {
+      if (!canAccessNavigationPath(profile.role as UserRole, pathname)) {
+        router.replace("/dashboard");
+      }
+      return;
+    }
+
     fetchProfile()
       .then((profile) => {
+        setProfile(profile);
         if (!canAccessNavigationPath(profile.role as UserRole, pathname)) {
           router.replace("/dashboard");
           return;
@@ -28,7 +38,7 @@ export default function DashboardLayout({
         setIsCheckingSession(false);
       })
       .catch(() => router.replace("/login"));
-  }, [pathname, router]);
+  }, [pathname, profile, router]);
 
   if (isCheckingSession) {
     return (

@@ -86,15 +86,15 @@ describe('Role Navigation Policy', () => {
     expect(keys).toEqual(['dashboard', 'attendance', 'leave', 'kpi', 'profile']);
   });
 
-  it('SUPERADMIN primary tabs match the design (Beranda · Cabang · Approval · Laporan · Akun)', () => {
+  it('SUPERADMIN primary tabs match the design (Beranda · Kehadiran · Karyawan · Laporan · Akun)', () => {
     const keys = getPrimaryNavigationForRole('SUPERADMIN').map((item) => item.key);
     const paths = getPrimaryNavigationForRole('SUPERADMIN').map((item) => item.path);
 
-    expect(keys).toEqual(['dashboard', 'locations', 'attendance-exceptions', 'reports', 'profile']);
+    expect(keys).toEqual(['dashboard', 'attendance', 'employees', 'reports', 'profile']);
     expect(paths).toEqual([
       '/dashboard',
-      '/dashboard/locations',
-      '/dashboard/attendance/exceptions',
+      '/dashboard/attendance',
+      '/dashboard/employees',
       '/dashboard/reports/attendance',
       '/dashboard/profile',
     ]);

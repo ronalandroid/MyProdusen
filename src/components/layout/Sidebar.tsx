@@ -12,7 +12,6 @@ import {
   Clock3,
   FileText,
   Home,
-  LogOut,
   MapPin,
   Shield,
   User,
@@ -44,7 +43,6 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [role, setRole] = useState<UserRole | null>(null);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     fetchProfile()
@@ -59,19 +57,6 @@ export default function Sidebar() {
       path: item.path,
       primary: item.primary,
     }));
-
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
-
-    setIsLoggingOut(true);
-    try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-      window.location.href = "/login";
-    } catch (error) {
-      console.error("Logout failed:", error);
-      setIsLoggingOut(false);
-    }
-  };
 
   return (
     <>
@@ -113,16 +98,8 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="hidden lg:block px-4 py-4 border-t border-[var(--border-color)]">
-        <button
-          type="button"
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          className="w-full flex items-center gap-3 px-4 py-3 text-[var(--danger)] hover:bg-red-50 rounded-xl transition-all duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]"
-        >
-          <LogOut size={20} aria-hidden="true" />
-          <span>{isLoggingOut ? "Keluar..." : "Keluar"}</span>
-        </button>
+      <div className="hidden lg:block px-4 py-4 border-t border-[var(--border-color)] text-xs text-[var(--text-muted)]">
+        Logout tersedia di menu Akun.
       </div>
     </>
   );

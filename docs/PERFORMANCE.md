@@ -48,3 +48,11 @@ Index penting wajib tersedia untuk user, employee, attendance, KPI, payroll, aud
 - `npm run release:check` harus pass.
 - Smoke test real device wajib untuk GPS + selfie.
 - Backup/restore drill staging wajib sebelum go-live besar.
+
+## Production Navigation Performance Update — 2026-05-19
+
+- Dashboard layout should not refetch profile on every internal route change; reuse current session profile unless the session fails.
+- Heavy mobile-only features such as realtime selfie camera should be lazy-loaded client-side.
+- Main dashboard content should avoid nested scroll containers on mobile/webview; let the document scroll and keep bottom nav fixed.
+- PWA service worker is install-only and intentionally avoids caching private HRIS data.
+- Route-level loading skeletons should be lightweight and avoid heavy charts/camera/PDF work during navigation.

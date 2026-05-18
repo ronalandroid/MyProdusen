@@ -91,18 +91,18 @@ export async function fetchProfile(): Promise<ClientUserProfile> {
  * Server will clear the httpOnly cookie
  */
 export async function logout(): Promise<void> {
-  try {
-    await fetch('/api/auth/logout', {
-      method: 'POST',
-      credentials: 'include',
-    });
-  } catch (error) {
-    // Ignore errors, just redirect to login
+  const response = await fetch('/api/auth/logout', {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Logout gagal. Periksa koneksi lalu coba lagi.');
   }
-  
+
   // Clear localStorage token if exists (backward compatibility)
   clearToken();
-  
+
   // Redirect to login page
   if (typeof window !== 'undefined') {
     window.location.href = '/login';

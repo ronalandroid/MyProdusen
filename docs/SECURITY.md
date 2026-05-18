@@ -152,3 +152,10 @@ pending accounts, manually activate/deactivate accounts, and assign access role
 (`Employee`, `Supervisor`, `Admin HR`, `Superadmin`). Employee placement details
 such as division, position, supervisor, shift, and location remain managed in the
 employee module.
+
+## PWA + Attendance Security Update — 2026-05-19
+
+- PWA service worker must not cache private payroll, attendance, selfie, audit, or report data.
+- PWA install prompt must rely on browser `beforeinstallprompt`; web apps cannot silently install themselves.
+- Logout action must call `/api/auth/logout` and clear the httpOnly session cookie before redirecting to `/login`.
+- Attendance frontend may show GPS proof, but backend remains the source of truth for GPS accuracy, timestamp age, Haversine distance, geofence decision, selfie validation, and audit logging.

@@ -238,3 +238,14 @@ Run this manually before declaring a release ready.
 - [ ] TestSprite safe smoke rerun after external MCP/CLI/API key is configured.
 - [ ] Superadmin PDF `200 application/pdf` rerun after credential env is available and login rate-limit cooldown is clear.
 - [ ] Android GPS + realtime selfie UAT completed on physical device.
+
+## Production Mobile/PWA Fix Checklist — 2026-05-19
+
+- [x] Logout moved to Akun/Profile flow only.
+- [x] Mobile nav role priorities include Akun and avoid random logout placement.
+- [x] PWA manifest and install prompt added.
+- [x] Service worker avoids private data caching.
+- [x] Attendance page shows GPS readiness and accuracy before submit.
+- [x] Realtime selfie camera lazy-loads and stops stream on cleanup.
+- [ ] Real Android GPS + selfie UAT after redeploy.
+- [ ] PWA install prompt verified on Android Chrome and iOS Safari.

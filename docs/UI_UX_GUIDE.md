@@ -412,3 +412,15 @@ The gate runs `lint`, `test`, `build`, and the migration-coverage check.
 Manual viewport checks at 320 / 375 / 768 / 1024 / 1440 px must show no
 horizontal scroll, the bottom nav respects safe-area insets, and selfie
 modals are scrollable on small devices.
+
+## Production Mobile UX Update — 2026-05-19
+
+- Bottom navigation must always expose `Akun` as the account/logout destination.
+- Logout belongs inside `/dashboard/profile` only; do not place random/floating logout actions in mobile nav, page headers, or dashboard cards.
+- Mobile bottom nav priority:
+  - Employee: Beranda, Kehadiran, Cuti, KPI, Akun.
+  - Supervisor: Beranda, Kehadiran, Karyawan/Tim, Cuti, Akun.
+  - Admin HR/Superadmin: Dashboard/Beranda, Absensi/Kehadiran, Karyawan, Laporan, Akun.
+- Content must include bottom safe-area padding so fixed bottom nav never covers cards/forms/buttons.
+- Attendance must show GPS readiness and accuracy before check-in/check-out.
+- PWA install banner must be dismissible, accessible, non-blocking, and not repeated for 7 days after dismissal.

@@ -178,3 +178,38 @@ Notes:
 - Superadmin PDF `200 application/pdf` was not re-tested here because credential env was not present in shell.
 - TestSprite was skipped because no local CLI/MCP/API key was available.
 - Rotate previously exposed TestSprite API key before future TestSprite runs.
+
+## Mobile/PWA Production Fix Note — 2026-05-19
+
+Source now includes:
+
+- Role-prioritized mobile bottom navigation with Akun as account/logout destination.
+- Logout only inside `/dashboard/profile` account flow with confirmation/loading/error state.
+- PWA manifest, install prompt, and install-only service worker with no private data caching.
+- Attendance GPS readiness/accuracy card before submit.
+- Lazy-loaded realtime selfie camera.
+
+Live verification required after next Coolify redeploy:
+
+```bash
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+E2E_BASE_URL=https://myprodusen.online npm run e2e:public
+```
+
+Manual device checks still required for PWA install and Android GPS+selfie.
+
+## Pre-Redeploy Verification for Mobile/PWA Fix — 2026-05-19
+
+Local source verification after mobile/PWA/attendance UX fixes:
+
+- `npm run lint`: PASS.
+- `npm run test`: PASS, 297 tests.
+- `npm run build`: PASS.
+- `npm run release:check`: PASS.
+- `npm run e2e:public`: PASS, 12 passed.
+- `npm run e2e:staging`: PASS, 12 passed, 4 skipped.
+
+Current live safe smoke before redeploy remains healthy:
+
+- `BASE_URL=https://myprodusen.online npm run verify:live-routes`: PASS.
+- `E2E_BASE_URL=https://myprodusen.online npm run e2e:public`: PASS, 12 passed.

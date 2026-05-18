@@ -10,6 +10,7 @@ const STATIC_ASSETS = new Set([
   '/icon-512.png',
   '/apple-touch-icon.png',
   '/manifest.json',
+  '/manifest.webmanifest',
 ]);
 
 function walk(dir: string, predicate: (file: string) => boolean, files: string[] = []) {

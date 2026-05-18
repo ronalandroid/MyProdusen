@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Settings, ChevronRight } from "lucide-react";
+import { ArrowLeft, Settings, ChevronRight, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,6 +9,8 @@ import { ClientUserProfile, fetchProfile, logout } from "@/lib/auth-client";
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<ClientUserProfile | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
 
   useEffect(() => {
     fetchProfile()
@@ -19,7 +21,18 @@ export default function ProfilePage() {
   const employee = profile?.employee;
 
   const handleLogout = async () => {
-    await logout();
+    if (isLoggingOut) return;
+    const confirmed = window.confirm("Keluar dari akun MyProdusen sekarang?");
+    if (!confirmed) return;
+
+    setLogoutError("");
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } catch (error) {
+      setLogoutError(error instanceof Error ? error.message : "Gagal logout. Coba ulangi.");
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -87,12 +100,26 @@ export default function ProfilePage() {
       </div>
 
       {/* Logout Button */}
-      <div style={{ marginTop: "24px" }}>
+      {logoutError && (
+        <div role="alert" className="card" style={{ padding: "12px", color: "var(--danger)", fontSize: "13px", fontWeight: 600 }}>
+          {logoutError}
+        </div>
+      )}
+
+      <div className="card" style={{ marginTop: "8px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div>
+          <h3 style={{ fontSize: "14px", fontWeight: 700 }}>Akun</h3>
+          <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Keluar hanya dari perangkat ini. Anda bisa masuk kembali kapan saja.</p>
+        </div>
         <button 
           className="btn btn-danger-outline" 
           onClick={handleLogout}
+          disabled={isLoggingOut}
+          aria-busy={isLoggingOut}
+          style={{ width: "100%" }}
         >
-          Keluar
+          <LogOut size={18} aria-hidden="true" />
+          {isLoggingOut ? "Keluar..." : "Keluar"}
         </button>
       </div>
     </div>
