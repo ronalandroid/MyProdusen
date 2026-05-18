@@ -180,3 +180,28 @@ Expected result:
 - `POST /api/reports/pdf` unauthenticated: `401` or `403`.
 - If `/api/reports/pdf` returns `404`, Coolify is likely serving a stale image/commit. Rebuild image with no cache and verify the branch/commit used by Coolify.
 - Set `APP_VERSION`, `GIT_COMMIT_SHA`, and `BUILD_TIME` so `/api/health` can prove the deployed version.
+
+## Build Timeout Failure Recovery
+
+If deployment fails with exit code `255` while logs still show:
+
+```txt
+[build] Next.js build still running
+```
+
+and there is no TypeScript/Next compile error, the build was likely interrupted by Coolify timeout or VPS resource pressure.
+
+Recommended settings:
+
+- Build timeout: `900` seconds minimum.
+- Low-resource VPS build timeout: `1200` seconds.
+- Keep Dockerfile command: `npm run build:next`.
+- Keep `BUILD_HEARTBEAT_MS=5000` for progress logs.
+- If build still stops, add swap or increase VPS RAM/CPU.
+
+After retry, verify:
+
+```bash
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+E2E_BASE_URL=https://myprodusen.online npm run e2e:public
+```

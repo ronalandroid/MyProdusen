@@ -13,7 +13,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/manifest.json',
+        source: '/manifest.:ext(json|webmanifest)',
         headers: [
           {
             key: 'Cache-Control',

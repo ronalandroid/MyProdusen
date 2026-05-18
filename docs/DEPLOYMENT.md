@@ -252,3 +252,15 @@ Expected:
 - `/api/health` returns `200` with `status=ok` and no secrets.
 - Unauthenticated `POST /api/reports/pdf` returns `401` or `403`, never `404` and never `200`.
 - Public Playwright smoke passes on mobile/tablet/desktop projects.
+
+## Coolify Build Timeout Note
+
+MyProdusen Next.js production build can take several minutes on a small VPS. If Coolify stops the deploy around 2 minutes with exit code `255` and the log only shows `[build] Next.js build still running`, increase Coolify build/deploy timeout.
+
+Recommended:
+
+- Build timeout: `900` seconds minimum.
+- Low-resource VPS: `1200` seconds.
+- Add swap if VPS memory is limited.
+
+This is an infrastructure timeout, not a code compile failure, unless the log shows an explicit TypeScript/Next error.

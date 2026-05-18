@@ -350,3 +350,57 @@ Go/No-Go:
 
 - READY FOR REDEPLOY.
 - After redeploy, run Android real-device attendance and PWA install UAT before final production go-live.
+
+## Coolify Deploy Failure Analysis — 2026-05-19
+
+Deployment log timestamp: 2026-05-18 18:59 WIB.
+
+### Symptom
+
+Coolify failed with:
+
+```txt
+Deployment failed: Command execution failed (exit code 255): docker exec ... bash /artifacts/build.sh
+```
+
+The Docker build was stopped while `npm run build:next` was still running:
+
+```txt
+#13 [builder 5/5] RUN ... npm run build:next
+#13 131.6 [build] Next.js build still running at ...
+```
+
+### Root cause
+
+No application compile error appears in the log. The build was interrupted by the deployment runner around ~2 minutes while Next.js was still compiling. Previous successful Coolify logs show this project can take several minutes on the VPS to build, then healthcheck passes.
+
+Most likely causes:
+
+1. Coolify build/deployment timeout too low.
+2. VPS CPU/RAM pressure during Next.js production build.
+3. No-cache rebuild taking longer than cached build.
+
+### Fix / operational action
+
+In Coolify application settings:
+
+1. Increase build/deployment timeout to at least `900` seconds; recommended `1200` seconds on low-resource VPS.
+2. Keep Dockerfile build command as `npm run build:next`.
+3. Keep `BUILD_HEARTBEAT_MS=5000` so Coolify logs show progress.
+4. Re-run deploy. If it fails again, check VPS memory/CPU and add swap.
+5. Do not disable lint/tests in repo; Docker build only runs Next production build by design.
+
+### Expected successful log
+
+- `✓ Compiled successfully`
+- `✓ Generating static pages`
+- `Building docker image completed`
+- `New container is healthy`
+- `Rolling update completed`
+
+### Post-deploy verification
+
+```bash
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+E2E_BASE_URL=https://myprodusen.online npm run e2e:public
+```
