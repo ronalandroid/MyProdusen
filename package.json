@@ -35,7 +35,8 @@
     "e2e": "playwright test",
     "e2e:staging": "playwright test tests/e2e/staging-smoke.spec.ts",
     "e2e:public": "playwright test tests/e2e/public-smoke.spec.ts",
-    "verify:live-routes": "node scripts/verify-live-routes.mjs"
+    "verify:live-routes": "node scripts/verify-live-routes.mjs",
+    "e2e:full-staging": "playwright test tests/e2e/full-staging.spec.ts"
   },
   "keywords": [
     "attendance",

@@ -146,3 +146,26 @@ E2E_BASE_URL=https://myprodusen.online npm run e2e:public
 ```
 
 7. Jika login Superadmin terkena rate limit, tunggu 15 menit. Jangan matikan rate limit produksi.
+
+## Full E2E Environment Template
+
+Use these only for staging/test automation. Do not commit real values.
+
+```env
+E2E_BASE_URL=https://staging.myprodusen.online
+E2E_SUPERADMIN_EMAIL=
+E2E_SUPERADMIN_PASSWORD=
+E2E_ADMIN_HR_EMAIL=
+E2E_ADMIN_HR_PASSWORD=
+E2E_SUPERVISOR_EMAIL=
+E2E_SUPERVISOR_PASSWORD=
+E2E_EMPLOYEE_EMAIL=
+E2E_EMPLOYEE_PASSWORD=
+E2E_ALLOW_MUTATION=false
+```
+
+Run safe full staging smoke:
+
+```bash
+npm run e2e:full-staging
+```

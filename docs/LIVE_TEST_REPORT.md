@@ -106,3 +106,51 @@ Conclusion:
 
 - Local source/build is ready.
 - Live must be redeployed with latest commit and no-cache rebuild.
+
+## Post-Redeploy Live Verification — PASS
+
+Tanggal: 2026-05-18
+
+Setelah redeploy, live route mismatch sudah selesai.
+
+Command:
+
+```bash
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+```
+
+Result:
+
+- `GET /api/health`: PASS, `200`, `status: ok`.
+- `POST /api/reports/pdf`: PASS, unauthenticated returns `401`.
+- `/api/reports/pdf` no longer returns `404`.
+
+Command:
+
+```bash
+E2E_BASE_URL=https://myprodusen.online npm run e2e:public
+```
+
+Result:
+
+- 12 passed.
+- Responsive public smoke passed on 360, 390, 768, 1440.
+- Healthcheck no secret leak passed.
+- PDF route protection passed.
+
+Command:
+
+```bash
+E2E_BASE_URL=https://myprodusen.online E2E_SUPERADMIN_EMAIL=<set> E2E_SUPERADMIN_PASSWORD=<set> npm run e2e:staging
+```
+
+Result:
+
+- 13 passed.
+- 3 skipped intentionally for mobile/tablet login to avoid rate limit.
+- Desktop Superadmin login reached `/dashboard/users`.
+- PDF route protection passed.
+
+Remaining note:
+
+- Health metadata currently returns `version`, `commit`, and `buildTime` as `unknown`. Set `APP_VERSION`, `GIT_COMMIT_SHA`, and `BUILD_TIME` in Coolify to verify exact deployed commit from `/api/health`.

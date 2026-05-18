@@ -459,3 +459,179 @@ npm run e2e:staging
 ```
 
 6. Run manual UAT for GPS, camera, attendance mutation, payroll mutation, PDF download as Superadmin, audit log, notifications, and backup/restore drill.
+
+## Full Staging E2E Package
+
+Added guarded full staging script:
+
+```bash
+npm run e2e:full-staging
+```
+
+Default behavior is read-only and production-safe:
+
+- Public/auth pages load.
+- Healthcheck no secret leak.
+- Sensitive unauthenticated APIs reject access.
+- Dashboard protected pages are not public.
+- Superadmin/Admin HR/Supervisor/Employee role smoke runs only when matching `E2E_*` credentials are set.
+- Mutation flows are skipped unless `E2E_ALLOW_MUTATION=true`.
+
+Required env for full role smoke:
+
+```env
+E2E_BASE_URL=https://staging.myprodusen.online
+E2E_SUPERADMIN_EMAIL=
+E2E_SUPERADMIN_PASSWORD=
+E2E_ADMIN_HR_EMAIL=
+E2E_ADMIN_HR_PASSWORD=
+E2E_SUPERVISOR_EMAIL=
+E2E_SUPERVISOR_PASSWORD=
+E2E_EMPLOYEE_EMAIL=
+E2E_EMPLOYEE_PASSWORD=
+```
+
+Mutation flows must only run on disposable staging data:
+
+```bash
+E2E_ALLOW_MUTATION=true npm run e2e:full-staging
+```
+
+## Full Staging E2E Execution Update — 2026-05-19
+
+Added and tested `tests/e2e/full-staging.spec.ts` with npm script:
+
+```bash
+npm run e2e:full-staging
+```
+
+What it checks by default:
+
+- Public pages: `/`, `/login`, `/register`, `/forgot-password`, `/reset-password`, `/activate-account`.
+- Responsive/no horizontal overflow on configured Playwright projects.
+- `/api/health` returns `200` and does not leak secrets.
+- Unauthenticated sensitive APIs reject access: `/api/reports/pdf`, `/api/attendance/check-in`, `/api/attendance/check-out`.
+- Protected dashboard pages are not public: `/dashboard`, `/dashboard/users`, `/dashboard/payroll`, `/dashboard/reports/pdf`, `/dashboard/audit`.
+- Superadmin role page smoke when `E2E_SUPERADMIN_EMAIL` and `E2E_SUPERADMIN_PASSWORD` exist.
+- Employee/Admin HR/Supervisor role smoke only when corresponding env credentials exist.
+- Mutation tests are gated and skipped unless `E2E_ALLOW_MUTATION=true`.
+
+Implementation notes:
+
+- Role smoke uses API login to set session, then validates pages. This avoids flaky UI login hydration and reduces rate-limit risk.
+- Credential login still only runs on `desktop-1440` project.
+- Protected API assertions retry transient `5xx` twice, then still fail if final status is not `401/403/422`.
+
+Local run:
+
+```bash
+npm run e2e:full-staging
+npm run lint
+```
+
+Result:
+
+- `npm run e2e:full-staging`: PASS, 12 passed, 16 skipped because role credentials/mutation flag absent locally.
+- `npm run lint`: PASS.
+
+Live run:
+
+```bash
+E2E_BASE_URL=https://myprodusen.online \
+E2E_SUPERADMIN_EMAIL=<set> \
+E2E_SUPERADMIN_PASSWORD=<set> \
+npm run e2e:full-staging
+```
+
+Result:
+
+- PASS, 13 passed, 15 skipped.
+- Superadmin critical dashboard pages passed on desktop.
+- Other role tests skipped because Admin HR/Supervisor/Employee credentials were not provided.
+- Mutation gate skipped because `E2E_ALLOW_MUTATION` was not set.
+
+Current limitation:
+
+- Full automatic mutation flows require disposable staging data and `E2E_ALLOW_MUTATION=true`.
+- GPS + realtime selfie still requires real Android/device-level testing or a dedicated device-cloud setup.
+
+## Live Parallel E2E Run — 2026-05-19
+
+Target: `https://myprodusen.online`
+
+### Playwright
+
+Commands run:
+
+```bash
+BASE_URL=https://myprodusen.online npm run verify:live-routes & E2E_BASE_URL=https://myprodusen.online npm run e2e:public & wait
+```
+
+Result:
+
+- `verify:live-routes`: PASS.
+- `GET /api/health`: PASS 200, `status=ok`, `nodeEnv=production`.
+- `POST /api/reports/pdf` unauthenticated: PASS 401, route exists and protected.
+- `e2e:public`: PASS, 12 passed.
+
+Command run:
+
+```bash
+E2E_BASE_URL=https://myprodusen.online npm run e2e:full-staging
+```
+
+Result:
+
+- `e2e:full-staging`: PASS, 12 passed, 16 skipped.
+- Credential smoke skipped because live login rate limit returned `429` during cooldown.
+- This is expected production protection, not app route failure.
+- Test was hardened so `429` becomes explicit skip with cooldown message, not false bug.
+
+### TestSprite
+
+- Local TestSprite CLI not installed in this repo/environment.
+- `package.json` has no TestSprite script/dependency.
+- Prior TestSprite run used external MCP/API, not repo CLI.
+- Safe fallback executed: Playwright public + full staging read-only.
+- To run TestSprite again: configure TestSprite MCP/API key outside repo, then execute from TestSprite dashboard/MCP against `https://myprodusen.online`.
+
+### Remaining Manual Checks
+
+- Wait login cooldown, then rerun credential smoke.
+- Real Android GPS + realtime selfie still needs physical device.
+- Mutation flows require disposable staging data and `E2E_ALLOW_MUTATION=true`.
+
+## Release Gate Update — 2026-05-19 00:30 WIB
+
+Commands run:
+
+```bash
+npm run build
+npm run release:check
+E2E_BASE_URL=https://myprodusen.online npm run e2e:full-staging
+```
+
+Result:
+
+- `npm run build`: PASS. Build output includes `/api/reports/pdf` and all protected API routes.
+- `npm run release:check`: PASS.
+- `npm run release:check` details: lint PASS, 297 tests PASS, build PASS, migration coverage PASS, reference contract PASS.
+- Live `e2e:full-staging`: PASS, 12 passed, 16 skipped.
+- Role credential smoke skipped because live login rate limit cooldown remains active.
+- Production rate limit is preserved; do not weaken it for tests.
+
+## Live Retest Update — 2026-05-19 00:40 WIB
+
+Command run:
+
+```bash
+E2E_BASE_URL=https://myprodusen.online npm run e2e:full-staging
+```
+
+Result:
+
+- PASS, 12 passed, 16 skipped.
+- Public/auth pages OK across responsive projects.
+- Health and sensitive unauthenticated API protection OK.
+- Protected dashboard pages not public.
+- Credential role smoke skipped while live login rate-limit cooldown remains active.

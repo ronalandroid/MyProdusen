@@ -224,3 +224,7 @@ Run this manually before declaring a release ready.
 - [ ] `E2E_BASE_URL=https://myprodusen.online npm run e2e:public` passes.
 - [ ] Superadmin staging login test runs only once on desktop to avoid rate limit.
 - [ ] If login rate limit appears, wait 15 minutes and rerun only required live smoke.
+
+## Full E2E Automation
+
+- [ ] Review full E2E report: `docs/FULL_STAGING_E2E_REPORT.md`.
