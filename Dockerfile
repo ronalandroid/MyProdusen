@@ -75,8 +75,11 @@ COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
-# Persistent upload volume
-RUN mkdir -p /app/uploads && chown -R nextjs:nodejs /app
+# Persistent upload volume.
+# Do not recursively chown /app here: Coolify's low-resource builders can fail
+# after the Next.js standalone tree is copied. Runtime files copied above already
+# use the right owner where needed, and the entrypoint validates upload writes.
+RUN install -d -o nextjs -g nodejs /app/uploads
 
 EXPOSE 3000
 
