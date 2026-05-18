@@ -23,9 +23,12 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await authService.register({ ...validation.data, role: 'EMPLOYEE', isActive: false });
-    await sendAuthEmail('register', result.email).catch(() => undefined);
+    const token = await authService.createAccountActivationToken(result.email);
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || request.nextUrl.origin;
+    const activationUrl = token ? `${appUrl}/activate-account?token=${encodeURIComponent(token)}` : undefined;
+    await sendAuthEmail('register', result.email, { name: result.username, ...(activationUrl ? { activationUrl } : {}) }).catch(() => undefined);
 
-    return successResponse(result, 'Registrasi berhasil. Tunggu aktivasi Superadmin.');
+    return successResponse(result, 'Registrasi berhasil. Cek inbox email untuk aktivasi akun.');
   } catch (error: any) {
     return errorResponse(error.message || 'Gagal registrasi');
   }

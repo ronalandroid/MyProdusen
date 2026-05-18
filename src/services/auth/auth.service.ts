@@ -22,7 +22,7 @@ export class AuthService extends BaseService {
     }
 
     if (!user.isActive) {
-      throw new AppError('AUTH_USER_INACTIVE', 'Akun tidak aktif', 403);
+      throw new AppError('AUTH_USER_INACTIVE', 'Akun tidak aktif. Cek inbox email aktivasi atau hubungi Superadmin.', 403);
     }
 
     const isPasswordValid = await verifyPassword(password, user.password);
@@ -183,6 +183,42 @@ export class AuthService extends BaseService {
 
     const secret = getProductionJwtSecret();
     return jwt.sign({ userId: user.id, email: user.email, purpose: 'password-reset' }, secret, { expiresIn: '30m' });
+  }
+
+  async createAccountActivationToken(email: string) {
+    const [user] = await db
+      .select({ id: users.id, email: users.email, isActive: users.isActive })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    if (!user || user.isActive) {
+      return null;
+    }
+
+    const secret = getProductionJwtSecret();
+    return jwt.sign({ userId: user.id, email: user.email, purpose: 'account-activation' }, secret, { expiresIn: '24h' });
+  }
+
+  async activateAccount(token: string) {
+    const secret = getProductionJwtSecret();
+    const payload = jwt.verify(token, secret) as { userId: string; email: string; purpose?: string };
+
+    if (payload.purpose !== 'account-activation') {
+      throw new Error('Token aktivasi akun tidak valid');
+    }
+
+    const [user] = await db
+      .update(users)
+      .set({ isActive: true, updatedAt: new Date() })
+      .where(eq(users.id, payload.userId))
+      .returning({ id: users.id, email: users.email, username: users.username, role: users.role, isActive: users.isActive });
+
+    if (!user) {
+      throw AppError.notFound('User tidak ditemukan');
+    }
+
+    return { success: true, userId: user.id, email: user.email, username: user.username, role: user.role, isActive: user.isActive };
   }
 
   async resetPassword(token: string, password: string) {

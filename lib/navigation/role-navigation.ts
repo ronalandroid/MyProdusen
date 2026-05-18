@@ -5,6 +5,7 @@ export type NavigationItemKey =
   | 'self-service'
   | 'attendance'
   | 'attendance-exceptions'
+  | 'users'
   | 'employees'
   | 'locations'
   | 'shifts'
@@ -62,6 +63,13 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
     path: '/dashboard/attendance/exceptions',
     primaryFor: ['SUPERADMIN'],
     allowedRoles: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'],
+  },
+  {
+    key: 'users',
+    name: 'User',
+    path: '/dashboard/users',
+    primaryFor: [],
+    allowedRoles: ['SUPERADMIN'],
   },
   {
     key: 'employees',

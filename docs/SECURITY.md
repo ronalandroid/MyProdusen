@@ -120,3 +120,16 @@ Triggered by:
 - [x] Cookie-authenticated state-changing routes have Origin/Referer CSRF guard.
 - [ ] No PII or secret in logs; `lib/logger` redacts known keys.
 - [ ] Periodic restore drill on staging (quarterly).
+
+## Account self-activation
+
+Public registration creates an inactive employee-role user and emails a 24-hour
+activation link through Resend. The link opens `/activate-account?token=...`,
+which posts the token to `/api/auth/activate`; the backend verifies JWT purpose
+`account-activation` before flipping `User.isActive` to `true`.
+
+Superadmin can review registered users at `/dashboard/users`, see active vs
+pending accounts, manually activate/deactivate accounts, and assign access role
+(`Employee`, `Supervisor`, `Admin HR`, `Superadmin`). Employee placement details
+such as division, position, supervisor, shift, and location remain managed in the
+employee module.

@@ -181,23 +181,29 @@ export async function sendAuthEmail(template: EmailTemplate, to: string, data: R
   const appUrl = getAppUrl();
   const loginUrl = `${appUrl}/login`;
   const displayName = data.name ? `, ${data.name}` : '';
+  const isActivationRegister = template === 'register' && Boolean(data.activationUrl);
   const templates: Record<EmailTemplate, SendEmailInput> = {
     register: {
       to,
-      subject: `${appName} - Akun Anda berhasil dibuat`,
+      subject: isActivationRegister ? `${appName} - Aktivasi akun Anda` : `${appName} - Akun Anda berhasil dibuat`,
       html: renderEmail({
-        eyebrow: 'Selamat datang',
-        title: 'Akun Anda berhasil dibuat',
-        intro: `Halo${displayName}! Semangat kerja dimulai dari langkah kecil yang rapi.`,
-        body: [
-          'Akun MyProdusen Anda sudah terdaftar. Setelah akun aktif, Anda bisa login untuk absensi, cek jadwal, ajukan cuti, dan melihat informasi kerja penting.',
-          'Satu sistem, banyak manfaat: data lebih tertata, kerja lebih tenang, tim lebih kompak.',
-        ],
-        cta: { label: 'Buka MyProdusen', url: loginUrl },
-        note: 'Jika akun belum bisa digunakan, tunggu aktivasi dari HRD atau Superadmin.',
-        text: `Akun Anda berhasil dibuat. Login: ${loginUrl}`,
+        eyebrow: isActivationRegister ? 'Aktivasi akun' : 'Selamat datang',
+        title: isActivationRegister ? 'Selamat Bergabung di MyProdusen!' : 'Akun Anda berhasil dibuat',
+        intro: isActivationRegister ? `Halo${displayName}! Akun Anda sudah dibuat dan tinggal satu langkah untuk aktif.` : `Halo${displayName}! Semangat kerja dimulai dari langkah kecil yang rapi.`,
+        body: isActivationRegister
+          ? [
+              'Klik tombol aktivasi di bawah agar akun Anda bisa digunakan untuk login, absensi, cek jadwal, ajukan cuti, dan melihat informasi kerja penting.',
+              'Setelah aktivasi, akun otomatis masuk daftar user aktif sehingga Superadmin dapat menempatkan role, posisi, dan akses kerja yang tepat.',
+            ]
+          : [
+              'Akun MyProdusen Anda sudah terdaftar. Setelah akun aktif, Anda bisa login untuk absensi, cek jadwal, ajukan cuti, dan melihat informasi kerja penting.',
+              'Satu sistem, banyak manfaat: data lebih tertata, kerja lebih tenang, tim lebih kompak.',
+            ],
+        cta: { label: isActivationRegister ? 'Aktivasi Akun' : 'Buka MyProdusen', url: isActivationRegister ? data.activationUrl : loginUrl },
+        note: isActivationRegister ? 'Link aktivasi berlaku 24 jam. Jika link kedaluwarsa, daftar ulang atau hubungi HRD/Superadmin.' : 'Jika akun belum bisa digunakan, tunggu aktivasi dari HRD atau Superadmin.',
+        text: isActivationRegister ? `Aktivasi akun MyProdusen Anda: ${data.activationUrl}` : `Akun Anda berhasil dibuat. Login: ${loginUrl}`,
       }),
-      text: `Akun Anda berhasil dibuat. Login: ${loginUrl}`,
+      text: isActivationRegister ? `Aktivasi akun MyProdusen Anda: ${data.activationUrl}` : `Akun Anda berhasil dibuat. Login: ${loginUrl}`,
     },
     'forgot-password': {
       to,

@@ -23,6 +23,7 @@ export default function Sidebar() {
     '/dashboard/self-service': BriefcaseBusiness,
     '/dashboard/attendance': Clock,
     '/dashboard/attendance/exceptions': AlertTriangle,
+    '/dashboard/users': Users,
     '/dashboard/employees': Users,
     '/dashboard/locations': MapPin,
     '/dashboard/shifts': Clock3,
