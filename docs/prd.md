@@ -1,1966 +1,1836 @@
-# PRD.md — Web App Management KPI & Kehadiran Karyawan
+# PRD — MyProdusen Web App
 
-**Project:** Dimsum Medan Employee Performance Management System  
+**Project:** MyProdusen HRIS & Employee Operations Web App  
 **Client:** Produsen Dimsum Medan  
-**Document Type:** PRD + SRS/SRC + TDD dalam satu dokumen  
-**Version:** 1.0  
-**Status:** Draft untuk Development  
-
-**UI/UX Guide:** [`UI_UX_GUIDE.md`](./UI_UX_GUIDE.md) defines the approved
-mobile-first yellow HRIS style and must be followed without changing this PRD's
-business scope.
+**Group:** TBM Group  
+**Primary Platform:** Web app with mobile-first responsive UI  
+**Production Target:** VPS + Coolify + Docker + PostgreSQL  
+**Document Status:** Canonical Product Requirements Document  
+**Last Updated:** 2026-05-18
 
 ---
 
-## 1. Executive Summary
+## 1. Overview
 
-Produsen Dimsum Medan membutuhkan web app internal untuk mengelola kehadiran karyawan, KPI/performa kerja, izin/cuti/sakit, laporan, dan dashboard monitoring untuk Superadmin/Owner.
+MyProdusen adalah aplikasi internal berbasis web untuk mendigitalkan proses HR,
+kehadiran, pengajuan cuti/izin/sakit, KPI, laporan, dan pengelolaan karyawan di
+Produsen Dimsum Medan. Sistem ini menggantikan proses manual seperti absensi
+kertas, rekap Excel, approval informal, dan pencatatan KPI yang tersebar.
 
-Sistem ini akan menggantikan proses manual seperti absensi kertas, rekap Excel, dan penilaian KPI yang tidak terpusat. Web app harus aman, mudah digunakan, scalable, dan memiliki kontrol akses berdasarkan role.
+Masalah utama yang diselesaikan:
 
-Fitur absensi wajib menggunakan:
+- Data karyawan tidak terpusat dan sulit dilacak.
+- NIP internal perlu dibuat otomatis, unik, dan tidak boleh dipakai ulang.
+- Kehadiran perlu validasi GPS, geo-fencing, geo-tagging, dan selfie realtime.
+- Pengajuan cuti/sakit/izin butuh workflow approval yang jelas.
+- KPI perlu template, assignment, scoring, approval, dan histori.
+- Superadmin/HR perlu dashboard, laporan, export, audit log, dan notifikasi.
+- File selfie/attachment harus aman, tidak publik, dan tetap ada setelah deploy.
+- Deployment harus siap untuk VPS + Coolify dengan PostgreSQL dan persistent volume.
 
-- GPS location
-- Geo-tagging
-- Geo-fencing
-- Selfie check-in
-- Selfie check-out
-- Selfie wajib diambil realtime dari kamera perangkat, tanpa upload manual/gallery picker
-- Validasi radius lokasi kerja
-
----
-
-## 2. Product Goals
-
-### 2.1 Business Goals
-
-- Memudahkan perusahaan memantau kedisiplinan karyawan.
-- Mempercepat rekap absensi dan KPI.
-- Mengurangi manipulasi absensi.
-- Membantu manajemen mengambil keputusan berbasis data.
-- Mengurangi human error dari rekap manual.
-- Membuat sistem kerja internal lebih profesional.
-
-### 2.2 User Goals
-
-- Karyawan dapat absensi datang dan pulang dengan mudah menggunakan GPS + selfie.
-- Supervisor dapat memantau tim dan menginput/menilai KPI.
-- HR/Admin dapat mengelola data karyawan, shift, absensi, izin, cuti, dan laporan.
-- Superadmin/Owner dapat memantau seluruh perusahaan melalui dashboard utama.
+Tujuan utama aplikasi adalah menyediakan sistem HRIS internal yang aman, cepat,
+mudah digunakan oleh staf non-teknis, mobile responsive, dan siap produksi.
 
 ---
 
-## 3. Target Users
+## 2. Requirements
 
-### 3.1 Superadmin / Owner / Management
+Berikut persyaratan tingkat tinggi untuk sistem MyProdusen.
 
-Role tertinggi. Memiliki akses penuh ke seluruh sistem.
+### 2.1 Aksesibilitas dan Platform
 
-### 3.2 Admin HR
+- Aplikasi harus dapat diakses melalui web browser desktop dan mobile.
+- UI harus mobile-first karena karyawan memakai HP untuk absensi.
+- Desktop tetap optimal untuk Superadmin/Admin HR saat mengelola data dan laporan.
+- App harus WCAG-friendly: label jelas, kontras baik, focus state, error state, empty state, dan loading state.
+- Bahasa utama UI adalah Bahasa Indonesia.
 
-Mengelola data karyawan, shift, absensi, izin/cuti/sakit, lokasi kerja, dan laporan.
+### 2.2 Pengguna dan Role
 
-### 3.3 Supervisor / Manager Divisi
+Sistem memiliki empat role utama:
 
-Memantau tim, melihat absensi tim, memvalidasi pengajuan, dan mengisi KPI karyawan bawahannya.
+| Role | Fungsi Utama |
+| --- | --- |
+| **Superadmin** | Akses penuh, user management, role, audit log, dashboard global, report, approval penting. |
+| **Admin HR** | Kelola karyawan, shift, lokasi kerja, absensi, cuti, KPI HR, report. |
+| **Supervisor** | Lihat tim, approve cuti tim, review absensi tim, input/review KPI tim. |
+| **Employee / Karyawan** | Absensi GPS + selfie, lihat dashboard pribadi, ajukan cuti/sakit/izin, lihat KPI dan notifikasi. |
 
-### 3.4 Karyawan
+Aturan akses wajib:
 
-Melakukan absensi, melihat jadwal, mengajukan izin/cuti/sakit, dan melihat KPI pribadi.
+- Employee hanya melihat data sendiri.
+- Supervisor hanya melihat data tim sendiri.
+- Admin HR tidak boleh mengakses fitur khusus Superadmin.
+- User inactive tidak boleh login.
+- Protected API wajib melakukan authorization server-side.
 
----
+### 2.3 Authentication dan Emailing
 
-## 4. User Roles & Permission Summary
+- Login menggunakan email/username + password.
+- Public register membuat user baru dengan role default `EMPLOYEE` dan status awal inactive.
+- Sistem mengirim email aktivasi akun melalui Resend.
+- User dapat mengaktifkan akun sendiri melalui link `/activate-account?token=...`.
+- Link aktivasi memakai JWT purpose `account-activation` dan masa berlaku 24 jam.
+- Setelah aktivasi, akun tersinkron ke `/dashboard/users` untuk review Superadmin.
+- Superadmin dapat melihat user yang daftar, status aktif/belum aktif, dan mengatur role.
+- Forgot password mengirim link `/reset-password?token=...` dengan token 30 menit.
+- Reset password mengirim email konfirmasi password berhasil diubah.
+- Email menggunakan brand MyProdusen sesuai reference: yellow `#FFC107`, logo, rounded card, CTA, footer internal by TBM Group.
 
-| Role | Akses Utama |
-|---|---|
-| Superadmin | Full access, dashboard global, user management, KPI config, report export, audit log, system setting |
-| Admin HR | Kelola karyawan, absensi, shift, lokasi kerja, izin/cuti, laporan HR |
-| Supervisor | Lihat data tim, validasi absensi tim, approve izin/cuti tim, input KPI tim |
-| Karyawan | Absensi GPS + selfie, lihat KPI pribadi, ajukan izin/cuti/sakit, lihat jadwal |
+### 2.4 Data Input
 
----
+- Data master dikelola lewat form web.
+- Absensi membutuhkan input device realtime: GPS, GPS accuracy, timestamp, selfie kamera realtime.
+- Selfie absensi tidak boleh upload manual/gallery picker.
+- Backend wajib memvalidasi data GPS dan selfie; frontend hanya membantu UX.
+- File upload wajib validasi MIME type, ukuran, filename aman, dan lokasi storage persistent.
 
-## 5. MVP Scope
+### 2.5 Data Integrity
 
-### 5.1 Fitur Wajib MVP
+- PostgreSQL adalah database produksi.
+- Migrations memakai Drizzle SQL migration dan `npm run db:deploy`.
+- Tidak boleh reset database produksi.
+- Tidak boleh hard delete data historis karyawan, absensi, KPI, audit log.
+- Gunakan deactivation/soft-delete behavior untuk data yang punya histori.
+- Audit log wajib untuk aksi sensitif.
 
-1. Authentication & RBAC.
-2. User management.
-3. Employee management.
-4. Work location management untuk geo-fencing.
-5. Attendance check-in dengan GPS + selfie.
-6. Attendance check-out dengan GPS + selfie.
-7. Shift management.
-8. Leave/permission/sick request.
-9. KPI template.
-10. KPI assignment.
-11. KPI input & scoring.
-12. Dashboard Superadmin.
-13. Dashboard Karyawan.
-14. Report basic.
-15. Export CSV/Excel.
-16. Audit log.
-17. Notification basic.
+### 2.6 Deployment
 
-### 5.2 Phase 2 / Enhancement
-
-1. QR code attendance.
-2. Face matching selfie dengan foto profil.
-3. Liveness detection.
-4. Anti-fake GPS detection.
-5. WhatsApp notification.
-6. Payroll integration.
-7. Production/inventory integration.
-8. AI performance insight.
-9. Native mobile app.
-
----
-
-## 6. Feature Requirements
-
----
-
-# 6A. Authentication & RBAC
-
-## Description
-
-Sistem login aman dengan role-based access control agar setiap user hanya dapat mengakses fitur sesuai hak aksesnya.
-
-## Features
-
-- Login email/username + password.
-- Logout.
-- Forgot password.
-- Reset password.
-- Change password.
-- Role-based dashboard.
-- Permission-based route guard.
-- Optional 2FA untuk Superadmin.
-- Session/token management.
-
-## Acceptance Criteria
-
-- User tidak bisa mengakses halaman yang bukan haknya.
-- User inactive tidak bisa login.
-- Password harus di-hash.
-- Backend wajib melakukan authorization check, bukan hanya frontend.
-- Session expired otomatis sesuai konfigurasi.
+- App harus build sebagai Next.js standalone container.
+- Deployment target: VPS + Coolify + Docker.
+- PostgreSQL dikelola sebagai service Coolify.
+- Upload selfie tersimpan di `/app/uploads` persistent volume.
+- Healthcheck tersedia di `/api/health`.
+- Env produksi wajib tervalidasi sebelum app start.
 
 ---
 
-# 6B. Employee Management
+## 3. Core Features
 
-## Description
+Fitur inti untuk MVP dan kesiapan produksi.
 
-Modul untuk mengelola data karyawan perusahaan.
+### 3.1 Landing, Auth, dan Account Activation
 
-## Features
+1. **Landing Page**
+   - Public landing cepat, static, mobile responsive.
+   - Brand MyProdusen: logo ayam, kuning, hitam, putih, rounded mobile mockup.
+   - CTA ke login/register.
 
-- Tambah karyawan.
-- Edit karyawan.
-- Nonaktifkan karyawan.
+2. **Login**
+   - Email/username + password.
+   - Rate limit login.
+   - Error jelas untuk kredensial salah atau akun belum aktif.
+   - Redirect ke dashboard sesuai session.
+
+3. **Register Public**
+   - Input username, email, password kuat.
+   - Role otomatis `EMPLOYEE`.
+   - Status awal inactive.
+   - Kirim email aktivasi via Resend.
+
+4. **Email Activation**
+   - Email subject: aktivasi akun.
+   - CTA: `Aktivasi Akun`.
+   - Link: `/activate-account?token=...`.
+   - Backend validasi JWT purpose `account-activation`.
+   - Jika valid, update `User.isActive=true`.
+   - UI menampilkan `Selamat Bergabung` dan link login.
+
+5. **Forgot / Reset Password**
+   - `/forgot-password` meminta email.
+   - `/reset-password?token=...` membuat password baru.
+   - Backend validasi policy password kuat.
+   - Kirim email konfirmasi password berubah.
+
+### 3.2 User Management
+
+- Superadmin membuka `/dashboard/users`.
+- Lihat semua user terdaftar.
+- Lihat status aktif/belum aktif.
+- Lihat user yang daftar sendiri.
+- Aktifkan/nonaktifkan user.
+- Ubah role akses.
+- Email dikirim saat role berubah dan saat akun approved.
+- Employee placement detail tetap di modul employee.
+
+### 3.3 Employee Management
+
+- Tambah/edit/nonaktifkan karyawan.
+- Generate NIP otomatis.
+- Assign divisi, posisi, supervisor, shift default, lokasi kerja default.
 - Lihat detail karyawan.
-- Upload foto profil.
-- Assign divisi.
-- Assign jabatan.
-- Assign supervisor.
-- Assign shift default.
-- Assign lokasi kerja.
-- Riwayat perubahan data.
+- Role user bisa dilihat dan dikoreksi oleh Superadmin.
+- Karyawan historis tidak boleh hard delete jika punya histori.
 
-## Data Karyawan
+NIP format default:
 
-- Employee code/NIK internal.
-- Nama lengkap.
-- Email.
-- Nomor HP.
-- Alamat.
-- Tanggal masuk.
-- Divisi.
-- Jabatan.
-- Atasan langsung.
-- Status kerja.
-- Shift default.
-- Lokasi kerja default.
-- Foto profil.
-- Kontak darurat.
-
-## Acceptance Criteria
-
-- Admin HR dan Superadmin dapat mengelola karyawan.
-- Supervisor hanya melihat karyawan dalam timnya.
-- Karyawan hanya melihat datanya sendiri.
-- Data historis tidak dihapus, hanya dinonaktifkan/soft delete.
-
----
-
-# 6C. Work Location & Geo-fencing Management
-
-## Description
-
-Modul untuk menentukan lokasi kerja valid yang digunakan saat absensi berbasis GPS.
-
-## Features
-
-- Buat lokasi kerja.
-- Edit lokasi kerja.
-- Nonaktifkan lokasi kerja.
-- Assign lokasi kerja ke karyawan/divisi/cabang.
-- Set latitude dan longitude.
-- Set radius absensi.
-- Validasi absensi berdasarkan jarak user ke lokasi kerja.
-
-## Data Lokasi Kerja
-
-- Nama lokasi.
-- Alamat.
-- Latitude.
-- Longitude.
-- Radius dalam meter.
-- Status aktif/nonaktif.
-
-## Recommended Default
-
-- Radius default: 100 meter.
-- GPS accuracy maksimal: 50-100 meter.
-- Jika di luar radius: absensi ditolak.
-- Kasus khusus: Admin HR dapat manual adjustment dengan alasan wajib.
-
-## Acceptance Criteria
-
-- Superadmin/Admin HR dapat mengelola lokasi kerja.
-- Karyawan hanya dapat absensi jika berada dalam radius lokasi kerja yang valid.
-- Validasi geo-fencing wajib dilakukan di backend.
-- Perubahan lokasi kerja tidak merusak data absensi historis.
-
----
-
-# 6D. Attendance Management — GPS, Geo-tagging, Geo-fencing, Selfie
-
-## Description
-
-Modul absensi datang dan pulang berbasis GPS, geo-tagging, geo-fencing, dan selfie.
-
-## Required Features
-
-- Check-in menggunakan GPS.
-- Check-out menggunakan GPS.
-- Selfie saat check-in.
-- Selfie saat check-out.
-- Validasi radius lokasi kerja.
-- Simpan latitude dan longitude.
-- Simpan GPS accuracy jika tersedia.
-- Simpan foto selfie check-in.
-- Simpan foto selfie check-out.
-- Simpan timestamp.
-- Simpan device info/user agent/IP.
-- Deteksi double check-in.
-- Deteksi check-out tanpa check-in.
-- Hitung telat otomatis.
-- Hitung pulang cepat otomatis.
-- Hitung total jam kerja.
-- Manual adjustment oleh Admin HR dengan alasan wajib.
-
-## Attendance Status
-
-- Hadir.
-- Terlambat.
-- Izin.
-- Sakit.
-- Cuti.
-- Alpha.
-- Lembur.
-- Pulang cepat.
-- Pending approval.
-- Rejected/out of radius.
-
-## Business Rules
-
-1. Satu karyawan hanya boleh memiliki satu record absensi per tanggal.
-2. Check-out tidak boleh dilakukan sebelum check-in.
-3. Check-in wajib GPS aktif.
-4. Check-out wajib GPS aktif.
-5. Check-in wajib selfie.
-6. Check-out wajib selfie.
-7. Absensi hanya valid jika lokasi berada dalam radius lokasi kerja.
-8. Jika GPS mati, permission ditolak, atau lokasi tidak tersedia, absensi ditolak.
-9. Jika lokasi di luar radius, absensi ditolak atau masuk pending approval sesuai konfigurasi.
-10. Foto selfie wajib tersimpan sebagai bukti.
-11. Latitude, longitude, accuracy, timestamp, dan device info harus tersimpan untuk audit.
-12. Jika check-in melewati toleransi shift, status menjadi terlambat.
-13. Jika tidak ada check-in dan tidak ada izin/cuti approved, status menjadi alpha.
-14. Admin HR boleh koreksi absensi, tetapi wajib memberi alasan.
-15. Koreksi tidak boleh menghapus data historis.
-
-## Acceptance Criteria
-
-- Karyawan tidak bisa check-in jika GPS tidak aktif.
-- Karyawan tidak bisa check-in jika tidak upload selfie.
-- Karyawan tidak bisa check-in jika berada di luar radius lokasi kerja.
-- Karyawan tidak bisa check-out jika belum check-in.
-- Karyawan tidak bisa check-out jika GPS tidak aktif.
-- Karyawan tidak bisa check-out jika tidak upload selfie.
-- Karyawan tidak bisa check-out jika berada di luar radius lokasi kerja.
-- Sistem menghitung keterlambatan otomatis berdasarkan shift.
-- Sistem menyimpan bukti lokasi dan selfie untuk audit.
-
----
-
-# 6E. Shift & Schedule Management
-
-## Description
-
-Modul untuk mengatur jam kerja karyawan.
-
-## Features
-
-- Buat shift kerja.
-- Edit shift kerja.
-- Assign shift ke karyawan.
-- Assign shift ke divisi.
-- Kalender jadwal kerja.
-- Hari libur manual.
-- Toleransi keterlambatan.
-- Rolling shift jika diperlukan.
-
-## Data Shift
-
-- Nama shift.
-- Jam masuk.
-- Jam pulang.
-- Toleransi telat.
-- Maksimum check-in sebelum jam masuk.
-- Maksimum check-out setelah jam pulang.
-- Status.
-
-## Acceptance Criteria
-
-- Admin HR dapat membuat dan mengubah shift.
-- Absensi otomatis membaca shift aktif karyawan.
-- Perubahan shift tidak merusak data absensi historis.
-
----
-
-# 6F. Leave, Permission & Sick Request
-
-## Description
-
-Karyawan dapat mengajukan izin, cuti, atau sakit melalui sistem.
-
-## Features
-
-- Form pengajuan izin.
-- Form pengajuan cuti.
-- Form pengajuan sakit.
-- Upload bukti/surat dokter jika diperlukan.
-- Approval oleh Supervisor/Admin HR.
-- Status pending/approved/rejected/cancelled.
-- Riwayat pengajuan.
-- Kuota cuti jika diperlukan.
-
-## Business Rules
-
-1. Pengajuan default status pending.
-2. Status absensi berubah setelah pengajuan approved.
-3. Rejection wajib memiliki alasan.
-4. Pengajuan tidak boleh overlap dengan pengajuan aktif lain pada tanggal yang sama.
-
-## Acceptance Criteria
-
-- Karyawan dapat membuat pengajuan.
-- Supervisor/Admin dapat approve/reject.
-- Karyawan mendapat notifikasi setelah status berubah.
-- Pengajuan tidak langsung mengubah absensi sebelum approved.
-
----
-
-# 6G. KPI Management
-
-## Description
-
-Modul untuk mengatur indikator performa karyawan berdasarkan role, divisi, dan target kerja.
-
-## Contoh KPI per Divisi
-
-### Produksi
-
-- Jumlah produksi harian.
-- Tingkat produk reject/cacat.
-- Ketepatan waktu produksi.
-- Kebersihan area kerja.
-- Kepatuhan SOP.
-- Efisiensi bahan baku.
-
-### Packing
-
-- Jumlah packing selesai.
-- Akurasi label/varian.
-- Produk rusak saat packing.
-- Kecepatan kerja.
-- Kebersihan packaging.
-
-### Gudang
-
-- Akurasi stok.
-- Kecepatan input barang masuk/keluar.
-- Selisih stok.
-- Kerapian gudang.
-
-### Sales/Marketing
-
-- Jumlah order.
-- Revenue penjualan.
-- Follow-up pelanggan.
-- Retensi pelanggan.
-- Target outlet/reseller.
-
-### Admin/Finance
-
-- Ketepatan input data.
-- Ketepatan laporan.
-- Akurasi transaksi.
-- Penyelesaian tugas administratif.
-
-## Features
-
-- Buat template KPI.
-- Assign KPI ke karyawan.
-- Input nilai KPI harian/mingguan/bulanan.
-- Bobot KPI.
-- Target KPI.
-- Realisasi KPI.
-- Skor otomatis.
-- Komentar supervisor.
-- Approval KPI.
-- Riwayat KPI.
-- Ranking performa.
-
-## KPI Formula
-
-```text
-Score KPI Item = (Actual / Target) x Weight
-Total KPI Score = Sum of all KPI item scores
-Final Performance Score = KPI Score + Attendance Score + Discipline Score
+```txt
+MPD-{YEAR}-{DIVISION_CODE}-{SEQUENCE}
 ```
 
-## KPI Scoring Logic
+Contoh:
 
-```text
-For each KPI item:
-  if scoring_method = higher_is_better:
-    item_score = min((actual / target) * weight, weight)
-
-  if scoring_method = lower_is_better:
-    item_score = min((target / actual) * weight, weight)
-
-  if scoring_method = boolean:
-    item_score = actual == target ? weight : 0
-
-Total Score = sum(item_score)
+```txt
+MPD-2026-PRD-0001
+MPD-2026-PCK-0002
+MPD-2026-SLS-0003
 ```
 
-## Score Grade
+Aturan NIP:
 
-| Score | Grade | Meaning |
-|---:|---|---|
-| 90-100 | A | Excellent |
-| 80-89 | B | Good |
-| 70-79 | C | Fair |
-| 60-69 | D | Poor |
-| <60 | E | Critical |
+- Unik.
+- Collision-safe.
+- Tidak dipakai ulang.
+- Stabil setelah employee update.
+- Deactivated/resigned employee tetap menyimpan NIP lama.
 
-## Business Rules
+### 3.4 Work Location dan Geo-fencing
 
-1. KPI dibuat berdasarkan periode harian, mingguan, atau bulanan.
-2. Setiap item KPI memiliki bobot.
-3. Total bobot template KPI idealnya 100%.
-4. Karyawan hanya bisa melihat KPI miliknya.
-5. Supervisor hanya bisa menilai bawahan/timnya.
-6. KPI yang sudah final/approved tidak boleh diedit kecuali oleh Superadmin/Admin dengan alasan.
+- Kelola lokasi kerja/cabang.
+- Field: name, address, latitude, longitude, radiusMeters/status.
+- Superadmin/Admin HR dapat create/update/deactivate.
+- Employee dapat assigned ke work location.
+- Backend menghitung jarak memakai Haversine/reliable distance calculation.
+- Perubahan lokasi tidak boleh merusak attendance historis.
+- Perubahan lokasi membuat audit log.
 
-## Acceptance Criteria
+### 3.5 Shift Management
 
-- Admin/Superadmin dapat membuat template KPI.
-- Supervisor dapat input/validasi KPI tim.
-- Karyawan dapat melihat KPI pribadi.
-- Sistem dapat menghitung skor otomatis.
-- Superadmin dapat melihat ranking performa seluruh karyawan.
+- Kelola shift kerja.
+- Field: name, startTime, endTime, lateToleranceMinutes, checkinOpenMinutesBefore, checkoutCloseMinutesAfter, status.
+- Employee punya default shift.
+- Attendance memakai shift aktif.
+- Shift change tidak merusak attendance historis.
 
----
+### 3.6 Attendance GPS + Selfie
 
-# 6H. Dashboard Superadmin
+Check-in wajib:
 
-## Description
+- User aktif.
+- Employee aktif.
+- Shift aktif.
+- Work location aktif.
+- GPS latitude/longitude.
+- GPS accuracy.
+- Selfie realtime.
+- Backend geo-fence validation.
 
-Dashboard utama untuk memantau seluruh operasional karyawan.
+Check-out wajib:
 
-## Widgets
+- Existing check-in.
+- Belum check-out.
+- GPS latitude/longitude.
+- GPS accuracy.
+- Selfie realtime.
+- Backend geo-fence validation.
 
-- Total karyawan aktif.
-- Kehadiran hari ini.
-- Karyawan terlambat hari ini.
-- Karyawan izin/cuti/sakit.
-- Karyawan alpha.
-- KPI rata-rata perusahaan.
-- Top performer.
-- Low performer.
-- Grafik absensi bulanan.
-- Grafik KPI per divisi.
-- Trend keterlambatan.
-- Alert karyawan bermasalah.
-- Absensi di luar radius/pending approval.
-- Export laporan.
+Aturan attendance:
 
-## Filters
+- Satu check-in per employee per tanggal.
+- Tidak boleh checkout sebelum check-in.
+- Tidak boleh double checkout.
+- GPS disabled/permission denied harus reject.
+- Selfie missing harus reject.
+- Outside radius mengikuti config `REJECT_OUTSIDE_GEOFENCE`:
+  - `true`: reject.
+  - `false`: pending review.
+- Outside-radius attempt tetap disimpan untuk audit/exception.
+- Hitung late minutes, early leave minutes, total work minutes.
+- Manual adjustment wajib reason dan audit log.
+- Historical attendance tidak boleh dihapus.
 
-- Tanggal.
-- Periode.
-- Divisi.
-- Jabatan.
-- Lokasi kerja.
-- Status absensi.
-- Status KPI.
+Attendance metadata wajib:
 
-## Acceptance Criteria
+```txt
+checkInAt
+checkOutAt
+checkInLatitude
+checkInLongitude
+checkInAccuracy
+checkOutLatitude
+checkOutLongitude
+checkOutAccuracy
+checkInSelfieUrl
+checkOutSelfieUrl
+checkInSelfiePath
+checkOutSelfiePath
+checkInSelfieSizeBytes
+checkOutSelfieSizeBytes
+checkInSelfieMimeType
+checkOutSelfieMimeType
+deviceInfo
+ipAddress
+userAgent
+geoValidationMetadata
+status
+lateMinutes
+earlyLeaveMinutes
+totalWorkMinutes
+```
 
-- Superadmin dapat melihat seluruh data perusahaan.
-- Dashboard mendukung filter.
-- Data dashboard real-time atau near real-time.
-- Dashboard memiliki empty state jika data belum ada.
+### 3.7 Attendance Exceptions
 
----
+- Outside geofence atau bad GPS dapat masuk pending queue.
+- Superadmin/Admin HR/Supervisor sesuai permission dapat review.
+- Approve/reject exception wajib reason.
+- Approval/rejection create audit log dan notification.
 
-# 6I. Dashboard Karyawan
+### 3.8 Leave / Sick / Permission
 
-## Features
+Jenis request:
+
+```txt
+leave
+sick
+permission
+```
+
+Fitur:
+
+- Employee membuat request sendiri.
+- Status awal pending.
+- Supervisor/Admin HR/Superadmin approve/reject sesuai permission.
+- Rejection wajib reason.
+- Overlap active request ditolak.
+- Approval/rejection mempengaruhi status attendance.
+- Approval/rejection membuat notification dan audit log.
+- Leave balance ledger mencatat pergerakan saldo cuti.
+
+### 3.9 KPI Management
+
+KPI mendukung:
+
+- Template.
+- Template item.
+- Assignment.
+- Result.
+- Scoring.
+- Approval.
+- History.
+
+Scoring methods:
+
+```txt
+higher_is_better
+lower_is_better
+boolean
+```
+
+Aturan KPI:
+
+- Total weight template idealnya 100.
+- Supervisor hanya input/review tim sendiri.
+- Employee hanya view KPI sendiri.
+- Employee tidak boleh edit skor sendiri.
+- KPI approved tidak boleh diedit tanpa role authorized dan reason.
+- Edit setelah approval wajib audit log.
+
+### 3.10 Dashboard
+
+Superadmin dashboard menampilkan:
+
+- Total active employees.
+- Attendance today.
+- Late employees today.
+- Leave/sick/permission today.
+- Absent employees today.
+- Average KPI month.
+- Top performers.
+- Low performers.
+- Attendance trend.
+- KPI by division.
+- Geo-fence rejected/pending alerts.
+- Employee risk alerts.
+
+Employee dashboard menampilkan:
 
 - Status absensi hari ini.
-- Tombol check-in.
-- Tombol check-out.
-- Kamera selfie absensi.
-- Validasi GPS sebelum absensi.
-- Jadwal kerja hari ini.
-- Lokasi kerja aktif.
-- Riwayat absensi.
-- KPI bulan berjalan.
-- Pengajuan izin/cuti/sakit.
-- Notifikasi approval/rejection.
+- Shortcut check-in/check-out.
+- Jadwal/shift.
+- Leave/KPI summary.
+- Notifikasi terbaru.
 
-## Acceptance Criteria
+Dashboard wajib respect permission dan tidak leak data lintas role.
 
-- Karyawan hanya melihat datanya sendiri.
-- Tombol absensi mengikuti aturan shift, lokasi, dan status hari itu.
-- Sistem menampilkan pesan jelas jika GPS mati atau lokasi di luar radius.
+### 3.11 Reports dan Export
 
----
+Required reports:
 
-# 6J. Reports & Export
+- Daily attendance report.
+- Monthly attendance report.
+- Late report.
+- Leave/sick/permission report.
+- KPI individual report.
+- KPI division report.
+- Employee performance report.
+- Geo-fence rejected/pending report.
 
-## Features
+Export:
 
-- Laporan absensi harian.
-- Laporan absensi mingguan.
-- Laporan absensi bulanan.
-- Laporan keterlambatan.
-- Laporan absensi luar radius/pending.
-- Laporan KPI individu.
-- Laporan KPI divisi.
-- Laporan performa perusahaan.
-- Export CSV.
-- Export Excel.
-- Optional export PDF.
+- CSV wajib.
+- Excel recommended.
+- PDF optional.
 
-## Acceptance Criteria
+Aturan:
 
-- Report dapat difilter berdasarkan tanggal, divisi, karyawan, lokasi, dan status.
-- Export harus sesuai filter yang dipilih.
-- Data report tidak boleh berbeda dengan data dashboard.
+- Export respect filters.
+- Export respect permissions.
+- Supervisor hanya export tim.
+- Employee hanya own data jika allowed.
+- Export create audit log.
+- Selfie tidak diekspor sebagai path/url/binary; cukup flag yes/no.
 
-## Implementation Notes
+### 3.12 Notifications
 
-- Sumber tunggal query: `lib/reports/attendance-history.ts` dipakai oleh halaman `/dashboard/reports/attendance` maupun export CSV. Tidak boleh ada query report yang menduplikasi logika ini.
-- Endpoint:
-  - `GET /api/reports/attendance` — list paginasi (default 25/halaman, maks 200).
-  - `GET /api/reports/attendance/summary` — kartu ringkasan.
-  - `GET /api/reports/attendance?format=csv` — export CSV.
-  - `GET /api/reports/attendance?format=xlsx` — CSV dengan UTF-8 BOM agar terbuka rapi di Microsoft Excel.
-- Filter wajib didukung server-side: tanggal, employee, division, work location, status, geo status, late only, missing checkout only.
-- Export wajib memiliki rentang tanggal dan dibatasi `ATTENDANCE_EXPORT_MAX_ROWS` (default 5000).
-- Setiap export menulis audit log `EXPORT / AttendanceReport` dengan filter, scope role, jumlah baris, status truncation.
-- Selfie tidak pernah diekspor sebagai biner. Hanya flag YES/NO.
-- Lihat detail di `/docs/REPORTS.md`.
+Notifikasi database untuk:
 
----
+- Leave request submitted.
+- Leave approved/rejected.
+- KPI assigned.
+- KPI approved.
+- Attendance rejected/pending due geo-fence.
+- Manual attendance adjustment.
+- Account activation / role change via email.
 
-# 6K. Notification System
+User dapat melihat notifikasi sendiri dan mark as read.
 
-## Features
+### 3.13 Audit Log
 
-- Notifikasi telat.
-- Notifikasi belum check-out.
-- Notifikasi pengajuan izin/cuti/sakit.
-- Notifikasi approval/rejection.
-- Notifikasi KPI belum diisi.
-- Notifikasi absensi di luar radius.
-- Optional WhatsApp/email notification.
+Audit wajib untuk:
 
-## Acceptance Criteria
+- Login/logout/failed login jika feasible.
+- User create/update/deactivate.
+- Role/permission change.
+- Account activation.
+- Employee create/update/deactivate.
+- NIP generation.
+- Work location create/update/deactivate.
+- Shift create/update/deactivate.
+- Attendance check-in/check-out.
+- Rejected/pending geo-fence attendance attempt.
+- Manual attendance adjustment.
+- Leave approval/rejection.
+- KPI create/update/approval.
+- Report export.
+- Selfie protected view.
 
-- User menerima notifikasi sesuai role.
-- Notifikasi tersimpan di database.
-- Notifikasi bisa dibaca/ditandai selesai.
+Audit fields:
 
----
+```txt
+actorUserId
+action
+targetType
+targetId
+oldValueJson
+newValueJson
+ipAddress
+userAgent
+createdAt
+```
 
-# 6L. Audit Log
+Normal user tidak boleh delete audit log.
 
-## Description
+### 3.14 Payroll, Overtime, Documents, Announcements, Offline Sync
 
-Mencatat aktivitas penting untuk keamanan dan transparansi.
+Existing operational modules may exist as extensions/supporting features:
 
-## Event yang Dicatat
+- Payroll periods and locks.
+- Overtime rates/requests.
+- Reimbursement claims.
+- Documents.
+- Announcements.
+- Offline sync/conflict handling.
+- Realtime notifications.
 
-- Login/logout.
-- Create/edit/delete/nonaktif user.
-- Perubahan role.
-- Perubahan data karyawan.
-- Check-in.
-- Check-out.
-- Absensi ditolak karena luar radius.
-- Absensi gagal karena GPS tidak aktif.
-- Manual adjustment absensi.
-- Approval/rejection izin.
-- Perubahan nilai KPI.
-- Approval KPI.
-- Export laporan.
-- Perubahan lokasi kerja.
-
-## Acceptance Criteria
-
-- Superadmin dapat melihat audit log.
-- Audit log tidak bisa dihapus user biasa.
-- Audit log memiliki timestamp, actor, action, target, IP/device, dan metadata.
+These modules must not weaken HRIS core security rules. Any production expansion
+must be documented before scope grows further.
 
 ---
 
-# 6M. UI/UX Design System
+## 4. User Flow
 
-## Description
+### 4.1 Public User Registration and Activation
 
-Aplikasi menggunakan pendekatan Mobile-First Responsive Design. Desain mengadopsi tema terang (Light Mode) yang modern dan bersih (clean), berfokus pada kemudahan akses (accessibility) bagi seluruh pengguna, dari karyawan lapangan hingga jajaran manajemen.
+1. User membuka `/register`.
+2. User isi username, email, password kuat.
+3. Backend validasi input, rate limit, duplicate email/username.
+4. Backend membuat `User` role `EMPLOYEE`, `isActive=false`.
+5. Backend membuat JWT activation token purpose `account-activation`, expiry 24h.
+6. Backend mengirim email Resend berisi CTA `Aktivasi Akun`.
+7. User membuka inbox email dan klik link aktivasi.
+8. Frontend `/activate-account?token=...` memanggil `/api/auth/activate`.
+9. Backend validasi token dan update `User.isActive=true`.
+10. UI menampilkan `Selamat Bergabung` dan CTA login.
+11. User login berhasil.
+12. Superadmin melihat user aktif di `/dashboard/users` dan dapat koreksi role.
+13. Admin HR/Superadmin melengkapi data karyawan di `/dashboard/employees`.
 
-## Brand Identity
-- **Warna Utama (Primary):** `#FFC107` (Kuning Produsen Dimsum)
-- **Warna Background:** `#F5F5F5` (Abu-abu terang untuk kontras card)
-- **Warna Card/Content:** `#FFFFFF` (Putih)
-- **Warna Teks Utama:** `#111111` (Hitam pekat)
-- **Warna Teks Sekunder:** `#666666` (Abu-abu)
-- **Warna Sukses:** `#22C55E` (Hijau terang untuk Check-In / Approved)
-- **Warna Bahaya/Error:** `#E53935` (Merah untuk Check-Out / Rejected)
+### 4.2 Login / Logout
 
-## Typography
-- **Primary Font:** `Poppins`
-- **Heading 1:** 24px, Bold (700)
-- **Heading 2:** 18px, Semi-Bold (600)
-- **Body Text:** 14px, Regular (400)
-- **Caption:** 12px, Medium (500)
+1. User masuk `/login`.
+2. Input email/username dan password.
+3. Backend mencari user by email/username.
+4. Jika user tidak aktif, tampilkan pesan cek inbox aktivasi atau hubungi Superadmin.
+5. Jika password valid dan user aktif, backend set session cookie/JWT.
+6. Frontend redirect ke `/dashboard`.
+7. Logout menghapus session cookie.
 
-## Layout & Responsive Behavior
+### 4.3 Superadmin User Placement
 
-1. **Mobile (Max-width < 768px):**
-   - Menggunakan `Bottom Navigation Bar` dengan 5 ikon utama (Beranda, Kehadiran, Karyawan, Cuti, Akun).
-   - Tampilan menggunakan lebar penuh perangkat (100% width).
-   - Elemen interaktif seperti tombol dan input dioptimalkan untuk sentuhan (touch-friendly).
-   - Floating Action Button (FAB) ditempatkan melayang di pojok kanan bawah.
+1. Superadmin login.
+2. Buka `/dashboard/users`.
+3. Lihat daftar user yang daftar sendiri.
+4. Cek status aktif/belum aktif.
+5. Set role akses: Employee, Supervisor, Admin HR, atau Superadmin.
+6. Jika akun belum aktif, Superadmin bisa aktifkan manual.
+7. Role change mengirim email role-changed.
+8. Untuk data kerja detail, Superadmin/Admin HR buka employee module.
+9. Atur posisi, divisi, supervisor, shift, work location, dan status employee.
 
-2. **Tablet & Desktop (Min-width >= 768px):**
-   - Mengadopsi **Split Pane Layout**.
-   - `Bottom Navigation Bar` bertransisi otomatis menjadi **Sidebar Navigasi Kiri**.
-   - Lebar konten di sebelah kanan disesuaikan maksimal 1200px agar tetap nyaman dibaca (tidak terlalu lebar).
-   - Elemen antarmuka seperti tabel, grid card, dan statistik otomatis beradaptasi (mengisi ruang yang tersedia).
-   - Logo "MyProdusen" muncul di bagian atas Sidebar.
+### 4.4 Attendance Check-in / Check-out
 
-## Komponen UI Utama
-- **Button:** Berbentuk kapsul penuh (rounded full). Tombol utama (primary) berwarna latar kuning dan teks hitam.
-- **Card:** Berbentuk persegi dengan sudut melengkung halus (rounded-lg) dan sedikit bayangan lembut (soft drop shadow).
-- **Badge/Status:** Latar belakang dengan opasitas 10% dari warna utama dengan teks sesuai warna (contoh: hijau muda dengan teks hijau tua untuk "Aktif" atau "Disetujui").
+1. Employee login.
+2. Buka dashboard/attendance.
+3. App meminta permission kamera dan lokasi.
+4. User ambil selfie realtime.
+5. App membaca GPS dan accuracy.
+6. Frontend mengirim selfie + GPS + metadata ke backend.
+7. Backend validasi user/employee/shift/location.
+8. Backend hitung jarak dari lokasi kerja.
+9. Backend simpan attendance dan file selfie di persistent storage.
+10. UI menampilkan success/pending/rejected state.
+11. Audit log dan notification dibuat sesuai hasil.
+
+### 4.5 Leave Approval
+
+1. Employee submit leave/sick/permission.
+2. Backend cek overlap dan permission.
+3. Request masuk pending.
+4. Supervisor/Admin HR approve/reject.
+5. Jika reject wajib reason.
+6. Backend update status, leave balance, notification, audit log.
+7. Employee melihat hasil di dashboard/notifikasi.
+
+### 4.6 KPI Workflow
+
+1. Admin HR/Superadmin membuat KPI template.
+2. Supervisor/Admin HR assign KPI ke employee/team.
+3. Supervisor input/review result.
+4. Backend menghitung score sesuai method.
+5. Authorized role approve result.
+6. Employee melihat KPI pribadi.
+7. Edit approved KPI perlu reason dan audit log.
+
+### 4.7 Report Export
+
+1. Authorized user buka report.
+2. Pilih filter tanggal/divisi/lokasi/status/employee.
+3. Backend resolve scope berdasarkan role.
+4. Backend query optimized dan apply row cap.
+5. Export CSV dibuat.
+6. Audit log export disimpan.
+7. UI download file.
 
 ---
 
-# 7. Software Requirements Specification / SRC
-
-## 7.1 Functional Requirements
-
-### FR-001 Authentication
-
-Sistem harus menyediakan login aman untuk user berdasarkan username/email dan password.
-
-Requirements:
-
-- User dapat login.
-- User dapat logout.
-- Password harus di-hash.
-- Session/token harus aman.
-- Role user dibaca setelah login.
-- User nonaktif tidak bisa login.
-
-### FR-002 Role-Based Access Control
-
-Sistem harus membatasi akses berdasarkan role dan permission.
-
-Requirements:
-
-- Superadmin memiliki semua akses.
-- Admin HR tidak boleh mengubah konfigurasi superadmin kecuali diberi permission.
-- Supervisor hanya dapat melihat timnya.
-- Karyawan hanya dapat melihat datanya sendiri.
-- Authorization wajib dilakukan di backend.
-
-### FR-003 Employee CRUD
-
-Sistem harus mendukung create, read, update, deactivate data karyawan.
-
-Requirements:
-
-- Admin HR dan Superadmin dapat membuat data karyawan.
-- Data karyawan memiliki ID unik.
-- Karyawan dapat dinonaktifkan tanpa menghapus data historis.
-
-### FR-004 Work Location Management
-
-Sistem harus mendukung pengelolaan lokasi kerja untuk geo-fencing.
-
-Requirements:
-
-- Superadmin/Admin HR dapat membuat lokasi kerja.
-- Lokasi kerja memiliki latitude, longitude, dan radius.
-- Lokasi kerja dapat di-assign ke karyawan.
-- Lokasi kerja aktif digunakan untuk validasi absensi.
-
-### FR-005 Attendance Check-In
-
-Sistem harus mencatat kehadiran masuk karyawan menggunakan GPS, geo-fencing, dan selfie.
-
-Requirements:
-
-- Karyawan dapat check-in pada hari kerja.
-- Sistem mencatat timestamp.
-- Sistem menentukan status on time/telat.
-- Sistem mencegah double check-in.
-- Sistem wajib meminta akses GPS/location permission.
-- Sistem wajib mengambil latitude dan longitude saat check-in.
-- Sistem wajib memvalidasi lokasi berdasarkan radius lokasi kerja.
-- Sistem wajib meminta selfie saat check-in.
-- Sistem menyimpan foto selfie check-in.
-- Sistem menyimpan metadata lokasi seperti latitude, longitude, GPS accuracy, dan device info jika tersedia.
-- Jika GPS tidak aktif atau permission ditolak, check-in harus gagal.
-- Jika lokasi di luar radius, sistem menolak check-in atau menandai pending approval sesuai konfigurasi perusahaan.
-
-### FR-006 Attendance Check-Out
-
-Sistem harus mencatat jam pulang karyawan menggunakan GPS, geo-fencing, dan selfie.
-
-Requirements:
-
-- Karyawan hanya dapat check-out setelah check-in.
-- Sistem menghitung total jam kerja.
-- Sistem menentukan pulang normal/pulang cepat.
-- Sistem wajib meminta akses GPS/location permission.
-- Sistem wajib mengambil latitude dan longitude saat check-out.
-- Sistem wajib memvalidasi lokasi berdasarkan radius lokasi kerja.
-- Sistem wajib meminta selfie saat check-out.
-- Sistem menyimpan foto selfie check-out.
-- Jika GPS tidak aktif atau permission ditolak, check-out harus gagal.
-- Jika lokasi di luar radius, sistem menolak check-out atau menandai pending approval sesuai konfigurasi perusahaan.
-
-### FR-007 Manual Attendance Adjustment
-
-Admin HR dapat melakukan koreksi absensi dengan alasan yang wajib diisi.
-
-Requirements:
-
-- Semua koreksi masuk audit log.
-- Data asli tidak hilang.
-- Old value dan new value disimpan.
-
-### FR-008 Shift Management
-
-Admin HR dapat membuat dan mengatur shift.
-
-Requirements:
-
-- Shift memiliki jam masuk, jam pulang, dan toleransi telat.
-- Shift dapat di-assign ke karyawan.
-- Absensi membaca shift yang berlaku.
-
-### FR-009 Leave/Permission Request
-
-Karyawan dapat mengajukan izin/cuti/sakit.
-
-Requirements:
-
-- Pengajuan memiliki tanggal mulai dan selesai.
-- Pengajuan memiliki alasan.
-- Pengajuan memiliki status.
-- Supervisor/Admin dapat approve/reject.
-
-### FR-010 KPI Template Management
-
-Superadmin/Admin dapat membuat template KPI.
-
-Requirements:
-
-- Template KPI memiliki nama, divisi, jabatan, periode, item KPI, target, dan bobot.
-- Total bobot idealnya 100%.
-- Template dapat diaktifkan/nonaktifkan.
-
-### FR-011 KPI Input & Evaluation
-
-Supervisor/Admin dapat mengisi nilai KPI karyawan.
-
-Requirements:
-
-- KPI memiliki target dan actual.
-- Sistem menghitung skor otomatis.
-- KPI bisa diberi catatan.
-- KPI bisa di-approve.
-
-### FR-012 Dashboard Superadmin
-
-Sistem harus menyediakan dashboard global.
-
-Requirements:
-
-- Menampilkan ringkasan karyawan.
-- Menampilkan ringkasan absensi.
-- Menampilkan ringkasan KPI.
-- Menampilkan data absensi luar radius/pending.
-- Menampilkan grafik dan filter.
-
-### FR-013 Dashboard Karyawan
-
-Sistem harus menyediakan dashboard personal karyawan.
-
-Requirements:
-
-- Menampilkan status absensi hari ini.
-- Menampilkan tombol check-in/check-out.
-- Menampilkan validasi GPS dan lokasi.
-- Menampilkan KPI pribadi.
-- Menampilkan riwayat absensi.
-- Menampilkan pengajuan izin/cuti.
-
-### FR-014 Reports
-
-Sistem harus menyediakan laporan.
-
-Requirements:
-
-- Filter tanggal.
-- Filter divisi.
-- Filter karyawan.
-- Filter lokasi kerja.
-- Export Excel/CSV.
-- Optional export PDF.
-
-### FR-015 Notification
-
-Sistem harus mengirim notifikasi internal.
-
-Requirements:
-
-- Notifikasi tersimpan di database.
-- User dapat melihat daftar notifikasi.
-- User dapat menandai notifikasi sebagai dibaca.
-
-### FR-016 Audit Log
-
-Sistem harus menyimpan log aktivitas penting.
-
-Requirements:
-
-- Log mencatat actor, action, target, timestamp, IP/device jika tersedia.
-- Log hanya dapat dilihat Superadmin.
-
----
-
-## 7.2 Non-Functional Requirements
-
-### NFR-001 Security
-
-- Password wajib di-hash dengan bcrypt/argon2.
-- Gunakan HTTPS di production.
-- Validasi input di frontend dan backend.
-- Proteksi dari SQL injection.
-- Proteksi dari XSS.
-- Proteksi dari CSRF jika menggunakan cookie session.
-- Rate limiting untuk login.
-- Audit log untuk aksi sensitif.
-- Authorization check wajib di backend.
-
-### NFR-002 GPS & Selfie Security
-
-- Validasi lokasi dilakukan di backend.
-- Frontend hanya mengirim latitude, longitude, accuracy, timestamp, dan selfie.
-- Backend tetap menghitung jarak ke lokasi kerja.
-- Gunakan batas maksimal GPS accuracy.
-- Simpan device info/user agent/IP untuk audit.
-- Selfie absensi wajib realtime dari kamera perangkat (`getUserMedia`), bukan upload/gallery picker.
-- Selfie upload wajib divalidasi mime type dan ukuran file.
-- File selfie disimpan dengan nama aman, bukan nama asli user.
-- Data selfie hanya dapat diakses role berwenang.
-- Absensi di luar radius harus tercatat sebagai rejected/pending agar bisa diaudit.
-
-### NFR-003 Performance
-
-- Dashboard utama load kurang dari 3 detik untuk data normal.
-- Query laporan harus menggunakan pagination/filter.
-- Index database wajib untuk kolom pencarian utama.
-- Hindari N+1 query.
-
-### NFR-004 Scalability
-
-- Struktur database mendukung penambahan cabang/divisi/lokasi kerja.
-- Sistem role dan permission harus modular.
-- KPI template harus fleksibel untuk berbagai jabatan.
-
-### NFR-005 Reliability
-
-- Data absensi tidak boleh hilang.
-- Gunakan backup database berkala.
-- Error harus ditangani dengan pesan jelas.
-- Critical action harus idempotent jika memungkinkan.
-
-### NFR-006 Usability
-
-- UI sederhana untuk karyawan non-teknis.
-- Mobile-first dengan aksen kuning brand, rounded cards, bottom navigation untuk flow karyawan, dan layout dashboard responsif untuk admin.
-- Screen wajib mengikuti panduan `UI_UX_GUIDE.md`: onboarding, login, dashboard, attendance, employees, leave, KPI, profile, dan reports.
-- Dashboard mudah dibaca.
-- Form memiliki validasi dan helper text.
-- Empty state informatif.
-- Pesan error GPS/lokasi harus jelas.
-
-### NFR-007 Maintainability
-
-- Struktur folder rapi.
-- Pisahkan business logic dari UI.
-- Gunakan reusable components.
-- Dokumentasi API dan database wajib tersedia.
-
-### NFR-008 Privacy
-
-- Data karyawan hanya boleh diakses role berwenang.
-- Data selfie absensi tidak boleh public.
-- Perubahan data sensitif wajib tercatat.
-- Export laporan hanya untuk user berhak.
-
----
-
-# 8. Data Model Draft
-
-## users
-
-- id
-- employee_id
-- name
-- email
-- username
-- password_hash
-- role_id
-- status
-- last_login_at
-- created_at
-- updated_at
-
-## roles
-
-- id
-- name
-- description
-- created_at
-- updated_at
-
-## permissions
-
-- id
-- key
-- name
-- description
-
-## role_permissions
-
-- id
-- role_id
-- permission_id
-
-## employees
-
-- id
-- employee_code
-- full_name
-- phone
-- email
-- address
-- join_date
-- division_id
-- position_id
-- supervisor_id
-- employment_status
-- default_shift_id
-- default_work_location_id
-- profile_photo_url
-- emergency_contact_name
-- emergency_contact_phone
-- created_at
-- updated_at
-- deleted_at
-
-## divisions
-
-- id
-- name
-- description
-- status
-
-## positions
-
-- id
-- division_id
-- name
-- description
-
-## work_locations
-
-- id
-- name
-- address
-- latitude
-- longitude
-- radius_meters
-- status
-- created_at
-- updated_at
-
-## employee_work_locations
-
-- id
-- employee_id
-- work_location_id
-- effective_date
-- end_date
-- created_at
-- updated_at
-
-## shifts
-
-- id
-- name
-- start_time
-- end_time
-- late_tolerance_minutes
-- checkin_open_minutes_before
-- checkout_close_minutes_after
-- status
-
-## employee_shifts
-
-- id
-- employee_id
-- shift_id
-- effective_date
-- end_date
-
-## attendances
-
-- id
-- employee_id
-- attendance_date
-- shift_id
-- work_location_id
-- check_in_at
-- check_out_at
-- status
-- late_minutes
-- early_leave_minutes
-- total_work_minutes
-- check_in_method
-- check_out_method
-- check_in_latitude
-- check_in_longitude
-- check_in_accuracy
-- check_in_distance_meters
-- check_in_photo_url
-- check_out_latitude
-- check_out_longitude
-- check_out_accuracy
-- check_out_distance_meters
-- check_out_photo_url
-- device_info
-- ip_address
-- user_agent
-- notes
-- created_at
-- updated_at
-
-## attendance_adjustments
-
-- id
-- attendance_id
-- adjusted_by
-- old_value_json
-- new_value_json
-- reason
-- created_at
-
-## leave_requests
-
-- id
-- employee_id
-- type
-- start_date
-- end_date
-- reason
-- attachment_url
-- status
-- approved_by
-- approved_at
-- rejection_reason
-- created_at
-- updated_at
-
-## kpi_templates
-
-- id
-- name
-- division_id
-- position_id
-- period_type
-- status
-- created_by
-- created_at
-- updated_at
-
-## kpi_template_items
-
-- id
-- kpi_template_id
-- name
-- description
-- target_value
-- unit
-- weight
-- scoring_method
-- order_index
-
-## kpi_assignments
-
-- id
-- employee_id
-- kpi_template_id
-- period_start
-- period_end
-- status
-- assigned_by
-- created_at
-
-## kpi_results
-
-- id
-- kpi_assignment_id
-- employee_id
-- total_score
-- status
-- reviewed_by
-- reviewed_at
-- notes
-- created_at
-- updated_at
-
-## kpi_result_items
-
-- id
-- kpi_result_id
-- kpi_template_item_id
-- target_value
-- actual_value
-- weight
-- score
-- notes
-
-## notifications
-
-- id
-- user_id
-- title
-- message
-- type
-- read_at
-- created_at
-
-## audit_logs
-
-- id
-- actor_user_id
-- action
-- target_type
-- target_id
-- old_value_json
-- new_value_json
-- ip_address
-- user_agent
-- created_at
-
----
-
-# 9. API Endpoint Draft
-
-## Auth
-
-- POST /api/auth/login
-- POST /api/auth/logout
-- POST /api/auth/forgot-password
-- POST /api/auth/reset-password
-- GET /api/auth/me
-
-## Users & Roles
-
-- GET /api/users
-- POST /api/users
-- GET /api/users/:id
-- PATCH /api/users/:id
-- PATCH /api/users/:id/status
-- GET /api/roles
-- POST /api/roles
-- PATCH /api/roles/:id
-
-## Employees
-
-- GET /api/employees
-- POST /api/employees
-- GET /api/employees/:id
-- PATCH /api/employees/:id
-- DELETE /api/employees/:id
-
-## Work Locations / Geo-fencing
-
-- GET /api/work-locations
-- POST /api/work-locations
-- GET /api/work-locations/:id
-- PATCH /api/work-locations/:id
-- DELETE /api/work-locations/:id
-- POST /api/work-locations/assign-employee
-
-## Attendance
-
-- GET /api/attendances
-- POST /api/attendances/check-in
-- POST /api/attendances/check-out
-- GET /api/attendances/me
-- PATCH /api/attendances/:id/adjust
-- GET /api/attendances/summary
-
-## Shifts
-
-- GET /api/shifts
-- POST /api/shifts
-- PATCH /api/shifts/:id
-- DELETE /api/shifts/:id
-- POST /api/employee-shifts
-
-## Leave Requests
-
-- GET /api/leave-requests
-- POST /api/leave-requests
-- GET /api/leave-requests/:id
-- PATCH /api/leave-requests/:id/approve
-- PATCH /api/leave-requests/:id/reject
-- PATCH /api/leave-requests/:id/cancel
-
-## KPI
-
-- GET /api/kpi/templates
-- POST /api/kpi/templates
-- GET /api/kpi/templates/:id
-- PATCH /api/kpi/templates/:id
-- DELETE /api/kpi/templates/:id
-- POST /api/kpi/assignments
-- GET /api/kpi/assignments
-- GET /api/kpi/results
-- POST /api/kpi/results
-- PATCH /api/kpi/results/:id
-- PATCH /api/kpi/results/:id/approve
-
-## Dashboard
-
-- GET /api/dashboard/superadmin
-- GET /api/dashboard/hr
-- GET /api/dashboard/supervisor
-- GET /api/dashboard/employee
-
-## Reports
-
-- GET /api/reports/attendance
-- GET /api/reports/attendance/export
-- GET /api/reports/kpi
-- GET /api/reports/kpi/export
-
-## Notifications
-
-- GET /api/notifications
-- PATCH /api/notifications/:id/read
-- PATCH /api/notifications/read-all
-
-## Audit Logs
-
-- GET /api/audit-logs
-
----
-
-# 10. Technical Design Document / TDD
-
-## 10.1 Recommended Tech Stack
-
-### Frontend
-
-- Next.js / React.
-- TypeScript.
-- Tailwind CSS.
-- Shadcn UI atau komponen internal.
-- React Hook Form + Zod.
-- TanStack Query.
-- Zustand/Context jika diperlukan.
-
-### Backend
-
-Pilihan recommended fullstack:
+## 5. Architecture
+
+Arsitektur menggunakan Next.js App Router sebagai frontend dan backend route
+handler dalam satu codebase. Business logic berada di service layer. Database
+menggunakan PostgreSQL via Drizzle ORM.
+
+### 5.1 High-level Architecture
+
+```mermaid
+sequenceDiagram
+    participant User as User Browser / Mobile Web
+    participant UI as Next.js Frontend
+    participant API as App Router API Routes
+    participant Service as Service Layer
+    participant DB as PostgreSQL
+    participant Storage as Persistent Upload Volume
+    participant Email as Resend Email API
+
+    User->>UI: Login/Register/Attendance/Approval
+    UI->>API: HTTPS request + cookie/session
+    API->>Service: Validate auth, RBAC, business rules
+    Service->>DB: Read/write relational data
+    Service->>Storage: Store/read protected selfies if needed
+    Service->>Email: Send activation/reset/notification email if needed
+    DB-->>Service: Data result
+    Storage-->>Service: File key/result
+    Email-->>Service: Email id/status
+    Service-->>API: Success/error response
+    API-->>UI: JSON response
+    UI-->>User: UI state update
+```
+
+### 5.2 Activation Flow Architecture
+
+```mermaid
+sequenceDiagram
+    participant User as New Employee
+    participant UI as Register Page
+    participant API as /api/auth/public-register
+    participant Auth as AuthService
+    participant Email as Resend
+    participant DB as PostgreSQL
+
+    User->>UI: Submit register form
+    UI->>API: username, email, password
+    API->>Auth: register inactive EMPLOYEE
+    Auth->>DB: Insert User isActive=false
+    API->>Auth: createAccountActivationToken(email)
+    Auth-->>API: JWT activation token 24h
+    API->>Email: send register email with activationUrl
+    Email-->>User: Activation inbox email
+    User->>UI: Open /activate-account?token=...
+    UI->>API: POST /api/auth/activate
+    API->>Auth: activateAccount(token)
+    Auth->>DB: Update User isActive=true
+    API-->>UI: success
+    UI-->>User: Selamat Bergabung + login CTA
+```
+
+### 5.3 Attendance Flow Architecture
+
+```mermaid
+sequenceDiagram
+    participant Employee as Employee Mobile Browser
+    participant UI as Attendance UI
+    participant API as Attendance API
+    participant Attendance as AttendanceService
+    participant Geo as GPS Validator
+    participant Storage as Upload Storage
+    participant DB as PostgreSQL
+
+    Employee->>UI: Capture realtime selfie + GPS
+    UI->>API: POST check-in/check-out
+    API->>Attendance: Validate request
+    Attendance->>Geo: Calculate distance / accuracy / timestamp
+    Attendance->>Storage: Store selfie safe filename
+    Attendance->>DB: Insert/update Attendance + metadata
+    Attendance->>DB: Create AuditLog/Notification
+    API-->>UI: Success/Pending/Rejected
+    UI-->>Employee: Show attendance status
+```
+
+### 5.4 Frontend Architecture
+
+Frontend stack:
 
 - Next.js App Router.
-- API Routes / Server Actions.
-- Drizzle ORM.
-- PostgreSQL.
+- TypeScript.
+- Tailwind CSS.
+- Mobile-first responsive layout.
+- Internal component patterns for cards, buttons, inputs, alerts, tables, empty states.
+- Poppins via `next/font`.
+- Lucide icons for consistent iconography.
+- Native browser camera/GPS APIs for attendance.
 
-Pilihan backend terpisah:
+Frontend folder responsibility:
 
-- Node.js + NestJS/Express.
-- Drizzle ORM.
-- PostgreSQL.
-- Redis untuk cache/rate limit/job queue jika diperlukan.
-
-### Database
-
-- PostgreSQL untuk production.
-- SQLite hanya untuk development/testing lokal.
-
-### Storage
-
-- S3-compatible storage untuk foto profil, bukti sakit, dan selfie absensi.
-- Local storage hanya untuk development.
-
-### Selfie Storage Optimization
-
-- Selfie ditangkap realtime melalui kamera perangkat (`getUserMedia`), tanpa file picker/gallery.
-- Frontend mengompres dan resize selfie sebelum upload (maks 720×720, kualitas ≈ 0.75, target ≤ 300KB).
-- Format default WebP (fallback JPEG untuk browser tanpa dukungan WebP).
-- Backend menerapkan batas keras `MAX_SELFIE_SIZE_MB` (default 1MB), validasi MIME (jpeg/png/webp), dan validasi tanda tangan biner.
-- File disimpan di volume persisten `${UPLOAD_DIR}/${ATTENDANCE_SELFIE_DIR}/<year>/<month>/<employeeId>/<attendanceId>-{checkin|checkout}.<ext>`.
-- PostgreSQL hanya menyimpan path + size + MIME + timestamp; tidak pernah menyimpan base64/binary.
-- Akses selfie hanya melalui endpoint terotentikasi:
-  - `GET /api/attendances/:attendanceId/selfie/check-in`
-  - `GET /api/attendances/:attendanceId/selfie/check-out`
-- Otorisasi role: Karyawan → milik sendiri; Supervisor → tim sendiri; Admin HR & Superadmin → semua.
-- Akses selfie oleh non-pemilik (Supervisor/Admin HR/Superadmin) menulis audit log `SELFIE_VIEW`.
-- UI menampilkan tombol "Lihat Selfie Masuk" dan "Lihat Selfie Pulang" yang membuka modal lazy-loaded; daftar tidak memuat semua selfie sekaligus.
-- Konfigurasi siap pindah ke S3-compatible storage tanpa mengubah URL atau kode pemanggil.
-
-### Deployment
-
-- VPS + Docker.
-- Coolify.
-- Railway/Render.
-- Vercel + managed PostgreSQL jika menggunakan Next.js.
-
----
-
-## 10.2 Architecture Overview
-
-```text
-Client Browser / Mobile Browser
-    ↓
-Frontend Web App
-    ↓
-API Layer / Server Actions
-    ↓
-Service Layer / Business Logic
-    ↓
-Repository / ORM
-    ↓
-PostgreSQL Database
-    ↓
-Object Storage for Images
+```txt
+/app
+  public pages: landing, login, register, forgot-password, reset-password, activate-account
+  dashboard pages: attendance, employees, users, leave, KPI, reports, profile, etc.
+/components
+  shared UI and layout components
+/features
+  feature-oriented business UI/helpers
+/lib
+  client utilities, auth client, navigation policy, validation helpers
 ```
 
----
-
-## 10.3 Recommended Folder Structure
-
-```text
-/src
-  /app
-    /(auth)
-    /(dashboard)
-    /api
-  /components
-    /ui
-    /forms
-    /tables
-    /dashboard
-  /features
-    /auth
-    /employees
-    /attendance
-    /work-locations
-    /kpi
-    /leave
-    /reports
-    /notifications
-    /audit
-  /lib
-    auth.ts
-    db.ts
-    permissions.ts
-    validations.ts
-    logger.ts
-    geo.ts
-    upload.ts
-  /server
-    /services
-    /repositories
-    /middlewares
-  /types
-  /utils
-/prisma
-  schema.prisma
-  migrations
-/docs
-  PRD.md
-  API.md
-  DATABASE.md
-  RBAC.md
-/tests
-  /unit
-  /integration
-  /e2e
-```
-
----
-
-## 10.4 Core Modules Design
-
-### Auth Module
-
-Responsibilities:
-
-- Login/logout.
-- Session/token validation.
-- Password hashing.
-- Current user context.
-- RBAC guard.
-
-Key Services:
-
-- AuthService.login().
-- AuthService.logout().
-- AuthService.getCurrentUser().
-- PermissionService.canAccess().
-
-### Employee Module
-
-Responsibilities:
-
-- CRUD karyawan.
-- Relasi divisi, jabatan, atasan.
-- Status karyawan.
-- Assign shift dan lokasi kerja.
-
-Key Services:
-
-- EmployeeService.createEmployee().
-- EmployeeService.updateEmployee().
-- EmployeeService.deactivateEmployee().
-- EmployeeService.getEmployeeProfile().
-
-### Work Location Module
-
-Responsibilities:
-
-- CRUD lokasi kerja.
-- Assign lokasi ke karyawan.
-- Validasi lokasi aktif.
-- Menyediakan data geo-fence untuk attendance.
-
-Key Services:
-
-- WorkLocationService.createLocation().
-- WorkLocationService.updateLocation().
-- WorkLocationService.assignEmployee().
-- WorkLocationService.getActiveLocationForEmployee().
-
-### Attendance Module
-
-Responsibilities:
-
-- Check-in/check-out.
-- Validasi GPS.
-- Validasi geo-fencing.
-- Upload selfie.
-- Perhitungan telat, pulang cepat, total jam kerja.
-- Koreksi manual.
-- Rekap absensi.
-
-Key Services:
-
-- AttendanceService.checkIn().
-- AttendanceService.checkOut().
-- AttendanceService.calculateAttendanceStatus().
-- AttendanceService.adjustAttendance().
-- AttendanceService.getSummary().
-
-### Geo Service
-
-Responsibilities:
-
-- Hitung jarak user ke lokasi kerja.
-- Validasi radius.
-- Validasi GPS accuracy.
-
-Formula:
-
-```text
-Distance = Haversine(user_lat, user_lng, work_location_lat, work_location_lng)
-Valid = Distance <= radius_meters
-```
-
-Key Services:
-
-- GeoService.calculateDistanceMeters().
-- GeoService.isInsideFence().
-- GeoService.validateAccuracy().
-
-### KPI Module
-
-Responsibilities:
-
-- Template KPI.
-- Assignment KPI.
-- Input actual KPI.
-- Hitung skor.
-- Approval KPI.
-
-Key Services:
-
-- KpiTemplateService.createTemplate().
-- KpiAssignmentService.assignToEmployee().
-- KpiScoringService.calculateScore().
-- KpiResultService.submitResult().
-- KpiResultService.approveResult().
-
-### Leave Module
-
-Responsibilities:
-
-- Pengajuan izin/cuti/sakit.
-- Approval workflow.
-- Update status absensi jika approved.
-
-Key Services:
-
-- LeaveService.createRequest().
-- LeaveService.approveRequest().
-- LeaveService.rejectRequest().
-- LeaveService.cancelRequest().
-
-### Report Module
-
-Responsibilities:
-
-- Query laporan.
-- Export CSV/Excel/PDF.
-- Filter dan pagination.
-
----
-
-# 11. RBAC Permission Matrix
-
-| Permission Key | Superadmin | Admin HR | Supervisor | Karyawan |
-|---|---:|---:|---:|---:|
-| dashboard.global.view | ✅ | ❌ | ❌ | ❌ |
-| dashboard.hr.view | ✅ | ✅ | ❌ | ❌ |
-| dashboard.team.view | ✅ | ✅ | ✅ | ❌ |
-| dashboard.self.view | ✅ | ✅ | ✅ | ✅ |
-| employee.create | ✅ | ✅ | ❌ | ❌ |
-| employee.update | ✅ | ✅ | ❌ | ❌ |
-| employee.deactivate | ✅ | ✅ | ❌ | ❌ |
-| work_location.manage | ✅ | ✅ | ❌ | ❌ |
-| attendance.self.checkin | ✅ | ✅ | ✅ | ✅ |
-| attendance.self.checkout | ✅ | ✅ | ✅ | ✅ |
-| attendance.all.view | ✅ | ✅ | ❌ | ❌ |
-| attendance.team.view | ✅ | ✅ | ✅ | ❌ |
-| attendance.adjust | ✅ | ✅ | ❌ | ❌ |
-| leave.self.create | ✅ | ✅ | ✅ | ✅ |
-| leave.team.approve | ✅ | ✅ | ✅ | ❌ |
-| kpi.template.manage | ✅ | ✅ | ❌ | ❌ |
-| kpi.team.input | ✅ | ✅ | ✅ | ❌ |
-| kpi.self.view | ✅ | ✅ | ✅ | ✅ |
-| report.export | ✅ | ✅ | ❌ | ❌ |
-| audit.view | ✅ | ❌ | ❌ | ❌ |
-| system.settings.manage | ✅ | ❌ | ❌ | ❌ |
-
----
-
-# 12. Attendance Technical Flow
-
-## 12.1 Check-In Flow
-
-```text
-1. User klik Check In.
-2. Frontend meminta permission GPS/location.
-3. Frontend mengambil latitude, longitude, dan accuracy dari device.
-4. Frontend meminta user mengambil selfie check-in.
-5. Frontend mengirim payload ke backend.
-6. Backend validasi user aktif.
-7. Backend validasi employee aktif.
-8. Backend cek attendance_date hari ini.
-9. Jika sudah check-in, return error.
-10. Backend ambil shift aktif.
-11. Backend ambil work location aktif karyawan.
-12. Backend hitung jarak user ke titik lokasi kerja.
-13. Jika GPS tidak ada atau accuracy buruk, return error/pending.
-14. Jika jarak melebihi radius, return error/pending sesuai konfigurasi.
-15. Backend upload/simpan foto selfie.
-16. Backend bandingkan current time dengan shift start + tolerance.
-17. Tentukan status: hadir/terlambat.
-18. Simpan attendance beserta latitude, longitude, accuracy, selfie URL, device info, dan method.
-19. Buat audit log.
-20. Return success.
-```
-
-## 12.2 Check-Out Flow
-
-```text
-1. User klik Check Out.
-2. Frontend meminta permission GPS/location.
-3. Frontend mengambil latitude, longitude, dan accuracy dari device.
-4. Frontend meminta user mengambil selfie check-out.
-5. Frontend mengirim payload ke backend.
-6. Backend cari attendance hari ini.
-7. Jika tidak ada check-in, return error.
-8. Jika sudah check-out, return error.
-9. Backend ambil work location aktif karyawan.
-10. Backend hitung jarak user ke titik lokasi kerja.
-11. Jika GPS tidak ada atau accuracy buruk, return error/pending.
-12. Jika jarak melebihi radius, return error/pending sesuai konfigurasi.
-13. Backend upload/simpan foto selfie check-out.
-14. Hitung total work minutes.
-15. Bandingkan checkout dengan shift end.
-16. Tentukan early leave jika perlu.
-17. Update attendance beserta checkout latitude, longitude, accuracy, selfie URL, dan device info.
-18. Buat audit log.
-19. Return success.
-```
-
----
-
-# 13. Security Design
-
-## 13.1 Required Security Controls
-
-1. Password hashing dengan bcrypt/argon2.
-2. Rate limit login.
-3. Validate all request payloads dengan Zod/class-validator.
-4. Authorization check di backend.
-5. Audit log untuk aksi penting.
-6. File upload validation.
-7. Prevent path traversal upload.
-8. Secure cookies jika menggunakan cookie session.
-9. CSRF protection jika pakai cookie auth.
-10. Sanitasi output untuk mencegah XSS.
-11. Database query via ORM/prepared statement.
-12. Environment variable untuk secret.
-13. Jangan commit .env ke repository.
-
-## 13.2 GPS & Selfie Controls
-
-1. Validasi geo-fence wajib di backend.
-2. Jangan percaya validasi radius dari frontend.
-3. Simpan latitude, longitude, accuracy, dan distance_meters.
-4. Batasi GPS accuracy maksimal sesuai konfigurasi.
-5. Simpan IP, user agent, dan device info.
-6. Selfie wajib ditangkap realtime dari kamera perangkat; file picker, gallery upload, dan base64 JSON dilarang untuk absensi.
-7. Backend wajib validasi MIME, ukuran file, tanda tangan biner, dan path containment.
-8. File selfie wajib disimpan di private persistent storage dengan server-generated filename.
-9. PostgreSQL hanya menyimpan metadata/path, bukan binary atau base64.
-10. Selfie hanya boleh diakses melalui endpoint terotentikasi dengan RBAC dan audit log.
-11. Optional: face matching.
-12. Optional: liveness detection.
-13. Optional: anti-fake GPS detection.
-
-## 13.3 Sensitive Actions
-
-- Change role.
-- Deactivate user.
-- Manual attendance adjustment.
-- KPI final approval/edit after approval.
-- Export report.
-- Delete/deactivate employee.
-- Update work location.
-- Override attendance outside radius.
-
-Semua sensitive actions wajib masuk audit log.
-
----
-
-# 14. Testing Plan
-
-## 14.1 Unit Tests
-
-- Attendance calculation.
-- Geo distance calculation.
-- Geo-fencing validation.
-- GPS accuracy validation.
-- KPI scoring.
-- Permission check.
-- Leave overlap validation.
-- Shift time calculation.
-
-## 14.2 Integration Tests
-
-- Login flow.
-- Check-in API with valid GPS + selfie.
-- Check-in rejected outside radius.
-- Check-in rejected without selfie.
-- Check-out API with valid GPS + selfie.
-- Employee CRUD.
-- Work location CRUD.
-- Leave approval flow.
-- KPI submission flow.
-- Report filter flow.
-
-## 14.3 E2E Tests
-
-- Karyawan login → check-in dengan GPS + selfie → check-out dengan GPS + selfie.
-- Karyawan di luar radius → check-in ditolak.
-- Karyawan ajukan izin → supervisor approve.
-- Admin buat lokasi kerja → assign ke karyawan.
-- Admin buat KPI template → assign → supervisor input nilai → karyawan lihat hasil.
-- Superadmin buka dashboard dan export report.
-
-## 14.4 Security Tests
-
-- Karyawan mencoba akses dashboard superadmin harus ditolak.
-- Supervisor mencoba melihat data divisi lain harus ditolak.
-- User inactive tidak bisa login.
-- Double check-in harus ditolak.
-- Check-in tanpa GPS harus ditolak.
-- Check-in tanpa selfie harus ditolak.
-- Check-in di luar radius harus ditolak.
-- Edit KPI approved tanpa permission harus ditolak.
-
----
-
-# 15. Error Handling Standard
-
-## 15.1 Response Format
+Frontend rules:
+
+- Use existing design tokens and brand colors.
+- Do not change logo/brand style without explicit request.
+- Use loading/error/empty/success states for all data screens.
+- Forms must have labels bound to inputs.
+- Tappable elements must be mobile-friendly.
+- Hide unauthorized actions in UI, but never rely only on frontend guards.
+
+### 5.5 Backend Architecture
+
+Backend stack:
+
+- Next.js App Router route handlers under `/app/api`.
+- TypeScript service layer under `src/services` and `lib`.
+- Drizzle ORM with PostgreSQL.
+- JWT/session auth utilities.
+- Zod validation.
+- Audit logging.
+- Resend transactional email.
+- Persistent local storage under `/app/uploads` for production.
+
+Backend rules:
+
+- Route handlers stay thin.
+- Business logic belongs in services.
+- All protected routes call `requireAuth`.
+- All protected routes enforce RBAC server-side.
+- Expected errors use consistent response format.
+- Never expose private selfies publicly.
+- Never commit secrets.
+- Avoid heavy dependencies unless documented.
+
+### 5.6 API Response Standard
+
+Use consistent error shape when possible:
 
 ```json
 {
   "success": false,
-  "error": {
-    "code": "ATTENDANCE_OUTSIDE_RADIUS",
-    "message": "Lokasi Anda berada di luar radius absensi yang diizinkan."
-  }
+  "error": "HUMAN_READABLE_ERROR",
+  "message": "HUMAN_READABLE_ERROR"
 }
 ```
 
-## 15.2 Common Error Codes
+Important error codes/messages include:
 
-- AUTH_INVALID_CREDENTIALS
-- AUTH_USER_INACTIVE
-- AUTH_FORBIDDEN
-- EMPLOYEE_NOT_FOUND
-- WORK_LOCATION_NOT_FOUND
-- WORK_LOCATION_NOT_ASSIGNED
-- GPS_PERMISSION_DENIED
-- GPS_LOCATION_UNAVAILABLE
-- GPS_ACCURACY_TOO_LOW
-- ATTENDANCE_OUTSIDE_RADIUS
-- ATTENDANCE_SELFIE_REQUIRED
-- ATTENDANCE_ALREADY_CHECKED_IN
-- ATTENDANCE_NOT_CHECKED_IN
-- ATTENDANCE_ALREADY_CHECKED_OUT
-- LEAVE_OVERLAP
-- KPI_TEMPLATE_INVALID_WEIGHT
-- KPI_RESULT_ALREADY_APPROVED
-- REPORT_EXPORT_FAILED
-
----
-
-# 16. Development Roadmap
-
-## Phase 1 — Foundation
-
-- Setup project.
-- Setup database schema.
-- Setup authentication.
-- Setup RBAC.
-- Setup dashboard layout.
-- Employee CRUD.
-
-## Phase 2 — Location & Attendance Core
-
-- Work location CRUD.
-- Assign location to employee.
-- Shift management.
-- GPS permission frontend.
-- Selfie capture frontend.
-- Check-in with geo-fencing.
-- Check-out with geo-fencing.
-- Attendance summary.
-- Manual adjustment.
-
-## Phase 3 — Leave Management
-
-- Leave request.
-- Approval workflow.
-- Notification basic.
-- Leave report.
-
-## Phase 4 — KPI Core
-
-- KPI template.
-- KPI assignment.
-- KPI input.
-- KPI scoring.
-- KPI dashboard.
-
-## Phase 5 — Superadmin Dashboard & Reports
-
-- Global dashboard.
-- Charts.
-- Filters.
-- Export CSV/Excel/PDF.
-- Audit log.
-
-## Phase 6 — Hardening & Production
-
-- Testing.
-- Security audit.
-- Performance optimization.
-- Backup strategy.
-- Deployment.
-- Documentation final.
-
----
-
-# 17. MVP Definition of Done
-
-Project MVP dianggap selesai jika:
-
-- Superadmin bisa login dan melihat dashboard global.
-- Admin HR bisa mengelola karyawan.
-- Admin HR bisa mengelola lokasi kerja untuk geo-fencing.
-- Admin HR bisa mengelola shift.
-- Karyawan bisa check-in dengan GPS + selfie.
-- Karyawan bisa check-out dengan GPS + selfie.
-- Sistem menolak absensi jika lokasi di luar radius.
-- Sistem menolak absensi jika GPS tidak aktif.
-- Sistem menolak absensi jika selfie tidak ada.
-- Sistem menghitung telat dan jam kerja otomatis.
-- Karyawan bisa mengajukan izin/cuti/sakit.
-- Supervisor/Admin bisa approve/reject pengajuan.
-- Admin bisa membuat template KPI.
-- Supervisor bisa input KPI karyawan.
-- Karyawan bisa melihat KPI pribadi.
-- Superadmin bisa melihat laporan absensi dan KPI.
-- Sistem memiliki audit log untuk aksi penting.
-- Semua route penting memiliki role/permission guard.
-- Data bisa diexport minimal CSV/Excel.
-- Testing dasar untuk attendance, geo-fencing, KPI, dan RBAC sudah ada.
-
----
-
-# 18. Prompt untuk AI Agent / Developer
-
-Gunakan prompt ini agar AI agent/developer membangun project sesuai dokumen dan tidak keluar scope.
-
-```text
-You are a senior fullstack engineer. Build a secure, scalable web app for Produsen Dimsum Medan to manage employee attendance, KPI, leave requests, reports, and superadmin dashboard.
-
-Source of truth:
-- Follow PRD.md strictly.
-- Do not change the core product scope without approval.
-- MVP must include auth, RBAC, employee management, work location geo-fencing, GPS + selfie attendance, shift, leave request, KPI, dashboard, reports, and audit log.
-
-Important attendance rules:
-1. Check-in requires GPS location and selfie.
-2. Check-out requires GPS location and selfie.
-3. Attendance must validate user location against assigned work location radius.
-4. Geo-fencing validation must happen in backend, not only frontend.
-5. Store latitude, longitude, GPS accuracy, distance from work location, selfie URL, timestamp, device info, IP, and user agent.
-6. Reject attendance if GPS is disabled, permission denied, selfie missing, or outside radius unless system config says pending approval.
-7. All attendance override/manual adjustment must require reason and create audit log.
-
-Engineering rules:
-1. Use TypeScript.
-2. Use strict validation.
-3. Use clean architecture: UI, service, repository/db layer separated.
-4. Backend authorization is mandatory for every protected action.
-5. Do not delete historical employee, attendance, KPI, or leave data. Use soft delete/deactivate.
-6. All sensitive actions must create audit logs.
-7. Use safe database migration. Never reset production data.
-8. Add tests for attendance logic, geo-fencing, KPI scoring, RBAC, and leave approval.
-9. Keep UI simple, professional, responsive, and easy for non-technical staff.
-10. Avoid unnecessary features before MVP is stable.
-
-Before coding a module:
-- Read related PRD.md section.
-- Confirm data model impact.
-- Implement backend first.
-- Add validation.
-- Add UI.
-- Add tests.
-- Update documentation.
-
-Every implementation output must include:
-- Changed files.
-- What was added.
-- How to test.
-- Any migration needed.
-- Any risk or limitation.
+```txt
+AUTH_INVALID_CREDENTIALS
+AUTH_USER_INACTIVE
+AUTH_FORBIDDEN
+EMPLOYEE_NOT_FOUND
+NIP_GENERATION_FAILED
+ATTENDANCE_ALREADY_CHECKED_IN
+ATTENDANCE_NOT_CHECKED_IN
+ATTENDANCE_ALREADY_CHECKED_OUT
+ATTENDANCE_GPS_REQUIRED
+ATTENDANCE_SELFIE_REQUIRED
+ATTENDANCE_OUTSIDE_GEOFENCE
+LEAVE_OVERLAP
+KPI_TEMPLATE_INVALID_WEIGHT
+KPI_RESULT_ALREADY_APPROVED
+REPORT_EXPORT_FAILED
 ```
 
+### 5.7 Deployment Architecture
+
+```mermaid
+flowchart TD
+    GitHub[GitHub main branch] --> Coolify[Coolify App]
+    Coolify --> Docker[Docker Build: Next.js standalone]
+    Docker --> App[MyProdusen Container]
+    App --> Postgres[(PostgreSQL Service)]
+    App --> Volume[(Persistent Volume /app/uploads)]
+    App --> Resend[Resend Email API]
+    App --> Health[/api/health]
+```
+
+Production startup:
+
+1. Validate env via `scripts/check-production-env.mjs`.
+2. Wait for PostgreSQL.
+3. Run `npm run db:deploy`.
+4. Optionally bootstrap Superadmin.
+5. Start Next.js standalone server.
+6. Healthcheck `/api/health`.
+
 ---
 
-# 19. Open Questions for Finalization
+## 6. Database Schema
 
-1. Berapa jumlah karyawan saat ini?
-2. Apakah lokasi kerja hanya satu atau ada beberapa cabang/lokasi produksi?
-3. Berapa radius absensi yang diinginkan? Default rekomendasi: 100 meter.
-4. Apakah absensi di luar radius langsung ditolak atau boleh pending approval?
-5. Apakah karyawan menggunakan HP masing-masing?
-6. Apakah semua karyawan memiliki akun login sendiri?
-7. Apakah ada beberapa shift kerja?
-8. Divisi apa saja yang ada di perusahaan?
-9. KPI ingin dinilai harian, mingguan, atau bulanan?
-10. Apakah laporan perlu PDF atau cukup Excel/CSV?
-11. Apakah perlu notifikasi WhatsApp?
-12. Apakah nanti perlu integrasi payroll/gaji?
+Database utama menggunakan PostgreSQL. Nama tabel mengikuti schema Drizzle saat
+ini. Diagram berikut merangkum entity utama.
+
+```mermaid
+erDiagram
+    User {
+        text id PK
+        text email UK
+        text username UK
+        text password
+        enum role
+        boolean isActive
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Employee {
+        text id PK
+        text nip UK
+        text userId UK
+        text fullName
+        text email
+        text phone
+        text address
+        datetime joinDate
+        text division
+        text position
+        text supervisorId
+        enum status
+        text defaultShiftId
+        text defaultLocationId
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    WorkLocation {
+        text id PK
+        text name
+        text address
+        real latitude
+        real longitude
+        int radius
+        boolean isActive
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Shift {
+        text id PK
+        text name
+        text startTime
+        text endTime
+        boolean isActive
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Attendance {
+        text id PK
+        text employeeId FK
+        text workLocationId FK
+        text shiftId FK
+        datetime checkInTime
+        datetime checkOutTime
+        real checkInLatitude
+        real checkInLongitude
+        real checkInAccuracy
+        real checkOutLatitude
+        real checkOutLongitude
+        real checkOutAccuracy
+        text checkInSelfiePath
+        text checkOutSelfiePath
+        text checkInGeoStatus
+        text checkOutGeoStatus
+        jsonb geoValidationMetadata
+        enum status
+        int lateMinutes
+        int earlyLeaveMinutes
+        int totalWorkMinutes
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    AttendanceException {
+        text id PK
+        text attendanceId FK
+        text employeeId FK
+        enum type
+        enum status
+        text reason
+        text reviewedBy
+        datetime reviewedAt
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    LeaveRequest {
+        text id PK
+        text employeeId FK
+        enum type
+        datetime startDate
+        datetime endDate
+        text reason
+        enum status
+        text approvedBy
+        datetime approvedAt
+        text rejectedBy
+        datetime rejectedAt
+        text rejectionReason
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    KpiTemplate {
+        text id PK
+        text name
+        text description
+        boolean isActive
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    KpiItem {
+        text id PK
+        text templateId FK
+        text name
+        text description
+        real weight
+        enum scoringType
+        real targetValue
+        real minValue
+        real maxValue
+        text unit
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    KpiAssignment {
+        text id PK
+        text employeeId FK
+        text templateId FK
+        text period
+        text assignedBy
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    KpiResult {
+        text id PK
+        text employeeId FK
+        text itemId FK
+        text period
+        real actualValue
+        real score
+        boolean isApproved
+        text approvedBy
+        datetime approvedAt
+        text notes
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    AuditLog {
+        text id PK
+        text actorUserId FK
+        text action
+        text targetType
+        text targetId
+        jsonb oldValueJson
+        jsonb newValueJson
+        text ipAddress
+        text userAgent
+        datetime createdAt
+    }
+
+    Notification {
+        text id PK
+        text userId FK
+        text title
+        text message
+        text type
+        boolean isRead
+        datetime createdAt
+    }
+
+    User ||--o| Employee : "may have employee profile"
+    Employee ||--o{ Attendance : "has attendance"
+    WorkLocation ||--o{ Attendance : "validates location"
+    Shift ||--o{ Attendance : "defines schedule"
+    Attendance ||--o{ AttendanceException : "may create exceptions"
+    Employee ||--o{ LeaveRequest : "submits"
+    Employee ||--o{ KpiAssignment : "assigned KPI"
+    KpiTemplate ||--o{ KpiItem : "has items"
+    KpiTemplate ||--o{ KpiAssignment : "assigned from"
+    KpiItem ||--o{ KpiResult : "scored in"
+    User ||--o{ AuditLog : "acts"
+    User ||--o{ Notification : "receives"
+```
+
+### 6.1 Table Descriptions
+
+| Tabel | Deskripsi |
+| --- | --- |
+| **User** | Akun login, role, status aktif, credential hash. |
+| **Employee** | Profil karyawan, NIP, divisi, posisi, supervisor, shift, lokasi kerja. |
+| **WorkLocation** | Lokasi kerja untuk geo-fencing. |
+| **Shift** | Jadwal kerja dan status aktif. |
+| **Attendance** | Check-in/out, GPS, selfie metadata, status, durasi kerja. |
+| **AttendanceException** | Queue review untuk masalah geo-fence/GPS/manual adjustment. |
+| **LeaveRequest** | Pengajuan cuti/sakit/izin dan approval state. |
+| **LeaveBalanceLedger** | Ledger saldo cuti. |
+| **KpiTemplate** | Master template KPI. |
+| **KpiItem** | Item KPI, bobot, metode scoring. |
+| **KpiAssignment** | Assignment KPI ke employee dan period. |
+| **KpiResult** | Nilai aktual, score, approval KPI. |
+| **AuditLog** | Catatan aksi sensitif. |
+| **Notification** | Notifikasi database untuk user. |
+| **PayrollPeriod / PayrollRun / PayrollStructure** | Payroll supporting modules. |
+| **OvertimeRate / OvertimeRequest** | Modul lembur. |
+| **Document / Announcement / Reimbursement** | Modul operasional pendukung. |
+
+
+### 6.2 Complete Module ERD
+
+Agar diagram tetap terbaca, ERD lengkap dipecah per domain modul.
+
+#### 6.2.1 Identity, Employee, Attendance, Leave, KPI
+
+```mermaid
+erDiagram
+    User ||--o| Employee : "profile"
+    User ||--o{ AuditLog : "actor"
+    User ||--o{ Notification : "receives"
+    Employee ||--o{ Attendance : "records"
+    WorkLocation ||--o{ Attendance : "location"
+    Shift ||--o{ Attendance : "schedule"
+    Attendance ||--o{ AttendanceException : "exceptions"
+    Employee ||--o{ LeaveRequest : "requests"
+    LeaveRequest ||--o{ LeaveBalanceLedger : "ledger"
+    Employee ||--o{ KpiAssignment : "assigned"
+    KpiTemplate ||--o{ KpiItem : "items"
+    KpiTemplate ||--o{ KpiAssignment : "template"
+    Employee ||--o{ KpiResult : "results"
+    KpiItem ||--o{ KpiResult : "scored item"
+
+    User {
+        text id PK
+        text email UK
+        text username UK
+        text password
+        UserRole role
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    Employee {
+        text id PK
+        text nip UK
+        text userId UK
+        text fullName
+        text email
+        text phone
+        text address
+        timestamp joinDate
+        text division
+        text position
+        text supervisorId
+        EmployeeStatus status
+        text profilePhoto
+        text emergencyContact
+        text defaultShiftId
+        text defaultLocationId
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    WorkLocation {
+        text id PK
+        text name
+        text address
+        real latitude
+        real longitude
+        int radius
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    Shift {
+        text id PK
+        text name
+        text startTime
+        text endTime
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    Attendance {
+        text id PK
+        text employeeId FK
+        text workLocationId FK
+        text shiftId FK
+        timestamp checkInTime
+        timestamp checkOutTime
+        real checkInLatitude
+        real checkInLongitude
+        real checkInAccuracy
+        real checkInDistance
+        text checkInSelfie
+        text checkInSelfieUrl
+        text checkInSelfiePath
+        timestamp checkInSelfieUploadedAt
+        int checkInSelfieSizeBytes
+        text checkInSelfieMimeType
+        text checkInDeviceInfo
+        text checkInIp
+        text checkInUserAgent
+        text checkInGeoStatus
+        real checkOutLatitude
+        real checkOutLongitude
+        real checkOutAccuracy
+        real checkOutDistance
+        text checkOutSelfie
+        text checkOutSelfieUrl
+        text checkOutSelfiePath
+        timestamp checkOutSelfieUploadedAt
+        int checkOutSelfieSizeBytes
+        text checkOutSelfieMimeType
+        text checkOutDeviceInfo
+        text checkOutIp
+        text checkOutUserAgent
+        text checkOutGeoStatus
+        jsonb geoValidationMetadata
+        AttendanceStatus status
+        int lateMinutes
+        int earlyLeaveMinutes
+        int totalWorkMinutes
+        text notes
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    AttendanceException {
+        text id PK
+        text attendanceId FK
+        text employeeId FK
+        AttendanceExceptionType type
+        AttendanceExceptionStatus status
+        text reason
+        jsonb metadata
+        text reviewedBy
+        timestamp reviewedAt
+        text reviewNote
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    LeaveRequest {
+        text id PK
+        text employeeId FK
+        LeaveType type
+        timestamp startDate
+        timestamp endDate
+        text reason
+        LeaveStatus status
+        text approvedBy
+        timestamp approvedAt
+        text rejectedBy
+        timestamp rejectedAt
+        text rejectionReason
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    LeaveBalanceLedger {
+        text id PK
+        text employeeId FK
+        text leaveRequestId FK
+        LeaveBalanceTransactionType transactionType
+        real amount
+        int balanceYear
+        text reason
+        text createdBy
+        timestamp createdAt
+    }
+
+    KpiTemplate {
+        text id PK
+        text name
+        text description
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    KpiItem {
+        text id PK
+        text templateId FK
+        text name
+        text description
+        real weight
+        KpiScoringType scoringType
+        real targetValue
+        real minValue
+        real maxValue
+        text unit
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    KpiAssignment {
+        text id PK
+        text employeeId FK
+        text templateId FK
+        text period
+        text assignedBy
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    KpiResult {
+        text id PK
+        text employeeId FK
+        text itemId FK
+        text period
+        real actualValue
+        real score
+        boolean isApproved
+        text approvedBy
+        timestamp approvedAt
+        text notes
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    AuditLog {
+        text id PK
+        text userId FK
+        text action
+        text entity
+        text entityId
+        text oldValue
+        text newValue
+        text ipAddress
+        text userAgent
+        timestamp createdAt
+    }
+
+    Notification {
+        text id PK
+        text userId FK
+        text title
+        text message
+        text type
+        boolean isRead
+        timestamp createdAt
+    }
+```
+
+#### 6.2.2 Payroll, Overtime, Reimbursement
+
+```mermaid
+erDiagram
+    User ||--o{ PayrollPeriod : "created or locked by"
+    Employee ||--o{ EmployeePayroll : "salary assignment"
+    PayrollStructure ||--o{ PayrollComponent : "components"
+    PayrollStructure ||--o{ EmployeePayroll : "assigned"
+    PayrollRun ||--o{ PayrollItem : "contains"
+    PayrollItem ||--o| Payslip : "generates"
+    Employee ||--o{ PayrollItem : "paid"
+    Employee ||--o{ Payslip : "receives"
+    OvertimeRate ||--o{ OvertimeRequest : "rate"
+    Employee ||--o{ OvertimeRequest : "requests"
+    PayrollRun ||--o{ OvertimeRequest : "paid in"
+    ExpenseCategory ||--o{ ExpenseClaim : "category"
+    Employee ||--o{ ExpenseClaim : "claims"
+    ExpenseClaim ||--o{ ExpenseItem : "items"
+    ExpenseClaim ||--o{ ExpenseReceipt : "receipts"
+
+    PayrollPeriod {
+        text id PK
+        text name
+        timestamp startDate
+        timestamp endDate
+        PayrollPeriodStatus status
+        text lockedBy
+        timestamp lockedAt
+        text lockedReason
+        text createdBy
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    PayrollStructure {
+        text id PK
+        text name
+        text description
+        real baseSalary
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    PayrollComponent {
+        text id PK
+        text structureId FK
+        text name
+        PayrollComponentType type
+        real amount
+        boolean isPercentage
+        boolean isTaxable
+        text description
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    EmployeePayroll {
+        text id PK
+        text employeeId FK
+        text structureId FK
+        real baseSalary
+        timestamp effectiveDate
+        timestamp endDate
+        text bankName
+        text bankAccountNumber
+        text bankAccountName
+        text taxId
+        text bpjsKesehatanNumber
+        text bpjsKetenagakerjaanNumber
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    PayrollRun {
+        text id PK
+        text period UK
+        timestamp periodStart
+        timestamp periodEnd
+        PayrollRunStatus status
+        int totalEmployees
+        real totalGrossPay
+        real totalDeductions
+        real totalNetPay
+        text calculatedBy
+        timestamp calculatedAt
+        text approvedBy
+        timestamp approvedAt
+        timestamp paidAt
+        text notes
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    PayrollItem {
+        text id PK
+        text runId FK
+        text employeeId FK
+        real baseSalary
+        real totalAllowances
+        real totalDeductions
+        real overtimePay
+        real attendanceDeduction
+        real taxAmount
+        real grossPay
+        real netPay
+        int workDays
+        int absentDays
+        int lateDays
+        real overtimeHours
+        text notes
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    Payslip {
+        text id PK
+        text itemId UK
+        text employeeId FK
+        text period
+        text fileUrl
+        boolean isDownloaded
+        timestamp downloadedAt
+        timestamp createdAt
+    }
+
+    OvertimeRate {
+        text id PK
+        text name
+        real multiplier
+        text description
+        boolean isWeekday
+        boolean isWeekend
+        boolean isHoliday
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    OvertimeRequest {
+        text id PK
+        text employeeId FK
+        timestamp overtimeDate
+        text startTime
+        text endTime
+        real durationHours
+        text rateId FK
+        text reason
+        OvertimeStatus status
+        text approvedBy
+        timestamp approvedAt
+        text rejectedReason
+        real calculatedPay
+        boolean isPaid
+        text paidInPayrollRunId FK
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    ExpenseCategory {
+        text id PK
+        text name
+        text description
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    ExpenseClaim {
+        text id PK
+        text employeeId FK
+        text categoryId FK
+        text title
+        text description
+        real totalAmount
+        ReimbursementStatus status
+        text approvedBy
+        timestamp approvedAt
+        text rejectedReason
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    ExpenseItem {
+        text id PK
+        text claimId FK
+        text description
+        real amount
+        timestamp expenseDate
+        timestamp createdAt
+    }
+
+    ExpenseReceipt {
+        text id PK
+        text claimId FK
+        text fileUrl
+        text fileName
+        int fileSize
+        text mimeType
+        timestamp uploadedAt
+    }
+```
+
+#### 6.2.3 Communication, Calendar, Performance Review, Documents, Settings
+
+```mermaid
+erDiagram
+    User ||--o{ Announcement : "publishes"
+    Announcement ||--o{ AnnouncementRead : "read receipts"
+    Announcement ||--o{ AnnouncementComment : "comments"
+    User ||--o{ AnnouncementRead : "reads"
+    User ||--o{ AnnouncementComment : "comments"
+    ReviewCycle ||--o{ PerformanceReview : "contains"
+    Employee ||--o{ PerformanceReview : "reviewed"
+    Employee ||--o{ PerformanceReview : "reviewer"
+    PerformanceReview ||--o{ ReviewGoal : "goals"
+    Employee ||--o{ EmployeeDocument : "documents"
+    User ||--o{ EmployeeDocument : "uploads approves"
+    User ||--o{ CompanySetting : "updates"
+
+    Announcement {
+        text id PK
+        text title
+        text content
+        AnnouncementType type
+        AnnouncementPriority priority
+        text targetAudience
+        text publishedBy FK
+        timestamp publishedAt
+        timestamp expiresAt
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    AnnouncementRead {
+        text id PK
+        text announcementId FK
+        text userId FK
+        timestamp readAt
+    }
+
+    AnnouncementComment {
+        text id PK
+        text announcementId FK
+        text userId FK
+        text content
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    Holiday {
+        text id PK
+        text name
+        timestamp date
+        text type
+        boolean isRecurring
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    CompanyEvent {
+        text id PK
+        text title
+        text description
+        timestamp startDate
+        timestamp endDate
+        text location
+        text createdBy FK
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    ReviewCycle {
+        text id PK
+        text name
+        text description
+        timestamp startDate
+        timestamp endDate
+        ReviewCycleStatus status
+        text createdBy FK
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    PerformanceReview {
+        text id PK
+        text cycleId FK
+        text employeeId FK
+        text reviewerId FK
+        ReviewStatus status
+        text selfAssessment
+        text managerAssessment
+        real overallRating
+        text strengths
+        text areasForImprovement
+        text goals
+        text comments
+        timestamp submittedAt
+        timestamp approvedAt
+        text approvedBy
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    ReviewGoal {
+        text id PK
+        text reviewId FK
+        text title
+        text description
+        timestamp targetDate
+        int progress
+        boolean isCompleted
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    EmployeeDocument {
+        text id PK
+        text employeeId FK
+        DocumentCategory category
+        text title
+        text description
+        text fileUrl
+        text fileName
+        int fileSize
+        text mimeType
+        int version
+        DocumentStatus status
+        timestamp expiryDate
+        text uploadedBy FK
+        text approvedBy FK
+        timestamp approvedAt
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    CompanySetting {
+        text id PK
+        text key UK
+        text value
+        text description
+        text updatedBy FK
+        timestamp updatedAt
+    }
+```
+
+#### 6.2.4 ERD Notes
+
+- Current codebase also contains offline sync/conflict client tables in IndexedDB; those are client-side persistence and are not part of PostgreSQL ERD.
+- Some foreign keys are enforced at application/service level even where SQL-level FK constraints are intentionally not declared yet.
+- Any new module table must be added to this ERD and `DATABASE.md` before implementation.
+
+### 6.3 Important Indexes and Constraints
+
+Required indexes/constraints:
+
+```txt
+User.email UNIQUE
+User.username UNIQUE
+Employee.nip UNIQUE
+Employee.userId UNIQUE
+Attendance.employeeId
+Attendance.workLocationId
+Attendance.status
+Attendance.employeeId + checkInDate UNIQUE
+Attendance.employeeId + checkInTime DESC
+Attendance.status + checkInTime DESC
+Attendance.check_in_geo_status
+Attendance.check_out_geo_status
+Employee.division
+Employee.status
+WorkLocation.isActive
+KpiAssignment.employeeId
+KpiAssignment.period
+KpiResult.employeeId
+AuditLog.actorUserId
+AuditLog.createdAt
+```
+
+### 6.4 Storage Model
+
+Selfie file path:
+
+```txt
+/app/uploads/attendance-selfies/<year>/<month>/<employeeId>/<attendanceId>-{checkin|checkout}.<ext>
+```
+
+Database stores:
+
+- Relative storage key/path.
+- Protected route URL.
+- MIME type.
+- Size.
+- Uploaded timestamp.
+
+Database does not store binary selfie content.
 
 ---
 
-# 20. Final Notes
+## 7. Design & Technical Constraints
 
-Dokumen ini menjadi panduan utama untuk membangun web app management KPI dan kehadiran karyawan Produsen Dimsum Medan.
+### 7.1 UI/UX Constraints
 
-Semua perubahan scope wajib diperbarui di PRD.md terlebih dahulu sebelum implementasi agar project tidak ambigu dan tidak keluar arah.
+Approved brand colors:
+
+```txt
+Primary Yellow: #FFC107
+Accent Red:    #E53935
+Black:         #111111
+Soft Gray:     #F5F5F5
+Success Green: #22C55E
+```
+
+Approved style:
+
+- Clean.
+- Minimal.
+- Professional internal dashboard.
+- Modern HRIS mobile app.
+- Rounded cards.
+- Bottom navigation on mobile.
+- Sidebar/navigation on desktop.
+- Not AI-looking.
+- Easy for non-technical staff.
+
+Rules:
+
+- Do not change logo without explicit request.
+- Do not change brand colors without explicit request.
+- Do not overuse yellow or red.
+- Yellow is CTA/accent.
+- Red is danger/reject/late/critical only.
+- Preserve reference UI direction from `UI_UX_GUIDE.md` and external design references.
+
+### 7.2 Email UI Constraints
+
+Email must follow reference style:
+
+- Yellow header `#FFC107`.
+- MyProdusen logo.
+- Rounded white main card.
+- Soft cream background.
+- Simple icon/hero feel.
+- Clear heading and CTA.
+- Footer: MyProdusen, by TBM Group, Produsen Dimsum Medan, Medan, Sumatera Utara.
+- Tone: ramah, profesional, jelas, singkat, mendukung produktivitas tim.
+
+Required transactional emails:
+
+- Register / activation email.
+- Account approved / active email.
+- Forgot password email.
+- Password changed email.
+- Role changed email.
+- Notification center email.
+
+Email delivery constraints:
+
+- Resend API key stored only in environment variables.
+- Sender domain must be verified in Resend DNS.
+- Email failures must not block core mutation unless explicitly required.
+- Activation and reset links must be HTTPS in production.
+
+### 7.3 Security Constraints
+
+- Passwords must be hashed.
+- Password policy requires strong password.
+- JWT secret required and strong in production.
+- Inactive user cannot login.
+- Protected API must verify auth and permission server-side.
+- CSRF/origin checks apply where configured.
+- Rate limit login/register.
+- Uploaded file must validate MIME and size.
+- Uploaded selfie not publicly exposed.
+- Use protected selfie routes with authorization.
+- Audit log sensitive actions.
+- Never commit `.env`, secrets, dumps, or private upload data.
+
+### 7.4 Backend Constraints
+
+- Use TypeScript.
+- Use existing stack before adding packages.
+- Keep routes thin.
+- Put business rules in service layer.
+- Validate request body with Zod or existing validators.
+- Use PostgreSQL-compatible queries.
+- Use additive migrations.
+- Never run destructive migration without explicit approval.
+- Use indexes for dashboards and reports.
+- Do not hard delete historical records.
+
+### 7.5 Frontend Constraints
+
+- Use mobile-first layout.
+- Use existing global CSS/design tokens.
+- Prefer semantic HTML controls.
+- Buttons need disabled/loading states.
+- Forms need labels, helper text, and clear errors.
+- Dashboards need loading/empty/error/success states.
+- Avoid heavy client JavaScript on public landing.
+- Static public assets should be optimized and cached.
+
+### 7.6 Testing Constraints
+
+Required test coverage:
+
+- NIP format, uniqueness, sequence, non-reuse.
+- Geo-fencing inside/outside/invalid/bad accuracy.
+- Attendance check-in/out and duplicate prevention.
+- RBAC cross-role access boundaries.
+- Inactive user cannot login.
+- Account activation token flow.
+- Email template content and activation URL.
+- KPI scoring.
+- Leave overlap and approval/rejection.
+- Report export scope and audit logging.
+
+Commands before release:
+
+```bash
+npm run lint
+npm run test
+npm run build
+npm run release:migrations
+```
+
+Preferred release gate:
+
+```bash
+npm run release:check
+```
+
+### 7.7 Performance Constraints
+
+- Landing page should be static and fast.
+- Use optimized images (`logo-fast.webp`) for public pages.
+- Avoid unnecessary hydration on public pages.
+- Cache static assets with immutable headers.
+- Dashboard/report queries must use indexes.
+- CSV export rows capped by `ATTENDANCE_EXPORT_MAX_ROWS`.
+- Healthcheck should return quickly and avoid leaking secrets.
+
+### 7.8 Deployment Constraints
+
+Production env required:
+
+```env
+DATABASE_URL=
+JWT_SECRET=
+NEXTAUTH_SECRET=
+APP_URL=
+NEXT_PUBLIC_APP_URL=
+NODE_ENV=production
+UPLOAD_DIR=/app/uploads
+ATTENDANCE_SELFIE_DIR=attendance-selfies
+MAX_UPLOAD_SIZE=
+MAX_SELFIE_SIZE_MB=1
+GPS_MAX_ACCURACY_METERS=100
+DEFAULT_GEOFENCE_RADIUS_METERS=100
+REJECT_OUTSIDE_GEOFENCE=true
+GPS_TIMESTAMP_MAX_AGE_SECONDS=120
+ATTENDANCE_EXPORT_MAX_ROWS=5000
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=
+SUPERADMIN_EMAIL=
+SUPERADMIN_PASSWORD=
+```
+
+Deployment rules:
+
+- Configure secrets in Coolify, not git.
+- Mount persistent volume at `/app/uploads`.
+- PostgreSQL backups daily.
+- Upload volume backups daily.
+- Restore drill quarterly.
+- Check `/api/health` after deploy.
+- Remove or rotate `SUPERADMIN_*` after first login.
+
+### 7.9 Out of Scope / Phase 2
+
+Phase 2 features must be documented before implementation:
+
+- QR code attendance.
+- Face matching selfie.
+- Liveness detection.
+- Anti-fake GPS detection.
+- WhatsApp notification.
+- Native mobile app.
+- Payroll deep integration.
+- Production/inventory sync.
+- AI performance insight.
+
+---
+
+## 8. MVP Acceptance Criteria
+
+A release is MVP-ready when all points below pass:
+
+1. User can register, receive email activation, activate account, and login.
+2. Superadmin can see registered users at `/dashboard/users` and assign role/status.
+3. Employee data can be created with auto-generated NIP.
+4. Work location and shift can be configured.
+5. Employee can check-in and check-out with GPS + realtime selfie.
+6. Backend validates geo-fence and stores selfie metadata securely.
+7. Leave/sick/permission request can be created and approved/rejected.
+8. KPI template/assignment/result/scoring works with approval rules.
+9. Dashboard displays role-appropriate data without leakage.
+10. Reports/export work with role scope and audit log.
+11. Notifications and audit log are written for sensitive workflows.
+12. Docker build works in Coolify.
+13. `/api/health` returns healthy after deploy.
+14. `npm run release:check` passes.
+15. Manual smoke test in `FINAL_CHECKLIST.md` passes.
+
+---
+
+## 9. References
+
+Canonical project docs:
+
+- [`AGENTS.md`](./AGENTS.md)
+- [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md)
+- [`FINAL_CHECKLIST.md`](./FINAL_CHECKLIST.md)
+- [`UI_UX_GUIDE.md`](./UI_UX_GUIDE.md)
+- [`UI_ALIGNMENT.md`](./UI_ALIGNMENT.md)
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md)
+- [`DATABASE.md`](./DATABASE.md)
+- [`SECURITY.md`](./SECURITY.md)
+- [`DEPLOYMENT.md`](./DEPLOYMENT.md)
+- [`COOLIFY.md`](./COOLIFY.md)
+- [`BACKUP_RESTORE.md`](./BACKUP_RESTORE.md)
+- [`REFERENCE_REPO_ANALYSIS.md`](./REFERENCE_REPO_ANALYSIS.md)
+
+External reference material:
+
+- `/Users/macbook/Downloads/contoh_prd.md`
+- `/Users/macbook/Downloads/Referencess UI UX MyProdusen/`
+- Resend send email docs: `https://resend.com/docs/send-with-nodejs`
+- Resend domain verification docs: `https://resend.com/docs/dashboard/domains/introduction`
