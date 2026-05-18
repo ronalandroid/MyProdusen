@@ -19,6 +19,7 @@
 | Touch attendance/selfie/GPS code | [SECURITY.md](./SECURITY.md) + [AGENTS.md](./AGENTS.md) |
 | Build or change a report | [REPORTS.md](./REPORTS.md) |
 | Run the test suite | [TESTING.md](./TESTING.md) |
+| Match the live UI to the design boards | [references/README.md](./references/README.md) |
 | Deploy to Coolify | [DEPLOYMENT.md](./DEPLOYMENT.md) → [COOLIFY.md](./COOLIFY.md) |
 | Plan the next sprint | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) |
 | Cut a release | [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md) |

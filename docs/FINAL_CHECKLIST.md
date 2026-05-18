@@ -19,8 +19,8 @@ verification step, not a wish.
 ## 2. Build & verification
 
 - [ ] `npm run release:check` exits 0. This is the local code-readiness gate
-      — it runs `lint`, the full `test` suite, the production `build`, and
-      the migration-coverage check (`scripts/check-migrations-coverage.mjs`).
+      — it runs `lint`, the full `test` suite, the production `build`, the
+      migration-coverage check, and the design-reference contract check.
 - [ ] `npm run release:check:full` exits 0 on the deploy target. Same as
       above plus the env preflight (`scripts/check-production-env.mjs`),
       so it only passes when production env vars are wired in.
@@ -124,3 +124,17 @@ Run this manually before declaring a release ready.
       `josephines1/o-present` (research-only per `REFERENCE_REPO_ANALYSIS.md`).
 - [ ] No public uploads folder, no base64 selfies, no default password
       `123456`, no Tabler / Bootstrap UI kit added.
+
+## 10. Design reference contract
+
+- [ ] Every screen affected by this release is checked against
+      `docs/references/design-checklist.md`.
+- [ ] No invented layout, copy, or interaction that is not present in
+      `docs/references/screens/*.png`.
+- [ ] Brand tokens (`--primary`, `--accent-red`, `--text-primary`,
+      `--bg-main`, `--success`, `--warning`) used; no hard-coded hex.
+- [ ] Every commit that touched UI cites the matching checklist line.
+- [ ] Email templates follow `docs/references/email-style-guide.md`.
+- [ ] If the operator approved a new design board, the file in
+      `docs/references/screens/` was replaced in place AND
+      `design-checklist.md` was updated in the same PR.

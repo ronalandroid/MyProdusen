@@ -22,6 +22,7 @@ Current canonical docs only. Historical docs are under `_archive/`.
 | [REPORTS.md](./REPORTS.md) | Attendance reports, exports, audit-logged CSV |
 | [TESTING.md](./TESTING.md) | How to run tests and what is covered |
 | [UI_UX_GUIDE.md](./UI_UX_GUIDE.md) | Brand tokens, mobile-first patterns, design board ↔ live module map, responsive audit log |
+| [references/](./references/README.md) | Locked design source-of-truth: screenshots + per-screen checklist + email style guide |
 
 ## Setup & deployment
 
