@@ -46,8 +46,10 @@ export default function LocationsPage() {
 
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<WorkLocationItem | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<WorkLocationItem | null>(null);
   const [form, setForm] = useState<LocationFormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -177,9 +179,9 @@ export default function LocationsPage() {
   }
 
   async function remove(location: WorkLocationItem) {
-    if (!confirm(`Hapus lokasi "${location.name}"? Tindakan ini tidak dapat dibatalkan.`)) return;
     setError(null);
     setMessage(null);
+    setDeleting(true);
     try {
       const response = await fetch(`/api/work-locations/${location.id}`, {
         method: "DELETE",
@@ -190,9 +192,12 @@ export default function LocationsPage() {
         throw new Error(payload.error || "Gagal menghapus lokasi.");
       }
       setMessage("Lokasi kerja berhasil dihapus.");
+      setPendingDelete(null);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menghapus lokasi.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -282,7 +287,7 @@ export default function LocationsPage() {
                 <button type="button" className="btn btn-secondary btn-sm" style={{ flex: 1, fontSize: "12px" }} onClick={() => openEdit(loc)}>
                   <Edit size={14} className="mr-1" /> Edit
                 </button>
-                <button type="button" className="btn btn-ghost btn-sm" style={{ fontSize: "12px" }} onClick={() => void remove(loc)} aria-label={`Hapus ${loc.name}`}>
+                <button type="button" className="btn btn-ghost btn-sm" style={{ fontSize: "12px" }} onClick={() => setPendingDelete(loc)} aria-label={`Hapus ${loc.name}`}>
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -319,7 +324,7 @@ export default function LocationsPage() {
                   required
                 />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 9rem), 1fr))", gap: "12px", marginBottom: "16px" }}>
                 <div>
                   <label className="label">Latitude</label>
                   <input
@@ -389,6 +394,23 @@ export default function LocationsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {pendingDelete && (
+        <div className="overlay" onClick={() => (!deleting ? setPendingDelete(null) : undefined)}>
+          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="delete-location-title" onClick={(event) => event.stopPropagation()}>
+            <h2 id="delete-location-title" style={{ fontSize: "18px", fontWeight: 700, marginBottom: "8px" }}>Hapus lokasi kerja?</h2>
+            <p className="text-sm" style={{ color: "var(--text-secondary)", marginBottom: "16px" }}>
+              Lokasi "{pendingDelete.name}" akan dinonaktifkan dari daftar operasional. Riwayat absensi lama tetap tersimpan.
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setPendingDelete(null)} disabled={deleting}>Batal</button>
+              <button type="button" className="btn btn-danger" onClick={() => void remove(pendingDelete)} disabled={deleting}>
+                {deleting ? "Menghapus..." : "Hapus"}
+              </button>
+            </div>
           </div>
         </div>
       )}
