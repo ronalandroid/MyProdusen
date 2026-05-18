@@ -16,33 +16,39 @@ export default function ChangePasswordPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setState("loading");
     setMessage("");
 
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     const payload = {
       currentPassword: String(form.get("currentPassword") || ""),
       newPassword: String(form.get("newPassword") || ""),
       confirmPassword: String(form.get("confirmPassword") || ""),
     };
 
-    const response = await fetch("/api/auth/change-password", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const result = await response.json().catch(() => null);
+    try {
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => null);
 
-    if (!response.ok || !result?.success) {
+      if (!response.ok || !result?.success) {
+        setState("error");
+        setMessage(result?.error || "Password gagal diubah");
+        return;
+      }
+
+      formElement.reset();
+      setState("success");
+      setMessage("Password berhasil diubah. Gunakan password baru saat login berikutnya.");
+    } catch (error) {
       setState("error");
-      setMessage(result?.error || "Password gagal diubah");
-      return;
+      setMessage(error instanceof Error ? error.message : "Password gagal diubah");
     }
-
-    event.currentTarget.reset();
-    setState("success");
-    setMessage("Password berhasil diubah. Gunakan password baru saat login berikutnya.");
   }
 
   return (

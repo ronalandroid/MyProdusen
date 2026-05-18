@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import { fetchProfile } from "@/lib/auth-client";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { ToastProvider } from "@/components/ui/Toast";
 
 export default function DashboardLayout({
   children,
@@ -29,16 +30,18 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="layout-wrapper">
-      {/* Navigation (Bottom on Mobile, Sidebar on Desktop) */}
-      <nav className="nav-container" aria-label="Main navigation">
-        <Sidebar />
-      </nav>
+    <ToastProvider>
+      <div className="layout-wrapper">
+        {/* Navigation (Bottom on Mobile, Sidebar on Desktop) */}
+        <nav className="nav-container" aria-label="Main navigation">
+          <Sidebar />
+        </nav>
 
-      {/* Main Content Area */}
-      <main className="mobile-content">
-        {children}
-      </main>
-    </div>
+        {/* Main Content Area */}
+        <main className="mobile-content">
+          {children}
+        </main>
+      </div>
+    </ToastProvider>
   );
 }

@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { Users, Clock, ShieldCheck, ChevronRight } from "lucide-react";
@@ -14,7 +12,7 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-6 flex items-center justify-between w-full">
         <div className="flex items-center gap-3">
-          <Image src="/logo.png" alt="MyProdusen Logo" width={56} height={56} className="w-12 h-12 lg:w-14 lg:h-14 object-contain" priority />
+          <Image src="/logo-fast.webp" alt="MyProdusen Logo" width={56} height={56} className="w-12 h-12 lg:w-14 lg:h-14 object-contain" priority />
           <div className="flex flex-col">
             <span className="text-xl lg:text-2xl font-black tracking-tight leading-none text-[#111111]">
               My<span className="text-[#FFC107]">Produsen</span>
@@ -108,14 +106,14 @@ export default function LandingPage() {
             {/* Screen Content - Mimicking the Splash/Onboarding */}
             <div className="flex-1 bg-[#FFC107] flex flex-col items-center justify-center p-6 relative">
               <div className="absolute top-8 left-6 flex items-center gap-2">
-                 <Image src="/logo.png" width={28} height={28} alt="Logo" className="w-7 h-7" />
+                 <Image src="/logo-fast.webp" width={28} height={28} alt="Logo" className="w-7 h-7" />
                  <div className="flex flex-col">
                    <span className="text-[10px] font-black leading-tight text-[#111111]">My<span className="text-white">Produsen</span></span>
                    <span className="text-[6px] font-bold text-[#111111]">Produsen Dimsum Medan</span>
                  </div>
               </div>
 
-              <Image src="/logo.png" width={160} height={160} alt="Big Logo" className="mt-12 drop-shadow-xl w-32 sm:w-40 transform transition-transform duration-700 group-hover:scale-105" />
+              <Image src="/logo-fast.webp" width={160} height={160} alt="MyProdusen chicken mascot" className="mt-12 drop-shadow-xl w-32 sm:w-40 transform transition-transform duration-700 group-hover:scale-105" />
               
               <div className="mt-auto w-full pb-8">
                 <h3 className="text-[22px] sm:text-2xl font-black text-[#111111] leading-tight text-center tracking-tight">
@@ -147,7 +145,7 @@ export default function LandingPage() {
       <div className="bg-[#FFC107] py-8 sm:py-10 mt-auto">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-            <Image src="/logo.png" width={64} height={64} alt="Chicken Logo" className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-md" />
+            <Image src="/logo-fast.webp" width={64} height={64} alt="MyProdusen chicken mascot" className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-md" />
             <div>
               <h2 className="text-xl sm:text-[26px] font-black text-[#111111] tracking-tight">Halo TBM Mania, Siap Gaspol? 🔥</h2>
               <p className="text-sm sm:text-base font-bold text-[#3A2C00] mt-1 sm:mt-2">Mari kerja lebih cerdas, cepat, dan makin solid bersama-sama.</p>

@@ -1,7 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { Poppins } from "next/font/google";
 import "@/lib/init";
 import "./globals.css";
-import { ToastProvider } from "@/components/ui/Toast";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  display: "swap",
+  variable: "--font-poppins",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || "https://myprodusen.online"),
@@ -55,12 +62,6 @@ export default function RootLayout({
   return (
     <html lang="id">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -69,12 +70,10 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className="antialiased" suppressHydrationWarning>
-        <ToastProvider>
-          <div className="mobile-container">
-            {children}
-          </div>
-        </ToastProvider>
+      <body className={`${poppins.variable} antialiased`} suppressHydrationWarning>
+        <div className="mobile-container">
+          {children}
+        </div>
       </body>
     </html>
   );

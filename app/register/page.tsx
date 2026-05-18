@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
+import { ArrowLeft, CheckCircle, Eye, EyeOff, Lock, Mail, ShieldCheck, User } from "lucide-react";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -12,11 +12,12 @@ export default function RegisterPage() {
 
   async function handleRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setError("");
     setSuccess("");
     setIsSubmitting(true);
 
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     const payload = {
       username: String(form.get("username") || "").trim(),
       email: String(form.get("email") || "").trim(),
@@ -35,7 +36,7 @@ export default function RegisterPage() {
         throw new Error(result?.error || "Registrasi gagal");
       }
 
-      event.currentTarget.reset();
+      formElement.reset();
       setSuccess("Registrasi berhasil. Tunggu aktivasi dari Superadmin atau HRD sebelum login.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registrasi gagal");
@@ -59,7 +60,52 @@ export default function RegisterPage() {
       </div>
 
       <section className="auth-shell relative z-10 !min-h-[calc(100dvh-64px)]">
-        <div className="auth-panel animate-scale-in">
+        <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          <div className="hidden lg:flex flex-col justify-center space-y-8 animate-fade-in">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-[1.35rem] bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] flex items-center justify-center shadow-lg">
+                <img src="/logo.png" alt="" className="w-10 h-10" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1">
+                  <span className="text-3xl font-extrabold text-[var(--text-primary)]">My</span>
+                  <span className="text-3xl font-extrabold text-[var(--primary)]">Produsen</span>
+                </div>
+                <p className="text-sm text-[var(--text-muted)] font-medium">Produsen Dimsum Medan</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <span className="inline-flex items-center gap-2 rounded-full bg-[var(--primary)]/15 px-4 py-2 text-sm font-bold text-[var(--text-primary)] ring-1 ring-[var(--primary)]/30">
+                <ShieldCheck size={16} aria-hidden="true" />
+                Pendaftaran internal aman
+              </span>
+              <h1 className="text-5xl font-extrabold text-[var(--text-primary)] leading-tight">
+                Mulai kelola HR, kehadiran, dan KPI dalam satu sistem
+              </h1>
+              <p className="text-lg text-[var(--text-secondary)] leading-relaxed max-w-lg">
+                Buat akun perusahaan, lalu tunggu persetujuan HRD atau Superadmin sebelum masuk ke dashboard.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 max-w-xl">
+              {[
+                ["Terintegrasi", "Data HR dalam satu sistem."],
+                ["Praktis", "Akses cepat kapan saja."],
+                ["Aman", "Akun aktif setelah disetujui."],
+              ].map(([title, description]) => (
+                <div key={title} className="rounded-2xl border border-[var(--border-color)] bg-white/80 p-4 shadow-sm">
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--text-primary)]">
+                    <CheckCircle size={18} aria-hidden="true" />
+                  </div>
+                  <p className="text-sm font-bold text-[var(--text-primary)]">{title}</p>
+                  <p className="mt-1 text-xs text-[var(--text-muted)]">{description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="auth-panel lg:mx-0 animate-scale-in">
           <div className="auth-card">
             <div className="mb-8 text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-[1.35rem] bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] flex items-center justify-center shadow-lg">
@@ -131,6 +177,7 @@ export default function RegisterPage() {
               </p>
             </div>
           </div>
+        </div>
         </div>
       </section>
     </main>

@@ -41,9 +41,9 @@ log_info "Starting backup process..."
 
 # Backup database
 log_info "Backing up database..."
-DB_BACKUP_FILE="$BACKUP_DIR/database/myprodusen_db_$DATE.sql.gz"
+DB_BACKUP_FILE="$BACKUP_DIR/database/myprodusen_db_$DATE.dump"
 
-if pg_dump "$DATABASE_URL" | gzip > "$DB_BACKUP_FILE"; then
+if pg_dump "$DATABASE_URL" --format=custom --no-owner --no-acl --file="$DB_BACKUP_FILE"; then
     DB_SIZE=$(du -h "$DB_BACKUP_FILE" | cut -f1)
     log_info "Database backup completed: $DB_BACKUP_FILE ($DB_SIZE)"
 else
@@ -53,7 +53,7 @@ fi
 
 # Backup uploads directory
 log_info "Backing up uploads directory..."
-UPLOADS_DIR="${UPLOAD_DIR:-./public/uploads}"
+UPLOADS_DIR="${UPLOAD_DIR:-/app/uploads}"
 UPLOADS_BACKUP_FILE="$BACKUP_DIR/uploads/myprodusen_uploads_$DATE.tar.gz"
 
 if [ -d "$UPLOADS_DIR" ]; then
@@ -69,7 +69,7 @@ fi
 
 # Clean old backups
 log_info "Cleaning old backups (older than $RETENTION_DAYS days)..."
-find "$BACKUP_DIR/database" -name "myprodusen_db_*.sql.gz" -mtime +$RETENTION_DAYS -delete
+find "$BACKUP_DIR/database" -name "myprodusen_db_*.dump" -mtime +$RETENTION_DAYS -delete
 find "$BACKUP_DIR/uploads" -name "myprodusen_uploads_*.tar.gz" -mtime +$RETENTION_DAYS -delete
 
 log_info "Backup process completed successfully"

@@ -31,6 +31,7 @@ Current canonical docs only. Historical docs are under `_archive/`.
 | [QUICK_START.md](./QUICK_START.md) | Five-minute developer onboarding |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | VPS + Coolify rollout, env vars, backup/restore |
 | [COOLIFY.md](./COOLIFY.md) | Coolify-specific config and persistent storage |
+| [BACKUP_RESTORE.md](./BACKUP_RESTORE.md) | Standalone backup, restore, and staging drill runbook |
 
 ## Archive
 
