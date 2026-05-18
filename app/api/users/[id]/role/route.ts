@@ -5,7 +5,7 @@ import { errorResponse, forbiddenResponse, successResponse, unauthorizedResponse
 import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { canManageRole } from '@/lib/permissions';
 import { logAudit } from '@/lib/audit';
-import { sendAuthEmail } from '@/lib/email';
+import { getUserEmailEvents, sendAuthEmail } from '@/lib/email';
 
 const updateRoleSchema = z.object({
   role: z.enum(['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE']),
@@ -32,12 +32,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return forbiddenResponse('Anda tidak memiliki akses untuk role tersebut');
     }
 
+    const currentUser = await authService.getUserSummary(id);
     const updated = await authService.updateUserRole(id, validation.data.role as UserRole, validation.data.isActive);
     await logAudit(actor.userId, 'UPDATE_ROLE', 'User', id, undefined, updated, request);
-    await sendAuthEmail('role-changed', updated.email, { role: updated.role }).catch(() => undefined);
 
-    if (updated.isActive) {
-      await sendAuthEmail('account-approved', updated.email).catch(() => undefined);
+    for (const event of getUserEmailEvents(currentUser, updated)) {
+      await sendAuthEmail(event, updated.email, { role: updated.role }).catch(() => undefined);
     }
 
     return successResponse(updated, 'Role user berhasil diperbarui');

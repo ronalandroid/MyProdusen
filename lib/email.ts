@@ -1,4 +1,10 @@
-export type EmailTemplate = 'register' | 'forgot-password' | 'reset-password' | 'role-changed' | 'account-approved';
+export type EmailTemplate = 'register' | 'forgot-password' | 'reset-password' | 'role-changed' | 'account-approved' | 'notification-center';
+type UserEmailEvent = Extract<EmailTemplate, 'account-approved' | 'role-changed'>;
+
+interface UserEmailState {
+  role: string;
+  isActive: boolean;
+}
 
 interface SendEmailInput {
   to: string;
@@ -24,6 +30,20 @@ const resendEndpoint = 'https://api.resend.com/emails';
 const appName = 'MyProdusen';
 const companyName = 'Produsen Dimsum Medan';
 
+export function getUserEmailEvents(previous: UserEmailState, next: UserEmailState): UserEmailEvent[] {
+  const events: UserEmailEvent[] = [];
+
+  if (!previous.isActive && next.isActive) {
+    events.push('account-approved');
+  }
+
+  if (previous.role !== next.role) {
+    events.push('role-changed');
+  }
+
+  return events;
+}
+
 function getAppUrl() {
   return process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
 }
@@ -39,11 +59,12 @@ function escapeHtml(value = '') {
 
 function renderEmail(input: BrandedEmailInput) {
   const appUrl = getAppUrl();
+  const logoUrl = `${appUrl}/logo-fast.webp`;
   const bodyHtml = input.body
-    .map((paragraph) => `<p style="margin:0 0 14px;color:#374151;font-size:15px;line-height:1.7;">${paragraph}</p>`)
+    .map((paragraph) => `<p style="margin:0 0 14px;color:#374151;font-size:14px;line-height:1.7;">${paragraph}</p>`)
     .join('');
   const ctaHtml = input.cta
-    ? `<div style="margin:26px 0 10px;"><a href="${escapeHtml(input.cta.url)}" style="display:inline-block;background:#FDC704;color:#111111;text-decoration:none;font-weight:800;font-size:14px;padding:14px 22px;border-radius:14px;border:1px solid #E5B800;box-shadow:0 8px 18px rgba(253,199,4,0.25);">${escapeHtml(input.cta.label)}</a></div>`
+    ? `<div style="margin:26px 0 10px;"><a href="${escapeHtml(input.cta.url)}" style="display:inline-block;background:#FFC107;color:#111111;text-decoration:none;font-weight:800;font-size:14px;padding:14px 22px;border-radius:12px;border:1px solid #E5AE06;box-shadow:0 8px 24px rgba(17,17,17,0.08);">${escapeHtml(input.cta.label)}</a></div>`
     : '';
   const fallbackLink = input.cta
     ? `<p style="margin:14px 0 0;color:#6B7280;font-size:12px;line-height:1.6;">Jika tombol tidak bisa dibuka, salin tautan ini:<br><a href="${escapeHtml(input.cta.url)}" style="color:#B51B19;word-break:break-all;">${escapeHtml(input.cta.url)}</a></p>`
@@ -59,21 +80,28 @@ function renderEmail(input: BrandedEmailInput) {
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>${escapeHtml(input.title)}</title>
   </head>
-  <body style="margin:0;padding:0;background:#F5F5F5;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;color:#111111;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#F5F5F5;padding:28px 12px;">
+  <body style="margin:0;padding:0;background:#FFF9E6;font-family:Poppins,Arial,'Helvetica Neue',Helvetica,sans-serif;color:#111111;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFF9E6;padding:28px 12px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#FFFFFF;border-radius:24px;overflow:hidden;border:1px solid #E5E3E6;box-shadow:0 18px 48px rgba(17,17,17,0.08);">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#FFFFFF;border-radius:20px;overflow:hidden;border:1px solid #E5E7EB;box-shadow:0 8px 24px rgba(17,17,17,0.08);">
             <tr>
-              <td style="background:#FDC704;padding:26px 28px 24px;">
+              <td style="background:#FFC107;padding:22px 28px 20px;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr>
                     <td style="vertical-align:middle;">
-                      <div style="font-size:28px;font-weight:900;letter-spacing:-0.5px;color:#111111;line-height:1;">My<span style="color:#FFFFFF;text-shadow:0 1px 0 rgba(17,17,17,0.12);">Produsen</span></div>
-                      <div style="margin-top:7px;font-size:13px;font-weight:700;color:#4B5563;">${companyName}</div>
+                      <table role="presentation" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td style="vertical-align:middle;padding-right:10px;"><img src="${escapeHtml(logoUrl)}" width="44" height="44" alt="MyProdusen" style="display:block;width:44px;height:44px;border:0;object-fit:contain;"></td>
+                          <td style="vertical-align:middle;">
+                            <div style="font-size:24px;font-weight:900;letter-spacing:-0.5px;color:#111111;line-height:1;">My<span style="color:#FFFFFF;text-shadow:0 1px 0 rgba(17,17,17,0.12);">Produsen</span></div>
+                            <div style="margin-top:5px;font-size:11px;font-weight:700;color:#4B5563;">${companyName}</div>
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                     <td align="right" style="vertical-align:middle;">
-                      <div style="display:inline-block;background:#111111;color:#FDC704;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800;">HRIS</div>
+                      <div style="display:inline-block;background:#111111;color:#FFC107;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800;">HRIS</div>
                     </td>
                   </tr>
                 </table>
@@ -82,7 +110,7 @@ function renderEmail(input: BrandedEmailInput) {
             <tr>
               <td style="padding:30px 28px 28px;">
                 <div style="display:inline-block;margin-bottom:12px;padding:7px 11px;border-radius:999px;background:#FFF7CC;color:#8A6400;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;">${escapeHtml(input.eyebrow)}</div>
-                <h1 style="margin:0 0 12px;color:#111111;font-size:25px;line-height:1.25;font-weight:900;">${escapeHtml(input.title)}</h1>
+                <h1 style="margin:0 0 12px;color:#111111;font-size:24px;line-height:1.25;font-weight:900;">${escapeHtml(input.title)}</h1>
                 <p style="margin:0 0 18px;color:#111111;font-size:16px;line-height:1.7;font-weight:700;">${escapeHtml(input.intro)}</p>
                 ${bodyHtml}
                 ${ctaHtml}
@@ -91,9 +119,18 @@ function renderEmail(input: BrandedEmailInput) {
               </td>
             </tr>
             <tr>
-              <td style="background:#F9FAFB;border-top:1px solid #E5E3E6;padding:20px 28px;">
-                <p style="margin:0 0 8px;color:#111111;font-size:13px;font-weight:800;">Semangat hari ini 💪</p>
-                <p style="margin:0;color:#6B7280;font-size:12px;line-height:1.6;">Email otomatis dari ${appName}. Jangan balas email ini. Jika butuh bantuan, hubungi HRD atau Superadmin ${companyName}.</p>
+              <td style="background:#FFF9E6;border-top:1px solid #E5E7EB;padding:20px 28px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="vertical-align:top;width:42px;"><img src="${escapeHtml(logoUrl)}" width="34" height="34" alt="" style="display:block;width:34px;height:34px;border:0;object-fit:contain;"></td>
+                    <td style="vertical-align:top;">
+                      <p style="margin:0 0 5px;color:#111111;font-size:13px;font-weight:800;">${appName}</p>
+                      <p style="margin:0;color:#6B7280;font-size:12px;line-height:1.6;">Sistem internal perusahaan by TBM Group<br>${companyName}<br>Medan, Sumatera Utara</p>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:14px 0 0;color:#6B7280;font-size:12px;line-height:1.6;">Email otomatis dari ${appName}. Jangan balas email ini. Jika butuh bantuan, hubungi HRD atau Superadmin.</p>
+                <p style="margin:8px 0 0;color:#6B7280;font-size:11px;line-height:1.5;">Email ini bersifat internal. Mohon tidak membagikan informasi ini kepada pihak lain.</p>
                 <p style="margin:12px 0 0;color:#9CA3AF;font-size:11px;line-height:1.5;">© ${appName} · <a href="${escapeHtml(appUrl)}" style="color:#6B7280;text-decoration:none;">${escapeHtml(appUrl)}</a></p>
               </td>
             </tr>
@@ -229,6 +266,24 @@ export async function sendAuthEmail(template: EmailTemplate, to: string, data: R
         text: `Akun Anda sudah aktif. Login: ${loginUrl}`,
       }),
       text: `Akun Anda sudah aktif. Login: ${loginUrl}`,
+    },
+    'notification-center': {
+      to,
+      subject: `${appName} - Pusat Notifikasi Anda`,
+      html: renderEmail({
+        eyebrow: 'Pusat notifikasi',
+        title: 'Pusat Notifikasi Anda',
+        intro: `Halo${displayName || ', Tim'}! Berikut ringkasan notifikasi terbaru yang perlu Anda ketahui.`,
+        body: [
+          '<strong>Cuti Disetujui</strong><br>Pengajuan cuti Anda telah disetujui oleh atasan.',
+          '<strong>Akun Ditugaskan</strong><br>Super Admin telah menugaskan akses kerja Anda di MyProdusen.',
+          '<strong>Pengingat Kehadiran</strong><br>Jangan lupa melakukan check-in sesuai jam kerja.',
+        ],
+        cta: { label: 'Buka MyProdusen', url: loginUrl },
+        note: 'Notifikasi penting tetap tersimpan di pusat notifikasi aplikasi.',
+        text: `Pusat Notifikasi Anda. Buka MyProdusen: ${loginUrl}`,
+      }),
+      text: `Pusat Notifikasi Anda. Buka MyProdusen: ${loginUrl}`,
     },
   };
 

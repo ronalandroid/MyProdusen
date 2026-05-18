@@ -6,7 +6,7 @@ import { canManageRole, hasPermission } from '@/lib/permissions';
 import { AppError } from '@/lib/core/app-error';
 import { parseJsonBody, withApiHandler } from '@/lib/core/route-handler';
 import { logAudit } from '@/lib/audit';
-import { sendAuthEmail } from '@/lib/email';
+import { getUserEmailEvents, sendAuthEmail } from '@/lib/email';
 import { z } from 'zod';
 
 const updateUserSchema = z.object({
@@ -55,15 +55,8 @@ export const PATCH = withApiHandler(async (request: NextRequest) => {
     request
   );
 
-  const becameActive = currentUser.isActive === false && updatedUser.isActive === true;
-  const roleChanged = currentUser.role !== updatedUser.role;
-
-  if (becameActive) {
-    await sendAuthEmail('account-approved', updatedUser.email).catch(() => undefined);
-  }
-
-  if (roleChanged) {
-    await sendAuthEmail('role-changed', updatedUser.email, { role: updatedUser.role }).catch(() => undefined);
+  for (const event of getUserEmailEvents(currentUser, updatedUser)) {
+    await sendAuthEmail(event, updatedUser.email, { role: updatedUser.role }).catch(() => undefined);
   }
 
   return successResponse(updatedUser, 'User berhasil diperbarui');

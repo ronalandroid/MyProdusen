@@ -244,6 +244,12 @@ export default function LoginPage() {
                   </div>
                 </div>
 
+                <div className="text-right">
+                  <Link href="/forgot-password" className="text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded-md">
+                    Lupa kata sandi?
+                  </Link>
+                </div>
+
                 {/* Submit Button */}
                 <button
                   type="submit"

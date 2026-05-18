@@ -83,9 +83,12 @@ describe('Resend email integration', () => {
     await sendAuthEmail('register', 'user@example.com', { name: 'Deni' });
 
     const payload = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(payload.html).toContain('background:#FDC704');
+    expect(payload.html).toContain('background:#FFC107');
+    expect(payload.html).toContain('https://myprodusen.online/logo-fast.webp');
     expect(payload.html).toContain('MyProdusen');
     expect(payload.html).toContain('Produsen Dimsum Medan');
+    expect(payload.html).toContain('by TBM Group');
+    expect(payload.html).toContain('Medan, Sumatera Utara');
     expect(payload.html).toContain('Semangat kerja dimulai dari langkah kecil yang rapi');
     expect(payload.html).toContain('Buka MyProdusen');
     expect(payload.html).toContain('© MyProdusen');
@@ -112,5 +115,26 @@ describe('Resend email integration', () => {
     expect(payload.html).toContain('Link berlaku 30 menit');
     expect(payload.html).toContain('Jika Anda tidak meminta reset password');
     expect(payload.html).toContain('https://myprodusen.online/reset-password?token=abc');
+  });
+
+  it('renders notification-center template like the reference email system', async () => {
+    process.env.RESEND_API_KEY = 're_test_key';
+    process.env.RESEND_FROM_EMAIL = 'MyProdusen <noreply@example.com>';
+    process.env.APP_URL = 'https://myprodusen.online';
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'email_791' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await sendAuthEmail('notification-center', 'user@example.com', { name: 'Deni Lesmana' });
+
+    const payload = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(payload.subject).toContain('Pusat Notifikasi');
+    expect(payload.html).toContain('Pusat Notifikasi Anda');
+    expect(payload.html).toContain('Cuti Disetujui');
+    expect(payload.html).toContain('Pengingat Kehadiran');
+    expect(payload.html).toContain('Buka MyProdusen');
   });
 });
