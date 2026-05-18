@@ -60,6 +60,13 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
     allowedRoles: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE'],
   },
   {
+    key: 'locations',
+    name: 'Cabang',
+    path: '/dashboard/locations',
+    primaryFor: ['SUPERADMIN'],
+    allowedRoles: ['SUPERADMIN', 'ADMIN_HR'],
+  },
+  {
     key: 'attendance-exceptions',
     name: 'Approval',
     path: '/dashboard/attendance/exceptions',
@@ -77,15 +84,8 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
     key: 'employees',
     name: 'Karyawan',
     path: '/dashboard/employees',
-    primaryFor: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'],
+    primaryFor: ['ADMIN_HR', 'SUPERVISOR'],
     allowedRoles: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'],
-  },
-  {
-    key: 'locations',
-    name: 'Cabang',
-    path: '/dashboard/locations',
-    primaryFor: [],
-    allowedRoles: ['SUPERADMIN', 'ADMIN_HR'],
   },
   {
     key: 'shifts',
@@ -111,7 +111,7 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
   {
     key: 'reports',
     name: 'Laporan',
-    path: '/dashboard/reports',
+    path: '/dashboard/reports/attendance',
     primaryFor: ['SUPERADMIN'],
     allowedRoles: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'],
   },
