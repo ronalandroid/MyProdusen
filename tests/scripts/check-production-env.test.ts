@@ -62,6 +62,8 @@ const VALID_ENV = {
   REJECT_OUTSIDE_GEOFENCE: 'true',
   GPS_TIMESTAMP_MAX_AGE_SECONDS: '120',
   ATTENDANCE_EXPORT_MAX_ROWS: '5000',
+  RESEND_API_KEY: 're_test_key',
+  RESEND_FROM_EMAIL: 'MyProdusen <noreply@example.com>',
 };
 
 describe('check-production-env script', () => {
@@ -98,5 +100,11 @@ describe('check-production-env script', () => {
     const result = run({ ...VALID_ENV, JWT_SECRET: 'dev-only-secret-change-me' });
     expect(result.status).toBe(1);
     expect(result.stdout + result.stderr).toContain('dev fallback');
+  });
+
+  it('fails when Resend email config is missing', () => {
+    const result = run({ ...VALID_ENV, RESEND_API_KEY: undefined });
+    expect(result.status).toBe(1);
+    expect(result.stdout + result.stderr).toContain('RESEND_API_KEY');
   });
 });

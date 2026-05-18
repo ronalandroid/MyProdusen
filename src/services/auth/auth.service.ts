@@ -185,11 +185,12 @@ export class AuthService extends BaseService {
     return jwt.sign({ userId: user.id, email: user.email, purpose: 'password-reset' }, secret, { expiresIn: '30m' });
   }
 
-  async createAccountActivationToken(email: string) {
+  async createAccountActivationToken(identifier: string) {
+    const normalizedIdentifier = identifier.trim();
     const [user] = await db
       .select({ id: users.id, email: users.email, isActive: users.isActive })
       .from(users)
-      .where(eq(users.email, email))
+      .where(or(eq(users.email, normalizedIdentifier), eq(users.username, normalizedIdentifier)))
       .limit(1);
 
     if (!user || user.isActive) {
@@ -197,7 +198,8 @@ export class AuthService extends BaseService {
     }
 
     const secret = getProductionJwtSecret();
-    return jwt.sign({ userId: user.id, email: user.email, purpose: 'account-activation' }, secret, { expiresIn: '24h' });
+    const token = jwt.sign({ userId: user.id, email: user.email, purpose: 'account-activation' }, secret, { expiresIn: '24h' });
+    return { token, email: user.email };
   }
 
   async activateAccount(token: string) {

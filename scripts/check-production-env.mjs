@@ -91,8 +91,8 @@ suggest('NEXT_PUBLIC_SELFIE_IMAGE_QUALITY', (v) => {
 }, 'must be a number between 0 and 1');
 suggest('NEXT_PUBLIC_SELFIE_TARGET_SIZE_KB', isPositiveInt, 'must be a positive integer');
 suggest('NEXT_PUBLIC_OSM_TILE_URL', (v) => /\{z\}.*\{x\}.*\{y\}/.test(v), 'must contain {z}, {x}, {y} placeholders');
-suggest('RESEND_API_KEY', (v) => /^re_/.test(v), 'expected to start with "re_"');
-suggest('RESEND_FROM_EMAIL', (v) => /@/.test(v), 'must contain "@"');
+require('RESEND_API_KEY', (v) => /^re_/.test(v), 'expected to start with "re_"');
+require('RESEND_FROM_EMAIL', (v) => /@/.test(v), 'must contain "@"');
 
 // ---------------- Bootstrap-only superadmin keys -----------------------------
 

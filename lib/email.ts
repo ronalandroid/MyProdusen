@@ -146,7 +146,17 @@ export function isEmailEnabled() {
   return Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL);
 }
 
+function requireProductionEmailConfig() {
+  if (process.env.NODE_ENV !== 'production' || isEmailEnabled()) {
+    return;
+  }
+
+  throw new Error('Email belum aktif. Set RESEND_API_KEY dan RESEND_FROM_EMAIL di Coolify.');
+}
+
 export async function sendEmail(input: SendEmailInput) {
+  requireProductionEmailConfig();
+
   if (!isEmailEnabled()) {
     if (process.env.NODE_ENV !== 'production') {
       console.info('[email:disabled]', { to: input.to, subject: input.subject });
@@ -171,10 +181,13 @@ export async function sendEmail(input: SendEmailInput) {
 
   if (!response.ok) {
     const detail = await response.text().catch(() => 'Unknown Resend error');
-    throw new Error(`Failed to send email: ${detail}`);
+    console.error('[email:resend-error]', { to: input.to, subject: input.subject, detail });
+    throw new Error(`Gagal mengirim email via Resend: ${detail}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  console.info('[email:sent]', { to: input.to, subject: input.subject, id: result?.id });
+  return result;
 }
 
 export async function sendAuthEmail(template: EmailTemplate, to: string, data: Record<string, string> = {}) {

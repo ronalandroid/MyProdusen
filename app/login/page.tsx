@@ -12,12 +12,16 @@ export default function LoginPage() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [activationMessage, setActivationMessage] = useState("");
+  const [isResendingActivation, setIsResendingActivation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const hasError = Boolean(error);
+  const canResendActivation = hasError && error.toLowerCase().includes("akun tidak aktif") && identifier.trim().length > 0;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setActivationMessage("");
     setIsSubmitting(true);
 
     try {
@@ -44,6 +48,31 @@ export default function LoginPage() {
       setError(err instanceof Error ? err.message : "Login gagal");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResendActivation = async () => {
+    setError("");
+    setActivationMessage("");
+    setIsResendingActivation(true);
+
+    try {
+      const response = await fetch("/api/auth/resend-activation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: identifier.trim() }),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || "Gagal mengirim ulang email aktivasi");
+      }
+
+      setActivationMessage(payload.message || "Link aktivasi sudah dikirim ke inbox email.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal mengirim ulang email aktivasi");
+    } finally {
+      setIsResendingActivation(false);
     }
   };
 
@@ -151,7 +180,23 @@ export default function LoginPage() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-red-800">{error}</p>
+                    {canResendActivation && (
+                      <button
+                        type="button"
+                        onClick={handleResendActivation}
+                        className="mt-3 inline-flex items-center justify-center rounded-xl bg-[var(--primary)] px-4 py-2 text-xs font-bold text-[var(--text-primary)] transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={isResendingActivation}
+                      >
+                        {isResendingActivation ? "Mengirim aktivasi..." : "Kirim ulang email aktivasi"}
+                      </button>
+                    )}
                   </div>
+                </div>
+              )}
+
+              {activationMessage && (
+                <div role="status" className="mb-6 p-4 rounded-2xl bg-green-50 border-2 border-green-200 text-sm font-semibold text-green-800 animate-fade-in">
+                  {activationMessage}
                 </div>
               )}
 

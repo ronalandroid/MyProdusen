@@ -26,10 +26,10 @@ describe('account self-activation', () => {
 
     await expect(service.login(user.email, 'Password123!')).rejects.toThrow('Cek inbox email aktivasi');
 
-    const token = await service.createAccountActivationToken(user.email);
-    expect(token).toEqual(expect.any(String));
+    const activation = await service.createAccountActivationToken(user.email);
+    expect(activation).toMatchObject({ token: expect.any(String), email: user.email });
 
-    const activated = await service.activateAccount(token!);
+    const activated = await service.activateAccount(activation!.token);
     expect(activated).toMatchObject({ userId: user.id, email: user.email, isActive: true });
 
     const login = await service.login(user.email, 'Password123!');

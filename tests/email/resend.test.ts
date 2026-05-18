@@ -49,6 +49,18 @@ describe('Resend email integration', () => {
     });
   });
 
+  it('fails loudly in production when Resend config is missing', async () => {
+    process.env.NODE_ENV = 'production';
+    delete process.env.RESEND_API_KEY;
+    delete process.env.RESEND_FROM_EMAIL;
+
+    await expect(sendEmail({
+      to: 'user@example.com',
+      subject: 'Subject',
+      html: '<p>Hello</p>',
+    })).rejects.toThrow('Email belum aktif');
+  });
+
   it('sends forgot password reset link through Resend template', async () => {
     process.env.RESEND_API_KEY = 're_test_key';
     process.env.RESEND_FROM_EMAIL = 'MyProdusen <noreply@example.com>';
