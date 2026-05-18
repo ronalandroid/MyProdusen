@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { overtimeService } from '@/src/services/overtime/overtime.service';
 import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
 import { logAudit } from '@/lib/audit';
+import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 
 const createRequestSchema = z.object({
   overtimeDate: z.string().transform((val) => new Date(val)),
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     const { searchParams } = new URL(request.url);
@@ -40,13 +41,10 @@ export async function GET(request: NextRequest) {
 
     const requests = await overtimeService.getRequests(filters);
 
-    return NextResponse.json({ data: requests });
+    return successResponse(requests);
   } catch (error: any) {
     console.error('Get overtime requests error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 }
 
@@ -54,14 +52,11 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     if (!user.employeeId) {
-      return NextResponse.json(
-        { error: 'User tidak terhubung dengan karyawan' },
-        { status: 400 }
-      );
+      return errorResponse('User tidak terhubung dengan karyawan');
     }
 
     const body = await request.json();
@@ -73,20 +68,14 @@ export async function POST(request: NextRequest) {
     });
     await logAudit(user.id, 'CREATE', 'OvertimeRequest', overtimeRequest.id, undefined, overtimeRequest, request);
 
-    return NextResponse.json({ data: overtimeRequest }, { status: 201 });
+    return successResponse(overtimeRequest, undefined, 201);
   } catch (error: any) {
     console.error('Create overtime request error:', error);
     
     if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      );
+      return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
     }
 
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 }

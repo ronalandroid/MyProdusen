@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { announcementService } from '@/src/services/announcement/announcement.service';
 import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
+import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 
 const updateAnnouncementSchema = z.object({
   title: z.string().min(1).optional(),
@@ -22,7 +23,7 @@ export async function GET(
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     const announcement = await announcementService.getAnnouncementById(
@@ -33,13 +34,10 @@ export async function GET(
     // Mark as read
     await announcementService.markAsRead(params.id, user.id);
 
-    return NextResponse.json({ data: announcement });
+    return successResponse(announcement);
   } catch (error: any) {
     console.error('Get announcement error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: error.message.includes('tidak ditemukan') ? 404 : 500 }
-    );
+    return errorResponse(error.message || 'Internal server error', error.message.includes('tidak ditemukan') ? 404 : 500);
   }
 }
 
@@ -50,11 +48,11 @@ export async function PATCH(
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return forbiddenResponse();
     }
 
     const body = await request.json();
@@ -65,21 +63,15 @@ export async function PATCH(
       validated
     );
 
-    return NextResponse.json({ data: announcement });
+    return successResponse(announcement);
   } catch (error: any) {
     console.error('Update announcement error:', error);
     
     if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      );
+      return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
     }
 
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: error.message.includes('tidak ditemukan') ? 404 : 500 }
-    );
+    return errorResponse(error.message || 'Internal server error', error.message.includes('tidak ditemukan') ? 404 : 500);
   }
 }
 
@@ -90,21 +82,18 @@ export async function DELETE(
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     if (user.role !== 'SUPERADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return forbiddenResponse();
     }
 
     await announcementService.deleteAnnouncement(params.id);
 
-    return NextResponse.json({ success: true });
+    return successResponse(null);
   } catch (error: any) {
     console.error('Delete announcement error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 }

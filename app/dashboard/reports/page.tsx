@@ -16,6 +16,7 @@ export default function ReportsPage() {
   const [endDate, setEndDate] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState("all");
   const [selectedPreset, setSelectedPreset] = useState<ReportPresetId | "">("");
+  const [notice, setNotice] = useState("");
 
   // Placeholder data - will be replaced with real API calls when backend is ready
   const reportSummary = {
@@ -41,9 +42,10 @@ export default function ReportsPage() {
 
   const handleExport = (format: 'csv' | 'pdf') => {
     if (format === 'pdf') {
-      alert('Export PDF belum aktif. Gunakan CSV untuk laporan siap pakai.');
+      setNotice('Export PDF belum aktif. Gunakan CSV untuk laporan siap pakai.');
       return;
     }
+    setNotice("");
 
     const endpointMap: Record<string, string> = {
       attendance: '/api/reports/attendance',
@@ -128,7 +130,7 @@ export default function ReportsPage() {
         <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
           Jenis Laporan
         </label>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 9rem), 1fr))", gap: "8px" }}>
           <button
             onClick={() => router.push("/dashboard/reports/attendance")}
             className="p-3 rounded-lg border border-[var(--primary)] bg-[var(--warning-bg)] transition-all"
@@ -160,6 +162,11 @@ export default function ReportsPage() {
             <p className="text-xs font-medium">Kinerja</p>
           </button>
         </div>
+        {notice && (
+          <div className="alert alert-warning mt-3" role="status">
+            {notice}
+          </div>
+        )}
       </div>
 
       {/* Filters */}

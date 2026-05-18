@@ -24,6 +24,7 @@ export default function NotificationsPage() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [pendingDelete, setPendingDelete] = useState<NotificationItem | null>(null);
 
   useEffect(() => {
     loadNotifications();
@@ -92,9 +93,8 @@ export default function NotificationsPage() {
   };
 
   const deleteNotification = async (id: string) => {
-    if (!confirm("Hapus notifikasi ini?")) return;
-
     try {
+      setProcessing(true);
       const response = await fetch(`/api/notifications/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
@@ -104,11 +104,14 @@ export default function NotificationsPage() {
 
       if (response.ok && payload.success) {
         setItems((current) => current.filter((item) => item.id !== id));
+        setPendingDelete(null);
       } else {
         throw new Error(payload.error || "Gagal menghapus notifikasi");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menghapus notifikasi");
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -245,7 +248,7 @@ export default function NotificationsPage() {
                   <Button 
                     variant="secondary" 
                     size="sm" 
-                    onClick={() => deleteNotification(item.id)}
+                    onClick={() => setPendingDelete(item)}
                     aria-label={`Hapus notifikasi ${item.title}`}
                     style={{ color: "var(--danger)" }}
                   >
@@ -255,6 +258,18 @@ export default function NotificationsPage() {
               </div>
             </article>
           ))}
+        </div>
+      )}
+      {pendingDelete && (
+        <div className="overlay" onClick={() => (!processing ? setPendingDelete(null) : undefined)}>
+          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="delete-notification-title" onClick={(event) => event.stopPropagation()}>
+            <h2 id="delete-notification-title" className="text-lg font-bold mb-2">Hapus notifikasi?</h2>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">Notifikasi "{pendingDelete.title}" akan dihapus dari daftar Anda.</p>
+            <div className="flex flex-wrap justify-end gap-3">
+              <Button variant="secondary" onClick={() => setPendingDelete(null)} disabled={processing}>Batal</Button>
+              <Button variant="danger" onClick={() => deleteNotification(pendingDelete.id)} disabled={processing} loading={processing}>Hapus</Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
