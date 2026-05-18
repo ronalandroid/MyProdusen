@@ -234,3 +234,12 @@ Catatan akhir:
 ```txt
 
 ```
+
+## One-Shot Live Automation Update — 2026-05-19
+
+- Local release checks: PASS.
+- Live `/api/health`: PASS 200.
+- Live `/api/reports/pdf` unauthenticated: PASS 401.
+- Live public Playwright: PASS 12 passed.
+- TestSprite: skipped because local CLI/MCP/API key unavailable.
+- Remaining UAT: Android GPS/selfie, Resend email, credential role smoke, backup/restore drill.

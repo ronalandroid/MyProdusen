@@ -237,3 +237,18 @@ E2E_BASE_URL=https://myprodusen.online npm run e2e:public
 ```
 
 Untuk kasus route live `404` tetapi local build ada, lakukan rebuild image/no-cache di Coolify dan cocokkan `app.commit` dari `/api/health`.
+
+## Final Live Route Verification
+
+After every Coolify redeploy, run:
+
+```bash
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+E2E_BASE_URL=https://myprodusen.online npm run e2e:public
+```
+
+Expected:
+
+- `/api/health` returns `200` with `status=ok` and no secrets.
+- Unauthenticated `POST /api/reports/pdf` returns `401` or `403`, never `404` and never `200`.
+- Public Playwright smoke passes on mobile/tablet/desktop projects.

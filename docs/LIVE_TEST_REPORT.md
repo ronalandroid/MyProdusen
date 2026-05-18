@@ -154,3 +154,27 @@ Result:
 Remaining note:
 
 - Health metadata currently returns `version`, `commit`, and `buildTime` as `unknown`. Set `APP_VERSION`, `GIT_COMMIT_SHA`, and `BUILD_TIME` in Coolify to verify exact deployed commit from `/api/health`.
+
+## One-Shot Final Live Verification — 2026-05-19
+
+Target: `https://myprodusen.online`
+
+Commands:
+
+```bash
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+E2E_BASE_URL=https://myprodusen.online npm run e2e:public
+```
+
+Results:
+
+- `GET /api/health`: PASS, `200`, `status=ok`, no secret leak.
+- `POST /api/reports/pdf` unauthenticated: PASS, `401`.
+- `/api/reports/pdf` no longer returns `404`; route is deployed and protected.
+- Live public Playwright smoke: PASS, 12 passed on 360, 390, 768, and 1440 projects.
+
+Notes:
+
+- Superadmin PDF `200 application/pdf` was not re-tested here because credential env was not present in shell.
+- TestSprite was skipped because no local CLI/MCP/API key was available.
+- Rotate previously exposed TestSprite API key before future TestSprite runs.

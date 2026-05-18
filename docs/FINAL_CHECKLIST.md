@@ -228,3 +228,13 @@ Run this manually before declaring a release ready.
 ## Full E2E Automation
 
 - [ ] Review full E2E report: `docs/FULL_STAGING_E2E_REPORT.md`.
+
+## One-Shot Live Verification Checklist — 2026-05-19
+
+- [x] Local lint/test/build/release checks passed.
+- [x] Live `/api/health` returns `200` and does not leak secrets.
+- [x] Live `/api/reports/pdf` exists and unauthenticated access returns `401`.
+- [x] Live public Playwright smoke passed on responsive projects.
+- [ ] TestSprite safe smoke rerun after external MCP/CLI/API key is configured.
+- [ ] Superadmin PDF `200 application/pdf` rerun after credential env is available and login rate-limit cooldown is clear.
+- [ ] Android GPS + realtime selfie UAT completed on physical device.

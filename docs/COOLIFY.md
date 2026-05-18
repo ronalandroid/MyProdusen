@@ -165,3 +165,18 @@ Jika masih `404`:
 - Cek build log menampilkan route `/api/reports/pdf`.
 - Redeploy ulang dengan no-cache.
 - Pastikan container lama sudah berhenti dan domain mengarah ke container baru.
+
+## Final Live Verification After Redeploy
+
+Run after redeploy or no-cache rebuild:
+
+```bash
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+```
+
+Expected result:
+
+- `GET /api/health`: `200`.
+- `POST /api/reports/pdf` unauthenticated: `401` or `403`.
+- If `/api/reports/pdf` returns `404`, Coolify is likely serving a stale image/commit. Rebuild image with no cache and verify the branch/commit used by Coolify.
+- Set `APP_VERSION`, `GIT_COMMIT_SHA`, and `BUILD_TIME` so `/api/health` can prove the deployed version.

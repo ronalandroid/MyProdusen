@@ -188,3 +188,25 @@ Record these after each smoke test:
 | Result | Pass / Fail |
 | Issues found |  |
 | Decision | Keep live / Roll back / Fix forward |
+
+## Final Safe Automation Smoke — 2026-05-19
+
+Run before manual UAT:
+
+```bash
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+E2E_BASE_URL=https://myprodusen.online npm run e2e:public
+```
+
+Pass criteria:
+
+- `/api/health` returns `200` and no secrets.
+- `/api/reports/pdf` unauthenticated returns `401` or `403`.
+- Public/auth pages load on 360, 390, 768, and 1440 without horizontal overflow.
+
+Manual steps still required:
+
+- Superadmin PDF download with credential env after rate-limit cooldown.
+- Android GPS + realtime selfie.
+- Resend activation/reset emails.
+- TestSprite safe smoke after MCP/CLI/API key setup.
