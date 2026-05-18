@@ -1819,7 +1819,6 @@ Canonical project docs:
 - [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md)
 - [`FINAL_CHECKLIST.md`](./FINAL_CHECKLIST.md)
 - [`UI_UX_GUIDE.md`](./UI_UX_GUIDE.md)
-- [`UI_ALIGNMENT.md`](./UI_ALIGNMENT.md)
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md)
 - [`DATABASE.md`](./DATABASE.md)
 - [`SECURITY.md`](./SECURITY.md)
