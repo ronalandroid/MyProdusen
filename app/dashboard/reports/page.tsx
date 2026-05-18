@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Download, FileText, Calendar, Users, Clock } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -10,39 +10,68 @@ import { getReportPresets, resolveReportPreset, type ReportPresetId } from "@/li
 
 export default function ReportsPage() {
   const router = useRouter();
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [reportType, setReportType] = useState("attendance");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState("all");
   const [selectedPreset, setSelectedPreset] = useState<ReportPresetId | "">("");
   const [notice, setNotice] = useState("");
+  const [employees, setEmployees] = useState<Array<{ id: string; name: string; nip?: string | null }>>([]);
+  const [attendanceSummary, setAttendanceSummary] = useState<any | null>(null);
+  const [error, setError] = useState("");
 
-  // Placeholder data - will be replaced with real API calls when backend is ready
-  const reportSummary = {
-    attendance: {
-      totalDays: 20,
-      present: 18,
-      absent: 1,
-      leave: 1,
-      percentage: 90,
-    },
-    leave: {
-      totalRequests: 5,
-      approved: 3,
-      pending: 1,
-      rejected: 1,
-    },
-    performance: {
-      totalEmployees: 25,
-      avgScore: 85,
-      topPerformers: 8,
-    },
-  };
+  const buildReportParams = useCallback(() => {
+    const params = new URLSearchParams();
+    if (startDate) params.set('from', startDate);
+    if (endDate) params.set('to', endDate);
+    if (selectedEmployee !== 'all') params.set('employeeId', selectedEmployee);
+    if (selectedPreset) params.set('preset', selectedPreset);
+    return params;
+  }, [endDate, selectedEmployee, selectedPreset, startDate]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadEmployees() {
+      try {
+        const response = await fetch('/api/employees?limit=200', { credentials: 'include' });
+        const payload = await response.json().catch(() => null);
+        if (!cancelled && response.ok && payload?.success) setEmployees(Array.isArray(payload.data) ? payload.data : []);
+      } catch {
+        if (!cancelled) setEmployees([]);
+      }
+    }
+    loadEmployees();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (reportType !== 'attendance') return;
+    let cancelled = false;
+    const handle = window.setTimeout(async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const params = buildReportParams();
+        const response = await fetch(`/api/reports/attendance/summary?${params.toString()}`, { credentials: 'include' });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success) throw new Error(payload?.error || 'Gagal mengambil ringkasan absensi');
+        if (!cancelled) setAttendanceSummary(payload.data?.summary || null);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Gagal mengambil ringkasan absensi');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
+  }, [buildReportParams, reportType]);
 
   const handleExport = (format: 'csv' | 'pdf') => {
     if (format === 'pdf') {
-      setNotice('Export PDF belum aktif. Gunakan CSV untuk laporan siap pakai.');
+      router.push('/dashboard/reports/pdf');
       return;
     }
     setNotice("");
@@ -52,14 +81,16 @@ export default function ReportsPage() {
       leave: '/api/reports/leave',
       performance: '/api/reports/kpi',
     };
-    const params = new URLSearchParams({ format: 'csv' });
-
-    if (startDate) params.set('from', startDate);
-    if (endDate) params.set('to', endDate);
-    if (selectedEmployee !== 'all') params.set('employeeId', selectedEmployee);
-    if (selectedPreset) params.set('preset', selectedPreset);
+    const params = buildReportParams();
+    params.set('format', 'csv');
 
     window.location.href = `${endpointMap[reportType]}?${params.toString()}`;
+  };
+
+  const reportDescriptions: Record<string, string> = {
+    attendance: 'Ringkasan ini diambil dari database attendance sesuai filter.',
+    leave: 'Gunakan export CSV untuk data leave real sesuai filter dan permission.',
+    performance: 'Gunakan export CSV untuk data KPI real sesuai filter dan permission.',
   };
 
   const handleGenerate = () => {
@@ -78,10 +109,15 @@ export default function ReportsPage() {
     <div className="phone-screen feature-screen" style={{ display: "flex", flexDirection: "column", gap: "20px", position: "relative", minHeight: "100%" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={() => router.back()}>
-          <ArrowLeft size={24} />
+        <button
+          type="button"
+          className="inline-flex min-h-[44px] items-center gap-3 rounded-xl px-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+          onClick={() => router.back()}
+          aria-label="Kembali ke halaman sebelumnya"
+        >
+          <ArrowLeft size={24} aria-hidden="true" />
           <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Laporan</h1>
-        </div>
+        </button>
       </div>
 
       {/* Info Banner */}
@@ -161,6 +197,14 @@ export default function ReportsPage() {
             <Users size={20} className="mx-auto mb-1" color={reportType === "performance" ? "var(--primary)" : "var(--text-muted)"} />
             <p className="text-xs font-medium">Kinerja</p>
           </button>
+          <button
+            onClick={() => router.push('/dashboard/reports/pdf')}
+            className="p-3 rounded-lg border border-[var(--primary)] bg-[var(--primary-light)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+          >
+            <FileText size={20} className="mx-auto mb-1" color="var(--primary-dark)" />
+            <p className="text-xs font-medium">PDF Superadmin</p>
+            <p className="text-[10px] text-[var(--text-secondary)] mt-1">Laporan profesional</p>
+          </button>
         </div>
         {notice && (
           <div className="alert alert-warning mt-3" role="status">
@@ -195,9 +239,9 @@ export default function ReportsPage() {
               onChange={(e) => setSelectedEmployee(e.target.value)}
             >
               <option value="all">Semua Karyawan</option>
-              <option value="1">Deni Lesmana</option>
-              <option value="2">Rina Putri</option>
-              <option value="3">Budi Santoso</option>
+              {employees.map((employee) => (
+                <option key={employee.id} value={employee.id}>{employee.name}{employee.nip ? ` — ${employee.nip}` : ""}</option>
+              ))}
             </select>
           </div>
           <Button onClick={handleGenerate} fullWidth>
@@ -206,26 +250,35 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="alert alert-danger" role="alert">{error}</div>
+      )}
+
+      {loading && (
+        <div className="card p-4 text-sm text-[var(--text-secondary)]" role="status">Memuat ringkasan laporan...</div>
+      )}
+
       {/* Report Summary */}
       {reportType === "attendance" && (
         <div className="card" style={{ padding: "16px" }}>
-          <h3 className="text-sm font-semibold mb-3">Ringkasan Kehadiran</h3>
+          <h3 className="text-sm font-semibold mb-1">Ringkasan Kehadiran</h3>
+          <p className="mb-3 text-xs text-[var(--text-secondary)]">{reportDescriptions.attendance}</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px", marginBottom: "16px" }}>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px" }}>
               <p className="text-xs text-[var(--text-secondary)] mb-1">Hadir</p>
-              <p className="text-2xl font-bold text-[var(--success)]">{reportSummary.attendance.present}</p>
+              <p className="text-2xl font-bold text-[var(--success)]">{attendanceSummary?.totalPresent ?? 0}</p>
             </div>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px" }}>
               <p className="text-xs text-[var(--text-secondary)] mb-1">Tidak Hadir</p>
-              <p className="text-2xl font-bold text-[var(--danger)]">{reportSummary.attendance.absent}</p>
+              <p className="text-2xl font-bold text-[var(--danger)]">{attendanceSummary?.totalAbsent ?? 0}</p>
             </div>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px" }}>
               <p className="text-xs text-[var(--text-secondary)] mb-1">Cuti/Izin</p>
-              <p className="text-2xl font-bold text-[var(--warning)]">{reportSummary.attendance.leave}</p>
+              <p className="text-2xl font-bold text-[var(--warning)]">{attendanceSummary?.totalLeaveSickPermission ?? 0}</p>
             </div>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px" }}>
               <p className="text-xs text-[var(--text-secondary)] mb-1">Persentase</p>
-              <p className="text-2xl font-bold text-[var(--primary)]">{reportSummary.attendance.percentage}%</p>
+              <p className="text-2xl font-bold text-[var(--primary)]">{attendanceSummary?.totalRecords ? Math.round(((attendanceSummary.totalPresent || 0) / attendanceSummary.totalRecords) * 100) : 0}%</p>
             </div>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
@@ -243,23 +296,24 @@ export default function ReportsPage() {
 
       {reportType === "leave" && (
         <div className="card" style={{ padding: "16px" }}>
-          <h3 className="text-sm font-semibold mb-3">Ringkasan Cuti</h3>
+          <h3 className="text-sm font-semibold mb-1">Laporan Cuti</h3>
+          <p className="mb-3 text-xs text-[var(--text-secondary)]">{reportDescriptions.leave}</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px", marginBottom: "16px" }}>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px" }}>
-              <p className="text-xs text-[var(--text-secondary)] mb-1">Total Pengajuan</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">{reportSummary.leave.totalRequests}</p>
+              <p className="text-xs text-[var(--text-secondary)] mb-1">Export</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">CSV</p>
             </div>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px" }}>
-              <p className="text-xs text-[var(--text-secondary)] mb-1">Disetujui</p>
-              <p className="text-2xl font-bold text-[var(--success)]">{reportSummary.leave.approved}</p>
+              <p className="text-xs text-[var(--text-secondary)] mb-1">Data</p>
+              <p className="text-2xl font-bold text-[var(--success)]">Real</p>
             </div>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px" }}>
-              <p className="text-xs text-[var(--text-secondary)] mb-1">Menunggu</p>
-              <p className="text-2xl font-bold text-[var(--warning)]">{reportSummary.leave.pending}</p>
+              <p className="text-xs text-[var(--text-secondary)] mb-1">Audit</p>
+              <p className="text-2xl font-bold text-[var(--warning)]">Audit</p>
             </div>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px" }}>
-              <p className="text-xs text-[var(--text-secondary)] mb-1">Ditolak</p>
-              <p className="text-2xl font-bold text-[var(--danger)]">{reportSummary.leave.rejected}</p>
+              <p className="text-xs text-[var(--text-secondary)] mb-1">Permission</p>
+              <p className="text-2xl font-bold text-[var(--danger)]">RBAC</p>
             </div>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
@@ -277,19 +331,20 @@ export default function ReportsPage() {
 
       {reportType === "performance" && (
         <div className="card" style={{ padding: "16px" }}>
-          <h3 className="text-sm font-semibold mb-3">Ringkasan Kinerja</h3>
+          <h3 className="text-sm font-semibold mb-1">Laporan Kinerja</h3>
+          <p className="mb-3 text-xs text-[var(--text-secondary)]">{reportDescriptions.performance}</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px", marginBottom: "16px" }}>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px" }}>
-              <p className="text-xs text-[var(--text-secondary)] mb-1">Total Karyawan</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">{reportSummary.performance.totalEmployees}</p>
+              <p className="text-xs text-[var(--text-secondary)] mb-1">Export</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">CSV</p>
             </div>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px" }}>
-              <p className="text-xs text-[var(--text-secondary)] mb-1">Rata-rata Skor</p>
-              <p className="text-2xl font-bold text-[var(--success)]">{reportSummary.performance.avgScore}</p>
+              <p className="text-xs text-[var(--text-secondary)] mb-1">Data</p>
+              <p className="text-2xl font-bold text-[var(--success)]">Real</p>
             </div>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px", gridColumn: "span 2" }}>
-              <p className="text-xs text-[var(--text-secondary)] mb-1">Top Performers</p>
-              <p className="text-2xl font-bold text-[var(--primary)]">{reportSummary.performance.topPerformers}</p>
+              <p className="text-xs text-[var(--text-secondary)] mb-1">Superadmin</p>
+              <p className="text-2xl font-bold text-[var(--primary)]">PDF</p>
             </div>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>

@@ -104,6 +104,77 @@ export class EmployeeService extends BaseService {
     return employee;
   }
 
+  async createEmployeeProfileForUser(userId: string, data: {
+    fullName: string;
+    phone?: string;
+    address?: string;
+    division?: string;
+    position?: string;
+    supervisorId?: string;
+    defaultShiftId?: string;
+    defaultLocationId?: string;
+    joinDate?: Date | string;
+  }) {
+    // Check if user exists
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) {
+      throw new AppError('NOT_FOUND', 'User tidak ditemukan', 404);
+    }
+
+    // Check if employee profile already exists
+    const [existingProfile] = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.userId, userId))
+      .limit(1);
+
+    if (existingProfile) {
+      throw new AppError('VALIDATION_ERROR', 'User sudah memiliki profil karyawan', 400);
+    }
+
+    // Get all existing NIPs
+    const allEmployees = await db.select({ nip: employees.nip }).from(employees);
+    const existingNIPs = allEmployees.map(e => e.nip);
+
+    // Generate NIP
+    const joinDate = data.joinDate ? new Date(data.joinDate) : new Date();
+    const nip = await getNextNIP(joinDate, existingNIPs);
+
+    // Generate IDs
+    const employeeId = `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Create employee
+    const [employee] = await db
+      .insert(employees)
+      .values({
+        id: employeeId,
+        nip,
+        userId: user.id,
+        fullName: data.fullName,
+        email: user.email,
+        phone: data.phone,
+        address: data.address,
+        division: data.division,
+        position: data.position,
+        supervisorId: data.supervisorId,
+        defaultShiftId: data.defaultShiftId,
+        defaultLocationId: data.defaultLocationId,
+        joinDate: joinDate,
+        status: 'ACTIVE',
+      })
+      .returning();
+
+    // Invalidate employee caches
+    await this.invalidateEmployeeCaches();
+
+    return employee;
+  }
+
   async getEmployees(filters?: {
     search?: string;
     status?: EmployeeStatus;

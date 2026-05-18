@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { offlineDb, SyncConflict } from '@/hooks/offline/db';
 import { conflictResolver } from '@/hooks/offline/conflict-resolver';
 
@@ -8,6 +8,7 @@ export function ConflictResolver() {
   const [conflicts, setConflicts] = useState<SyncConflict[]>([]);
   const [selectedConflict, setSelectedConflict] = useState<SyncConflict | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     loadConflicts();
@@ -16,6 +17,18 @@ export function ConflictResolver() {
     const interval = setInterval(loadConflicts, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    closeButtonRef.current?.focus();
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen]);
 
   const loadConflicts = async () => {
     try {
@@ -65,8 +78,9 @@ export function ConflictResolver() {
   if (!isOpen) {
     return (
       <button
+        type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-36 right-4 z-40 bg-orange-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium hover:bg-orange-700 animate-pulse"
+        className="fixed bottom-36 right-4 z-40 bg-orange-600 text-white px-4 py-2 min-h-[44px] rounded-lg shadow-lg text-sm font-medium hover:bg-orange-700 animate-pulse focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
       >
         {conflicts.length} Conflict{conflicts.length > 1 ? 's' : ''}
       </button>
@@ -74,18 +88,21 @@ export function ConflictResolver() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="conflict-resolver-title">
       <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b bg-orange-50">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Sync Conflicts</h2>
+            <h2 id="conflict-resolver-title" className="text-lg font-semibold text-gray-900">Sync Conflicts</h2>
             <p className="text-sm text-gray-600">
               {conflicts.length} conflict{conflicts.length > 1 ? 's' : ''} need{conflicts.length === 1 ? 's' : ''} resolution
             </p>
           </div>
           <button
+            ref={closeButtonRef}
+            type="button"
             onClick={() => setIsOpen(false)}
-            className="text-gray-400 hover:text-gray-600"
+            className="min-h-[44px] min-w-[44px] rounded-lg text-gray-500 hover:text-gray-700 hover:bg-orange-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+            aria-label="Tutup konflik sinkronisasi"
           >
             ✕
           </button>
@@ -95,8 +112,9 @@ export function ConflictResolver() {
           {selectedConflict ? (
             <div className="space-y-4">
               <button
+                type="button"
                 onClick={() => setSelectedConflict(null)}
-                className="text-sm text-blue-600 hover:text-blue-700"
+                className="min-h-[44px] rounded-lg px-2 text-sm text-blue-600 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               >
                 ← Back to list
               </button>
@@ -123,8 +141,9 @@ export function ConflictResolver() {
                       {JSON.stringify(selectedConflict.clientData, null, 2)}
                     </pre>
                     <button
+                      type="button"
                       onClick={() => handleResolve(selectedConflict.id!, 'client')}
-                      className="mt-3 w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
+                      className="mt-3 w-full px-4 py-2 min-h-[44px] bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
                     >
                       Use My Changes
                     </button>
@@ -141,8 +160,9 @@ export function ConflictResolver() {
                       {JSON.stringify(selectedConflict.serverData, null, 2)}
                     </pre>
                     <button
+                      type="button"
                       onClick={() => handleResolve(selectedConflict.id!, 'server')}
-                      className="mt-3 w-full px-4 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700"
+                      className="mt-3 w-full px-4 py-2 min-h-[44px] bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-300"
                     >
                       Use Server Version
                     </button>
@@ -153,9 +173,10 @@ export function ConflictResolver() {
           ) : (
             <div className="space-y-3">
               {conflicts.map((conflict) => (
-                <div
+                <button
+                  type="button"
                   key={conflict.id}
-                  className="border border-orange-200 rounded-lg p-4 bg-orange-50 hover:bg-orange-100 cursor-pointer"
+                  className="w-full border border-orange-200 rounded-lg p-4 bg-orange-50 hover:bg-orange-100 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
                   onClick={() => setSelectedConflict(conflict)}
                 >
                   <div className="flex items-start justify-between">
@@ -170,7 +191,7 @@ export function ConflictResolver() {
                     </div>
                     <div className="text-orange-600 text-sm">→</div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}

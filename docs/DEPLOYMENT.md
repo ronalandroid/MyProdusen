@@ -14,10 +14,12 @@ must never be committed.
 | `NODE_ENV=production` | Required. Triggers strict `JWT_SECRET` validation in `lib/auth.ts`. |
 | `DATABASE_URL` | secret — `postgresql://user:pass@host:5432/db`. Coolify alias `myprodusen-db`. |
 | `JWT_SECRET` | secret, ≥ 32 chars. Production startup throws if missing. |
-| `NEXT_PUBLIC_APP_URL` / `APP_URL` | The public domain. |
+| `NEXT_PUBLIC_APP_URL` / `APP_URL` | The public HTTPS domain used by email links and redirects. |
+| `NEXTAUTH_SECRET` | secret, ≥ 32 chars. Required by runtime session compatibility check. |
 | `STORAGE_DRIVER=local` | Future S3 driver shares the same key layout. |
 | `UPLOAD_DIR=/app/uploads` | Mount point of the persistent volume. |
 | `ATTENDANCE_SELFIE_DIR=attendance-selfies` | Subdirectory under `UPLOAD_DIR`. Runtime defaults to this value if omitted. |
+| `MAX_UPLOAD_SIZE=5242880` | Generic upload cap in bytes. Required by production env validation. |
 | `MAX_SELFIE_SIZE_MB=1` | Backend hard cap. Runtime defaults to this value if omitted. |
 | `NEXT_PUBLIC_SELFIE_MAX_WIDTH=720` / `MAX_HEIGHT=720` / `IMAGE_QUALITY=0.75` / `TARGET_SIZE_KB=300` | Client-side compression knobs. Runtime defaults exist, but set them in Coolify for explicit config. |
 | `GPS_MAX_ACCURACY_METERS=100` | Reject any fix above this. Runtime defaults to this value if omitted. |
@@ -25,6 +27,8 @@ must never be committed.
 | `REJECT_OUTSIDE_GEOFENCE=true` | Set to `false` to send outside-radius attempts to the pending-review queue. Runtime defaults to `true`. |
 | `GPS_TIMESTAMP_MAX_AGE_SECONDS=120` | Set to `0` to disable freshness check. Runtime defaults to `120`. |
 | `ATTENDANCE_EXPORT_MAX_ROWS=5000` | Cap on CSV/XLSX export rows. Runtime defaults to this value if omitted. |
+| `PDF_REPORT_MAX_ROWS=1000` | Cap on Superadmin PDF report rows. Required by production env validation. |
+| `PDF_REPORT_MAX_DATE_RANGE_MONTHS=12` | Maximum PDF report date range. Required by production env validation. |
 | `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | secret — email delivery. |
 | `REDIS_URL` / `REDIS_PASSWORD` | secret, optional. App degrades gracefully if Redis is unavailable. |
 | `SUPERADMIN_EMAIL` / `SUPERADMIN_USERNAME` / `SUPERADMIN_PASSWORD` | secret — first-deploy bootstrap only. Rotate or remove after first login. |
@@ -40,7 +44,7 @@ The project's `Dockerfile` builds the Next.js standalone output. The
 3. Waits up to 60 seconds for PostgreSQL.
 4. Runs `npm run db:deploy` (idempotent migration runner).
 5. Optionally bootstraps the superadmin if `SUPERADMIN_*` env vars exist.
-6. Boots Next.js on `0.0.0.0:3000`.
+6. Boots the standalone Next.js server on `0.0.0.0:3000` with `node server.js`; no dev server is used.
 
 `.dockerignore` excludes secrets, dependencies, build output, and uploads.
 
@@ -53,7 +57,8 @@ The project's `Dockerfile` builds the Next.js standalone output. The
 4. Mount a persistent volume at `/app/uploads`. Selfies live under
    `/app/uploads/attendance-selfies/<year>/<month>/<employeeId>/<attendanceId>-{checkin|checkout}.<ext>`.
 5. Healthcheck path: `/api/health`.
-6. Build command: `npm run build`. Start command: `npm run start`.
+6. Build command: `npm run build`. Start command: `npm run start` for non-Docker fallback; Docker uses `docker-entrypoint.sh` and the standalone `server.js`.
+7. Confirm no reverse-proxy rule exposes `/app/uploads` publicly; selfies must only flow through protected API routes.
 
 ## 4. Storage layout
 
@@ -157,7 +162,7 @@ host). All times are server local time.
 
 ## 9. Observability
 
-- Healthcheck: `GET /api/health` returns `{ status: "ok" }` and basic DB ping.
+- Healthcheck: `GET /api/health` returns `{ status: "ok" }`, DB/Redis/disk status only, and no secret values.
 - Audit log: query `AuditLog` for forensics. Sensitive actions logged today:
   `CHECK_IN`, `CHECK_OUT`, `CHECK_IN_GPS_*`, `CHECK_OUT_GPS_*`,
   `SELFIE_VIEW`, `INVALID_SELFIE_ACCESS`, `EXPORT`, `APPROVE`, `REJECT`,
@@ -197,3 +202,38 @@ DATABASE_URL=postgresql://staging:… npm run perf:explain
 If any step fails, **do not proceed** until the failure is fixed. The
 audit log and the env preflight script are the canonical guards against
 silent regressions.
+
+## Deployment Version Verification
+
+Healthcheck mengembalikan metadata aman untuk memastikan live menjalankan build terbaru:
+
+```json
+{
+  "app": {
+    "name": "MyProdusen",
+    "version": "...",
+    "commit": "...",
+    "buildTime": "...",
+    "nodeEnv": "production"
+  }
+}
+```
+
+Env yang direkomendasikan di Coolify:
+
+```env
+APP_VERSION=<release-name>
+NEXT_PUBLIC_APP_VERSION=<release-name>
+GIT_COMMIT_SHA=<git-sha>
+BUILD_TIME=<ISO-8601-time>
+```
+
+Setelah deploy, verifikasi:
+
+```bash
+curl -sS https://myprodusen.online/api/health
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+E2E_BASE_URL=https://myprodusen.online npm run e2e:public
+```
+
+Untuk kasus route live `404` tetapi local build ada, lakukan rebuild image/no-cache di Coolify dan cocokkan `app.commit` dari `/api/health`.

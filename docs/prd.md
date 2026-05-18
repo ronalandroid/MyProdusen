@@ -337,10 +337,11 @@ Superadmin dashboard menampilkan:
 - Average KPI month.
 - Top performers.
 - Low performers.
-- Attendance trend.
+- Attendance trend & Employee Heatmap.
 - KPI by division.
-- Geo-fence rejected/pending alerts.
+- Geo-fence rejected/pending alerts & Pending Approvals panel.
 - Employee risk alerts.
+- System-wide Recent Activity (Audit Log) tracking.
 
 Employee dashboard menampilkan:
 
@@ -348,6 +349,7 @@ Employee dashboard menampilkan:
 - Shortcut check-in/check-out.
 - Jadwal/shift.
 - Leave/KPI summary.
+- Personal Attendance Heatmap (365-day contribution graph).
 - Notifikasi terbaru.
 
 Dashboard wajib respect permission dan tidak leak data lintas role.
@@ -1794,7 +1796,7 @@ Phase 2 features must be documented before implementation:
 A release is MVP-ready when all points below pass:
 
 1. User can register, receive email activation, activate account, and login.
-2. Superadmin can see registered users at `/dashboard/users` and assign role/status.
+2. Superadmin can see registered users at `/dashboard/users`, assign role/status, and directly onboard them into the Employee records.
 3. Employee data can be created with auto-generated NIP.
 4. Work location and shift can be configured.
 5. Employee can check-in and check-out with GPS + realtime selfie.

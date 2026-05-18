@@ -82,7 +82,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   const styles = {
     success: 'bg-[var(--success)] text-white border-[var(--success)]',
     error: 'bg-[var(--danger)] text-white border-[var(--danger)]',
-    warning: 'bg-[var(--warning)] text-white border-[var(--warning)]',
+    warning: 'bg-[var(--warning)] text-[var(--text-primary)] border-[var(--warning)]',
     info: 'bg-[var(--info)] text-white border-[var(--info)]',
   };
 

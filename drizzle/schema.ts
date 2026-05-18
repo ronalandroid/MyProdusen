@@ -50,6 +50,8 @@ export const employees = pgTable('Employee', {
 }, (table) => ({
   nipIdx: index('Employee_nip_idx').on(table.nip),
   userIdIdx: index('Employee_userId_idx').on(table.userId),
+  divisionIdx: index('Employee_division_idx').on(table.division),
+  statusIdx: index('Employee_status_idx').on(table.status),
   supervisorIdIdx: index('Employee_supervisorId_idx').on(table.supervisorId),
 }));
 
@@ -130,6 +132,8 @@ export const attendances = pgTable('Attendance', {
   workLocationIdIdx: index('Attendance_workLocationId_idx').on(table.workLocationId),
   checkInTimeIdx: index('Attendance_checkInTime_idx').on(table.checkInTime),
   statusIdx: index('Attendance_status_idx').on(table.status),
+  checkInGeoStatusIdx: index('Attendance_check_in_geo_status_idx').on(table.checkInGeoStatus),
+  checkOutGeoStatusIdx: index('Attendance_check_out_geo_status_idx').on(table.checkOutGeoStatus),
   employeeCheckInDateUnique: uniqueIndex('Attendance_employeeId_checkInDate_key').on(
     table.employeeId,
     sql`DATE(${table.checkInTime})`

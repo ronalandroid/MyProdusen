@@ -288,13 +288,18 @@ export default function AttendanceReportPage() {
   }
 
   return (
-    <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={() => router.back()}>
-          <ArrowLeft size={24} />
+    <div className="feature-screen" style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="button"
+          className="inline-flex min-h-[44px] items-center gap-3 rounded-xl px-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
+          onClick={() => router.back()}
+          aria-label="Kembali ke halaman sebelumnya"
+        >
+          <ArrowLeft size={24} aria-hidden="true" />
           <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Laporan Kehadiran</h1>
-        </div>
-        <div className="flex flex-wrap gap-2">
+        </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
           <Button variant="secondary" onClick={() => loadReport()} disabled={isLoading}>
             <RefreshCw size={16} className="mr-2" />
             Muat Ulang

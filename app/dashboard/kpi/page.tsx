@@ -1,337 +1,222 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Target, TrendingUp, Package, Users, PlusCircle } from "lucide-react";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { ArrowLeft, Target, TrendingUp, Users } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders } from "@/lib/auth-client";
-import { useToast } from "@/components/ui/Toast";
+
+type KpiResultRow = {
+  result: {
+    id: string;
+    period: string;
+    actualValue: number;
+    score: number;
+    isApproved: boolean;
+    notes?: string | null;
+  };
+  employee?: { id: string; name: string; nip?: string | null } | null;
+  item?: { id: string; name: string; targetValue?: number | null; unit?: string | null } | null;
+};
+
+type EmployeeRow = { id: string; name: string; nip?: string | null };
+
+type EmployeeSummary = {
+  employeeId: string;
+  period: string;
+  totalScore: number;
+  weightedScore: number;
+  itemCount: number;
+  approvedCount: number;
+  items: KpiResultRow[];
+};
+
+const currentPeriod = new Date().toISOString().slice(0, 7);
+
+function progressPercentage(score: number) {
+  return Math.max(0, Math.min(Math.round(score || 0), 100));
+}
+
+function statusColor(score: number) {
+  if (score >= 90) return "var(--success)";
+  if (score >= 70) return "var(--primary)";
+  return "var(--danger)";
+}
 
 export default function KPIPage() {
   const router = useRouter();
-  const { success, error: showError } = useToast();
-  
   const [role, setRole] = useState<string>("EMPLOYEE");
+  const [results, setResults] = useState<KpiResultRow[]>([]);
+  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
+  const [employeeSummary, setEmployeeSummary] = useState<EmployeeSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Tab control untuk Supervisor
-  const [activeTab, setActiveTab] = useState<"input" | "team">("input");
-  
-  // Data State
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [formData, setFormData] = useState({
-    employeeId: "",
-    jenisDimsum: "Siomay Ayam",
-    jumlahPack: "",
-  });
-  const [submitting, setSubmitting] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Placeholder data - KPI Karyawan
-  const kpiData = [
-    {
-      id: "1",
-      name: "Target Produksi Bulanan",
-      target: 1000,
-      current: 750,
-      unit: "pack",
-      period: "Mei 2026",
-    },
-    {
-      id: "2",
-      name: "Kualitas Produk (Lolos QC)",
-      target: 95,
-      current: 92,
-      unit: "%",
-      period: "Mei 2026",
-    },
-    {
-      id: "3",
-      name: "Kehadiran",
-      target: 100,
-      current: 95,
-      unit: "%",
-      period: "Mei 2026",
-    },
-  ];
+  const canViewTeam = role === "SUPERVISOR" || role === "ADMIN_HR" || role === "SUPERADMIN";
 
-  useEffect(() => {
-    fetchInitData();
-  }, []);
-
-  const fetchInitData = async () => {
+  const loadInitialData = useCallback(async () => {
+    setLoading(true);
+    setError("");
     try {
-      setLoading(true);
-      const statsRes = await fetch("/api/dashboard/stats", { headers: getAuthHeaders() });
-      if (statsRes.ok) {
-        const stats = await statsRes.json();
-        setRole(stats.data.role);
-        
-        if (stats.data.role === "SUPERVISOR") {
-          fetchEmployees();
+      const [statsResponse, resultsResponse] = await Promise.all([
+        fetch("/api/dashboard/stats", { headers: getAuthHeaders(), credentials: "include" }),
+        fetch(`/api/kpi/results?period=${currentPeriod}`, { headers: getAuthHeaders(), credentials: "include" }),
+      ]);
+
+      const statsPayload = await statsResponse.json().catch(() => null);
+      const resultsPayload = await resultsResponse.json().catch(() => null);
+
+      if (!statsResponse.ok || !statsPayload?.success) throw new Error(statsPayload?.error || "Gagal mengambil role pengguna");
+      if (!resultsResponse.ok || !resultsPayload?.success) throw new Error(resultsPayload?.error || "Gagal mengambil KPI");
+
+      const nextRole = statsPayload.data?.role || "EMPLOYEE";
+      setRole(nextRole);
+      setResults(Array.isArray(resultsPayload.data) ? resultsPayload.data : []);
+
+      if (["SUPERVISOR", "ADMIN_HR", "SUPERADMIN"].includes(nextRole)) {
+        const employeeResponse = await fetch("/api/employees?limit=100", { headers: getAuthHeaders(), credentials: "include" });
+        const employeePayload = await employeeResponse.json().catch(() => null);
+        if (employeeResponse.ok && employeePayload?.success) {
+          setEmployees(Array.isArray(employeePayload.data) ? employeePayload.data : []);
         }
       }
     } catch (err) {
-      console.error(err);
+      setError(err instanceof Error ? err.message : "Gagal memuat modul KPI");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchEmployees = async () => {
-    try {
-      const res = await fetch("/api/employees?limit=50", { headers: getAuthHeaders() });
-      const data = await res.json();
-      if (data.success) {
-        setEmployees(data.data || []);
-      }
-    } catch (err) {
-      console.error("Gagal memuat tim", err);
-    }
-  };
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
 
-  const handleSubmitProduksi = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.employeeId || !formData.jumlahPack) {
-      showError("Mohon pilih karyawan dan masukkan jumlah pack.");
+  useEffect(() => {
+    if (!selectedEmployeeId) {
+      setEmployeeSummary(null);
       return;
     }
 
-    setSubmitting(true);
-    
-    // Simulasi penyimpanan KPI pencetakan dimsum (karena backend API KPI masih tahap integrasi)
-    setTimeout(() => {
-      success(`Berhasil mencatat ${formData.jumlahPack} pack ${formData.jenisDimsum}`);
-      setFormData({ ...formData, jumlahPack: "" });
-      setSubmitting(false);
-    }, 1000);
-  };
+    let cancelled = false;
+    async function loadEmployeeSummary() {
+      setSummaryLoading(true);
+      setError("");
+      try {
+        const response = await fetch(`/api/kpi/employee/${selectedEmployeeId}?period=${currentPeriod}`, { headers: getAuthHeaders(), credentials: "include" });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success) throw new Error(payload?.error || "Gagal mengambil ringkasan KPI employee");
+        if (!cancelled) setEmployeeSummary(payload.data);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Gagal mengambil ringkasan KPI employee");
+      } finally {
+        if (!cancelled) setSummaryLoading(false);
+      }
+    }
 
-  const getProgressPercentage = (current: number, target: number) => {
-    return Math.min(Math.round((current / target) * 100), 100);
-  };
+    loadEmployeeSummary();
+    return () => { cancelled = true; };
+  }, [selectedEmployeeId]);
 
-  const getStatusColor = (percentage: number) => {
-    if (percentage >= 90) return "var(--success)";
-    if (percentage >= 70) return "var(--primary)";
-    return "var(--danger)";
-  };
+  const averageScore = useMemo(() => {
+    if (!results.length) return 0;
+    return Math.round(results.reduce((sum, row) => sum + Number(row.result?.score || 0), 0) / results.length);
+  }, [results]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-full min-h-[300px]">
+      <div className="flex min-h-[300px] items-center justify-center">
         <LoadingSpinner size="lg" message="Memuat modul KPI..." />
       </div>
     );
   }
 
   return (
-    <div className="phone-screen feature-screen" style={{ display: "flex", flexDirection: "column", gap: "20px", position: "relative", minHeight: "100%" }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={() => router.back()}>
-          <ArrowLeft size={24} />
-          <h1 style={{ fontSize: "20px", fontWeight: 700 }}>{role === "SUPERVISOR" ? "Input Produksi (Leader)" : "KPI Saya"}</h1>
-        </div>
+    <div className="phone-screen feature-screen flex min-h-full flex-col gap-5">
+      <div className="flex items-center justify-between gap-3">
+        <button type="button" className="flex min-w-0 items-center gap-3 text-left" onClick={() => router.back()} aria-label="Kembali">
+          <ArrowLeft size={24} aria-hidden="true" />
+          <div>
+            <h1 className="text-xl font-bold">{canViewTeam ? "KPI Tim" : "KPI Saya"}</h1>
+            <p className="text-xs text-[var(--text-secondary)]">Periode {currentPeriod}</p>
+          </div>
+        </button>
       </div>
 
-      {role === "SUPERVISOR" && (
-        <div style={{ display: "flex", backgroundColor: "white", borderRadius: "8px", padding: "4px", border: "1px solid var(--border-color)", marginBottom: "8px" }}>
-          <div 
-            onClick={() => setActiveTab("input")}
-            style={{ 
-              flex: 1, textAlign: "center", padding: "10px", borderRadius: "6px", fontSize: "14px", fontWeight: 600, cursor: "pointer",
-              backgroundColor: activeTab === "input" ? "var(--primary)" : "transparent",
-              color: activeTab === "input" ? "black" : "var(--text-secondary)",
-              transition: "all 0.2s"
-            }}
-          >
-            Input Pencetakan
-          </div>
-          <div 
-            onClick={() => setActiveTab("team")}
-            style={{ 
-              flex: 1, textAlign: "center", padding: "10px", borderRadius: "6px", fontSize: "14px", fontWeight: 600, cursor: "pointer",
-              backgroundColor: activeTab === "team" ? "var(--primary)" : "transparent",
-              color: activeTab === "team" ? "black" : "var(--text-secondary)",
-              transition: "all 0.2s"
-            }}
-          >
-            KPI Tim
-          </div>
+      {error && (
+        <div className="card border border-red-200 bg-red-50 p-4 text-sm text-[var(--danger)]" role="alert">
+          {error}
+          <button type="button" className="btn btn-secondary btn-sm ml-3" onClick={loadInitialData}>Coba lagi</button>
         </div>
       )}
 
-      {role === "SUPERVISOR" && activeTab === "input" ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div style={{ 
-            backgroundColor: "white", 
-            border: "1px solid var(--primary)",
-            borderRadius: "var(--radius-md)", 
-            padding: "16px",
-            display: "flex",
-            alignItems: "start",
-            gap: "12px"
-          }}>
-            <Package size={24} color="var(--primary)" style={{ flexShrink: 0, marginTop: "2px" }} />
-            <div>
-              <p className="text-sm font-semibold mb-1">Catat Hasil Produksi Harian</p>
-              <p className="text-xs text-[var(--text-secondary)]">
-                Pilih anggota tim Anda, jenis dimsum yang dicetak, dan jumlah pack yang dihasilkan. Data ini otomatis masuk ke skor KPI bulanan.
-              </p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmitProduksi} className="card" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div>
-              <label className="block text-sm font-medium mb-1.5 text-[var(--text-primary)]">Anggota Tim (Operator)</label>
-              <select
-                className="input"
-                value={formData.employeeId}
-                onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                required
-              >
-                <option value="">-- Pilih Karyawan --</option>
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>{emp.fullName} - {emp.nip}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1.5 text-[var(--text-primary)]">Jenis Dimsum</label>
-              <select
-                className="input"
-                value={formData.jenisDimsum}
-                onChange={(e) => setFormData({ ...formData, jenisDimsum: e.target.value })}
-                required
-              >
-                <option value="Siomay Ayam">Siomay Ayam</option>
-                <option value="Siomay Udang">Siomay Udang</option>
-                <option value="Hakau">Hakau</option>
-                <option value="Lumpia Kulit Tahu">Lumpia Kulit Tahu</option>
-                <option value="Kwo Tie">Kwo Tie</option>
-                <option value="Pangsit Goreng">Pangsit Goreng</option>
-                <option value="Bakpao">Bakpao</option>
-              </select>
-            </div>
-
-            <Input
-              label="Jumlah Pack"
-              type="number"
-              placeholder="Contoh: 150"
-              value={formData.jumlahPack}
-              onChange={(e) => setFormData({ ...formData, jumlahPack: e.target.value })}
-              required
-              min="1"
-            />
-
-            <Button 
-              type="submit" 
-              loading={submitting} 
-              style={{ marginTop: "8px", width: "100%", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}
-            >
-              <PlusCircle size={18} /> Simpan Hasil Cetak
-            </Button>
-          </form>
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="card p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)]"><Target size={18} /> KPI Tercatat</div>
+          <div className="text-2xl font-extrabold">{results.length}</div>
         </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {/* Info Banner untuk Employee atau Tab Team */}
-          {role === "EMPLOYEE" && (
-            <div style={{ 
-              backgroundColor: "var(--info-bg)", 
-              border: "1px solid var(--info)",
-              borderRadius: "var(--radius-md)", 
-              padding: "16px",
-              display: "flex",
-              alignItems: "start",
-              gap: "12px"
-            }}>
-              <Target size={20} color="var(--info)" style={{ flexShrink: 0, marginTop: "2px" }} />
-              <div>
-                <p className="text-sm font-semibold text-[var(--info)] mb-1">Fitur dalam tahap integrasi</p>
-                <p className="text-xs text-[var(--text-secondary)]">
-                  Skor pencetakan dimsum Anda diinput oleh Leader. Data di bawah ini adalah estimasi sementara.
-                </p>
+        <div className="card p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)]"><TrendingUp size={18} /> Rata-rata</div>
+          <div className="text-2xl font-extrabold">{averageScore}%</div>
+        </div>
+        <div className="card p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)]"><Users size={18} /> Role</div>
+          <div className="text-lg font-extrabold">{role}</div>
+        </div>
+      </section>
+
+      {canViewTeam && (
+        <section className="card p-4 sm:p-5">
+          <label className="label" htmlFor="employee-kpi-select">Lihat KPI employee/tim</label>
+          <select id="employee-kpi-select" className="input" value={selectedEmployeeId} onChange={(event) => setSelectedEmployeeId(event.target.value)}>
+            <option value="">Pilih employee</option>
+            {employees.map((employee) => (
+              <option key={employee.id} value={employee.id}>{employee.name}{employee.nip ? ` — ${employee.nip}` : ""}</option>
+            ))}
+          </select>
+          {summaryLoading && <p className="mt-3 text-sm text-[var(--text-secondary)]">Memuat ringkasan employee...</p>}
+          {employeeSummary && (
+            <div className="mt-4 rounded-2xl bg-[var(--bg-input)] p-4">
+              <div className="font-bold">Ringkasan employee terpilih</div>
+              <div className="mt-1 text-sm text-[var(--text-secondary)]">
+                Total score {Math.round(employeeSummary.totalScore)}% · Weighted {Math.round(employeeSummary.weightedScore)}% · {employeeSummary.approvedCount}/{employeeSummary.itemCount} approved
               </div>
             </div>
           )}
-
-          {/* Summary Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
-            <div className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>Total Pack Dicetak</div>
-              <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)" }}>
-                {role === "SUPERVISOR" ? "3,450" : "750"}
-              </div>
-            </div>
-            <div className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>Rata-rata Skor</div>
-              <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--success)" }}>85%</div>
-            </div>
-          </div>
-
-          {/* KPI List */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingBottom: "24px" }}>
-            {kpiData.map((kpi) => {
-              const percentage = getProgressPercentage(kpi.current, kpi.target);
-              const statusColor = getStatusColor(percentage);
-              
-              return (
-                <div key={kpi.id} className="card" style={{ padding: "16px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "12px" }}>
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>{kpi.name}</h3>
-                      <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{kpi.period}</p>
-                    </div>
-                    <div style={{ 
-                      display: "flex", 
-                      alignItems: "center", 
-                      gap: "4px",
-                      fontSize: "14px",
-                      fontWeight: 700,
-                      color: statusColor
-                    }}>
-                      <TrendingUp size={16} />
-                      {percentage}%
-                    </div>
-                  </div>
-                  
-                  {/* Progress Bar */}
-                  <div style={{ marginBottom: "8px" }}>
-                    <div style={{ 
-                      width: "100%", 
-                      height: "8px", 
-                      backgroundColor: "var(--border-color)", 
-                      borderRadius: "4px",
-                      overflow: "hidden"
-                    }}>
-                      <div style={{ 
-                        width: `${percentage}%`, 
-                        height: "100%", 
-                        backgroundColor: statusColor,
-                        transition: "width 0.3s ease"
-                      }} />
-                    </div>
-                  </div>
-                  
-                  {/* Current vs Target */}
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
-                    <span style={{ color: "var(--text-secondary)" }}>
-                      Saat ini: <strong>{kpi.current} {kpi.unit}</strong>
-                    </span>
-                    <span style={{ color: "var(--text-secondary)" }}>
-                      Target: <strong>{kpi.target} {kpi.unit}</strong>
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        </section>
       )}
+
+      <section className="space-y-3">
+        {!results.length ? (
+          <div className="card p-8 text-center text-sm text-[var(--text-secondary)]" role="status">
+            Belum ada hasil KPI untuk periode ini. Hubungi Supervisor/Admin HR jika KPI belum di-assign.
+          </div>
+        ) : (
+          results.map((row) => {
+            const score = progressPercentage(Number(row.result.score || 0));
+            return (
+              <div key={row.result.id} className="card p-4 sm:p-5">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-bold">{row.item?.name || "Item KPI"}</h3>
+                    <p className="text-xs text-[var(--text-secondary)]">{row.employee?.name || "Employee"} · Target {row.item?.targetValue ?? "-"} {row.item?.unit || ""}</p>
+                  </div>
+                  <span className={`badge ${row.result.isApproved ? "badge-success" : "badge-warning"}`}>{row.result.isApproved ? "Approved" : "Pending"}</span>
+                </div>
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span>Aktual: {row.result.actualValue} {row.item?.unit || ""}</span>
+                  <span className="font-bold" style={{ color: statusColor(score) }}>{score}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-input)]">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${score}%`, backgroundColor: statusColor(score) }} />
+                </div>
+                {row.result.notes && <p className="mt-3 text-xs text-[var(--text-muted)]">Catatan: {row.result.notes}</p>}
+              </div>
+            );
+          })
+        )}
+      </section>
     </div>
   );
 }

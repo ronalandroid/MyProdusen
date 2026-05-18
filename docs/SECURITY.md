@@ -77,8 +77,16 @@ Authentication email uses Resend through `lib/email.ts`.
   storage path resolver re-checks containment under `UPLOAD_DIR`.
 - Stored selfie path strings are sanitised; backslashes, leading slashes,
   `..` segments are rejected outright.
-- Cache headers: `Cache-Control: private, max-age=300, must-revalidate` plus
+- Cache headers: `Cache-Control: no-store, private` plus
   `X-Content-Type-Options: nosniff`.
+
+## PDF report security
+
+- `/dashboard/reports/pdf` and `POST /api/reports/pdf` are Superadmin-only.
+- PDF responses use `Cache-Control: no-store, no-cache, must-revalidate, private`.
+- Report type, date range, and row caps are validated with `PDF_REPORT_MAX_ROWS` and `PDF_REPORT_MAX_DATE_RANGE_MONTHS`.
+- Selfie path, URL, and binary fields are stripped from PDF data.
+- Every PDF download writes a `DOWNLOAD_PDF` audit log.
 
 ## Audit log
 
@@ -112,6 +120,17 @@ Triggered by:
 - KPI approval.
 - Pending geo-fence attendance (notifies ADMIN_HR + SUPERADMIN).
 - Geo approve / reject (notifies the employee).
+
+
+## Production security verification
+
+- Upload volume `/app/uploads` must remain private and must not be mapped as public static storage.
+- Attendance selfies are served only through protected API endpoints with ownership/RBAC checks.
+- Payroll endpoints must enforce employee-own access, Superadmin full access, and Admin HR permission policy server-side.
+- PDF report page and API remain Superadmin-only; non-Superadmin access must be tested after deploy.
+- Secrets live only in Coolify/password manager: never commit `.env`, database dumps, upload archives, Resend keys, JWT secrets, or payroll exports.
+- Protected API responses for selfies, PDF reports, payroll exports, and health checks must use private/no-store cache where sensitive.
+- Production smoke test must verify unauthorized employee-to-employee, supervisor-outside-team, Admin HR Superadmin-only, and public upload access denial.
 
 ## Hardening checklist
 

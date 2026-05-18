@@ -38,7 +38,7 @@ export default function ActivateAccountClient() {
   }, [token]);
 
   return (
-    <main className="auth-page relative overflow-hidden">
+    <main className="auth-page relative overflow-x-hidden">
       <section className="auth-shell relative z-10 !min-h-screen">
         <div className="auth-panel animate-scale-in">
           <div className="auth-card text-center">

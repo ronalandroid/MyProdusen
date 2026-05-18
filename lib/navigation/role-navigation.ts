@@ -12,6 +12,7 @@ export type NavigationItemKey =
   | 'leave'
   | 'kpi'
   | 'reports'
+  | 'reports-pdf'
   | 'payroll'
   | 'overtime'
   | 'documents'
@@ -120,7 +121,7 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
     name: 'Payroll',
     path: '/dashboard/payroll',
     primaryFor: [],
-    allowedRoles: ['SUPERADMIN', 'ADMIN_HR'],
+    allowedRoles: ['SUPERADMIN', 'ADMIN_HR', 'EMPLOYEE'],
   },
   {
     key: 'overtime',
@@ -159,6 +160,16 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
   },
 ];
 
+const sensitiveRoutePolicy: readonly NavigationPolicyItem[] = [
+  {
+    key: 'reports-pdf',
+    name: 'PDF Reports',
+    path: '/dashboard/reports/pdf',
+    primaryFor: [],
+    allowedRoles: ['SUPERADMIN'],
+  },
+];
+
 const MAX_PRIMARY_SLOTS = 5;
 
 export function getNavigationForRole(role: UserRole): readonly NavigationItem[] {
@@ -180,5 +191,9 @@ export function getPrimaryNavigationForRole(role: UserRole): readonly Navigation
 }
 
 export function canAccessNavigationPath(role: UserRole, path: string): boolean {
-  return navigationPolicy.some((item) => path === item.path && item.allowedRoles.includes(role));
+  const policies = [...navigationPolicy, ...sensitiveRoutePolicy]
+    .sort((left, right) => right.path.length - left.path.length);
+
+  const matchedPolicy = policies.find((item) => path === item.path || path.startsWith(`${item.path}/`));
+  return Boolean(matchedPolicy?.allowedRoles.includes(role));
 }

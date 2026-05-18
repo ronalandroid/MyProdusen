@@ -1,27 +1,23 @@
 import { NextRequest } from 'next/server';
 import { payrollService } from '@/src/services/payroll/payroll.service';
-import { getCurrentUser } from '@/lib/auth-context';
-import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
+import { requireAuth } from '@/lib/middleware';
+import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
+import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
+import { logAudit } from '@/lib/audit';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return unauthorizedResponse();
-    }
-
-    if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
-      return forbiddenResponse();
-    }
-
-    const run = await payrollService.calculatePayroll(params.id);
-
-    return successResponse(run);
+    const user = await requireAuth(request);
+    assertPayrollAccess(user.role, 'mutate');
+    const { id } = await params;
+    const before = await payrollService.getPayrollRunById(id);
+    const run = await payrollService.calculatePayroll(id);
+    await logAudit(user.userId, 'CALCULATE', 'PayrollRun', id, before, run, request);
+    return successResponse(run, 'Payroll berhasil dikalkulasi');
   } catch (error: any) {
-    console.error('Calculate payroll error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
+    if (error.message === 'Unauthorized') return unauthorizedResponse();
+    const accessMessage = payrollAccessErrorMessage(error);
+    if (accessMessage) return forbiddenResponse(accessMessage);
+    return errorResponse(error.message || 'Gagal kalkulasi payroll', 500);
   }
 }

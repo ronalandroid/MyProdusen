@@ -62,12 +62,14 @@ function isBoolean(value) {
 require('NODE_ENV', (v) => v === 'production', 'must be "production"');
 require('DATABASE_URL', isPostgres, 'must start with postgres:// or postgresql://');
 require('JWT_SECRET', (v) => v.length >= 32, 'must be at least 32 characters');
+require('NEXTAUTH_SECRET', (v) => v.length >= 32, 'must be at least 32 characters');
 require('NEXT_PUBLIC_APP_URL', isHttps, 'must be an HTTP(S) URL');
 require('APP_URL', isHttps, 'must be an HTTP(S) URL');
 
 // Selfie + storage
 require('UPLOAD_DIR', (v) => v.startsWith('/'), 'must be an absolute path');
 require('ATTENDANCE_SELFIE_DIR', (v) => v.length > 0, 'must be a non-empty subdirectory');
+require('MAX_UPLOAD_SIZE', isPositiveInt, 'must be a positive integer');
 require('MAX_SELFIE_SIZE_MB', isPositiveInt, 'must be a positive integer');
 
 // GPS / geo-fence
@@ -78,10 +80,11 @@ require('GPS_TIMESTAMP_MAX_AGE_SECONDS', (v) => /^\d+$/.test(v), 'must be a non-
 
 // Reports
 require('ATTENDANCE_EXPORT_MAX_ROWS', isPositiveInt, 'must be a positive integer');
+require('PDF_REPORT_MAX_ROWS', isPositiveInt, 'must be a positive integer');
+require('PDF_REPORT_MAX_DATE_RANGE_MONTHS', isPositiveInt, 'must be a positive integer');
 
 // ---------------- Recommended but not strictly required ----------------------
 
-suggest('NEXTAUTH_SECRET', (v) => v.length >= 32, 'must be at least 32 characters');
 suggest('NEXTAUTH_URL', isHttps, 'must be an HTTP(S) URL');
 suggest('NEXT_PUBLIC_SELFIE_MAX_WIDTH', isPositiveInt, 'must be a positive integer');
 suggest('NEXT_PUBLIC_SELFIE_MAX_HEIGHT', isPositiveInt, 'must be a positive integer');
@@ -95,6 +98,8 @@ require('RESEND_API_KEY', (v) => /^re_/.test(v), 'expected to start with "re_"')
 require('RESEND_FROM_EMAIL', (v) => /@/.test(v), 'must contain "@"');
 
 // ---------------- Bootstrap-only superadmin keys -----------------------------
+
+suggest('SUPERADMIN_EMAIL', (v) => /@/.test(v), 'must contain "@" when present');
 
 if (ENV.SUPERADMIN_PASSWORD) {
   if (ENV.SUPERADMIN_PASSWORD.length < 12) {

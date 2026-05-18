@@ -79,6 +79,8 @@ export class PayrollService {
       isActive?: boolean;
     }
   ) {
+    await this.assertStructureEditable(id);
+
     const [updated] = await db
       .update(payrollStructures)
       .set({
@@ -96,6 +98,8 @@ export class PayrollService {
   }
 
   async deleteStructure(id: string) {
+    await this.assertStructureEditable(id);
+
     // Check if structure is used by any employee
     const [usage] = await db
       .select()
@@ -194,6 +198,16 @@ export class PayrollService {
     bpjsKesehatanNumber?: string;
     bpjsKetenagakerjaanNumber?: string;
   }) {
+    const [activeRun] = await db
+      .select({ id: payrollRuns.id })
+      .from(payrollRuns)
+      .where(sql`${payrollRuns.status} IN ('APPROVED', 'PAID')`)
+      .limit(1);
+
+    if (activeRun) {
+      throw new Error('Assignment payroll tidak dapat diubah setelah ada payroll disetujui/dibayar');
+    }
+
     // End previous payroll assignment
     await db
       .update(employeePayrolls)
@@ -247,6 +261,18 @@ export class PayrollService {
       bpjsKetenagakerjaanNumber?: string;
     }
   ) {
+    const [assignment] = await db
+      .select()
+      .from(employeePayrolls)
+      .where(eq(employeePayrolls.id, id))
+      .limit(1);
+
+    if (!assignment) {
+      throw new Error('Data payroll karyawan tidak ditemukan');
+    }
+
+    await this.assertNoFinalPayrollForEmployee(assignment.employeeId);
+
     const [updated] = await db
       .update(employeePayrolls)
       .set({
@@ -313,6 +339,8 @@ export class PayrollService {
     if (run.status !== 'DRAFT') {
       throw new Error('Payroll sudah dikalkulasi');
     }
+
+    await db.delete(payrollItems).where(eq(payrollItems.runId, runId));
 
     // Get all active employees with payroll assignment
     const activeEmployees = await db
@@ -590,11 +618,49 @@ export class PayrollService {
     return updated;
   }
 
+  async markPayrollRunPaid(runId: string) {
+    const [run] = await db
+      .select()
+      .from(payrollRuns)
+      .where(eq(payrollRuns.id, runId))
+      .limit(1);
+
+    if (!run) {
+      throw new Error('Payroll run tidak ditemukan');
+    }
+
+    if (run.status !== 'APPROVED') {
+      throw new Error('Hanya payroll approved yang dapat ditandai paid');
+    }
+
+    const [updated] = await db
+      .update(payrollRuns)
+      .set({ status: 'PAID', paidAt: new Date(), updatedAt: new Date() })
+      .where(eq(payrollRuns.id, runId))
+      .returning();
+
+    return updated;
+  }
+
   async getPayrollRuns() {
     return await db
       .select()
       .from(payrollRuns)
       .orderBy(sql`${payrollRuns.period} DESC`);
+  }
+
+  async getPayrollSummary() {
+    const runs = await this.getPayrollRuns();
+    const latest = runs[0] ?? null;
+    return {
+      totalRuns: runs.length,
+      draftRuns: runs.filter((run) => run.status === 'DRAFT').length,
+      calculatedRuns: runs.filter((run) => run.status === 'CALCULATED').length,
+      approvedRuns: runs.filter((run) => run.status === 'APPROVED').length,
+      paidRuns: runs.filter((run) => run.status === 'PAID').length,
+      totalNetPay: runs.reduce((sum, run) => sum + run.totalNetPay, 0),
+      latest,
+    };
   }
 
   async getPayrollRunById(id: string) {
@@ -631,6 +697,74 @@ export class PayrollService {
       .innerJoin(payrollRuns, eq(payrollItems.runId, payrollRuns.id))
       .where(eq(payrollItems.employeeId, employeeId))
       .orderBy(sql`${payrollRuns.period} DESC`);
+  }
+
+  async getPayrollItemById(itemId: string) {
+    const [row] = await db
+      .select({ item: payrollItems, run: payrollRuns, employee: employees })
+      .from(payrollItems)
+      .innerJoin(payrollRuns, eq(payrollItems.runId, payrollRuns.id))
+      .innerJoin(employees, eq(payrollItems.employeeId, employees.id))
+      .where(eq(payrollItems.id, itemId))
+      .limit(1);
+
+    if (!row) {
+      throw new Error('Payslip tidak ditemukan');
+    }
+
+    return row;
+  }
+
+  async getOrCreatePayslip(itemId: string) {
+    const row = await this.getPayrollItemById(itemId);
+    const [existing] = await db
+      .select()
+      .from(payslips)
+      .where(eq(payslips.itemId, itemId))
+      .limit(1);
+
+    if (existing) return { ...row, payslip: existing };
+
+    const [payslip] = await db
+      .insert(payslips)
+      .values({ id: nanoid(), itemId, employeeId: row.item.employeeId, period: row.run.period })
+      .returning();
+
+    return { ...row, payslip };
+  }
+
+  async markPayslipDownloaded(itemId: string) {
+    await db
+      .update(payslips)
+      .set({ isDownloaded: true, downloadedAt: new Date() })
+      .where(eq(payslips.itemId, itemId));
+  }
+
+  private async assertStructureEditable(structureId: string) {
+    const [finalized] = await db
+      .select({ id: payrollItems.id })
+      .from(payrollItems)
+      .innerJoin(employeePayrolls, eq(payrollItems.employeeId, employeePayrolls.employeeId))
+      .innerJoin(payrollRuns, eq(payrollItems.runId, payrollRuns.id))
+      .where(and(eq(employeePayrolls.structureId, structureId), sql`${payrollRuns.status} IN ('APPROVED', 'PAID')`))
+      .limit(1);
+
+    if (finalized) {
+      throw new Error('Struktur payroll yang sudah masuk payroll approved/paid tidak dapat diedit langsung');
+    }
+  }
+
+  private async assertNoFinalPayrollForEmployee(employeeId: string) {
+    const [finalized] = await db
+      .select({ id: payrollItems.id })
+      .from(payrollItems)
+      .innerJoin(payrollRuns, eq(payrollItems.runId, payrollRuns.id))
+      .where(and(eq(payrollItems.employeeId, employeeId), sql`${payrollRuns.status} IN ('APPROVED', 'PAID')`))
+      .limit(1);
+
+    if (finalized) {
+      throw new Error('Payroll karyawan yang sudah approved/paid tidak dapat diedit langsung');
+    }
   }
 }
 

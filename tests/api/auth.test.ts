@@ -142,12 +142,15 @@ describe('Auth API', () => {
     it('should register new user as SUPERADMIN', async () => {
       const superadmin = await createTestUser('SUPERADMIN');
       testUserIds.push(superadmin.id);
+      const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const email = `newuser_${uniqueSuffix}@test.com`;
+      const username = `newuser_${uniqueSuffix}`;
 
       const request = createMockRequest('POST', 'http://localhost:3000/api/auth/register', {
         token: superadmin.token,
         body: {
-          email: 'newuser@test.com',
-          username: 'newuser',
+          email,
+          username,
           password: 'Password123!',
           role: 'EMPLOYEE',
         },
@@ -158,7 +161,7 @@ describe('Auth API', () => {
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.data.email).toBe('newuser@test.com');
+      expect(data.data.email).toBe(email);
       
       // Cleanup
       if (data.data.id) {

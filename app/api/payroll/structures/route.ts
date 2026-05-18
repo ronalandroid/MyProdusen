@@ -1,8 +1,10 @@
 import { NextRequest } from 'next/server';
-import { payrollService } from '@/src/services/payroll/payroll.service';
-import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
+import { payrollService } from '@/src/services/payroll/payroll.service';
+import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
+import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
+import { logAudit } from '@/lib/audit';
 
 const createStructureSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi'),
@@ -12,55 +14,34 @@ const createStructureSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return unauthorizedResponse();
-    }
-
-    // Only SUPERADMIN and ADMIN_HR can view payroll structures
-    if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
-      return forbiddenResponse();
-    }
-
+    const user = await requireAuth(request);
+    assertPayrollAccess(user.role, 'read');
     const { searchParams } = new URL(request.url);
     const isActive = searchParams.get('isActive');
-
-    const structures = await payrollService.getStructures(
-      isActive === 'true' ? true : isActive === 'false' ? false : undefined
-    );
-
+    const structures = await payrollService.getStructures(isActive === 'true' ? true : isActive === 'false' ? false : undefined);
     return successResponse(structures);
   } catch (error: any) {
-    console.error('Get payroll structures error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
+    if (error.message === 'Unauthorized') return unauthorizedResponse();
+    const accessMessage = payrollAccessErrorMessage(error);
+    if (accessMessage) return forbiddenResponse(accessMessage);
+    return errorResponse(error.message || 'Gagal mengambil struktur payroll', 500);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return unauthorizedResponse();
-    }
-
-    // Only SUPERADMIN and ADMIN_HR can create payroll structures
-    if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
-      return forbiddenResponse();
-    }
-
-    const body = await request.json();
-    const validated = createStructureSchema.parse(body);
-
-    const structure = await payrollService.createStructure(validated);
-
-    return successResponse(structure, undefined, 201);
+    const user = await requireAuth(request);
+    assertPayrollAccess(user.role, 'mutate');
+    const body = await getRequestBody(request);
+    const validation = createStructureSchema.safeParse(body);
+    if (!validation.success) return validationErrorResponse(validation.error.errors[0].message);
+    const structure = await payrollService.createStructure(validation.data);
+    await logAudit(user.userId, 'CREATE', 'PayrollStructure', structure.id, undefined, structure, request);
+    return successResponse(structure, 'Struktur payroll berhasil dibuat', 201);
   } catch (error: any) {
-    console.error('Create payroll structure error:', error);
-    
-    if (error.name === 'ZodError') {
-      return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
-    }
-
-    return errorResponse(error.message || 'Internal server error', 500);
+    if (error.message === 'Unauthorized') return unauthorizedResponse();
+    const accessMessage = payrollAccessErrorMessage(error);
+    if (accessMessage) return forbiddenResponse(accessMessage);
+    return errorResponse(error.message || 'Gagal membuat struktur payroll', 500);
   }
 }

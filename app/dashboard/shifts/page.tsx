@@ -1,87 +1,184 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-const shiftsData = [
-  { id: 1, name: "Shift Pagi", startTime: "07:00", endTime: "15:00", isActive: true, employeeCount: 24 },
-  { id: 2, name: "Shift Siang", startTime: "15:00", endTime: "23:00", isActive: true, employeeCount: 16 },
-  { id: 3, name: "Shift Malam", startTime: "23:00", endTime: "07:00", isActive: false, employeeCount: 8 },
-  { id: 4, name: "Office Hours", startTime: "08:00", endTime: "17:00", isActive: true, employeeCount: 12 },
-];
+type Shift = {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+};
 
 export default function ShiftsPage() {
+  const [shifts, setShifts] = useState<Shift[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [editingShift, setEditingShift] = useState<Shift | null>(null);
+  const [formData, setFormData] = useState({ name: "", startTime: "", endTime: "" });
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  const loadShifts = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/shifts", { credentials: "include" });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) throw new Error(result?.error || "Gagal mengambil data shift");
+      setShifts(Array.isArray(result.data) ? result.data : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal mengambil data shift");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadShifts();
+  }, [loadShifts]);
+
+  function openCreateModal() {
+    setEditingShift(null);
+    setFormData({ name: "", startTime: "", endTime: "" });
+    setMessage("");
+    setError("");
+    setShowModal(true);
+  }
+
+  function openEditModal(shift: Shift) {
+    setEditingShift(shift);
+    setFormData({ name: shift.name, startTime: shift.startTime, endTime: shift.endTime });
+    setMessage("");
+    setError("");
+    setShowModal(true);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitting(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetch(editingShift ? `/api/shifts/${editingShift.id}` : "/api/shifts", {
+        method: editingShift ? "PUT" : "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) throw new Error(result?.error || "Gagal menyimpan shift");
+      setMessage(editingShift ? "Shift berhasil diperbarui." : "Shift berhasil dibuat.");
+      setShowModal(false);
+      await loadShifts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menyimpan shift");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function toggleShift(shift: Shift) {
+    setSubmitting(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetch(`/api/shifts/${shift.id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !shift.isActive }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) throw new Error(result?.error || "Gagal mengubah status shift");
+      setMessage("Status shift berhasil diperbarui.");
+      await loadShifts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal mengubah status shift");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 style={{ fontSize: "24px", fontWeight: 800 }}>⏰ Shift Kerja</h1>
-          <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>Kelola jadwal shift karyawan</p>
+          <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">⏰ Shift Kerja</h1>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">Kelola jadwal shift karyawan dari database</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>➕ Tambah Shift</button>
+        <button type="button" className="btn btn-primary w-full sm:w-auto" onClick={openCreateModal}>➕ Tambah Shift</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))", gap: "16px" }}>
-        {shiftsData.map(shift => (
-          <div key={shift.id} className="card" style={{ padding: "24px", position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: shift.isActive ? "#22C55E" : "#5A5F78" }} />
-            
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: 700 }}>{shift.name}</h3>
-              <span className={`badge ${shift.isActive ? "badge-success" : "badge-danger"}`} style={{ fontSize: "10px" }}>
-                {shift.isActive ? "Aktif" : "Nonaktif"}
-              </span>
-            </div>
+      {message && <div className="card border border-green-200 bg-green-50 p-4 text-sm text-[var(--success)]" role="status">{message}</div>}
+      {error && (
+        <div className="card border border-red-200 bg-red-50 p-4 text-sm text-[var(--danger)]" role="alert">
+          {error}
+          <button type="button" className="btn btn-secondary btn-sm ml-3" onClick={loadShifts}>Coba lagi</button>
+        </div>
+      )}
 
-            <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
-              <div style={{ flex: 1, padding: "12px", background: "var(--bg-input)", borderRadius: "var(--radius-md)", textAlign: "center" }}>
-                <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Masuk</div>
-                <div style={{ fontSize: "20px", fontWeight: 700, fontFamily: "monospace", color: "var(--success)" }}>{shift.startTime}</div>
+      {loading ? (
+        <div className="card p-8 text-center text-sm text-[var(--text-secondary)]" role="status">Memuat shift...</div>
+      ) : !shifts.length ? (
+        <div className="card p-8 text-center text-sm text-[var(--text-secondary)]" role="status">Belum ada shift. Tambahkan shift kerja pertama.</div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {shifts.map((shift) => (
+            <div key={shift.id} className="card relative overflow-hidden p-5 sm:p-6">
+              <div className="absolute left-0 right-0 top-0 h-1" style={{ background: shift.isActive ? "#22C55E" : "#5A5F78" }} />
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h3 className="min-w-0 truncate text-base font-bold">{shift.name}</h3>
+                <span className={`badge ${shift.isActive ? "badge-success" : "badge-danger"}`}>{shift.isActive ? "Aktif" : "Nonaktif"}</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", color: "var(--text-muted)" }}>→</div>
-              <div style={{ flex: 1, padding: "12px", background: "var(--bg-input)", borderRadius: "var(--radius-md)", textAlign: "center" }}>
-                <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Pulang</div>
-                <div style={{ fontSize: "20px", fontWeight: 700, fontFamily: "monospace", color: "var(--danger)" }}>{shift.endTime}</div>
+              <div className="mb-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                <div className="rounded-[var(--radius-md)] bg-[var(--bg-input)] p-3 text-center">
+                  <div className="mb-1 text-[11px] text-[var(--text-muted)]">Masuk</div>
+                  <div className="font-mono text-xl font-bold text-[var(--success)]">{shift.startTime}</div>
+                </div>
+                <div className="text-[var(--text-muted)]">→</div>
+                <div className="rounded-[var(--radius-md)] bg-[var(--bg-input)] p-3 text-center">
+                  <div className="mb-1 text-[11px] text-[var(--text-muted)]">Pulang</div>
+                  <div className="font-mono text-xl font-bold text-[var(--danger)]">{shift.endTime}</div>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => openEditModal(shift)}>✏️ Edit</button>
+                <button type="button" className="btn btn-secondary btn-sm" disabled={submitting} onClick={() => toggleShift(shift)}>
+                  {shift.isActive ? "Nonaktifkan" : "Aktifkan"}
+                </button>
               </div>
             </div>
-
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>👥 {shift.employeeCount} karyawan</span>
-              <div style={{ display: "flex", gap: "4px" }}>
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: "12px" }}>✏️</button>
-                <button className="btn btn-ghost btn-sm" style={{ fontSize: "12px" }}>🗑️</button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {showModal && (
-        <div className="overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
-              <h2 style={{ fontSize: "18px", fontWeight: 700 }}>➕ Tambah Shift</h2>
-              <button className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)} style={{ fontSize: "16px" }}>✕</button>
+        <div className="overlay" onClick={() => !submitting && setShowModal(false)}>
+          <div className="modal w-[min(92vw,520px)]" onClick={(event) => event.stopPropagation()}>
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-bold">{editingShift ? "✏️ Edit Shift" : "➕ Tambah Shift"}</h2>
+              <button type="button" className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)} disabled={submitting}>✕</button>
             </div>
-            <form onSubmit={e => { e.preventDefault(); setShowModal(false); }}>
-              <div style={{ marginBottom: "16px" }}>
-                <label className="label">Nama Shift</label>
-                <input className="input" placeholder="Contoh: Shift Pagi" required />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="label" htmlFor="shift-name">Nama Shift</label>
+                <input id="shift-name" className="input" placeholder="Contoh: Shift Pagi" required minLength={3} value={formData.name} onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))} />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="label">Jam Masuk</label>
-                  <input className="input" type="time" required />
+                  <label className="label" htmlFor="shift-start">Jam Masuk</label>
+                  <input id="shift-start" className="input" type="time" required value={formData.startTime} onChange={(event) => setFormData((current) => ({ ...current, startTime: event.target.value }))} />
                 </div>
                 <div>
-                  <label className="label">Jam Pulang</label>
-                  <input className="input" type="time" required />
+                  <label className="label" htmlFor="shift-end">Jam Pulang</label>
+                  <input id="shift-end" className="input" type="time" required value={formData.endTime} onChange={(event) => setFormData((current) => ({ ...current, endTime: event.target.value }))} />
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Batal</button>
-                <button type="submit" className="btn btn-primary">💾 Simpan</button>
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)} disabled={submitting}>Batal</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? "Menyimpan..." : "💾 Simpan"}</button>
               </div>
             </form>
           </div>

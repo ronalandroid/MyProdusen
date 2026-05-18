@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 
 export interface ModalProps {
@@ -22,11 +22,26 @@ export default function Modal({
   closeOnOverlayClick = true,
   footer,
 }: ModalProps) {
+  const titleId = useId();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedElement = useRef<Element | null>(null);
+
   useEffect(() => {
     if (isOpen) {
+      previouslyFocusedElement.current = document.activeElement;
       document.body.style.overflow = 'hidden';
+
+      requestAnimationFrame(() => {
+        const firstFocusable = contentRef.current?.querySelector<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        firstFocusable?.focus();
+      });
     } else {
       document.body.style.overflow = 'unset';
+      if (previouslyFocusedElement.current instanceof HTMLElement) {
+        previouslyFocusedElement.current.focus();
+      }
     }
 
     return () => {
@@ -38,6 +53,33 @@ export default function Modal({
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
         onClose();
+      }
+
+      if (e.key !== 'Tab' || !isOpen || !contentRef.current) {
+        return;
+      }
+
+      const focusableElements = Array.from(
+        contentRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((element) => !element.hasAttribute('aria-hidden'));
+
+      if (focusableElements.length === 0) {
+        e.preventDefault();
+        contentRef.current.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (e.shiftKey && document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement.focus();
+      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement.focus();
       }
     };
 
@@ -66,7 +108,7 @@ export default function Modal({
       className="fixed inset-0 z-[var(--z-modal)] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
       role="dialog"
       aria-modal="true"
-      aria-labelledby={title ? 'modal-title' : undefined}
+      aria-labelledby={title ? titleId : undefined}
     >
       {/* Backdrop */}
       <div
@@ -77,6 +119,8 @@ export default function Modal({
 
       {/* Modal Content */}
       <div
+        ref={contentRef}
+        tabIndex={-1}
         className={`
           relative w-full ${sizeClasses[size]}
           bg-white rounded-t-3xl sm:rounded-3xl
@@ -91,7 +135,7 @@ export default function Modal({
           <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-color)]">
             {title && (
               <h2
-                id="modal-title"
+                id={titleId}
                 className="text-xl font-bold text-[var(--text-primary)]"
               >
                 {title}

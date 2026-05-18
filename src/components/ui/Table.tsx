@@ -27,8 +27,9 @@ export default function Table<T>({
   if (loading) {
     return (
       <div className="w-full bg-white rounded-lg border border-[var(--border-color)] p-8">
-        <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary)]"></div>
+        <div className="flex items-center justify-center" role="status" aria-live="polite">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary)]" aria-hidden="true"></div>
+          <span className="sr-only">Memuat data...</span>
         </div>
       </div>
     );
@@ -63,8 +64,17 @@ export default function Table<T>({
             <tr
               key={keyExtractor(item)}
               onClick={() => onRowClick?.(item)}
+              onKeyDown={(event) => {
+                if (!onRowClick) return;
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onRowClick(item);
+                }
+              }}
+              tabIndex={onRowClick ? 0 : undefined}
+              role={onRowClick ? 'button' : undefined}
               className={`${
-                onRowClick ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''
+                onRowClick ? 'cursor-pointer hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--primary)]' : ''
               }`}
             >
               {columns.map((column) => (

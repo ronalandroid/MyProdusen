@@ -46,7 +46,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="auth-page relative overflow-hidden">
+    <main className="auth-page relative overflow-x-hidden">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -right-24 top-0 h-72 w-72 rounded-full bg-[var(--primary)]/25 blur-3xl" />
         <div className="absolute -left-20 bottom-12 h-64 w-64 rounded-full bg-[var(--primary)]/15 blur-3xl" />

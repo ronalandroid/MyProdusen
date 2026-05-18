@@ -137,6 +137,17 @@ function getCircuitBreakerStats() {
   return stats;
 }
 
+function getAppMetadata() {
+  return {
+    name: 'MyProdusen',
+    status: 'ok' as CheckStatus,
+    version: process.env.APP_VERSION || process.env.NEXT_PUBLIC_APP_VERSION || 'unknown',
+    commit: process.env.GIT_COMMIT_SHA || process.env.COOLIFY_GIT_COMMIT_SHA || 'unknown',
+    buildTime: process.env.BUILD_TIME || process.env.COOLIFY_BUILD_TIME || 'unknown',
+    nodeEnv: process.env.NODE_ENV || 'unknown',
+  };
+}
+
 export async function GET(_request: NextRequest) {
   const startedAt = Date.now();
   const [database, redis, disk] = await Promise.all([
@@ -156,6 +167,7 @@ export async function GET(_request: NextRequest) {
   return Response.json(
     {
       status,
+      app: getAppMetadata(),
       timestamp: new Date().toISOString(),
       responseTimeMs: Date.now() - startedAt,
       checks: {
@@ -174,6 +186,11 @@ export async function GET(_request: NextRequest) {
         ])
       ),
     },
-    { status: status === 'ok' ? 200 : 503 }
+    {
+      status: status === 'ok' ? 200 : 503,
+      headers: {
+        'Cache-Control': 'no-store, private',
+      },
+    }
   );
 }

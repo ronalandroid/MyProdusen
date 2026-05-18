@@ -31,7 +31,11 @@
     "cap:open": "cap open android",
     "android:live": "bash scripts/android-live-preview.sh",
     "android:install-live": "bash scripts/android-install-live.sh",
-    "android:realtime": "bash scripts/sync-android-realtime.sh"
+    "android:realtime": "bash scripts/sync-android-realtime.sh",
+    "e2e": "playwright test",
+    "e2e:staging": "playwright test tests/e2e/staging-smoke.spec.ts",
+    "e2e:public": "playwright test tests/e2e/public-smoke.spec.ts",
+    "verify:live-routes": "node scripts/verify-live-routes.mjs"
   },
   "keywords": [
     "attendance",
@@ -75,6 +79,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/uuid": "^10.0.0",
     "@vitest/coverage-v8": "^4.1.6",
     "dotenv": "^17.4.2",

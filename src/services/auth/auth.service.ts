@@ -1,7 +1,7 @@
 import { db, users, employees } from '@/lib/db';
 import { hashPassword, verifyPassword, generateToken, getProductionJwtSecret } from '@/lib/auth';
 import { validatePassword } from '@/lib/password-policy';
-import { eq, or } from 'drizzle-orm';
+import { eq, or, asc } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { BaseService } from '@/lib/core/base-service';
 import { AppError } from '@/lib/core/app-error';
@@ -117,7 +117,7 @@ export class AuthService extends BaseService {
   }
 
   async listUsers() {
-    return db
+    const rows = await db
       .select({
         id: users.id,
         email: users.email,
@@ -126,8 +126,22 @@ export class AuthService extends BaseService {
         isActive: users.isActive,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
+        employeeId: employees.id,
       })
-      .from(users);
+      .from(users)
+      .leftJoin(employees, eq(employees.userId, users.id))
+      .orderBy(asc(users.username));
+
+    return rows.map(row => ({
+      id: row.id,
+      email: row.email,
+      username: row.username,
+      role: row.role,
+      isActive: row.isActive,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      hasEmployeeProfile: !!row.employeeId,
+    }));
   }
 
   async getUserSummary(userId: string) {

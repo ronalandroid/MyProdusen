@@ -28,7 +28,7 @@ export async function GET(
       headers: {
         'Content-Type': result.data.mimeType,
         'Content-Length': String(result.data.size),
-        'Cache-Control': 'private, max-age=300, must-revalidate',
+        'Cache-Control': 'no-store, private',
         'X-Content-Type-Options': 'nosniff',
         'Content-Disposition': `inline; filename="attendance-${attendanceId}-checkout"`,
       },

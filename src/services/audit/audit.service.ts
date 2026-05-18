@@ -1,5 +1,5 @@
 import { db, auditLogs } from '@/lib/db';
-import { eq, and, gte, lte, desc } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, ilike, or } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface AuditLogData {
@@ -41,6 +41,8 @@ export class AuditService {
     from?: Date;
     to?: Date;
     limit?: number;
+    offset?: number;
+    search?: string;
   }) {
     const conditions = [];
 
@@ -59,6 +61,17 @@ export class AuditService {
     if (filters?.to) {
       conditions.push(lte(auditLogs.createdAt, filters.to));
     }
+    if (filters?.search) {
+      const search = `%${filters.search}%`;
+      conditions.push(or(
+        ilike(auditLogs.userId, search),
+        ilike(auditLogs.action, search),
+        ilike(auditLogs.entity, search),
+        ilike(auditLogs.entityId, search),
+        ilike(auditLogs.ipAddress, search),
+        ilike(auditLogs.newValue, search),
+      ));
+    }
 
     let query = db.select().from(auditLogs);
 
@@ -70,6 +83,10 @@ export class AuditService {
 
     if (filters?.limit) {
       query = query.limit(filters.limit) as any;
+    }
+
+    if (filters?.offset) {
+      query = query.offset(filters.offset) as any;
     }
 
     return query;

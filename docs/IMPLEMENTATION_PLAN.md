@@ -76,13 +76,16 @@
 - Backup + restore documented; daily `pg_dump` + `rsync` cron schedules listed in `COOLIFY.md`.
 - `npm run perf:explain` runbook for index validation on staging.
 
-### Phase 10 — UI/UX Upgrade Alignment (approved docs scope)
+### Phase 10 — UI/UX Upgrade Alignment (done)
 - Preserve stack: Next.js App Router, TypeScript, Drizzle ORM, PostgreSQL, Tailwind CSS.
 - Follow `UI_UX_GUIDE.md` for onboarding, login, dashboard, attendance, employees, leave, KPI, profile, and reports screens.
 - Keep brand colors and existing logo unchanged; use yellow as primary accent, red only for danger/rejection/late states.
 - Use mobile-first rounded cards and bottom navigation for employee flows, with responsive admin dashboards for desktop.
 - Preserve backend RBAC, GPS, geofence, private selfie storage, and audit requirements as non-negotiable security gates.
 - Confirm attendance UI has realtime camera selfie only: no upload button, no gallery picker, no `<input type="file">`, no `accept="image/*"` fallback.
+- Guaranteed no horizontal scrolling bug (`overflow-x-hidden`) and smooth touch interactions (`-webkit-overflow-scrolling`) on iOS/Safari.
+- Superadmin dashboard enriched with Heatmap, Recent Activity, and Pending Approvals panels.
+- Added onboarding workflow for registered users to be directly assigned an employee profile (`/api/users/[id]/employee-profile`).
 
 ## 3. Workstream summaries (delivered)
 
@@ -136,6 +139,8 @@
 - `/dashboard/attendance` includes the `MyExceptionPanel` so employees can
   file `MANUAL_ADJUSTMENT`, `MISSING_CHECKOUT`, `LATE_CORRECTION`, or
   `OUTSIDE_GEOFENCE` exceptions and watch the review status.
+- `/dashboard` (Superadmin) features global Heatmap, system-wide Audit Log tracking (`RecentActivityPanel`), and consolidated `PendingApprovalsPanel`.
+- `/dashboard/users` allows direct onboarding/assignment of Employee Profiles for self-registered users with automatic NIP generation.
 
 ### Reference repo research (research-only)
 - `REFERENCE_REPO_ANALYSIS.md` documents what was extracted from

@@ -80,60 +80,6 @@ export default function PayrollDetailPage() {
     return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long' });
   };
 
-  const exportToCSV = () => {
-    if (!run) return;
-
-    const headers = [
-      'NIP',
-      'Nama',
-      'Divisi',
-      'Posisi',
-      'Gaji Pokok',
-      'Tunjangan',
-      'Lembur',
-      'Gross Pay',
-      'Potongan Absensi',
-      'Pajak',
-      'BPJS Kesehatan',
-      'BPJS Ketenagakerjaan',
-      'Total Potongan',
-      'Net Pay',
-      'Hari Kerja',
-      'Hari Absen',
-      'Hari Terlambat',
-      'Jam Lembur',
-    ];
-
-    const rows = run.items.map((item) => [
-      item.employee.nip,
-      item.employee.fullName,
-      item.employee.division,
-      item.employee.position,
-      item.item.baseSalary,
-      item.item.totalAllowances,
-      item.item.overtimePay,
-      item.item.grossPay,
-      item.item.attendanceDeduction,
-      item.item.taxAmount,
-      item.item.bpjsKesehatanEmployee,
-      item.item.bpjsKetenagakerjaanEmployee,
-      item.item.totalDeductions,
-      item.item.netPay,
-      item.item.workDays,
-      item.item.absentDays,
-      item.item.lateDays,
-      item.item.overtimeHours,
-    ]);
-
-    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `payroll-${run.period}.csv`;
-    a.click();
-  };
-
   const filteredItems = run?.items.filter((item) =>
     item.employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.employee.nip.toLowerCase().includes(searchTerm.toLowerCase())
@@ -179,15 +125,15 @@ export default function PayrollDetailPage() {
             <p className="text-gray-600 mt-1">Detail penggajian periode {run.period}</p>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={exportToCSV}
+            <a
+              href={`/api/payroll/runs/${run.id}/export`}
               className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               Export CSV
-            </button>
+            </a>
           </div>
         </div>
       </div>
@@ -262,6 +208,9 @@ export default function PayrollDetailPage() {
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
                   Kehadiran
                 </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  Payslip
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -304,6 +253,11 @@ export default function PayrollDetailPage() {
                         </div>
                       )}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <a className="text-sm font-semibold text-blue-600 hover:text-blue-800" href={`/api/payroll/payslips/${item.item.id}`}>
+                      Download
+                    </a>
                   </td>
                 </tr>
               ))}

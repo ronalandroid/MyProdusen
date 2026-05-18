@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { db, users, employees, attendances, leaveRequests, kpiResults, notifications, payrollRuns, attendanceExceptions } from '@/lib/db';
+import { db, users, employees, attendances, leaveRequests, kpiResults, notifications, payrollRuns, attendanceExceptions, workLocations, auditLogs, payrollItems } from '@/lib/db';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse } from '@/utils/response';
 import { eq, and, gte, lte, sql, desc, inArray } from 'drizzle-orm';
@@ -323,6 +323,82 @@ async function getSuperadminInsights(input: {
     return accumulator;
   }, {});
 
+  // 1. Cabang Aktif
+  const [activeBranchesResult] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(workLocations)
+    .where(eq(workLocations.isActive, true));
+  const activeBranches = activeBranchesResult?.count || 0;
+
+  // 2. Total Gaji (from the latest payroll run)
+  const [latestPayroll] = await db
+    .select({ id: payrollRuns.id, totalNetPay: payrollRuns.totalNetPay, period: payrollRuns.period })
+    .from(payrollRuns)
+    .orderBy(desc(payrollRuns.period))
+    .limit(1);
+
+  // 3. Aktivitas Sistem Terbaru (Audit Logs)
+  const recentActivityRows = await db
+    .select({
+      id: auditLogs.id,
+      action: auditLogs.action,
+      entity: auditLogs.entity,
+      createdAt: auditLogs.createdAt,
+      user: users.username,
+    })
+    .from(auditLogs)
+    .leftJoin(users, eq(users.id, auditLogs.userId))
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(5);
+
+  const recentActivity = recentActivityRows.map(row => ({
+    id: row.id,
+    action: row.action,
+    entity: row.entity,
+    user: row.user || 'Sistem',
+    time: row.createdAt.toISOString(),
+  }));
+
+  // 4. Approval Pending List (Attendance Exceptions & Leaves)
+  const pendingExceptionRows = await db
+    .select({
+      id: attendanceExceptions.id,
+      type: sql<string>`'Kehadiran'`,
+      detail: attendanceExceptions.reason,
+      employeeName: employees.fullName,
+      createdAt: attendanceExceptions.createdAt,
+    })
+    .from(attendanceExceptions)
+    .leftJoin(employees, eq(employees.id, attendanceExceptions.employeeId))
+    .where(eq(attendanceExceptions.status, 'PENDING'))
+    .orderBy(desc(attendanceExceptions.createdAt))
+    .limit(3);
+
+  const pendingLeaveRows = await db
+    .select({
+      id: leaveRequests.id,
+      type: sql<string>`'Cuti/Izin'`,
+      detail: leaveRequests.reason,
+      employeeName: employees.fullName,
+      createdAt: leaveRequests.createdAt,
+    })
+    .from(leaveRequests)
+    .leftJoin(employees, eq(employees.id, leaveRequests.employeeId))
+    .where(eq(leaveRequests.status, 'PENDING'))
+    .orderBy(desc(leaveRequests.createdAt))
+    .limit(3);
+
+  const pendingApprovalsList = [...pendingExceptionRows, ...pendingLeaveRows]
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 5)
+    .map(row => ({
+      id: row.id,
+      type: row.type,
+      detail: row.detail,
+      employeeName: row.employeeName || 'Unknown',
+      time: row.createdAt.toISOString(),
+    }));
+
   return {
     attendanceTrend,
     divisionMonitoring,
@@ -334,27 +410,37 @@ async function getSuperadminInsights(input: {
       lowPerformers,
     },
     employeeRisks,
+    recentActivity,
+    pendingApprovalsList,
     managementCards: [
       {
-        label: 'Management User & Role',
+        label: 'Total Karyawan',
         value: Object.values(activeUsersByRole).reduce((total, count) => total + count, 0),
-        detail: `${activeUsersByRole.SUPERADMIN || 0} Superadmin · ${activeUsersByRole.ADMIN_HR || 0} HR · ${activeUsersByRole.SUPERVISOR || 0} Leader`,
+        detail: `${activeUsersByRole.SUPERADMIN || 0} SA · ${activeUsersByRole.ADMIN_HR || 0} HR · ${activeUsersByRole.SUPERVISOR || 0} Leader`,
         href: '/dashboard/employees',
         tone: 'primary',
       },
       {
-        label: 'Approval Center',
-        value: input.pendingLeaves + input.pendingKpiApprovals + input.pendingAttendanceExceptions,
-        detail: `${input.pendingLeaves} cuti · ${input.pendingKpiApprovals} KPI · ${input.pendingAttendanceExceptions} absensi`,
-        href: '/dashboard/attendance/exceptions',
-        tone: input.pendingLeaves + input.pendingKpiApprovals + input.pendingAttendanceExceptions > 0 ? 'warning' : 'success',
+        label: 'Cabang Aktif',
+        value: activeBranches,
+        detail: 'Lokasi kerja yang beroperasi',
+        href: '/dashboard/locations',
+        tone: 'info',
       },
       {
-        label: 'Reports & Export',
-        value: attendanceTrend.reduce((total, day) => total + day.present + day.late + day.absent, 0),
-        detail: 'Siap ekspor laporan kehadiran, KPI, cuti, dan karyawan.',
-        href: '/dashboard/reports',
-        tone: 'info',
+        label: 'Pengajuan Pending',
+        value: input.pendingLeaves + input.pendingKpiApprovals + input.pendingAttendanceExceptions,
+        detail: `${input.pendingLeaves} Cuti · ${input.pendingKpiApprovals} KPI · ${input.pendingAttendanceExceptions} Absensi`,
+        href: '/dashboard/attendance/exceptions',
+        tone: (input.pendingLeaves + input.pendingKpiApprovals + input.pendingAttendanceExceptions) > 0 ? 'warning' : 'success',
+      },
+      {
+        label: 'Total Gaji (Bulan Ini)',
+        value: latestPayroll?.totalNetPay || 0,
+        detail: `Periode: ${latestPayroll?.period || 'Belum ada'}`,
+        href: '/dashboard/payroll',
+        tone: 'success',
+        isCurrency: true,
       },
     ],
   };

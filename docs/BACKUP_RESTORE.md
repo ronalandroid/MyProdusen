@@ -1,86 +1,133 @@
 # Backup & Restore — MyProdusen
 
-This document is the standalone backup and restore runbook for the VPS +
-Coolify production deployment. Keep it aligned with [`DEPLOYMENT.md`](./DEPLOYMENT.md)
-and [`COOLIFY.md`](./COOLIFY.md).
+This runbook covers production backup, staging restore drills, and emergency restore decision rules for MyProdusen on VPS + Coolify + Docker + PostgreSQL. Keep it aligned with [`DEPLOYMENT.md`](./DEPLOYMENT.md), [`COOLIFY.md`](./COOLIFY.md), and [`PRODUCTION_SMOKE_TEST.md`](./PRODUCTION_SMOKE_TEST.md).
+
+## Safety rules
+
+- Never reset or overwrite production database without manual incident approval.
+- Never restore directly to production as a test.
+- Never commit database dumps, upload archives, `.env`, or secrets.
+- Never expose `/app/uploads` through public static routing.
+- Always back up PostgreSQL and uploads from the same time window.
+- Always verify restore on staging/test before trusting a backup.
 
 ## Backup scope
 
-Back up these assets together so attendance history, selfie files, and audit
-records stay consistent:
+Back up these assets together so attendance history, selfie files, payroll files, and audit records stay consistent:
 
-1. PostgreSQL database: users, employees, attendance, KPI, leave, audit logs,
-   notifications, selfie paths, and GPS metadata.
-2. Persistent upload volume: `/app/uploads`, especially
-   `/app/uploads/attendance-selfies`.
-3. Coolify environment variables: store exported values in a password manager,
-   never in git.
+1. PostgreSQL database: users, employees, attendance, leave, KPI, payroll, reports, audit logs, notifications, selfie paths, and GPS metadata.
+2. Persistent upload volume: `/app/uploads`.
+3. Attendance selfies: `/app/uploads/attendance-selfies`.
+4. Document or payslip files if present under `/app/uploads`.
+5. Coolify env var inventory: store in password manager only, never in git.
 
-## Schedule
+## A. PostgreSQL backup
 
-| Asset | Frequency | Retention |
-| --- | --- | --- |
-| PostgreSQL custom dump | Daily | 7 daily, 4 weekly, 12 monthly |
-| `/app/uploads` snapshot or sync | Daily after DB dump | Match database retention |
-| Environment variable export | On every config change | Latest + previous version |
-| Restore drill | Quarterly on staging | Keep latest drill notes |
+### Command
 
-Use off-host storage for at least one copy. Local VPS backups alone are not
-sufficient.
-
-## PostgreSQL backup
-
-Run from the database host or a Coolify scheduled task with access to the
-PostgreSQL container/network:
+Use the safe template script when possible:
 
 ```bash
-BACKUP_DIR=/backups UPLOAD_DIR=/app/uploads ./scripts/backup.sh
+DATABASE_URL="postgresql://..." \
+UPLOAD_DIR=/app/uploads \
+BACKUP_ROOT=/backups/myprodusen \
+./scripts/backup-production-template.sh
 ```
 
-Or run the database dump directly:
+Direct `pg_dump` command:
 
 ```bash
-mkdir -p /backups/postgres
+BACKUP_ROOT=/backups/myprodusen
+DATE_DIR="$(date +%F)"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$BACKUP_ROOT/$DATE_DIR"
+
 pg_dump "$DATABASE_URL" \
   --format=custom \
   --no-owner \
   --no-acl \
-  --file="/backups/postgres/myprodusen-$(date +%Y%m%d-%H%M).dump"
+  --file="$BACKUP_ROOT/$DATE_DIR/myprodusen-db-$STAMP.dump"
 ```
 
-If using `docker exec` against a database container:
+### Schedule
+
+- Frequency: daily.
+- Preferred time: after business hours, before upload backup.
+- Storage path: `/backups/myprodusen/YYYY-MM-DD/`.
+- Naming format: `myprodusen-db-YYYYMMDD-HHMMSS.dump`.
+- Off-host copy: required after local backup completes.
+
+### Verify backup file
 
 ```bash
-docker exec myprodusen-db pg_dump \
-  -U postgres \
-  -d myprodusen_production \
-  -Fc \
-  -f "/backups/postgres/myprodusen-$(date +%Y%m%d-%H%M).dump"
+test -s /backups/myprodusen/YYYY-MM-DD/myprodusen-db-YYYYMMDD-HHMMSS.dump
+pg_restore --list /backups/myprodusen/YYYY-MM-DD/myprodusen-db-YYYYMMDD-HHMMSS.dump >/tmp/myprodusen-restore-list.txt
+sha256sum /backups/myprodusen/YYYY-MM-DD/myprodusen-db-YYYYMMDD-HHMMSS.dump
 ```
 
-## Upload volume backup
+Expected result: file exists, non-empty, `pg_restore --list` exits `0`, checksum recorded in manifest.
 
-Run after the database dump finishes:
+## B. Uploads backup
+
+### Command
+
+Use the safe template script with the database backup, or run uploads archive directly:
 
 ```bash
-mkdir -p /backups/uploads
-rsync -a --delete /app/uploads/ "/backups/uploads/myprodusen-uploads-$(date +%Y%m%d-%H%M)/"
+BACKUP_ROOT=/backups/myprodusen
+DATE_DIR="$(date +%F)"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+UPLOAD_DIR=/app/uploads
+mkdir -p "$BACKUP_ROOT/$DATE_DIR"
+
+tar -czf "$BACKUP_ROOT/$DATE_DIR/myprodusen-uploads-$STAMP.tar.gz" \
+  -C "$(dirname "$UPLOAD_DIR")" \
+  "$(basename "$UPLOAD_DIR")"
 ```
 
-For S3-compatible backup storage:
+### Included paths
+
+- `/app/uploads/attendance-selfies`.
+- `/app/uploads/documents` if present.
+- `/app/uploads/payslips` if present.
+- Any future private upload subfolder under `/app/uploads`.
+
+### Schedule and retention
+
+| Asset | Frequency | Retention |
+| --- | --- | --- |
+| PostgreSQL custom dump | Daily | 7 daily, 4 weekly, 12 monthly |
+| `/app/uploads` archive | Daily after DB dump | Match database retention |
+| Off-host encrypted copy | Daily | Match database retention |
+| Env var inventory | Every config change | Latest + previous version |
+| Restore drill | Quarterly and before major launch | Keep latest drill notes |
+
+### Verify uploads archive
 
 ```bash
-aws s3 sync /app/uploads/ s3://myprodusen-backups/uploads/ --delete
+test -s /backups/myprodusen/YYYY-MM-DD/myprodusen-uploads-YYYYMMDD-HHMMSS.tar.gz
+tar -tzf /backups/myprodusen/YYYY-MM-DD/myprodusen-uploads-YYYYMMDD-HHMMSS.tar.gz | head
+sha256sum /backups/myprodusen/YYYY-MM-DD/myprodusen-uploads-YYYYMMDD-HHMMSS.tar.gz
 ```
 
-## Restore to staging
+Expected result: archive exists, lists `uploads/`, and includes `uploads/attendance-selfies` when production has attendance selfies.
 
-Never test restores directly on production.
+## C. Restore drill
 
-1. Create a fresh staging PostgreSQL database with the same major PostgreSQL
-   version as production.
-2. Stop the staging app or put it in maintenance mode.
-3. Restore the database dump:
+Restore drills must target staging/test only.
+
+### Restore PostgreSQL to staging/test
+
+```bash
+CONFIRM_RESTORE_STAGING=yes \
+STAGING_DATABASE_URL="postgresql://staging:..." \
+DB_DUMP_FILE=/backups/myprodusen/YYYY-MM-DD/myprodusen-db-YYYYMMDD-HHMMSS.dump \
+UPLOADS_ARCHIVE=/backups/myprodusen/YYYY-MM-DD/myprodusen-uploads-YYYYMMDD-HHMMSS.tar.gz \
+STAGING_UPLOAD_DIR=/app/uploads \
+./scripts/restore-staging-template.sh
+```
+
+Direct database restore command if needed:
 
 ```bash
 pg_restore \
@@ -89,69 +136,72 @@ pg_restore \
   --if-exists \
   --no-owner \
   --no-acl \
-  "/backups/postgres/myprodusen-YYYYMMDD-HHMM.dump"
+  /backups/myprodusen/YYYY-MM-DD/myprodusen-db-YYYYMMDD-HHMMSS.dump
 ```
 
-4. Restore matching uploads snapshot:
+### Restore uploads to staging/test volume
 
 ```bash
-rsync -a --delete \
-  /backups/uploads/myprodusen-uploads-YYYYMMDD-HHMM/ \
-  /app/uploads/
+STAGING_UPLOAD_DIR=/app/uploads
+UPLOADS_ARCHIVE=/backups/myprodusen/YYYY-MM-DD/myprodusen-uploads-YYYYMMDD-HHMMSS.tar.gz
+mkdir -p "$STAGING_UPLOAD_DIR"
+tar -xzf "$UPLOADS_ARCHIVE" -C "$(dirname "$STAGING_UPLOAD_DIR")"
 ```
 
-5. Run migrations in case staging code is newer than backup:
+### Restore verification
 
-```bash
-npm run db:deploy
-```
+1. Run `npm run db:deploy` against staging code.
+2. Start staging app.
+3. Open staging `/api/health` and confirm healthy.
+4. Login as Superadmin.
+5. Confirm dashboard totals load.
+6. Open historical attendance with selfie.
+7. Confirm app can read restored selfie files.
+8. Confirm employee login works.
+9. Confirm attendance history works.
+10. Confirm protected selfie endpoint works for authorized role.
+11. Confirm employee cannot view another employee selfie.
+12. Run report CSV export and confirm audit log.
+13. Record drill date, backup ID, tester, result, and issues.
 
-6. Restart staging app.
+## D. Coolify notes
 
-## Restore verification
-
-After restore, verify these checks before declaring the backup usable:
-
-```bash
-curl -fsS https://staging.myprodusen.online/api/health
-npm run release:migrations
-```
-
-Manual smoke test:
-
-1. Login as Superadmin.
-2. Open `/dashboard` and confirm employee/attendance totals load.
-3. Open `/dashboard/attendance` for a historical row with selfies.
-4. Confirm protected selfie endpoints return images for authorized users.
-5. Confirm a cross-employee selfie request still returns `403`.
-6. Export an attendance CSV and confirm an audit row is created.
+- PostgreSQL service: Coolify project service named `myprodusen-db` or configured alias.
+- Production database: `myprodusen_production`.
+- App container upload mount: `/app/uploads`.
+- Attendance selfie path: `/app/uploads/attendance-selfies`.
+- Backups path: `/backups/myprodusen/YYYY-MM-DD/` or equivalent mounted backup volume.
+- Required env vars: `DATABASE_URL`, `JWT_SECRET`, `NEXTAUTH_SECRET`, `APP_URL`, `NEXT_PUBLIC_APP_URL`, `UPLOAD_DIR`, `ATTENDANCE_SELFIE_DIR`, `MAX_UPLOAD_SIZE`, `MAX_SELFIE_SIZE_MB`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`.
+- Never restore directly to production without manual approval from incident owner.
+- Before production restore, take emergency backup of current production DB and uploads.
 
 ## Production restore decision
 
-Only restore production after these conditions are true:
+Only restore production after all conditions are true:
 
 - Incident owner approves restore window.
-- Latest usable database dump and matching upload snapshot are identified.
-- Staging restore drill passes.
+- Latest usable database dump and matching upload archive are identified.
+- Staging restore drill passes using that backup pair.
 - Current production data is backed up before overwrite.
-- Users are informed about maintenance window and expected data rollback point.
+- Users are informed about maintenance window and rollback point.
+- Roll-forward or rollback decision is documented.
 
 ## Production restore outline
 
-1. Put production app in maintenance mode or stop the web container.
-2. Take an emergency backup of current production DB and `/app/uploads`.
+1. Put production app in maintenance mode or stop web container.
+2. Take emergency backup of current production database and `/app/uploads`.
 3. Restore PostgreSQL using `pg_restore --clean --if-exists`.
-4. Restore matching `/app/uploads` snapshot.
+4. Restore matching `/app/uploads` archive.
 5. Run `npm run db:deploy`.
 6. Start app and check `/api/health`.
-7. Run the smoke test from [`FINAL_CHECKLIST.md`](./FINAL_CHECKLIST.md).
-8. Remove bootstrap-only `SUPERADMIN_*` variables if they were temporarily set.
+7. Run [`PRODUCTION_SMOKE_TEST.md`](./PRODUCTION_SMOKE_TEST.md).
+8. Remove or rotate bootstrap-only `SUPERADMIN_*` variables if used.
 
 ## Security rules
 
-- Do not commit dumps, upload snapshots, or `.env` files.
 - Encrypt off-host backups.
-- Limit backup access to Superadmin/DevOps only.
-- Store `JWT_SECRET`, database passwords, and Resend keys in Coolify secrets or
-  a password manager.
+- Restrict backup access to Superadmin/DevOps only.
+- Store `JWT_SECRET`, `NEXTAUTH_SECRET`, database passwords, and Resend keys in Coolify secrets or password manager.
 - Rotate credentials if backup storage access is exposed.
+- Keep `/app/uploads` private; serve selfies only via protected API.
+- Do not include selfie binaries, database dumps, or payroll exports in tickets unless encrypted and approved.

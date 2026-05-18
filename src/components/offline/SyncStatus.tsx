@@ -56,7 +56,7 @@ export function SyncStatus() {
 
   const handleManualSync = async () => {
     if (!isOnline) {
-      alert('Cannot sync while offline');
+      console.warn('Cannot sync while offline');
       return;
     }
     await syncManager.syncAll();
@@ -64,7 +64,7 @@ export function SyncStatus() {
 
   const handleRetryFailed = async () => {
     if (!isOnline) {
-      alert('Cannot retry while offline');
+      console.warn('Cannot retry while offline');
       return;
     }
     await syncManager.retryFailed();
@@ -132,18 +132,18 @@ export function SyncStatus() {
         {isOnline && totalPending > 0 && (
           <button
             onClick={handleManualSync}
-            className="flex-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700"
+            className="flex-1 px-3 py-2 min-h-[44px] bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
           >
-            Sync Now
+            Sinkronkan
           </button>
         )}
         
         {status.failed > 0 && (
           <button
             onClick={handleRetryFailed}
-            className="flex-1 px-3 py-1.5 bg-orange-600 text-white text-xs font-medium rounded hover:bg-orange-700"
+            className="flex-1 px-3 py-2 min-h-[44px] bg-orange-600 text-white text-xs font-medium rounded hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
           >
-            Retry Failed
+            Coba Lagi
           </button>
         )}
       </div>

@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import { fetchProfile } from "@/lib/auth-client";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { ToastProvider } from "@/components/ui/Toast";
+import { canAccessNavigationPath } from "@/lib/navigation/role-navigation";
+import type { UserRole } from "@/lib/permissions";
 
 export default function DashboardLayout({
   children,
@@ -13,13 +15,20 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   useEffect(() => {
     fetchProfile()
-      .then(() => setIsCheckingSession(false))
+      .then((profile) => {
+        if (!canAccessNavigationPath(profile.role as UserRole, pathname)) {
+          router.replace("/dashboard");
+          return;
+        }
+        setIsCheckingSession(false);
+      })
       .catch(() => router.replace("/login"));
-  }, [router]);
+  }, [pathname, router]);
 
   if (isCheckingSession) {
     return (

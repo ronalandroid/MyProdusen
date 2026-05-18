@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Bell, CheckCircle, Clock, TrendingUp, Users, AlertTriangle, CalendarDays, RefreshCcw, ArrowRight, ShieldCheck, BarChart3 } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders, fetchProfile } from "@/lib/auth-client";
+import AttendanceHeatmap from "@/components/attendance/AttendanceHeatmap";
 import { buildDashboardActions, type DashboardActionTone } from "@/lib/dashboard/action-cards";
 import { getRoleExperience } from "@/lib/dashboard/role-experience";
 import type { UserRole } from "@/lib/permissions";
@@ -40,7 +41,9 @@ interface SuperadminInsights {
     lowPerformers: Array<{ employeeId: string; name: string; division: string | null; score: number }>;
   };
   employeeRisks: Array<{ employeeId: string; name: string; division: string; lateCount: number; absentCount: number; averageKpi: number; riskScore: number }>;
-  managementCards: Array<{ label: string; value: number; detail: string; href: string; tone: DashboardActionTone }>;
+  managementCards: Array<{ label: string; value: number; detail: string; href: string; tone: DashboardActionTone; isCurrency?: boolean }>;
+  recentActivity?: Array<{ id: string; action: string; entity: string; user: string; time: string }>;
+  pendingApprovalsList?: Array<{ id: string; type: string; detail: string; employeeName: string; time: string }>;
 }
 
 const numberFormatter = new Intl.NumberFormat("id-ID");
@@ -305,27 +308,36 @@ export default function DashboardPage() {
       )}
 
       {/* Insights Grid */}
-      {stats.role !== "SUPERADMIN" && <section className="insights-grid animate-slide-up" aria-labelledby="insights-title" style={{ animationDelay: '850ms' }}>
-        <div className="section-heading full-span">
-          <h2 id="insights-title">Insight Operasional</h2>
-        </div>
-        <div className="card empty-state-card">
-          <div className="w-12 h-12 rounded-xl bg-[var(--primary-light)] flex items-center justify-center mb-3">
-            <TrendingUp size={24} className="text-[var(--primary-dark)]" aria-hidden="true" />
+      {stats.role !== "SUPERADMIN" && (
+        <section className="animate-slide-up" aria-labelledby="insights-title" style={{ animationDelay: '850ms' }}>
+          <div className="section-heading full-span">
+            <h2 id="insights-title">Insight Operasional & Kehadiran</h2>
           </div>
-          <h3 className="text-base sm:text-lg">KPI rata-rata belum tersedia</h3>
-          <p className="text-xs sm:text-sm">Dashboard tidak menampilkan angka KPI sampai API agregasi Phase 6 siap.</p>
-          <Link href="/dashboard/kpi" className="text-link text-sm">Kelola KPI →</Link>
-        </div>
-        {canOpenReports && <div className="card empty-state-card">
-          <div className="w-12 h-12 rounded-xl bg-[var(--info-bg)] flex items-center justify-center mb-3">
-            <Clock size={24} className="text-[var(--info)]" aria-hidden="true" />
+          
+          <div className="mb-6 w-full">
+            <AttendanceHeatmap />
           </div>
-          <h3 className="text-base sm:text-lg">Tren mingguan belum tersedia</h3>
-          <p className="text-xs sm:text-sm">Grafik mingguan menunggu endpoint historis agar data produksi tidak memakai mock.</p>
-          <Link href="/dashboard/reports" className="text-link text-sm">Buka Laporan →</Link>
-        </div>}
-      </section>}
+
+          <div className="insights-grid">
+            <div className="card empty-state-card">
+              <div className="w-12 h-12 rounded-xl bg-[var(--primary-light)] flex items-center justify-center mb-3">
+                <TrendingUp size={24} className="text-[var(--primary-dark)]" aria-hidden="true" />
+              </div>
+              <h3 className="text-base sm:text-lg">KPI rata-rata belum tersedia</h3>
+              <p className="text-xs sm:text-sm">Dashboard tidak menampilkan angka KPI sampai API agregasi Phase 6 siap.</p>
+              <Link href="/dashboard/kpi" className="text-link text-sm">Kelola KPI →</Link>
+            </div>
+            {canOpenReports && <div className="card empty-state-card">
+              <div className="w-12 h-12 rounded-xl bg-[var(--info-bg)] flex items-center justify-center mb-3">
+                <Clock size={24} className="text-[var(--info)]" aria-hidden="true" />
+              </div>
+              <h3 className="text-base sm:text-lg">Tren mingguan belum tersedia</h3>
+              <p className="text-xs sm:text-sm">Grafik mingguan menunggu endpoint historis agar data produksi tidak memakai mock.</p>
+              <Link href="/dashboard/reports" className="text-link text-sm">Buka Laporan →</Link>
+            </div>}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -352,9 +364,14 @@ function SuperadminMonitoring({ insights }: { insights: SuperadminInsights }) {
         <KpiOverviewCard overview={insights.kpiOverview} />
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
+      <div className="grid gap-5 lg:grid-cols-[1fr_1fr] mb-5">
         <DivisionMonitoringChart divisions={insights.divisionMonitoring} />
         <EmployeeRiskPanel risks={insights.employeeRisks} />
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
+        <RecentActivityPanel activities={insights.recentActivity || []} />
+        <PendingApprovalsPanel approvals={insights.pendingApprovalsList || []} />
       </div>
     </section>
   );
@@ -366,7 +383,7 @@ function ManagementCard({ card, delay }: { card: SuperadminInsights['managementC
       <span className="flex flex-col">
         <strong className="text-xs sm:text-sm text-[var(--text-secondary)] font-semibold uppercase tracking-wide">{card.label}</strong>
         <strong className="text-2xl sm:text-3xl mt-1 text-[var(--text-primary)]">
-          {numberFormatter.format(card.value)}
+          {card.isCurrency ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(card.value) : numberFormatter.format(card.value)}
         </strong>
       </span>
       <small className="text-xs sm:text-sm font-medium mt-auto" style={{ color: mapToneToColor(card.tone) }}>{card.detail}</small>
@@ -616,5 +633,86 @@ function QuickAction({
         <small className="text-xs sm:text-sm">{description}</small>
       </span>
     </Link>
+  );
+}
+
+function RecentActivityPanel({ activities }: { activities: SuperadminInsights['recentActivity'] }) {
+  if (!activities) return null;
+  return (
+    <div className="card">
+      <div className="flex items-start justify-between gap-3 mb-5">
+        <div>
+          <p className="eyebrow">Log Audit</p>
+          <h3 className="text-base sm:text-lg">Aktivitas Sistem Terbaru</h3>
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)]">Jejak tindakan penting dalam sistem.</p>
+        </div>
+        <div className="w-11 h-11 rounded-xl bg-[var(--info-bg)] flex items-center justify-center">
+          <Clock size={22} className="text-[var(--info)]" aria-hidden="true" />
+        </div>
+      </div>
+      <div className="space-y-4">
+        {activities.length > 0 ? activities.map((activity) => (
+          <div key={activity.id} className="flex gap-3 relative">
+            <div className="mt-1 w-2 h-2 rounded-full bg-[var(--primary)] flex-shrink-0 relative z-10" />
+            <div className="absolute left-1 top-3 bottom-[-16px] w-[1px] bg-[var(--border-color)] last:hidden" />
+            <div className="pb-4">
+              <p className="text-sm font-medium text-[var(--text-primary)]">
+                <span className="font-semibold">{activity.user}</span> {activity.action} <span className="font-semibold text-[var(--primary-dark)]">{activity.entity}</span>
+              </p>
+              <p className="text-[11px] text-[var(--text-secondary)] mt-1">
+                {new Date(activity.time).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+              </p>
+            </div>
+          </div>
+        )) : <EmptyMiniState title="Belum ada aktivitas" description="Log sistem masih kosong." />}
+      </div>
+      {activities.length > 0 && (
+        <div className="mt-2 pt-4 border-t border-[var(--border-color)] text-center">
+          <Link href="/dashboard/audit" className="text-link text-xs font-semibold">Lihat Semua Log</Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PendingApprovalsPanel({ approvals }: { approvals: SuperadminInsights['pendingApprovalsList'] }) {
+  if (!approvals) return null;
+  return (
+    <div className="card">
+      <div className="flex items-start justify-between gap-3 mb-5">
+        <div>
+          <p className="eyebrow">Butuh Tindakan</p>
+          <h3 className="text-base sm:text-lg">Approval Pending</h3>
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)]">Menunggu persetujuan Anda.</p>
+        </div>
+        <div className="w-11 h-11 rounded-xl bg-[var(--warning-bg)] flex items-center justify-center">
+          <CheckCircle size={22} className="text-[var(--warning)]" aria-hidden="true" />
+        </div>
+      </div>
+      <div className="space-y-3">
+        {approvals.length > 0 ? approvals.map((approval) => (
+          <div key={approval.id} className="rounded-xl border border-[var(--border-color)] p-3 hover:border-[var(--primary)] transition-colors">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <span className="badge badge-warning mb-2">{approval.type}</span>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">{approval.employeeName}</p>
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-[var(--text-secondary)] line-clamp-2">{approval.detail}</p>
+            <div className="mt-3 flex justify-between items-center">
+               <p className="text-[10px] text-[var(--text-muted)]">
+                 {new Date(approval.time).toLocaleDateString('id-ID', { dateStyle: 'short' })}
+               </p>
+               <Link href="/dashboard/attendance/exceptions" className="text-link text-xs font-semibold">Tinjau →</Link>
+            </div>
+          </div>
+        )) : <EmptyMiniState title="Semua beres!" description="Tidak ada antrian persetujuan." />}
+      </div>
+      {approvals.length > 0 && (
+        <div className="mt-4 text-center">
+          <Link href="/dashboard/attendance/exceptions" className="text-link text-xs font-semibold">Lihat Semua Approval</Link>
+        </div>
+      )}
+    </div>
   );
 }

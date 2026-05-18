@@ -134,7 +134,7 @@ export default function EmployeesPage() {
         ? `/api/employees/${selectedEmployee.id}`
         : "/api/employees";
       
-      const method = selectedEmployee ? "PATCH" : "POST";
+      const method = selectedEmployee ? "PUT" : "POST";
       
       const payload = selectedEmployee
         ? { ...formData, password: formData.password || undefined }

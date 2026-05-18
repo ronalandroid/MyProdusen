@@ -33,10 +33,14 @@ NEXT_PUBLIC_APP_URL=https://myprodusen.online
 
 DATABASE_URL=postgresql://postgres:<POSTGRES_PASSWORD>@myprodusen-db:5432/myprodusen_production
 JWT_SECRET=<RANDOM_32_PLUS_CHARACTER_SECRET>
+NEXTAUTH_SECRET=<RANDOM_32_PLUS_CHARACTER_SECRET>
 
 UPLOAD_DIR=/app/uploads
 ATTENDANCE_SELFIE_DIR=attendance-selfies
+MAX_UPLOAD_SIZE=5242880
 MAX_SELFIE_SIZE_MB=1
+PDF_REPORT_MAX_ROWS=1000
+PDF_REPORT_MAX_DATE_RANGE_MONTHS=12
 NEXT_PUBLIC_SELFIE_MAX_WIDTH=720
 NEXT_PUBLIC_SELFIE_MAX_HEIGHT=720
 NEXT_PUBLIC_SELFIE_IMAGE_QUALITY=0.75
@@ -48,6 +52,9 @@ DEFAULT_GEOFENCE_RADIUS_METERS=100
 REJECT_OUTSIDE_GEOFENCE=true
 GPS_TIMESTAMP_MAX_AGE_SECONDS=120
 ATTENDANCE_EXPORT_MAX_ROWS=5000
+
+RESEND_API_KEY=<RESEND_API_KEY>
+RESEND_FROM_EMAIL="MyProdusen <noreply@myprodusen.online>"
 
 SUPERADMIN_EMAIL=<SUPERADMIN_EMAIL>
 SUPERADMIN_USERNAME=superadmin
@@ -87,6 +94,7 @@ Checklist:
 4. Container optionally creates/updates the Superadmin only when all
    `SUPERADMIN_*` variables exist.
 5. Container starts Next.js standalone server on `0.0.0.0:3000`.
+6. Coolify healthcheck path is `/api/health`; the response is fast, cache-free, and does not expose secrets.
 
 ## Scheduled tasks
 
@@ -121,3 +129,39 @@ When traffic outgrows the local volume:
    so authorization stays centralised.
 4. Update the backup schedule to drop the `rsync` task once S3 versioning
    covers it.
+
+## Live Route Mismatch Recovery: `/api/reports/pdf` 404
+
+Jika local build berisi `/api/reports/pdf` tetapi live mengembalikan `404`, hampir pasti Coolify masih menjalankan image/commit lama atau build cache stale.
+
+Langkah wajib:
+
+1. Pastikan semua perubahan sudah commit di branch yang dipakai Coolify.
+2. Push branch tersebut ke remote.
+3. Di Coolify, buka aplikasi MyProdusen.
+4. Pilih redeploy dengan opsi rebuild image/no cache jika tersedia.
+5. Pastikan Docker build menjalankan `npm run build` dan runtime menjalankan `npm run start:prod` atau standalone server.
+6. Set metadata env untuk verifikasi deploy:
+   - `APP_VERSION=<release-name>`
+   - `NEXT_PUBLIC_APP_VERSION=<release-name>`
+   - `GIT_COMMIT_SHA=<git-sha>`
+   - `BUILD_TIME=<ISO-8601-build-time>`
+7. Setelah deploy, buka `https://myprodusen.online/api/health` dan cocokkan `app.commit` dengan commit yang baru dideploy.
+8. Jalankan route verifier dari lokal:
+
+```bash
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+```
+
+Expected:
+
+- `GET /api/health` status `200` dan body `status: ok`.
+- `POST /api/reports/pdf` tanpa login status `401` atau `403`.
+- `POST /api/reports/pdf` tidak boleh `404`.
+
+Jika masih `404`:
+
+- Cek branch Coolify benar.
+- Cek build log menampilkan route `/api/reports/pdf`.
+- Redeploy ulang dengan no-cache.
+- Pastikan container lama sudah berhenti dan domain mengarah ke container baru.

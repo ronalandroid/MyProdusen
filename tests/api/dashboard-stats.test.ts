@@ -116,8 +116,8 @@ describe('Dashboard stats API', () => {
     expect(data.data.superadminInsights.employeeRisks.length).toBeGreaterThan(0);
     expect(data.data.superadminInsights.managementCards).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ label: 'Management User & Role', href: '/dashboard/employees' }),
-        expect.objectContaining({ label: 'Approval Center', href: '/dashboard/attendance/exceptions' }),
+        expect.objectContaining({ label: 'Total Karyawan', href: '/dashboard/employees' }),
+        expect.objectContaining({ label: 'Pengajuan Pending', href: '/dashboard/attendance/exceptions' }),
       ]),
     );
   });

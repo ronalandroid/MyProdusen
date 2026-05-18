@@ -8,6 +8,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { getAuthHeaders, fetchProfile } from "@/lib/auth-client";
+import AttendanceHeatmap from "@/components/attendance/AttendanceHeatmap";
 
 interface Employee {
   id: string;
@@ -234,6 +235,9 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
           )}
         </div>
       </div>
+
+      {/* Attendance Heatmap */}
+      <AttendanceHeatmap employeeId={employee.id} />
 
       {/* Role Management - Superadmin Only */}
       {isSuperadmin && (

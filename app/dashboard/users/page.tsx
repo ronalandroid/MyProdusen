@@ -12,6 +12,7 @@ type UserRow = {
   role: UserRole;
   isActive: boolean;
   createdAt?: string;
+  hasEmployeeProfile?: boolean;
 };
 
 const roleLabels: Record<UserRole, string> = {
@@ -27,6 +28,8 @@ export default function UsersPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [profileModalUser, setProfileModalUser] = useState<UserRow | null>(null);
+  const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
 
   const pendingUsers = useMemo(() => users.filter((user) => !user.isActive), [users]);
 
@@ -74,6 +77,41 @@ export default function UsersPage() {
       setError(err instanceof Error ? err.message : "Gagal memperbarui user");
     } finally {
       setSavingId(null);
+    }
+  }
+
+  async function handleCreateProfile(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!profileModalUser) return;
+    setIsSubmittingProfile(true);
+    setError("");
+    setMessage("");
+    try {
+      const formData = new FormData(e.currentTarget);
+      const data = {
+        fullName: formData.get("fullName"),
+        division: formData.get("division"),
+        position: formData.get("position"),
+      };
+
+      const response = await fetch(`/api/users/${profileModalUser.id}/employee-profile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Gagal membuat profil karyawan");
+      }
+
+      setMessage("Profil karyawan berhasil dibuat!");
+      setUsers((current) => current.map((item) => (item.id === profileModalUser.id ? { ...item, hasEmployeeProfile: true } : item)));
+      setProfileModalUser(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan sistem");
+    } finally {
+      setIsSubmittingProfile(false);
     }
   }
 
@@ -149,12 +187,57 @@ export default function UsersPage() {
                     <ShieldCheck size={16} aria-hidden="true" />
                     {user.isActive ? "Nonaktifkan" : "Aktifkan"}
                   </button>
+                  {user.role !== "SUPERADMIN" && user.role !== "ADMIN_HR" && !user.hasEmployeeProfile && (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => setProfileModalUser(user)}
+                    >
+                      Buat Profil Karyawan
+                    </button>
+                  )}
                 </div>
               </article>
             ))}
           </div>
         )}
       </section>
+
+      {profileModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="card w-full max-w-md animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">Lengkapi Profil Karyawan</h3>
+              <button type="button" onClick={() => setProfileModalUser(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">&times;</button>
+            </div>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">
+              User <strong>{profileModalUser.username}</strong> membutuhkan profil karyawan agar dapat melakukan presensi, mendapat KPI, dll.
+            </p>
+            <form onSubmit={handleCreateProfile} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-1" htmlFor="fullName">Nama Lengkap Karyawan</label>
+                <input id="fullName" name="fullName" type="text" required className="input" placeholder="Misal: Budi Santoso" defaultValue={profileModalUser.username} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold mb-1" htmlFor="division">Divisi</label>
+                  <input id="division" name="division" type="text" className="input" placeholder="Misal: Produksi" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-1" htmlFor="position">Posisi</label>
+                  <input id="position" name="position" type="text" className="input" placeholder="Misal: Staff" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button type="button" className="btn btn-secondary" onClick={() => setProfileModalUser(null)}>Batal</button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmittingProfile}>
+                  {isSubmittingProfile ? "Menyimpan..." : "Simpan Profil"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -31,7 +31,7 @@ export default function Button({
     danger: 'bg-[var(--danger)] text-white hover:bg-red-600 focus-visible:ring-red-200 shadow-sm hover:shadow-md',
     ghost: 'bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-hover)] focus-visible:ring-[var(--bg-hover)]',
     success: 'bg-[var(--success)] text-white hover:bg-green-600 focus-visible:ring-green-200 shadow-sm hover:shadow-md',
-    warning: 'bg-[var(--warning)] text-white hover:bg-orange-600 focus-visible:ring-orange-200 shadow-sm hover:shadow-md',
+    warning: 'bg-[var(--warning)] text-[var(--text-primary)] hover:bg-orange-500 focus-visible:ring-orange-200 shadow-sm hover:shadow-md',
   };
   
   const sizeStyles = {

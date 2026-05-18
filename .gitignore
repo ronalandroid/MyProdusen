@@ -78,3 +78,7 @@ temp/
 # Archives
 *.zip
 *.tar.gz
+
+# Playwright artifacts
+/playwright-report/
+/test-results/

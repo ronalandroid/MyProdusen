@@ -1,8 +1,10 @@
 import { NextRequest } from 'next/server';
-import { payrollService } from '@/src/services/payroll/payroll.service';
-import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
+import { payrollService } from '@/src/services/payroll/payroll.service';
+import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
+import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
+import { logAudit } from '@/lib/audit';
 
 const updateStructureSchema = z.object({
   name: z.string().min(1).optional(),
@@ -11,79 +13,53 @@ const updateStructureSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return unauthorizedResponse();
-    }
-
-    if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
-      return forbiddenResponse();
-    }
-
-    const structure = await payrollService.getStructureById(params.id);
-
-    return successResponse(structure);
+    const user = await requireAuth(request);
+    assertPayrollAccess(user.role, 'read');
+    const { id } = await params;
+    return successResponse(await payrollService.getStructureById(id));
   } catch (error: any) {
-    console.error('Get payroll structure error:', error);
-    return errorResponse(error.message || 'Internal server error', error.message.includes('tidak ditemukan') ? 404 : 500);
+    if (error.message === 'Unauthorized') return unauthorizedResponse();
+    const accessMessage = payrollAccessErrorMessage(error);
+    if (accessMessage) return forbiddenResponse(accessMessage);
+    return errorResponse(error.message || 'Gagal mengambil struktur payroll', error.message?.includes('tidak ditemukan') ? 404 : 500);
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return unauthorizedResponse();
-    }
-
-    if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
-      return forbiddenResponse();
-    }
-
-    const body = await request.json();
-    const validated = updateStructureSchema.parse(body);
-
-    const structure = await payrollService.updateStructure(params.id, validated);
-
-    return successResponse(structure);
+    const user = await requireAuth(request);
+    assertPayrollAccess(user.role, 'mutate');
+    const { id } = await params;
+    const body = await getRequestBody(request);
+    const validation = updateStructureSchema.safeParse(body);
+    if (!validation.success) return validationErrorResponse(validation.error.errors[0].message);
+    const oldStructure = await payrollService.getStructureById(id);
+    const structure = await payrollService.updateStructure(id, validation.data);
+    await logAudit(user.userId, 'UPDATE', 'PayrollStructure', id, oldStructure, structure, request);
+    return successResponse(structure, 'Struktur payroll berhasil diubah');
   } catch (error: any) {
-    console.error('Update payroll structure error:', error);
-    
-    if (error.name === 'ZodError') {
-      return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
-    }
-
-    return errorResponse(error.message || 'Internal server error', error.message.includes('tidak ditemukan') ? 404 : 500);
+    if (error.message === 'Unauthorized') return unauthorizedResponse();
+    const accessMessage = payrollAccessErrorMessage(error);
+    if (accessMessage) return forbiddenResponse(accessMessage);
+    return errorResponse(error.message || 'Gagal mengubah struktur payroll', 500);
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return unauthorizedResponse();
-    }
-
-    if (user.role !== 'SUPERADMIN') {
-      return forbiddenResponse();
-    }
-
-    await payrollService.deleteStructure(params.id);
-
-    return successResponse(null);
+    const user = await requireAuth(request);
+    assertPayrollAccess(user.role, 'mutate');
+    const { id } = await params;
+    const oldStructure = await payrollService.getStructureById(id);
+    const result = await payrollService.deleteStructure(id);
+    await logAudit(user.userId, 'DELETE', 'PayrollStructure', id, oldStructure, undefined, request);
+    return successResponse(result, 'Struktur payroll berhasil dihapus');
   } catch (error: any) {
-    console.error('Delete payroll structure error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
+    if (error.message === 'Unauthorized') return unauthorizedResponse();
+    const accessMessage = payrollAccessErrorMessage(error);
+    if (accessMessage) return forbiddenResponse(accessMessage);
+    return errorResponse(error.message || 'Gagal menghapus struktur payroll', 500);
   }
 }

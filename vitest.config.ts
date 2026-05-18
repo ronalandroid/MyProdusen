@@ -7,7 +7,7 @@ export default defineConfig({
     environment: 'node',
     setupFiles: ['./tests/setup.ts'],
     include: ['**/*.test.ts', '**/*.spec.ts'],
-    exclude: ['node_modules', 'dist', '.next'],
+    exclude: ['node_modules', 'dist', '.next', 'tests/e2e/**', 'playwright-report/**', 'test-results/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

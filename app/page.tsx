@@ -4,7 +4,7 @@ import { Users, Clock, ShieldCheck, ChevronRight } from "lucide-react";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#FAFAFA] font-sans selection:bg-[#FFC107]/30 text-[#111111] overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-[#FAFAFA] font-sans selection:bg-[#FFC107]/30 text-[#111111] overflow-x-hidden flex flex-col">
       {/* Background decorations */}
       <div className="absolute top-0 right-0 w-1/2 h-full bg-[#FFC107]/5 blur-[120px] rounded-full -z-10 pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-1/3 h-1/2 bg-[#FFC107]/10 blur-[100px] rounded-full -z-10 pointer-events-none" />

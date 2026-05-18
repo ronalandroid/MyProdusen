@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="auth-page relative overflow-hidden">
+    <main className="auth-page relative overflow-x-hidden">
       <div className="relative z-10 p-4">
         <Link href="/login" className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
           <ArrowLeft size={18} aria-hidden="true" />

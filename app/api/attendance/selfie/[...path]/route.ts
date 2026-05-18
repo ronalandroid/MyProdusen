@@ -111,10 +111,26 @@ export async function GET(
     const file = await readFile(filePath);
     const extension = (path.extname(filePath).slice(1) || 'jpg').toLowerCase();
 
+    if (attendance.employee.userId !== user.userId) {
+      await logAudit(
+        user.userId,
+        'SELFIE_VIEW',
+        'Attendance',
+        attendance.attendance.id,
+        undefined,
+        {
+          viewerRole: user.role,
+          employeeId: attendance.employee.id,
+          sizeBytes: stats.size,
+        },
+        request,
+      );
+    }
+
     return new NextResponse(file, {
       headers: {
         'Content-Type': MIME_BY_EXTENSION[extension] || 'application/octet-stream',
-        'Cache-Control': 'private, max-age=300, must-revalidate',
+        'Cache-Control': 'no-store, private',
         'Content-Length': String(stats.size),
         'X-Content-Type-Options': 'nosniff',
       },

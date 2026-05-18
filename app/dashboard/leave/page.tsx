@@ -54,6 +54,7 @@ export default function LeavePage() {
     endDate: "",
     reason: "",
   });
+  const [rejectReason, setRejectReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -161,11 +162,21 @@ export default function LeavePage() {
   };
 
   const handleReject = async (id: string) => {
+    const trimmedReason = rejectReason.trim();
+    if (trimmedReason.length < 10) {
+      showError("Alasan penolakan minimal 10 karakter");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const response = await fetch(`/api/leave/${id}/reject`, {
         method: "POST",
-        headers: getAuthHeaders(),
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reason: trimmedReason }),
       });
 
       const data = await response.json();
@@ -173,6 +184,7 @@ export default function LeavePage() {
       if (data.success) {
         success(data.message || "Pengajuan berhasil ditolak");
         setIsDetailModalOpen(false);
+        setRejectReason("");
         fetchLeaveRequests();
       } else {
         showError(data.error || "Gagal menolak pengajuan");
@@ -426,6 +438,26 @@ export default function LeavePage() {
               <p className="text-xs text-[var(--text-secondary)] mb-1">Alasan</p>
               <p className="text-sm">{selectedLeave.reason}</p>
             </div>
+            {selectedLeave.status === "PENDING" && (
+              <div>
+                <label htmlFor="reject-reason" className="block text-xs text-[var(--text-secondary)] mb-1">
+                  Alasan Penolakan
+                </label>
+                <textarea
+                  id="reject-reason"
+                  className="input"
+                  rows={3}
+                  value={rejectReason}
+                  onChange={(event) => setRejectReason(event.target.value)}
+                  placeholder="Wajib diisi jika pengajuan ditolak..."
+                  aria-describedby="reject-reason-help"
+                  style={{ resize: "vertical" }}
+                />
+                <p id="reject-reason-help" className="mt-1 text-xs text-[var(--text-muted)]">
+                  Minimal 10 karakter untuk audit dan notifikasi karyawan.
+                </p>
+              </div>
+            )}
             {selectedLeave.approvedBy && (
               <div>
                 <p className="text-xs text-[var(--text-secondary)] mb-1">Disetujui oleh</p>

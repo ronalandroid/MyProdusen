@@ -51,13 +51,13 @@ describe('Role Navigation Policy', () => {
     expect(nav.map((item) => item.key)).toContain('kpi');
     expect(nav.map((item) => item.key)).toContain('notifications');
     expect(nav.map((item) => item.key)).toContain('overtime');
+    expect(nav.map((item) => item.key)).toContain('payroll');
     expect(nav.map((item) => item.key)).toContain('profile');
     expect(nav.map((item) => item.key)).not.toContain('employees');
     expect(nav.map((item) => item.key)).not.toContain('locations');
     expect(nav.map((item) => item.key)).not.toContain('shifts');
     expect(nav.map((item) => item.key)).not.toContain('attendance-exceptions');
     expect(nav.map((item) => item.key)).not.toContain('reports');
-    expect(nav.map((item) => item.key)).not.toContain('payroll');
     expect(nav.map((item) => item.key)).not.toContain('audit');
   });
 
@@ -65,7 +65,7 @@ describe('Role Navigation Policy', () => {
     expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/audit')).toBe(false);
     expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/employees')).toBe(false);
     expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/attendance')).toBe(true);
-    expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/payroll')).toBe(false);
+    expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/payroll')).toBe(true);
     expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/overtime')).toBe(true);
     expect(canAccessNavigationPath('ADMIN_HR', '/dashboard/payroll')).toBe(true);
     expect(canAccessNavigationPath('SUPERVISOR', '/dashboard/employees')).toBe(true);
