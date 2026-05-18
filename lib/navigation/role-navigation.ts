@@ -12,6 +12,8 @@ export type NavigationItemKey =
   | 'leave'
   | 'kpi'
   | 'reports'
+  | 'payroll'
+  | 'overtime'
   | 'documents'
   | 'notifications'
   | 'audit'
@@ -112,6 +114,20 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
     path: '/dashboard/reports',
     primaryFor: ['SUPERADMIN'],
     allowedRoles: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'],
+  },
+  {
+    key: 'payroll',
+    name: 'Payroll',
+    path: '/dashboard/payroll',
+    primaryFor: [],
+    allowedRoles: ['SUPERADMIN', 'ADMIN_HR'],
+  },
+  {
+    key: 'overtime',
+    name: 'Lembur',
+    path: '/dashboard/overtime',
+    primaryFor: [],
+    allowedRoles: ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE'],
   },
   {
     key: 'documents',

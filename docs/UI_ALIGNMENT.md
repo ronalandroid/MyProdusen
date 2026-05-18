@@ -140,3 +140,11 @@ rules from `AGENTS.md` instead.
 - Manual viewport spot-checks at 320 / 375 / 768 / 1024 / 1440 px all
   render without horizontal scroll, with bottom nav respecting safe-area
   insets, with selfie modal scrollable on small devices.
+
+## Production sweep 2026-05-18
+
+- BUG-001: `/dashboard/locations` card grid now uses `minmax(min(100%, 340px), 1fr)` so cards stay inside 320 px mobile content.
+- BUG-002: `/dashboard/shifts` card grid now uses `minmax(min(100%, 300px), 1fr)` so cards stay inside 320 px mobile content.
+- BUG-003: `/dashboard/overtime` no longer links to missing `/dashboard/overtime/rates`; the header shows the active rate count from existing data.
+- BUG-004: `/dashboard` quick/insight links now respect documented role access for payroll and reports.
+- BUG-005: Desktop/sidebar navigation now includes existing payroll and overtime pages as non-primary items without changing the five-tab mobile shell.

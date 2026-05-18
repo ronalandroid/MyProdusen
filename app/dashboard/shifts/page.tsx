@@ -22,7 +22,7 @@ export default function ShiftsPage() {
         <button className="btn btn-primary" onClick={() => setShowModal(true)}>➕ Tambah Shift</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))", gap: "16px" }}>
         {shiftsData.map(shift => (
           <div key={shift.id} className="card" style={{ padding: "24px", position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: shift.isActive ? "#22C55E" : "#5A5F78" }} />
