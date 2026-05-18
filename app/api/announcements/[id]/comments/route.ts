@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { announcementService } from '@/src/services/announcement/announcement.service';
 import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
+import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 
 const addCommentSchema = z.object({
   comment: z.string().min(1, 'Comment wajib diisi'),
@@ -14,7 +15,7 @@ export async function POST(
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     const body = await request.json();
@@ -26,20 +27,14 @@ export async function POST(
       comment: validated.comment,
     });
 
-    return NextResponse.json({ data: comment }, { status: 201 });
+    return successResponse(comment, undefined, 201);
   } catch (error: any) {
     console.error('Add comment error:', error);
     
     if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      );
+      return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
     }
 
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 }

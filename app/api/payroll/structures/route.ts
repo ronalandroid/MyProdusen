@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { payrollService } from '@/src/services/payroll/payroll.service';
 import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
+import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 
 const createStructureSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi'),
@@ -13,12 +14,12 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     // Only SUPERADMIN and ADMIN_HR can view payroll structures
     if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return forbiddenResponse();
     }
 
     const { searchParams } = new URL(request.url);
@@ -28,13 +29,10 @@ export async function GET(request: NextRequest) {
       isActive === 'true' ? true : isActive === 'false' ? false : undefined
     );
 
-    return NextResponse.json({ data: structures });
+    return successResponse(structures);
   } catch (error: any) {
     console.error('Get payroll structures error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 }
 
@@ -42,12 +40,12 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     // Only SUPERADMIN and ADMIN_HR can create payroll structures
     if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return forbiddenResponse();
     }
 
     const body = await request.json();
@@ -55,20 +53,14 @@ export async function POST(request: NextRequest) {
 
     const structure = await payrollService.createStructure(validated);
 
-    return NextResponse.json({ data: structure }, { status: 201 });
+    return successResponse(structure, undefined, 201);
   } catch (error: any) {
     console.error('Create payroll structure error:', error);
     
     if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      );
+      return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
     }
 
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 }

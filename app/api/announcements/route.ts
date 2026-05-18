@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { announcementService } from '@/src/services/announcement/announcement.service';
 import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
+import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 
 const createAnnouncementSchema = z.object({
   title: z.string().min(1, 'Title wajib diisi'),
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     const { searchParams } = new URL(request.url);
@@ -32,13 +33,10 @@ export async function GET(request: NextRequest) {
       userId: user.id,
     });
 
-    return NextResponse.json({ data: announcements });
+    return successResponse(announcements);
   } catch (error: any) {
     console.error('Get announcements error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 }
 
@@ -46,12 +44,12 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     // Only ADMIN_HR and SUPERADMIN can create announcements
     if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return forbiddenResponse();
     }
 
     const body = await request.json();
@@ -62,20 +60,14 @@ export async function POST(request: NextRequest) {
       publishedBy: user.id,
     });
 
-    return NextResponse.json({ data: announcement }, { status: 201 });
+    return successResponse(announcement, undefined, 201);
   } catch (error: any) {
     console.error('Create announcement error:', error);
     
     if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      );
+      return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
     }
 
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse(error.message || 'Internal server error', 500);
   }
 }
