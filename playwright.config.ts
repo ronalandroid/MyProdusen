@@ -3,6 +3,20 @@ import { defineConfig, devices } from '@playwright/test';
 const explicitBaseURL = process.env.E2E_BASE_URL;
 const localPort = process.env.E2E_PORT || '3010';
 const baseURL = explicitBaseURL || `http://127.0.0.1:${localPort}`;
+const browserMatrixEnabled = process.env.E2E_BROWSER_MATRIX === '1';
+
+const responsiveProjects = [
+  { name: 'mobile-360', use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true } },
+  { name: 'mobile-390', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+  { name: 'tablet-768', use: { ...devices['Desktop Chrome'], viewport: { width: 768, height: 1024 }, isMobile: true, hasTouch: true } },
+  { name: 'desktop-1440', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
+];
+
+const browserProjects = [
+  { name: 'chromium-browser', use: { ...devices['Desktop Chrome'], browserName: 'chromium' as const, viewport: { width: 1440, height: 900 } } },
+  { name: 'firefox-browser', use: { ...devices['Desktop Firefox'], browserName: 'firefox' as const, viewport: { width: 1440, height: 900 } } },
+  { name: 'webkit-browser', use: { ...devices['Desktop Safari'], browserName: 'webkit' as const, viewport: { width: 1440, height: 900 } } },
+];
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -26,10 +40,5 @@ export default defineConfig({
     video: 'retain-on-failure',
     ignoreHTTPSErrors: false,
   },
-  projects: [
-    { name: 'mobile-360', use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true } },
-    { name: 'mobile-390', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
-    { name: 'tablet-768', use: { ...devices['Desktop Chrome'], viewport: { width: 768, height: 1024 }, isMobile: true, hasTouch: true } },
-    { name: 'desktop-1440', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
-  ],
+  projects: browserMatrixEnabled ? browserProjects : responsiveProjects,
 });

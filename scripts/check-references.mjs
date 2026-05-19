@@ -25,9 +25,10 @@ const emailGuidePath = path.join(referencesDir, 'email-style-guide.md');
 const logoPath = path.join(referencesDir, 'myprodusen-logo.png');
 
 const REQUIRED_SCREENS = new Set([
-  'employee-app-shell.png',
-  'superadmin-app-shell.png',
-  'emailing-system.png',
+  'employee-full-ui-ux-mobile.png',
+  'super-admin-full-ui-ux-desktop.png',
+  'super-admin-full-ui-ux-mobile.png',
+  'full-ui-ux-emailing-system.png',
 ]);
 
 const errors = [];
@@ -80,7 +81,12 @@ for (const extra of actualScreens) {
 if (existsSync(checklistPath)) {
   const checklist = readFileSync(checklistPath, 'utf8');
 
-  const referencedScreens = ['employee-app-shell.png', 'superadmin-app-shell.png', 'emailing-system.png'];
+  const referencedScreens = [
+    'employee-full-ui-ux-mobile.png',
+    'super-admin-full-ui-ux-desktop.png',
+    'super-admin-full-ui-ux-mobile.png',
+    'full-ui-ux-emailing-system.png',
+  ];
   for (const screen of referencedScreens) {
     if (!checklist.includes(screen)) {
       errors.push(`design-checklist.md does not reference ${screen}`);

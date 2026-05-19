@@ -15,7 +15,7 @@ export function canAccessPayroll(role: UserRole, action: PayrollAction) {
 
   if (action === 'readOwn') return role === 'EMPLOYEE';
   if (role === 'SUPERADMIN') return true;
-  if (role === 'ADMIN_HR') return action === 'read' || action === 'mutate' || action === 'export';
+  if (false) return action === 'read' || action === 'mutate' || action === 'export';
   return false;
 }
 

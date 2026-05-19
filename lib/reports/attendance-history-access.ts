@@ -98,30 +98,8 @@ export async function resolveAttendanceReportRequest(
     };
   }
 
-  if (viewer.role === 'SUPERVISOR') {
-    const supervisor = await employeeService.getEmployeeByUserId(viewer.userId).catch(() => null);
-    if (!supervisor) {
-      return { ok: false, status: 404, error: 'Data supervisor tidak ditemukan.' };
-    }
 
-    if (employeeIdFilter) {
-      const target = await employeeService.getEmployeeById(employeeIdFilter).catch(() => null);
-      if (!target || target.supervisorId !== supervisor.id) {
-        return { ok: false, status: 403, error: 'Anda hanya dapat melihat absensi tim Anda.' };
-      }
-      return {
-        ok: true,
-        resolved: { scope: 'team', filters: { ...baseFilters, supervisorId: supervisor.id } },
-      };
-    }
-
-    return {
-      ok: true,
-      resolved: { scope: 'team', filters: { ...baseFilters, supervisorId: supervisor.id } },
-    };
-  }
-
-  if (viewer.role === 'ADMIN_HR' || viewer.role === 'SUPERADMIN') {
+  if (viewer.role === 'SUPERADMIN') {
     if (mode === 'export' && !hasPermission(viewer.role, 'REPORT_EXPORT')) {
       return { ok: false, status: 403, error: 'Anda tidak memiliki akses export laporan.' };
     }

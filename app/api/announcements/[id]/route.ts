@@ -51,7 +51,7 @@ export async function PATCH(
       return unauthorizedResponse();
     }
 
-    if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
+    if (user.role !== 'SUPERADMIN') {
       return forbiddenResponse();
     }
 

@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     
-    // Only SUPERADMIN, ADMIN_HR, and SUPERVISOR can view templates
-    if (!['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'].includes(user.role)) {
+    // Only SUPERADMIN can view templates
+    if (!['SUPERADMIN'].includes(user.role)) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
 
@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     
-    // Only SUPERADMIN and ADMIN_HR can create templates
-    if (!['SUPERADMIN', 'ADMIN_HR'].includes(user.role)) {
+    // Only SUPERADMIN can create templates
+    if (!['SUPERADMIN'].includes(user.role)) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
 

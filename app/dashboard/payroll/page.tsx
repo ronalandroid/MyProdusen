@@ -35,7 +35,7 @@ export default function PayrollPage() {
   const [error, setError] = useState('');
 
   const isEmployee = role === 'EMPLOYEE';
-  const canMutate = role === 'SUPERADMIN' || role === 'ADMIN_HR';
+  const canMutate = role === 'SUPERADMIN';
   const canApproveOrPay = role === 'SUPERADMIN';
 
   useEffect(() => {
@@ -106,10 +106,6 @@ export default function PayrollPage() {
   };
 
   if (loading) return <LoadingSpinner fullScreen message="Memuat payroll..." />;
-
-  if (role === 'SUPERVISOR') {
-    return <div className="phone-screen feature-screen"><section className="card"><h1 className="text-xl font-bold">Payroll</h1><p className="text-sm text-[var(--text-secondary)] mt-2">Supervisor tidak memiliki akses payroll secara default.</p></section></div>;
-  }
 
   if (isEmployee) {
     return (

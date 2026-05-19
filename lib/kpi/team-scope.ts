@@ -10,15 +10,11 @@ export function canManageEmployeeKpi(
   actorEmployee: KpiScopeEmployee | null | undefined,
   targetEmployee: KpiScopeEmployee | null | undefined,
 ) {
-  if (role === 'SUPERADMIN' || role === 'ADMIN_HR') {
+  if (role === 'SUPERADMIN') {
     return true;
   }
 
-  if (role !== 'SUPERVISOR' || !actorEmployee || !targetEmployee) {
-    return false;
-  }
-
-  return targetEmployee.supervisorId === actorEmployee.id;
+  return false;
 }
 
 export function canReadEmployeeKpi(

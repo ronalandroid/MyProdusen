@@ -17,29 +17,9 @@ describe('Role Navigation Policy', () => {
     expect(nav.length).toBeGreaterThan(10);
   });
 
-  it('ADMIN_HR sees HR-focused navigation without audit', () => {
-    const nav = getNavigationForRole('ADMIN_HR');
-    expect(nav.map((item) => item.key)).toContain('employees');
-    expect(nav.map((item) => item.key)).toContain('locations');
-    expect(nav.map((item) => item.key)).toContain('shifts');
-    expect(nav.map((item) => item.key)).toContain('payroll');
-    expect(nav.map((item) => item.key)).toContain('overtime');
-    expect(nav.map((item) => item.key)).toContain('attendance-exceptions');
-    expect(nav.map((item) => item.key)).not.toContain('audit');
-    expect(nav.map((item) => item.key)).not.toContain('self-service');
-  });
-
-  it('SUPERVISOR sees team-focused navigation', () => {
-    const nav = getNavigationForRole('SUPERVISOR');
-    expect(nav.map((item) => item.key)).toContain('self-service');
-    expect(nav.map((item) => item.key)).toContain('employees');
-    expect(nav.map((item) => item.key)).toContain('attendance-exceptions');
-    expect(nav.map((item) => item.key)).toContain('kpi');
-    expect(nav.map((item) => item.key)).toContain('overtime');
-    expect(nav.map((item) => item.key)).not.toContain('payroll');
-    expect(nav.map((item) => item.key)).not.toContain('locations');
-    expect(nav.map((item) => item.key)).not.toContain('shifts');
-    expect(nav.map((item) => item.key)).not.toContain('audit');
+  it('legacy HR and supervisor roles are not exposed in production navigation', () => {
+    expect(getNavigationForRole('ADMIN_HR')).toHaveLength(0);
+    expect(getNavigationForRole('SUPERVISOR')).toHaveLength(0);
   });
 
   it('EMPLOYEE sees personal navigation only', () => {
@@ -67,14 +47,14 @@ describe('Role Navigation Policy', () => {
     expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/attendance')).toBe(true);
     expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/payroll')).toBe(true);
     expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/overtime')).toBe(true);
-    expect(canAccessNavigationPath('ADMIN_HR', '/dashboard/payroll')).toBe(true);
-    expect(canAccessNavigationPath('SUPERVISOR', '/dashboard/employees')).toBe(true);
+    expect(canAccessNavigationPath('ADMIN_HR', '/dashboard/payroll')).toBe(false);
+    expect(canAccessNavigationPath('SUPERVISOR', '/dashboard/employees')).toBe(false);
     expect(canAccessNavigationPath('SUPERVISOR', '/dashboard/audit')).toBe(false);
     expect(canAccessNavigationPath('SUPERADMIN', '/dashboard/audit')).toBe(true);
   });
 
   it('Each role exposes at most 5 primary tabs to match the mobile design', () => {
-    for (const role of ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE'] as const) {
+    for (const role of ['SUPERADMIN', 'EMPLOYEE'] as const) {
       const primary = getPrimaryNavigationForRole(role);
       expect(primary.length).toBeGreaterThan(0);
       expect(primary.length).toBeLessThanOrEqual(5);
@@ -86,15 +66,15 @@ describe('Role Navigation Policy', () => {
     expect(keys).toEqual(['dashboard', 'attendance', 'leave', 'kpi', 'profile']);
   });
 
-  it('SUPERADMIN primary tabs match the design (Beranda · Kehadiran · Karyawan · Laporan · Akun)', () => {
+  it('SUPERADMIN primary tabs match the design (Beranda · Cabang · Approval · Laporan · Akun)', () => {
     const keys = getPrimaryNavigationForRole('SUPERADMIN').map((item) => item.key);
     const paths = getPrimaryNavigationForRole('SUPERADMIN').map((item) => item.path);
 
-    expect(keys).toEqual(['dashboard', 'attendance', 'employees', 'reports', 'profile']);
+    expect(keys).toEqual(['dashboard', 'locations', 'attendance-exceptions', 'reports', 'profile']);
     expect(paths).toEqual([
       '/dashboard',
-      '/dashboard/attendance',
-      '/dashboard/employees',
+      '/dashboard/locations',
+      '/dashboard/attendance/exceptions',
       '/dashboard/reports/attendance',
       '/dashboard/profile',
     ]);

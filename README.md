@@ -1,5 +1,8 @@
 # 🎉 MyProdusen - HRIS Application
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 **Modern, Mobile-First HRIS System for Produsen Dimsum Medan**
 
 [![Status](https://img.shields.io/badge/status-production--ready-success)](https://github.com)
@@ -30,7 +33,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
-### Deploy to Netlify (25 minutes)
+### Deploy to VPS + Coolify
 
 ```bash
 # 1. Commit your code
@@ -38,11 +41,11 @@ git add .
 git commit -m "feat: ready for deployment"
 git push origin main
 
-# 2. Follow the step-by-step guide
-See: docs/DEPLOY_NOW.md
+# 2. Follow the deployment guide
+See: docs/DEPLOYMENT.md
 ```
 
-**Quick Deploy:** [docs/DEPLOY_NOW.md](docs/DEPLOY_NOW.md)
+**Quick Deploy:** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
 ---
 
@@ -96,15 +99,15 @@ MyProdusen/
 │   ├── dashboard/         # Dashboard pages
 │   └── globals.css        # Design system (2,000+ lines)
 │
-├── docs/                   # Documentation (44 files)
-│   ├── DEPLOY_NOW.md      # Step-by-step deployment
+├── docs/                   # Canonical documentation
+│   ├── DEPLOYMENT.md      # VPS + Coolify deployment
 │   ├── INDEX.md           # Documentation index
 │   └── ...
 │
-└── netlify.toml           # Netlify configuration
+└── Dockerfile             # Production container
 ```
 
-**Total:** 52 files organized, 99 imports updated, 44 documentation files
+**Documentation:** canonical docs only; obsolete markdown removed
 
 ---
 
@@ -135,17 +138,17 @@ MyProdusen/
 ## 📚 Documentation
 
 ### Essential Reading
-1. **[DEPLOY_NOW.md](docs/DEPLOY_NOW.md)** - Step-by-step deployment guide
-2. **[COMPLETE_PROJECT_SUMMARY.md](docs/COMPLETE_PROJECT_SUMMARY.md)** - Complete overview
-3. **[UI_IMPROVEMENT_COMPLETE.md](docs/UI_IMPROVEMENT_COMPLETE.md)** - UI/UX guide
-4. **[FOLDER_STRUCTURE.md](docs/FOLDER_STRUCTURE.md)** - Project structure
+1. **[prd.md](docs/prd.md)** - Product source of truth
+2. **[IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)** - Current roadmap
+3. **[UI_UX_GUIDE.md](docs/UI_UX_GUIDE.md)** - UI/UX guide
+4. **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** - VPS + Coolify deployment guide
 
 ### Quick Reference
 - **[INDEX.md](docs/INDEX.md)** - Complete documentation index
-- **[src/QUICK_REFERENCE.md](src/QUICK_REFERENCE.md)** - Developer quick reference
-- **[NETLIFY_DEPLOYMENT_GUIDE.md](docs/NETLIFY_DEPLOYMENT_GUIDE.md)** - Full deployment guide
+- **[QUICK_START.md](docs/QUICK_START.md)** - Developer quick start
+- **[COOLIFY.md](docs/COOLIFY.md)** - Coolify configuration
 
-**Total Documentation:** 44 files organized in `docs/`
+**Total Documentation:** Canonical docs only; legacy/archive reports removed.
 
 ---
 
@@ -194,14 +197,13 @@ MyProdusen/
      - Build command: `npm run build`
      - Publish directory: `.next`
    - Add environment variables (see below)
-   - Deploy!
+   - Deploy with Docker build.
 
 3. **Setup database:**
-   - Create free database at [neon.tech](https://neon.tech)
-   - Copy connection string
-   - Add to Netlify environment variables
+   - Use PostgreSQL service in Coolify or managed PostgreSQL.
+   - Set `DATABASE_URL` and production secrets in Coolify.
 
-**Full Guide:** [docs/DEPLOY_NOW.md](docs/DEPLOY_NOW.md)
+**Full Guide:** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
 ### Option 2: Other Platforms
 
@@ -346,8 +348,8 @@ This project is proprietary software for Produsen Dimsum Medan.
 
 ### Documentation
 - **Complete Guide:** [docs/INDEX.md](docs/INDEX.md)
-- **Deployment:** [docs/DEPLOY_NOW.md](docs/DEPLOY_NOW.md)
-- **UI Guide:** [docs/UI_IMPROVEMENT_COMPLETE.md](docs/UI_IMPROVEMENT_COMPLETE.md)
+- **Deployment:** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- **UI Guide:** [docs/UI_UX_GUIDE.md](docs/UI_UX_GUIDE.md)
 
 ### Resources
 - **Netlify:** [app.netlify.com](https://app.netlify.com)
@@ -395,5 +397,4 @@ Built with:
 
 ---
 
-**🚀 Ready to deploy? Start with [docs/DEPLOY_NOW.md](docs/DEPLOY_NOW.md)**
-
+**🚀 Ready to deploy? Start with [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**

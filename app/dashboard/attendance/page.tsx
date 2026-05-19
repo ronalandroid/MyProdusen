@@ -65,6 +65,25 @@ function formatTime(value?: string | null) {
   }).format(new Date(value));
 }
 
+
+function getCleanAttendanceError(error: unknown, fallback = "Terjadi kendala saat memuat data. Silakan coba lagi.") {
+  const message = error instanceof Error ? error.message : String(error || "");
+
+  if (!message || /Cannot read properties|undefined|null|TypeError|ReferenceError|SyntaxError/i.test(message)) {
+    return fallback;
+  }
+
+  if (/permission|denied|izin|lokasi/i.test(message)) {
+    return "Lokasi tidak dapat diakses. Izinkan lokasi dan pastikan sinyal stabil.";
+  }
+
+  if (/timeout|timed out|position unavailable/i.test(message)) {
+    return "GPS belum siap. Coba ambil ulang lokasi dari area terbuka.";
+  }
+
+  return message;
+}
+
 function getBrowserPosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -156,7 +175,7 @@ export default function AttendancePage() {
       setTodayAttendance(todayPayload.data || null);
       setHistory((historyPayload.data || []).slice(0, 5));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memuat absensi");
+      setError(getCleanAttendanceError(err, "Data absensi belum tersedia."));
     } finally {
       setIsLoading(false);
     }
@@ -181,7 +200,7 @@ export default function AttendancePage() {
       setGpsPosition(position);
     } catch (err) {
       setGpsPosition(null);
-      setGpsError(err instanceof Error ? err.message : "GPS tidak dapat diakses. Izinkan lokasi dan pastikan sinyal stabil.");
+      setGpsError(getCleanAttendanceError(err, "GPS belum siap. Coba ambil ulang lokasi dari area terbuka."));
     } finally {
       setIsGettingGps(false);
     }
@@ -240,7 +259,7 @@ export default function AttendancePage() {
       setGpsPosition(null);
       await loadAttendance();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal menyimpan absensi");
+      setError(getCleanAttendanceError(err, "Gagal menyimpan absensi. Silakan coba lagi."));
     } finally {
       setIsSubmitting(false);
     }
@@ -254,6 +273,19 @@ export default function AttendancePage() {
   useEffect(() => {
     void refreshGps();
   }, []);
+
+  const missingRequirements = [
+    !employee?.defaultLocation?.id ? "Lokasi kerja belum tersedia" : null,
+    !gpsPosition ? "GPS belum siap" : null,
+    !selfieBlob ? "Selfie wajib diambil" : null,
+  ].filter(Boolean) as string[];
+  const checkInDisabled = Boolean(todayAttendance) || isSubmitting || missingRequirements.length > 0;
+  const checkOutDisabled = !todayAttendance || Boolean(todayAttendance?.checkOutTime) || isSubmitting || missingRequirements.length > 0;
+  const actionHint = isSubmitting
+    ? "Absensi sedang diproses."
+    : missingRequirements.length > 0
+      ? missingRequirements.join(" • ")
+      : "Data siap. Server tetap memvalidasi GPS, selfie, dan geofence.";
 
   return (
     <div className="phone-screen attendance-screen" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -358,6 +390,9 @@ export default function AttendancePage() {
           </div>
         </div>
         {gpsError && <div role="alert" style={{ color: "var(--danger)", fontSize: "12px", fontWeight: 600 }}>{gpsError}</div>}
+        <div role="status" aria-live="polite" style={{ color: missingRequirements.length ? "var(--text-secondary)" : "var(--success)", fontSize: "12px", fontWeight: 600 }}>
+          {actionHint}
+        </div>
         <button type="button" className="btn btn-secondary" onClick={refreshGps} disabled={isGettingGps || isSubmitting}>
           {isGettingGps ? "Mengambil GPS..." : "Ambil Ulang GPS"}
         </button>
@@ -366,16 +401,16 @@ export default function AttendancePage() {
       <div className="flex flex-col gap-3 sm:flex-row">
         <button
           className="btn btn-success"
-          style={{ flex: 1, padding: "16px", opacity: todayAttendance || isSubmitting || !selfieBlob || !gpsPosition ? 0.6 : 1 }}
-          disabled={Boolean(todayAttendance) || isSubmitting || !selfieBlob || !gpsPosition}
+          style={{ flex: 1, padding: "16px", opacity: checkInDisabled ? 0.6 : 1 }}
+          disabled={checkInDisabled}
           onClick={() => submitAttendance("check-in")}
         >
           {isSubmitting ? "Memproses..." : "Check-In"}
         </button>
         <button
           className="btn btn-danger-outline"
-          style={{ flex: 1, padding: "16px", backgroundColor: "white", opacity: !todayAttendance || todayAttendance.checkOutTime || isSubmitting || !selfieBlob || !gpsPosition ? 0.6 : 1 }}
-          disabled={!todayAttendance || Boolean(todayAttendance.checkOutTime) || isSubmitting || !selfieBlob || !gpsPosition}
+          style={{ flex: 1, padding: "16px", backgroundColor: "white", opacity: checkOutDisabled ? 0.6 : 1 }}
+          disabled={checkOutDisabled}
           onClick={() => submitAttendance("check-out")}
         >
           {isSubmitting ? "Memproses..." : "Check-Out"}

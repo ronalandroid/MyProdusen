@@ -1,5 +1,8 @@
 # Backup & Restore — MyProdusen
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 This runbook covers production backup, staging restore drills, and emergency restore decision rules for MyProdusen on VPS + Coolify + Docker + PostgreSQL. Keep it aligned with [`DEPLOYMENT.md`](./DEPLOYMENT.md), [`COOLIFY.md`](./COOLIFY.md), and [`PRODUCTION_SMOKE_TEST.md`](./PRODUCTION_SMOKE_TEST.md).
 
 ## Safety rules

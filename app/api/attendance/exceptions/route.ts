@@ -20,14 +20,16 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') as any;
     const employee = await employeeService.getEmployeeByUserId(user.userId).catch(() => null);
 
-    if (!employee) return errorResponse('Data karyawan tidak ditemukan');
-    if (!['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE'].includes(user.role)) return forbiddenResponse('Anda tidak memiliki akses');
+    if (!employee && user.role !== 'SUPERADMIN') {
+      return errorResponse('Data karyawan tidak ditemukan');
+    }
+    if (!['SUPERADMIN', 'EMPLOYEE'].includes(user.role)) return forbiddenResponse('Anda tidak memiliki akses');
 
     const rows = await attendanceExceptionService.listExceptions({
       status: status || undefined,
       viewerRole: user.role,
       viewerUserId: user.userId,
-      viewerEmployeeId: employee.id,
+      viewerEmployeeId: employee?.id,
     });
 
     return successResponse(rows.map(({ exception, employee }) => ({ ...exception, employee })));

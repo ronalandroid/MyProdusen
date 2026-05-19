@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
         employeeId: employee.id,
         status: status || undefined,
       });
-    } else if (user.role === 'SUPERVISOR') {
+    } else if (false) {
       requests = await overtimeService.getRequests({
         status: status || undefined,
       });

@@ -54,7 +54,7 @@ export default function KPIPage() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const canViewTeam = role === "SUPERVISOR" || role === "ADMIN_HR" || role === "SUPERADMIN";
+  const canViewTeam = role === "SUPERADMIN";
 
   const loadInitialData = useCallback(async () => {
     setLoading(true);
@@ -75,7 +75,7 @@ export default function KPIPage() {
       setRole(nextRole);
       setResults(Array.isArray(resultsPayload.data) ? resultsPayload.data : []);
 
-      if (["SUPERVISOR", "ADMIN_HR", "SUPERADMIN"].includes(nextRole)) {
+      if (nextRole === "SUPERADMIN") {
         const employeeResponse = await fetch("/api/employees?limit=100", { headers: getAuthHeaders(), credentials: "include" });
         const employeePayload = await employeeResponse.json().catch(() => null);
         if (employeeResponse.ok && employeePayload?.success) {
@@ -190,7 +190,7 @@ export default function KPIPage() {
       <section className="space-y-3">
         {!results.length ? (
           <div className="card p-8 text-center text-sm text-[var(--text-secondary)]" role="status">
-            Belum ada hasil KPI untuk periode ini. Hubungi Supervisor/Admin HR jika KPI belum di-assign.
+            Belum ada hasil KPI untuk periode ini. Hubungi Superadmin jika KPI belum di-assign.
           </div>
         ) : (
           results.map((row) => {

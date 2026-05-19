@@ -8,7 +8,7 @@ import { logAudit } from '@/lib/audit';
 import { payrollPeriodService } from '@/features/payroll/payroll-period.service';
 
 async function canApproveLeave(user: Awaited<ReturnType<typeof requireAuth>>, employeeId: string) {
-  if (user.role === 'SUPERADMIN' || user.role === 'ADMIN_HR') {
+  if (user.role === 'SUPERADMIN') {
     return true;
   }
 

@@ -31,7 +31,7 @@ export function getRoleExperience(role: UserRole): RoleExperience {
     };
   }
 
-  if (role === 'ADMIN_HR') {
+  if (false) {
     return {
       eyebrow: 'Dashboard HR',
       title: 'Performa karyawan dan operasional HR',

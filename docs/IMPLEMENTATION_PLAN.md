@@ -1,5 +1,8 @@
 # Implementation Plan
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 > Track of what is shipped, what's in flight, and what's deferred. The
 > highest source of truth is `prd.md`; everything here describes how to get
 > there.
@@ -177,5 +180,4 @@
 2. Then read `AGENTS.md` for selfie / brand / secret rules.
 3. Then read this plan to see what's already done.
 4. Update this plan in the same commit as the change.
-5. Move historical / dated docs into `docs/_archive/`. Top-level docs only
-   describe the current state.
+5. Remove historical / dated docs instead of keeping archive clutter. Top-level docs only describe the current state.

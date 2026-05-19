@@ -60,7 +60,7 @@ describe('Employees API', () => {
       expect(data.success).toBe(false);
     });
 
-    it('should ignore arbitrary supervisorId and only list supervisor own team', async () => {
+    it('should deny legacy supervisor employee list access', async () => {
       const supervisor1 = await createTestUser('SUPERVISOR');
       testUserIds.push(supervisor1.id);
       const supervisor1EmpId = await createTestEmployee(supervisor1.id);
@@ -92,15 +92,14 @@ describe('Employees API', () => {
       const response = await employeesGET(request as any);
       const data = await response.json();
 
-      expect(response.status).toBe(200);
-      expect(data.data.map((employee: any) => employee.id)).toContain(teamEmployeeId);
-      expect(data.data.map((employee: any) => employee.id)).not.toContain(otherEmployeeId);
+      expect(response.status).toBe(403);
+      expect(data.success).toBe(false);
     });
   });
 
   describe('POST /api/employees', () => {
-    it('should create employee as ADMIN_HR', async () => {
-      const adminHr = await createTestUser('ADMIN_HR');
+    it('should create employee as SUPERADMIN', async () => {
+      const adminHr = await createTestUser('SUPERADMIN');
       testUserIds.push(adminHr.id);
 
       const request = createMockRequest('POST', 'http://localhost:3000/api/employees', {
@@ -132,7 +131,7 @@ describe('Employees API', () => {
       }
     });
 
-    it('should create employee account with selected access role and placement', async () => {
+    it('should create employee account with selected production access role and placement', async () => {
       const superadmin = await createTestUser('SUPERADMIN');
       testUserIds.push(superadmin.id);
       const unique = Date.now().toString(36);
@@ -140,14 +139,14 @@ describe('Employees API', () => {
       const request = createMockRequest('POST', 'http://localhost:3000/api/employees', {
         token: superadmin.token,
         body: {
-          email: `leader-expedition-${unique}@test.com`,
-          username: `leaderexpedition${unique}`,
+          email: `operator-expedition-${unique}@test.com`,
+          username: `operatorexpedition${unique}`,
           password: 'password123',
-          fullName: 'Leader Expedition',
+          fullName: 'Operator Expedition',
           phone: '081234567891',
           division: 'Expedition',
-          position: 'Leader',
-          role: 'SUPERVISOR',
+          position: 'Operator',
+          role: 'EMPLOYEE',
         },
       });
 
@@ -157,7 +156,7 @@ describe('Employees API', () => {
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.data.division).toBe('Expedition');
-      expect(data.data.position).toBe('Leader');
+      expect(data.data.position).toBe('Operator');
 
       const [createdUser] = await db
         .select({ role: users.role })
@@ -165,7 +164,7 @@ describe('Employees API', () => {
         .where(eq(users.id, data.data.userId))
         .limit(1);
 
-      expect(createdUser.role).toBe('SUPERVISOR');
+      expect(createdUser.role).toBe('EMPLOYEE');
 
       if (data.data.id) {
         testEmployeeIds.push(data.data.id);
@@ -222,7 +221,7 @@ describe('Employees API', () => {
     });
 
     it('should fail with duplicate email', async () => {
-      const adminHr = await createTestUser('ADMIN_HR');
+      const adminHr = await createTestUser('SUPERADMIN');
       testUserIds.push(adminHr.id);
 
       const existingUser = await createTestUser('EMPLOYEE', {

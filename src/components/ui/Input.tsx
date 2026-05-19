@@ -52,9 +52,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           </label>
         )}
         
-        <div className="relative">
+        <div className="relative flex min-w-0 items-center">
           {resolvedLeftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
+            <div className="pointer-events-none absolute left-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[var(--text-muted)] [&>svg]:h-5 [&>svg]:w-5 [&>svg]:shrink-0">
               {resolvedLeftIcon}
             </div>
           )}
@@ -67,7 +67,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             aria-invalid={hasError ? 'true' : undefined}
             aria-describedby={[errorId, helperId].filter(Boolean).join(' ') || undefined}
             className={`
-              w-full px-4 py-3 text-sm font-medium
+              min-h-[44px] w-full min-w-0 px-4 py-2.5 text-sm font-medium sm:min-h-[48px]
               bg-[var(--bg-input)] text-[var(--text-primary)]
               border-2 rounded-xl
               transition-all duration-200
@@ -78,7 +78,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 ? 'border-[var(--danger)] focus:border-[var(--danger)] focus:ring-red-100' 
                 : 'border-[var(--border-color)] focus:border-[var(--primary)] focus:ring-[var(--primary-light)]'
               }
-              ${resolvedLeftIcon ? 'pl-10' : ''}
+              ${resolvedLeftIcon ? 'pl-11' : ''}
               ${resolvedRightIcon || hasError ? 'pr-10' : ''}
               ${className}
             `}
@@ -86,7 +86,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           />
           
           {resolvedRightIcon && !hasError && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
+            <div className="pointer-events-none absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[var(--text-muted)] [&>svg]:h-5 [&>svg]:w-5 [&>svg]:shrink-0">
               {resolvedRightIcon}
             </div>
           )}

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     
-    if (!['SUPERADMIN', 'ADMIN_HR'].includes(user.role)) {
+    if (!['SUPERADMIN'].includes(user.role)) {
       return forbiddenResponse('You do not have permission to view payroll periods');
     }
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     
-    if (!['SUPERADMIN', 'ADMIN_HR'].includes(user.role)) {
+    if (!['SUPERADMIN'].includes(user.role)) {
       return forbiddenResponse('You do not have permission to create payroll periods');
     }
 

@@ -47,8 +47,8 @@ export async function POST(request: NextRequest) {
       return unauthorizedResponse();
     }
 
-    // Only ADMIN_HR and SUPERADMIN can create announcements
-    if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
+    // Only SUPERADMIN can create announcements
+    if (user.role !== 'SUPERADMIN') {
       return forbiddenResponse();
     }
 

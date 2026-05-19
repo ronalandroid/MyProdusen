@@ -4,7 +4,7 @@
  *
  * - When `validation.decision === 'pending'` we register an OUTSIDE_GEOFENCE
  *   exception so admins see the entry on the existing review screen.
- * - We notify Admin HR + Superadmin users so the page does not need to be
+ * - We notify Superadmin users so the page does not need to be
  *   polled.
  * - Every branch writes a structured audit log entry so the original GPS
  *   evidence is preserved.
@@ -141,13 +141,13 @@ async function notifyAdminsForPendingGeo(payload: {
   const targets = adminUsers.filter(() => true);
   if (!targets.length) return;
 
-  // Only notify SUPERADMIN + ADMIN_HR roles. Re-query with role filter.
+  // Only notify SUPERADMIN roles. Re-query with role filter.
   const roleTargets = await db
     .select({ id: users.id, role: users.role })
     .from(users)
     .where(eq(users.isActive, true));
 
-  const filtered = roleTargets.filter((row) => row.role === 'SUPERADMIN' || row.role === 'ADMIN_HR');
+  const filtered = roleTargets.filter((row) => row.role === 'SUPERADMIN' );
   if (!filtered.length) return;
 
   await db.insert(notifications).values(

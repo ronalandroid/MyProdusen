@@ -1,5 +1,8 @@
 # SOP Superadmin — MyProdusen
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 Panduan ini untuk pengguna dengan role Superadmin. Superadmin punya akses penuh dan wajib berhati-hati karena semua aksi sensitif tercatat di audit log.
 
 ## 1. Login
@@ -36,7 +39,7 @@ Panduan ini untuk pengguna dengan role Superadmin. Superadmin punya akses penuh 
 
 1. Buka `/dashboard/users`.
 2. Pilih user.
-3. Ubah role sesuai jabatan sistem: Superadmin, Admin HR, Supervisor, atau Employee.
+3. Ubah role sesuai akses produksi: Superadmin atau Employee.
 4. Simpan perubahan.
 5. Verifikasi user hanya melihat menu sesuai role.
 6. Cek audit log role change.

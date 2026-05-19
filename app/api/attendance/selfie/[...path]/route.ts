@@ -91,14 +91,8 @@ export async function GET(
       return forbiddenResponse('Anda tidak memiliki akses melihat selfie absensi ini');
     }
 
-    if (user.role === 'SUPERVISOR') {
-      const supervisor = await employeeService.getEmployeeByUserId(user.userId);
-      if (attendance.employee.supervisorId !== supervisor.id) {
-        return forbiddenResponse('Anda hanya dapat melihat selfie absensi tim Anda');
-      }
-    }
 
-    const allowedRoles = ['EMPLOYEE', 'SUPERVISOR', 'SUPERADMIN', 'ADMIN_HR'];
+    const allowedRoles = ['EMPLOYEE', 'SUPERADMIN'];
     if (!allowedRoles.includes(user.role) && !hasPermission(user.role, 'ATTENDANCE_READ')) {
       return forbiddenResponse('Anda tidak memiliki akses melihat selfie absensi');
     }

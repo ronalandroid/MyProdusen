@@ -43,11 +43,16 @@ export function RealtimeSelfieCamera({
   function stopCamera() {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.srcObject = null;
+    }
     setIsCameraOpen(false);
   }
 
   async function openCamera() {
     setCameraError("");
+    stopCamera();
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError(CAMERA_NOT_SUPPORTED);
@@ -100,7 +105,7 @@ export function RealtimeSelfieCamera({
 
     setIsCapturing(true);
     try {
-      const result = await captureSelfieFromVideo(video);
+      const result = await captureSelfieFromVideo(video, true);
 
       if (result.exceedsHardLimit) {
         setCameraError(SELFIE_TOO_LARGE_HARD);
@@ -125,6 +130,10 @@ export function RealtimeSelfieCamera({
   }
 
   useEffect(() => stopCamera, []);
+
+  useEffect(() => {
+    if (disabled) stopCamera();
+  }, [disabled]);
 
   return (
     <div className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -170,6 +179,7 @@ export function RealtimeSelfieCamera({
               maxHeight: "320px",
               objectFit: "cover",
               display: isCameraOpen ? "block" : "none",
+              transform: "scaleX(-1)",
             }}
           />
         )}

@@ -1,5 +1,8 @@
 # Quick Start
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 Get a working dev environment in five minutes. For deeper setup, read
 [`INSTALLATION.md`](./INSTALLATION.md).
 

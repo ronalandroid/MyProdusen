@@ -1,5 +1,8 @@
 # AGENTS.md — MyProdusen Web App
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 ## 0. Prime Directive
 
 You are working on **MyProdusen Web App** for **Produsen Dimsum Medan**.
@@ -442,14 +445,14 @@ Suggested structure:
 
 ## 10. Auth & RBAC Rules
 
-Required roles:
+Production user-facing roles are locked to exactly two accounts:
 
 ```txt
 Superadmin
-Admin HR
-Supervisor
 Employee / Karyawan
 ```
+
+Legacy `Admin HR` and `Supervisor` references are historical only. Do not use them for new UI/UX, docs, tests, route access, or seed/demo accounts unless product direction is explicitly changed in `/docs/prd.md`.
 
 Backend authorization is mandatory.
 
@@ -463,28 +466,12 @@ Can:
 - manage roles
 - manage employees
 - manage attendance
-- manage KPI
-- manage reports
+- manage work locations and shifts
+- approve/reject attendance exceptions and leave/sick/permission requests
+- manage KPI templates, assignments, scoring, and approvals
+- manage reports and exports
 - manage settings
 - view audit logs
-
-### Admin HR
-
-Can:
-- manage employees
-- manage shifts
-- manage attendance
-- manage leave
-- manage reports
-- manage KPI templates if allowed
-
-### Supervisor
-
-Can:
-- view own team
-- approve team leave
-- input/review team KPI
-- view team attendance
 
 ### Employee
 
@@ -494,13 +481,16 @@ Can:
 - view own attendance
 - view own KPI
 - submit leave/sick/permission
+- view own payroll/slip if enabled
+- view own notifications and profile
 
 Rules:
 1. Employee cannot access other employee data.
-2. Supervisor cannot access other team data.
-3. Admin HR cannot access Superadmin-only settings.
-4. Inactive user cannot login.
-5. All protected APIs must verify permission server-side.
+2. Superadmin is the only operational admin account.
+3. Inactive user cannot login.
+4. All protected APIs must verify permission server-side.
+5. New navigation must expose only Superadmin and Employee experiences.
+6. Legacy roles must be treated as migration/historical data only.
 
 ---
 
@@ -554,7 +544,7 @@ status
 
 Rules:
 
-1. Only Superadmin/Admin HR can manage work locations.
+1. Only Superadmin can manage work locations.
 2. Employee can be assigned to work location.
 3. Backend calculates distance.
 4. Do not trust frontend distance calculation.
@@ -685,7 +675,7 @@ Rules:
 
 1. Employee can create own request.
 2. Request starts as pending.
-3. Supervisor/Admin HR can approve or reject.
+3. Superadmin can approve or reject.
 4. Rejection requires reason.
 5. Approved request affects attendance status.
 6. Overlapping active request is rejected.
@@ -717,7 +707,7 @@ boolean
 Rules:
 
 1. KPI template total weight should be 100.
-2. Supervisor can input/review own team KPI only.
+2. Superadmin can input/review KPI results.
 3. Employee can view own KPI only.
 4. Employee cannot edit own KPI score.
 5. Approved KPI cannot be edited except by authorized role with reason.
@@ -787,7 +777,7 @@ Rules:
 
 1. Export respects filters.
 2. Export respects permissions.
-3. Supervisor exports team data only.
+3. Superadmin exports all permitted data.
 4. Employee exports own data only if allowed.
 5. Export creates audit log.
 
@@ -852,7 +842,7 @@ Rules:
 
 1. User can view own notifications.
 2. User can mark notification as read.
-3. Admin/Superadmin receives important operational alerts.
+3. Superadmin receives important operational alerts.
 4. Notification data is stored in database.
 
 ---
@@ -979,9 +969,9 @@ Required tests:
 ### RBAC
 
 - employee cannot access superadmin dashboard/API
-- supervisor cannot access other team data
+- legacy Supervisor role must not be exposed in production UI
 - inactive user cannot login
-- Admin HR cannot access Superadmin-only settings
+- Legacy Admin HR/Supervisor roles must not be exposed in production UI.
 
 ### KPI
 

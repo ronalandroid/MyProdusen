@@ -1,5 +1,8 @@
 # UI/UX Guide
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 This guide defines the approved mobile-first interface direction for MyProdusen. It complements `prd.md` and does not change product scope, RBAC, attendance rules, storage rules, or the approved stack: Next.js App Router, TypeScript, Drizzle ORM, PostgreSQL, and Tailwind CSS.
 
 ## 1. Design Direction
@@ -78,7 +81,7 @@ Employee mobile bottom navigation should prioritize:
 4. KPI
 5. Profile
 
-Admin and Superadmin navigation should prioritize:
+Superadmin navigation should prioritize:
 
 1. Dashboard
 2. Employees
@@ -129,7 +132,7 @@ Employee dashboard shows:
 - KPI snapshot.
 - Recent notifications.
 
-Admin/Superadmin dashboard shows:
+Superadmin dashboard shows:
 
 - Active employee count.
 - Attendance today.
@@ -181,7 +184,7 @@ Requirements:
 - Overlap validation error shown clearly.
 - Pending, approved, and rejected states use readable status chips.
 - Rejection reason visible to requester.
-- Approval actions only visible to authorized Supervisor, Admin HR, or Superadmin.
+- Approval actions only visible to Superadmin.
 
 ### KPI
 
@@ -233,7 +236,7 @@ Requirements:
 - Summary cards before export actions.
 - CSV export as required baseline.
 - Export action explains scope and creates audit log.
-- Supervisor reports only team data; Employee reports only own data when allowed.
+- Superadmin reports all permitted data; Employee reports only own data when allowed.
 
 ## 6. Attendance Security UX
 
@@ -299,8 +302,6 @@ The mobile bottom navigation must hold ≤ 5 tabs per role.
 | ---- | --------------------------- |
 | EMPLOYEE | Beranda · Kehadiran · Cuti · KPI · Akun |
 | SUPERADMIN | Beranda · Cabang · Approval · Laporan · Akun |
-| ADMIN_HR | Beranda · Kehadiran · Karyawan · Cuti · Akun |
-| SUPERVISOR | Beranda · Kehadiran · Karyawan · Cuti · Akun |
 
 `lib/navigation/role-navigation.ts` holds the policy.
 `getPrimaryNavigationForRole(role)` returns the ≤ 5 tabs for the bottom
@@ -417,10 +418,42 @@ modals are scrollable on small devices.
 
 - Bottom navigation must always expose `Akun` as the account/logout destination.
 - Logout belongs inside `/dashboard/profile` only; do not place random/floating logout actions in mobile nav, page headers, or dashboard cards.
+- Dashboard layout owns the authenticated role and passes it into navigation; sidebar must not refetch profile data.
+- Bottom/side navigation uses `next/link` with prefetch to reduce tap delay and preserve browser navigation semantics.
+- Dashboard content scroll resets on route change so mobile/tablet views do not keep stale scroll position between modules.
+- Icon-looking controls must be real buttons or links with labels; no dead settings/back icons.
+- Realtime attendance camera must stop tracks and clear video source whenever closed, disabled, retaken, or unmounted.
 - Mobile bottom nav priority:
   - Employee: Beranda, Kehadiran, Cuti, KPI, Akun.
-  - Supervisor: Beranda, Kehadiran, Karyawan/Tim, Cuti, Akun.
-  - Admin HR/Superadmin: Dashboard/Beranda, Absensi/Kehadiran, Karyawan, Laporan, Akun.
+  - Superadmin: Beranda, Cabang, Approval, Laporan, Akun.
 - Content must include bottom safe-area padding so fixed bottom nav never covers cards/forms/buttons.
 - Attendance must show GPS readiness and accuracy before check-in/check-out.
 - PWA install banner must be dismissible, accessible, non-blocking, and not repeated for 7 days after dismissal.
+
+## UI/UX Audit Guardrails — 2026-05-19
+
+- Keep dashboard scroll changes instant; do not use global smooth scrolling for route changes because it can feel like mobile nav delay.
+- PWA install banner must fit 360px and high browser zoom; actions stack vertically when needed and banner scrolls within viewport.
+- Profile icon actions must be semantic buttons/links with labels, never decorative dead icons.
+- Logout remains only in Akun/Profile with `Keluar`, confirmation, loading state, and real logout call.
+
+## PWA Install UX — 2026-05-19
+
+- Install banner uses `Install App` primary CTA and `Nanti` secondary action.
+- Banner is dismissible, non-blocking, mobile-friendly, and respects a 7-day dismissal cooldown.
+- Unsupported browsers show manual install guidance: Android Chrome menu ⋮ → Tambahkan ke layar utama; iOS Safari Share → Add to Home Screen.
+
+## UI/UX Patch Note — Buttons, Modals, Attendance
+
+- Action buttons must use icon/text flex with 44px minimum touch target, shrink-safe icons, and non-clipping text.
+- Destructive modal footers must stack actions on mobile and wrap right-aligned on larger screens.
+- Runtime JavaScript errors must never render directly to users; show Indonesian fallback and retry guidance.
+- Attendance CTA must show missing requirements before submit: work location, GPS, selfie.
+- Report export action groups use responsive grid: one column on mobile, two columns on wider screens.
+
+## UI Reference Alignment Patch — 2026-05-19
+
+- Buttons follow reference screen rhythm: rounded, 44px mobile minimum, 48px desktop, 8px icon gap, no clipped label.
+- Pagination uses compact `Prev` / `Hal.` / `Next` controls with readable minimum widths and wrapping for 360px screens.
+- Search inputs reserve a 20px icon slot and keep text min-width safe inside cards.
+- Selfie front-camera preview is mirrored and captured image matches preview.

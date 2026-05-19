@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     const user = await requireAuth(request);
-    if (!['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'].includes(user.role)) {
+    if (!['SUPERADMIN'].includes(user.role)) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
     const { id } = await params;
@@ -28,7 +28,7 @@ export async function PATCH(
 ) {
   try {
     const user = await requireAuth(request);
-    if (!['SUPERADMIN', 'ADMIN_HR'].includes(user.role)) {
+    if (!['SUPERADMIN'].includes(user.role)) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
     const { id } = await params;
@@ -50,7 +50,7 @@ export async function DELETE(
 ) {
   try {
     const user = await requireAuth(request);
-    if (!['SUPERADMIN', 'ADMIN_HR'].includes(user.role)) {
+    if (!['SUPERADMIN'].includes(user.role)) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
     const { id } = await params;

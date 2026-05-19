@@ -29,11 +29,11 @@ function writeChecklist(target: string) {
 
 ## Brand tokens
 
-## EMPLOYEE APP SHELL — \`screens/employee-app-shell.png\`
+## EMPLOYEE APP SHELL — \`screens/employee-full-ui-ux-mobile.png\`
 
-## SUPER ADMIN APP SHELL — \`screens/superadmin-app-shell.png\`
+## SUPER ADMIN APP SHELL — \`screens/super-admin-full-ui-ux-mobile.png\` and \`screens/super-admin-full-ui-ux-desktop.png\`
 
-## EMAILING SYSTEM — \`screens/emailing-system.png\`
+## EMAILING SYSTEM — \`screens/full-ui-ux-emailing-system.png\`
 `,
   );
 }
@@ -53,9 +53,10 @@ function seedHappyPath(workdir: string) {
   writeChecklist(path.join(refsDir, 'design-checklist.md'));
   writeEmailGuide(path.join(refsDir, 'email-style-guide.md'));
   writeFakePng(path.join(refsDir, 'myprodusen-logo.png'));
-  writeFakePng(path.join(screensDir, 'employee-app-shell.png'));
-  writeFakePng(path.join(screensDir, 'superadmin-app-shell.png'));
-  writeFakePng(path.join(screensDir, 'emailing-system.png'));
+  writeFakePng(path.join(screensDir, 'employee-full-ui-ux-mobile.png'));
+  writeFakePng(path.join(screensDir, 'super-admin-full-ui-ux-desktop.png'));
+  writeFakePng(path.join(screensDir, 'super-admin-full-ui-ux-mobile.png'));
+  writeFakePng(path.join(screensDir, 'full-ui-ux-emailing-system.png'));
 }
 
 function runIn(workdir: string) {
@@ -99,10 +100,10 @@ describe('check-references script', () => {
 
   it('errors when a required screen is missing', () => {
     seedHappyPath(workdir);
-    rmSync(path.join(workdir, 'docs', 'references', 'screens', 'employee-app-shell.png'));
+    rmSync(path.join(workdir, 'docs', 'references', 'screens', 'employee-full-ui-ux-mobile.png'));
     const result = runIn(workdir);
     expect(result.status).toBe(1);
-    expect(result.stdout + result.stderr).toContain('employee-app-shell.png');
+    expect(result.stdout + result.stderr).toContain('employee-full-ui-ux-mobile.png');
   });
 
   it('errors when the checklist no longer references all screens', () => {
@@ -113,7 +114,7 @@ describe('check-references script', () => {
     );
     const result = runIn(workdir);
     expect(result.status).toBe(1);
-    expect(result.stdout + result.stderr).toContain('superadmin-app-shell.png');
+    expect(result.stdout + result.stderr).toContain('super-admin-full-ui-ux-desktop.png');
   });
 
   it('warns about extra screens that are not part of the canonical set', () => {

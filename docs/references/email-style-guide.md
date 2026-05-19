@@ -1,5 +1,8 @@
 # MyProdusen Email UI — Style, Tone & Theme Guide
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 Dokumen ini adalah panduan resmi untuk menjaga konsistensi desain email MyProdusen saat AI agent / developer membuat template email seperti register, verifikasi email, lupa password, ubah password, notifikasi cuti, payroll, approval, pengumuman, dan email sistem lainnya.
 
 Tujuan utama: semua email terlihat **clean, profesional, ramah, mudah dibaca, dan tetap sesuai brand MyProdusen**.

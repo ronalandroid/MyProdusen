@@ -152,7 +152,7 @@ export default function Modal({
                   transition-all duration-200
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]
                 "
-                aria-label="Close modal"
+                aria-label="Tutup modal"
               >
                 <X size={24} aria-hidden="true" />
               </button>
@@ -167,8 +167,10 @@ export default function Modal({
 
         {/* Footer */}
         {footer && (
-          <div className="px-6 py-4 border-t border-[var(--border-color)] bg-[var(--bg-hover)]">
-            {footer}
+          <div className="border-t border-[var(--border-color)] bg-[var(--bg-hover)] px-4 py-4 sm:px-6">
+            <div className="modal-footer-actions">
+              {footer}
+            </div>
           </div>
         )}
       </div>

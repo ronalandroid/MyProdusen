@@ -24,10 +24,10 @@ export const GET = withApiHandler(async (request: NextRequest) => {
     search: searchParams.get('search') || undefined,
   };
 
-  if (user.role === 'SUPERVISOR') {
+  if (false) {
     const supervisor = await employeeService.getEmployeeByUserId(user.userId);
     filters.supervisorId = supervisor.id;
-  } else if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
+  } else if (user.role !== 'SUPERADMIN') {
     throw AppError.forbidden('Anda tidak memiliki akses untuk melihat daftar karyawan');
   }
 

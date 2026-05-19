@@ -1,5 +1,8 @@
 # Production Smoke Test — MyProdusen
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 Run this checklist after every production deploy and after every restore drill. Use real HTTPS production URL, real Android phone for attendance, and test accounts with non-sensitive sample data. Do not paste secrets, dumps, or selfie paths into tickets or chat.
 
 ## Preconditions
@@ -10,7 +13,7 @@ Run this checklist after every production deploy and after every restore drill. 
 - PostgreSQL service is connected.
 - Persistent volume `/app/uploads` is mounted and private.
 - Resend sender domain is verified.
-- Test Superadmin, Admin HR, Supervisor, and Employee accounts are available.
+- Test Superadmin, Employee and Superadmin accounts are available.
 - Rollback plan and latest backup location are known.
 
 ## A. Public Pages
@@ -79,7 +82,7 @@ Expected result: no gallery upload path, missing GPS/selfie rejected, backend va
 ## F. Protected Selfie
 
 1. Login as Superadmin and view the test attendance selfie.
-2. Login as Admin HR and view selfie only if role policy allows it.
+2. Login as Superadmin and view selfie through protected endpoint.
 3. Login as employee and view own selfie.
 4. Login as another employee and attempt to view the first employee selfie.
 5. Confirm access is denied.
@@ -94,7 +97,7 @@ Expected result: selfies are served only through protected API routes with `Cach
 1. Login as employee.
 2. Submit leave request.
 3. Submit sick or permission request if relevant to current workflow.
-4. Login as Supervisor or Admin HR.
+4. Login as Superadmin.
 5. Approve one request.
 6. Reject another request with a clear reason.
 7. Confirm rejection without reason is blocked.
@@ -105,10 +108,10 @@ Expected result: leave workflow respects ownership, reason rule, notification, a
 
 ## H. KPI
 
-1. Login as authorized Admin HR or Superadmin.
+1. Login as authorized Superadmin.
 2. Create KPI template with valid weights.
 3. Assign KPI to test employee.
-4. Login as Supervisor or authorized reviewer.
+4. Login as Superadmin reviewer.
 5. Input KPI result.
 6. Approve result.
 7. Login as employee.
@@ -130,7 +133,7 @@ Expected result: KPI workflow works end-to-end and approved result cannot be edi
 9. Confirm unauthorized role cannot export payroll.
 10. Confirm audit log records payroll export, approve, mark paid, and payslip download.
 
-Expected result: payroll data never leaks across employee, supervisor, or unauthorized Admin HR scope.
+Expected result: payroll data never leaks across employee, legacy role, or public scope.
 
 ## J. Reports
 
@@ -224,3 +227,28 @@ Add these checks after redeploy:
 7. Open Kehadiran; confirm GPS status/accuracy card appears before submit.
 8. Confirm check-in/check-out buttons are disabled until GPS and realtime selfie are ready.
 9. Confirm page scroll remains smooth and bottom nav does not cover content.
+
+## Release Blocker Smoke Addendum — 2026-05-19
+
+Before staging UAT / production signoff:
+
+```bash
+npm run e2e:browsers
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+E2E_BASE_URL=https://myprodusen.online npm run e2e:public
+E2E_BASE_URL=https://myprodusen.online \
+E2E_SUPERADMIN_EMAIL="$E2E_SUPERADMIN_EMAIL" \
+E2E_SUPERADMIN_PASSWORD="$E2E_SUPERADMIN_PASSWORD" \
+npm run e2e:staging
+```
+
+Rules:
+
+- Superadmin login smoke runs only on desktop-1440; if rate-limited, wait 15 minutes.
+- `/api/version` must return `200` after redeploy and must not leak secrets.
+- Android GPS+selfie checklist and TestSprite safe smoke must be recorded, or explicitly skipped with reason.
+
+Browser matrix note:
+
+- `npm run e2e:browsers` skips only missing Playwright browser binaries and prints the exact `npx playwright install <browser>` action.
+- Any real browser test failure remains a failed smoke.

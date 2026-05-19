@@ -23,7 +23,7 @@ export default function Button({
   className = '',
   ...props
 }: ButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-4 active:scale-[0.98]';
+  const baseStyles = 'inline-flex max-w-full items-center justify-center font-semibold leading-tight rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-4 active:scale-[0.98]';
   
   const variantStyles = {
     primary: 'bg-[var(--primary)] text-[var(--text-primary)] hover:bg-[var(--primary-hover)] focus-visible:ring-[var(--primary-light)] shadow-sm hover:shadow-md',
@@ -56,15 +56,15 @@ export default function Button({
     >
       {loading ? (
         <>
-          <Loader2 size={iconSize[size]} className="animate-spin" aria-hidden="true" />
-          <span>{children}</span>
+          <Loader2 size={iconSize[size]} className="shrink-0 animate-spin" aria-hidden="true" />
+          <span className="min-w-0 text-center">{children}</span>
         </>
       ) : (
         <>
           {icon && iconPosition === 'left' && (
             <span className="flex-shrink-0" aria-hidden="true">{icon}</span>
           )}
-          <span>{children}</span>
+          <span className="min-w-0 text-center">{children}</span>
           {icon && iconPosition === 'right' && (
             <span className="flex-shrink-0" aria-hidden="true">{icon}</span>
           )}

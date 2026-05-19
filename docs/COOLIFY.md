@@ -1,5 +1,8 @@
 # Coolify Deployment
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 > Coolify-specific configuration. For the broader runbook (env, backup,
 > restore, performance smoke test), read [`DEPLOYMENT.md`](./DEPLOYMENT.md).
 
@@ -146,7 +149,7 @@ Langkah wajib:
    - `NEXT_PUBLIC_APP_VERSION=<release-name>`
    - `GIT_COMMIT_SHA=<git-sha>`
    - `BUILD_TIME=<ISO-8601-build-time>`
-7. Setelah deploy, buka `https://myprodusen.online/api/health` dan cocokkan `app.commit` dengan commit yang baru dideploy.
+7. Setelah deploy, buka `https://myprodusen.online/api/health` dan `https://myprodusen.online/api/version`, lalu cocokkan `app.commit` / `gitCommitSha` dengan commit yang baru dideploy.
 8. Jalankan route verifier dari lokal:
 
 ```bash
@@ -156,6 +159,7 @@ BASE_URL=https://myprodusen.online npm run verify:live-routes
 Expected:
 
 - `GET /api/health` status `200` dan body `status: ok`.
+- `GET /api/version` status `200`, metadata aman, dan tanpa secret.
 - `POST /api/reports/pdf` tanpa login status `401` atau `403`.
 - `POST /api/reports/pdf` tidak boleh `404`.
 
@@ -177,6 +181,7 @@ BASE_URL=https://myprodusen.online npm run verify:live-routes
 Expected result:
 
 - `GET /api/health`: `200`.
+- `GET /api/version`: `200`, safe metadata only.
 - `POST /api/reports/pdf` unauthenticated: `401` or `403`.
 - If `/api/reports/pdf` returns `404`, Coolify is likely serving a stale image/commit. Rebuild image with no cache and verify the branch/commit used by Coolify.
 - Set `APP_VERSION`, `GIT_COMMIT_SHA`, and `BUILD_TIME` so `/api/health` can prove the deployed version.

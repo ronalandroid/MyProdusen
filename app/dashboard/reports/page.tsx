@@ -281,13 +281,13 @@ export default function ReportsPage() {
               <p className="text-2xl font-bold text-[var(--primary)]">{attendanceSummary?.totalRecords ? Math.round(((attendanceSummary.totalPresent || 0) / attendanceSummary.totalRecords) * 100) : 0}%</p>
             </div>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Button variant="secondary" onClick={() => handleExport('csv')} fullWidth>
-              <Download size={16} className="mr-2" />
+              <Download size={16} className="shrink-0" aria-hidden="true" />
               Export CSV
             </Button>
             <Button variant="secondary" onClick={() => handleExport('pdf')} fullWidth>
-              <Download size={16} className="mr-2" />
+              <Download size={16} className="shrink-0" aria-hidden="true" />
               Export PDF
             </Button>
           </div>
@@ -316,13 +316,13 @@ export default function ReportsPage() {
               <p className="text-2xl font-bold text-[var(--danger)]">RBAC</p>
             </div>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Button variant="secondary" onClick={() => handleExport('csv')} fullWidth>
-              <Download size={16} className="mr-2" />
+              <Download size={16} className="shrink-0" aria-hidden="true" />
               Export CSV
             </Button>
             <Button variant="secondary" onClick={() => handleExport('pdf')} fullWidth>
-              <Download size={16} className="mr-2" />
+              <Download size={16} className="shrink-0" aria-hidden="true" />
               Export PDF
             </Button>
           </div>
@@ -347,13 +347,13 @@ export default function ReportsPage() {
               <p className="text-2xl font-bold text-[var(--primary)]">PDF</p>
             </div>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Button variant="secondary" onClick={() => handleExport('csv')} fullWidth>
-              <Download size={16} className="mr-2" />
+              <Download size={16} className="shrink-0" aria-hidden="true" />
               Export CSV
             </Button>
             <Button variant="secondary" onClick={() => handleExport('pdf')} fullWidth>
-              <Download size={16} className="mr-2" />
+              <Download size={16} className="shrink-0" aria-hidden="true" />
               Export PDF
             </Button>
           </div>

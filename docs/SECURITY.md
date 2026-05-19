@@ -1,5 +1,8 @@
 # Security
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 > Highest priority: protect employee data. RBAC is enforced server-side.
 > Frontend hiding is UX, not security.
 
@@ -19,8 +22,6 @@
 | Role        | Access |
 | ----------- | ------ |
 | Superadmin  | Full access. Role management, audit log read, system settings. |
-| Admin HR    | Employee / shift / location / leave / attendance / KPI operational data. Cannot create or promote Superadmin. |
-| Supervisor  | Read + approve only for direct reports. KPI input for own team. |
 | Employee    | Own data only. Submit attendance / leave / corrections. |
 
 Inactive users cannot log in. Disabled accounts lose access on the next auth
@@ -29,7 +30,7 @@ revalidation.
 System `role` controls access only. Operational labels such as HR, Admin,
 Leader, Expedition, Driver, or Staff belong in employee `division` and
 `position`, not in the RBAC role list. Superadmin may assign any role when
-creating a new employee account. Admin HR may create lower-ranked accounts
+creating a new employee account. Superadmin manages all production accounts
 only; attempts to create or promote Superadmin are blocked server-side.
 
 ## Auth email delivery
@@ -56,10 +57,10 @@ Authentication email uses Resend through `lib/email.ts`.
 - Server computes Haversine distance vs `WorkLocation.radius`.
 - `REJECT_OUTSIDE_GEOFENCE=true` (default) blocks outside-radius submissions.
   `false` enqueues them as `OUTSIDE_GEOFENCE` exceptions and notifies
-  ADMIN_HR + SUPERADMIN.
+  SUPERADMIN.
 - Admin approval flips `check_in_geo_status` to `APPROVED_MANUAL`. Rejection
   flips it to `REJECTED`. Both notify the affected employee.
-- Manual attendance adjustment requires Admin HR or Superadmin and a reason
+- Manual attendance adjustment requires Superadmin and a reason
   ≥ 5 characters.
 
 ## Selfie file access
@@ -71,8 +72,7 @@ Authentication email uses Resend through `lib/email.ts`.
   - `GET /api/attendances/:id/selfie/check-in`
   - `GET /api/attendances/:id/selfie/check-out`
   - Legacy: `GET /api/attendance/selfie/[...path]` (still backward-compatible).
-- RBAC: Employee → own only; Supervisor → team only; ADMIN_HR /
-  SUPERADMIN → all.
+- RBAC: Employee → own only; Superadmin → all. Legacy `ADMIN_HR` and `SUPERVISOR` are historical only and must not be exposed in production UI.
 - Path traversal blocked: attendance ID validated by `^[A-Za-z0-9_-]+$`,
   storage path resolver re-checks containment under `UPLOAD_DIR`.
 - Stored selfie path strings are sanitised; backslashes, leading slashes,
@@ -118,7 +118,7 @@ Triggered by:
 
 - Leave approval / rejection.
 - KPI approval.
-- Pending geo-fence attendance (notifies ADMIN_HR + SUPERADMIN).
+- Pending geo-fence attendance (notifies SUPERADMIN).
 - Geo approve / reject (notifies the employee).
 
 
@@ -126,11 +126,11 @@ Triggered by:
 
 - Upload volume `/app/uploads` must remain private and must not be mapped as public static storage.
 - Attendance selfies are served only through protected API endpoints with ownership/RBAC checks.
-- Payroll endpoints must enforce employee-own access, Superadmin full access, and Admin HR permission policy server-side.
+- Payroll endpoints must enforce employee-own access and Superadmin full access server-side.
 - PDF report page and API remain Superadmin-only; non-Superadmin access must be tested after deploy.
 - Secrets live only in Coolify/password manager: never commit `.env`, database dumps, upload archives, Resend keys, JWT secrets, or payroll exports.
 - Protected API responses for selfies, PDF reports, payroll exports, and health checks must use private/no-store cache where sensitive.
-- Production smoke test must verify unauthorized employee-to-employee, supervisor-outside-team, Admin HR Superadmin-only, and public upload access denial.
+- Production smoke test must verify unauthorized employee-to-employee, legacy-role, and public upload access denial.
 
 ## Hardening checklist
 
@@ -149,7 +149,7 @@ which posts the token to `/api/auth/activate`; the backend verifies JWT purpose
 
 Superadmin can review registered users at `/dashboard/users`, see active vs
 pending accounts, manually activate/deactivate accounts, and assign access role
-(`Employee`, `Supervisor`, `Admin HR`, `Superadmin`). Employee placement details
+(`Employee`, `Superadmin`). Employee placement details
 such as division, position, supervisor, shift, and location remain managed in the
 employee module.
 
@@ -159,3 +159,9 @@ employee module.
 - PWA install prompt must rely on browser `beforeinstallprompt`; web apps cannot silently install themselves.
 - Logout action must call `/api/auth/logout` and clear the httpOnly session cookie before redirecting to `/login`.
 - Attendance frontend may show GPS proof, but backend remains the source of truth for GPS accuracy, timestamp age, Haversine distance, geofence decision, selfie validation, and audit logging.
+
+## Safe Build Metadata Endpoint
+
+- `/api/version` is public but must only expose safe operational metadata: app name, status, node env, app version, git commit SHA, and build time.
+- Never expose secrets, database URLs, email provider keys, passwords, upload paths, selfie paths, or private file names from health/version endpoints.
+- Use `/api/health` for health status and `/api/version` for deploy traceability after Coolify redeploy.

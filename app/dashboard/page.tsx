@@ -109,8 +109,8 @@ export default function DashboardPage() {
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? "Selamat Pagi" : currentHour < 18 ? "Selamat Siang" : "Selamat Malam";
   const roleExperience = getRoleExperience(stats.role);
-  const canOpenPayroll = stats.role === "SUPERADMIN" || stats.role === "ADMIN_HR";
-  const canOpenReports = stats.role === "SUPERADMIN" || stats.role === "ADMIN_HR" || stats.role === "SUPERVISOR";
+  const canOpenPayroll = stats.role === "SUPERADMIN";
+  const canOpenReports = stats.role === "SUPERADMIN";
   const actionCards = buildDashboardActions(stats.role, {
     pendingLeaves: stats.pendingLeave,
     pendingKpiApprovals: stats.pendingKpiApprovals,

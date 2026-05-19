@@ -14,7 +14,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const user = await requireAuth(request);
     const { id } = await params;
     
-    if (!['SUPERADMIN', 'ADMIN_HR'].includes(user.role)) {
+    if (!['SUPERADMIN'].includes(user.role)) {
       return forbiddenResponse('You do not have permission to lock payroll periods');
     }
 

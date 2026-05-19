@@ -70,12 +70,7 @@ export async function loadAttendanceSelfie(
     if (row.employee.userId !== viewer.userId) {
       return { ok: false, status: 403, error: 'Anda tidak memiliki akses melihat selfie absensi ini' };
     }
-  } else if (viewer.role === 'SUPERVISOR') {
-    const supervisor = await employeeService.getEmployeeByUserId(viewer.userId).catch(() => null);
-    if (!supervisor || row.employee.supervisorId !== supervisor.id) {
-      return { ok: false, status: 403, error: 'Anda hanya dapat melihat selfie absensi tim Anda' };
-    }
-  } else if (!['SUPERADMIN', 'ADMIN_HR'].includes(viewer.role)) {
+  } else if (!['SUPERADMIN'].includes(viewer.role)) {
     if (!hasPermission(viewer.role, 'ATTENDANCE_READ')) {
       return { ok: false, status: 403, error: 'Anda tidak memiliki akses melihat selfie absensi' };
     }

@@ -16,7 +16,7 @@ describe('RBAC Authorization', () => {
     testUserIds.length = 0;
   });
 
-  it('should allow supervisor to see own team member', async () => {
+  it('should deny legacy supervisor from seeing own team member', async () => {
     const supervisor = await createTestUser('SUPERVISOR');
     testUserIds.push(supervisor.id);
     const supervisorEmployeeId = await createTestEmployee(supervisor.id);
@@ -36,9 +36,8 @@ describe('RBAC Authorization', () => {
     const response = await employeeGET(request as any, { params: Promise.resolve({ id: teamMemberEmployeeId }) });
     const data = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data.data.id).toBe(teamMemberEmployeeId);
+    expect(response.status).toBe(403);
+    expect(data.success).toBe(false);
   });
 
   it('should block supervisor from seeing other teams', async () => {

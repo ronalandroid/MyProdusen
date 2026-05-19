@@ -46,13 +46,13 @@ describe('payroll access policy', () => {
     expect(() => assertPayrollAccess('SUPERADMIN', 'approve')).not.toThrow();
   });
 
-  it('allows Admin HR operational payroll but not final approval/payment', () => {
+  it('blocks legacy Admin HR payroll access', () => {
     process.env.PAYROLL_MODULE_ENABLED = 'true';
     process.env.PAYROLL_MUTATION_ENABLED = 'true';
 
-    expect(canAccessPayroll('ADMIN_HR', 'read')).toBe(true);
-    expect(canAccessPayroll('ADMIN_HR', 'mutate')).toBe(true);
-    expect(canAccessPayroll('ADMIN_HR', 'export')).toBe(true);
+    expect(canAccessPayroll('ADMIN_HR', 'read')).toBe(false);
+    expect(canAccessPayroll('ADMIN_HR', 'mutate')).toBe(false);
+    expect(canAccessPayroll('ADMIN_HR', 'export')).toBe(false);
     expect(canAccessPayroll('ADMIN_HR', 'approve')).toBe(false);
     expect(canAccessPayroll('ADMIN_HR', 'pay')).toBe(false);
   });

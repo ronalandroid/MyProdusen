@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 const updateUserSchema = z.object({
   userId: z.string().min(1, 'User wajib dipilih'),
-  role: z.enum(['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE']).optional(),
+  role: z.enum(['SUPERADMIN', 'EMPLOYEE']).optional(),
   isActive: z.boolean().optional(),
 }).refine((data) => data.role || typeof data.isActive === 'boolean', {
   message: 'Role atau status aktif wajib diisi',

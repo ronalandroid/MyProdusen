@@ -7,13 +7,13 @@ import { employeeService } from '@/services/employees/employee.service';
 import { logAudit } from '@/lib/audit';
 
 async function canAccessLeave(user: Awaited<ReturnType<typeof requireAuth>>, employeeId: string) {
-  if (user.role === 'SUPERADMIN' || user.role === 'ADMIN_HR') {
+  if (user.role === 'SUPERADMIN') {
     return true;
   }
 
   const currentEmployee = await employeeService.getEmployeeByUserId(user.userId);
 
-  if (user.role === 'SUPERVISOR') {
+  if (false) {
     const targetEmployee = await employeeService.getEmployeeById(employeeId);
     return targetEmployee.supervisorId === currentEmployee.id || targetEmployee.id === currentEmployee.id;
   }

@@ -1,13 +1,16 @@
 # Troubleshooting — MyProdusen
 
-Panduan ini membantu pengguna dan Admin HR menangani masalah umum. Jika masalah menyangkut data sensitif, payroll, selfie, atau akses role, jangan kirim data pribadi ke grup umum.
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
+Panduan ini membantu pengguna dan Superadmin menangani masalah umum. Jika masalah menyangkut data sensitif, payroll, selfie, atau akses role, jangan kirim data pribadi ke grup umum.
 
 ## Tidak Bisa Login
 
 1. Pastikan email/username benar.
 2. Pastikan password benar.
 3. Cek apakah akun sudah aktif.
-4. Jika akun inactive, hubungi Admin HR atau Superadmin.
+4. Jika akun inactive, hubungi Superadmin.
 5. Jika lupa password, gunakan `/forgot-password`.
 
 ## Activation Email Tidak Diterima
@@ -15,7 +18,7 @@ Panduan ini membantu pengguna dan Admin HR menangani masalah umum. Jika masalah 
 1. Cek folder spam atau promotions.
 2. Pastikan email yang dipakai saat register benar.
 3. Klik resend activation jika tersedia.
-4. Jika tetap tidak masuk, Admin HR/Superadmin cek Resend dan status user.
+4. Jika tetap tidak masuk, Superadmin cek Resend dan status user.
 
 ## Forgot Password Email Tidak Diterima
 
@@ -23,7 +26,7 @@ Panduan ini membantu pengguna dan Admin HR menangani masalah umum. Jika masalah 
 2. Cek folder spam.
 3. Tunggu beberapa menit.
 4. Minta link ulang dari `/forgot-password`.
-5. Jika tetap gagal, hubungi Admin HR/Superadmin.
+5. Jika tetap gagal, hubungi Superadmin.
 
 ## GPS Denied
 
@@ -63,20 +66,20 @@ Panduan ini membantu pengguna dan Admin HR menangani masalah umum. Jika masalah 
 2. Pastikan GPS akurat.
 3. Coba ulang setelah lokasi stabil.
 4. Jika sedang tugas luar, ikuti aturan perusahaan dan ajukan ke HR.
-5. Admin HR/Superadmin review exception sesuai kebijakan.
+5. Superadmin review exception sesuai kebijakan.
 
 ## Check-In Already Exists
 
 1. Karyawan hanya bisa check-in sekali per hari.
 2. Buka attendance history untuk melihat check-in hari ini.
-3. Jika data salah, ajukan koreksi ke Admin HR dengan alasan.
+3. Jika data salah, ajukan koreksi ke Superadmin dengan alasan.
 
 ## Cannot Checkout
 
 1. Pastikan sudah check-in hari itu.
 2. Pastikan belum check-out sebelumnya.
 3. Pastikan GPS dan kamera aktif.
-4. Jika tetap gagal, hubungi Admin HR.
+4. Jika tetap gagal, hubungi Superadmin.
 
 ## Payroll Tidak Terlihat
 
@@ -96,7 +99,7 @@ Panduan ini membantu pengguna dan Admin HR menangani masalah umum. Jika masalah 
 
 1. PDF report hanya untuk Superadmin.
 2. Login ulang sebagai Superadmin jika memang berwenang.
-3. Jika Admin HR butuh data, gunakan CSV report yang diizinkan atau minta Superadmin.
+3. Jika Superadmin butuh data, gunakan CSV report yang diizinkan atau minta Superadmin.
 
 ## Permission Denied
 

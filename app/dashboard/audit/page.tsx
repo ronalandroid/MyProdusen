@@ -209,10 +209,11 @@ export default function AuditPage() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-[var(--text-muted)]">Halaman {page}. Filter diproses server-side dan dibatasi {PAGE_SIZE} baris per halaman.</p>
-        <div className="flex gap-2">
-          <button type="button" className="btn btn-secondary btn-sm" disabled={page === 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))}>Sebelumnya</button>
-          <button type="button" className="btn btn-primary btn-sm" disabled={!hasNextPage || loading} onClick={() => setPage((current) => current + 1)}>Berikutnya</button>
-        </div>
+        <nav className="pagination-compact" aria-label="Navigasi halaman audit">
+          <button type="button" className="pagination-button" disabled={page === 1 || loading} onClick={() => setPage((current) => Math.max(1, current - 1))}>Prev</button>
+          <span className="pagination-info">Hal. {page}</span>
+          <button type="button" className="pagination-button" disabled={!hasNextPage || loading} onClick={() => setPage((current) => current + 1)}>Next</button>
+        </nav>
       </div>
     </div>
   );

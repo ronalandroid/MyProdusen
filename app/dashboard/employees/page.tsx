@@ -24,13 +24,11 @@ interface Employee {
 
 const accessRoleOptions = [
   { value: "EMPLOYEE", label: "Karyawan", description: "Akses pribadi: absensi, cuti, KPI sendiri" },
-  { value: "SUPERVISOR", label: "Leader / Supervisor", description: "Akses tim: approval cuti, KPI tim, data bawahan" },
-  { value: "ADMIN_HR", label: "Admin HR", description: "Akses HR: karyawan, absensi, cuti, laporan HR" },
   { value: "SUPERADMIN", label: "Superadmin", description: "Akses penuh owner/superadmin" },
 ] as const;
 
 const divisionOptions = ["HR", "Produksi", "Packing", "Sales", "Expedition", "Finance", "Operational"];
-const positionOptions = ["Admin", "Leader", "Staff", "Driver", "Manager", "Supervisor"];
+const positionOptions = ["Admin", "Leader", "Staff", "Driver", "Manager", "Operator"];
 
 export default function EmployeesPage() {
   const router = useRouter();
@@ -436,16 +434,22 @@ export default function EmployeesPage() {
             <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)}>
               Batal
             </Button>
-            <Button variant="danger" onClick={handleDelete} loading={submitting}>
+            <Button variant="danger" onClick={handleDelete} loading={submitting} disabled={!selectedEmployee || submitting}>
               Hapus
             </Button>
           </>
         }
       >
-        <p className="text-sm text-[var(--text-secondary)]">
-          Apakah Anda yakin ingin menghapus karyawan <strong>{selectedEmployee?.fullName}</strong>?
-          Tindakan ini tidak dapat dibatalkan.
-        </p>
+        {selectedEmployee ? (
+          <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+            Apakah Anda yakin ingin menghapus karyawan <strong>{selectedEmployee.fullName}</strong>?
+            Tindakan ini tidak dapat dibatalkan.
+          </p>
+        ) : (
+          <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+            Data karyawan tidak tersedia. Tutup dialog lalu pilih karyawan kembali.
+          </p>
+        )}
       </Modal>
     </div>
   );

@@ -1,5 +1,8 @@
 # Testing Guide
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 MyProdusen uses **Vitest** for unit, integration, and database-constraint
 tests. The canonical pre-deploy gate is `npm run release:check`.
 
@@ -49,7 +52,7 @@ tests/
   timestamps, inactive locations, reject vs pending behaviour.
 - **Selfie storage**: structured key path, MIME signature, oversized rejection,
   traversal-safe storage path resolver, base64-never-in-DB.
-- **Protected selfie access**: owner allowed, peer denied, ADMIN_HR allowed,
+- **Protected selfie access**: owner allowed, peer denied, SUPERADMIN allowed,
   unauthenticated 401, unknown ID 404, traversal 404.
 - **Attendance reports**: RBAC scoping (self/team/all), filter parity with
   CSV, format=csv requires date range, audit log entry on export, row cap

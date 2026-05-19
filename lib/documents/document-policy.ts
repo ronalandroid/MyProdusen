@@ -16,7 +16,7 @@ export function canAccessEmployeeDocument(input: {
   userEmployeeId?: string;
   targetEmployeeId: string;
 }): boolean {
-  if (input.role === 'SUPERADMIN' || input.role === 'ADMIN_HR') {
+  if (input.role === 'SUPERADMIN' ) {
     return true;
   }
 

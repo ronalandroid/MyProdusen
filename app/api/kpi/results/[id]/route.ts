@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth(request);
-    if (!['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'].includes(user.role)) {
+    if (!['SUPERADMIN'].includes(user.role)) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
     const { id } = await params;

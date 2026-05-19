@@ -1,5 +1,8 @@
 # Operations Runbook — MyProdusen
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 Runbook ini dipakai untuk operasional harian, mingguan, dan bulanan setelah MyProdusen live.
 
 ## Daily Checks
@@ -31,7 +34,7 @@ Runbook ini dipakai untuk operasional harian, mingguan, dan bulanan setelah MyPr
 - [ ] Review data employee aktif/nonaktif.
 - [ ] Review backup retention.
 - [ ] Jalankan restore drill jika masuk jadwal kuartalan.
-- [ ] Review akses role Admin HR dan Supervisor.
+- [ ] Review akses role produksi Superadmin dan Employee.
 
 ## Backup Check
 
@@ -109,7 +112,7 @@ Runbook ini dipakai untuk operasional harian, mingguan, dan bulanan setelah MyPr
 
 ## Escalation
 
-- Masalah user biasa: Admin HR.
+- Masalah user biasa: Superadmin.
 - Masalah role/access: Superadmin.
 - Masalah attendance/payroll sensitif: HR lead + Superadmin.
 - Masalah deploy/database/storage: Technical PIC.

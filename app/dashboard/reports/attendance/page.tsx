@@ -131,7 +131,7 @@ export default function AttendanceReportPage() {
   const [missingCheckoutOnly, setMissingCheckoutOnly] = useState(false);
 
   const [page, setPage] = useState(1);
-  const pageSize = 25;
+  const pageSize = 10;
 
   const [report, setReport] = useState<ReportPage | null>(null);
   const [summary, setSummary] = useState<ReportSummary | null>(null);
@@ -299,13 +299,22 @@ export default function AttendanceReportPage() {
           <ArrowLeft size={24} aria-hidden="true" />
           <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Laporan Kehadiran</h1>
         </button>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-          <Button variant="secondary" onClick={() => loadReport()} disabled={isLoading}>
-            <RefreshCw size={16} className="mr-2" />
+        <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
+          <Button
+            variant="secondary"
+            onClick={() => loadReport()}
+            disabled={isLoading}
+            fullWidth
+            icon={<RefreshCw size={16} aria-hidden="true" />}
+          >
             Muat Ulang
           </Button>
-          <Button onClick={handleExport} disabled={isExporting || isLoading}>
-            <Download size={16} className="mr-2" />
+          <Button
+            onClick={handleExport}
+            disabled={isExporting || isLoading}
+            fullWidth
+            icon={<Download size={16} aria-hidden="true" />}
+          >
             {isExporting ? "Mengekspor..." : "Export CSV"}
           </Button>
         </div>
@@ -369,12 +378,12 @@ export default function AttendanceReportPage() {
             Belum check-out
           </label>
         </div>
-        <div className="flex justify-end mt-3">
-          <Button variant="secondary" onClick={resetFilters}>Reset filter</Button>
+        <div className="mt-3 grid grid-cols-1 sm:flex sm:justify-end">
+          <Button variant="secondary" onClick={resetFilters} fullWidth className="sm:w-auto sm:min-w-[120px]">Reset filter</Button>
         </div>
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px" }}>
+      <section className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 gap-3">
         <SummaryCard label="Total catatan" value={summary?.totalRecords ?? 0} loading={isLoading} />
         <SummaryCard label="Hadir" value={summary?.totalPresent ?? 0} accent="var(--success)" loading={isLoading} />
         <SummaryCard label="Terlambat" value={summary?.totalLate ?? 0} accent="var(--warning)" loading={isLoading} />
@@ -387,8 +396,8 @@ export default function AttendanceReportPage() {
       </section>
 
       <section className="card" style={{ padding: 0, overflow: "hidden" }}>
-        <div style={{ overflowX: "auto" }}>
-          <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+        <div className="w-full overflow-x-auto">
+          <table className="min-w-full text-sm" style={{ borderCollapse: "collapse" }}>
             <thead style={{ background: "var(--bg-secondary)" }}>
               <tr>
                 <Th>Tanggal</Th>
@@ -453,11 +462,11 @@ export default function AttendanceReportPage() {
             <span className="text-xs text-[var(--text-secondary)]">
               Menampilkan {(report.page - 1) * report.pageSize + 1}–{Math.min(report.page * report.pageSize, report.total)} dari {report.total}
             </span>
-            <div className="flex gap-2">
-              <Button variant="secondary" disabled={report.page <= 1 || isLoading} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
-              <span className="text-xs self-center">Hal. {report.page} / {totalPages}</span>
-              <Button variant="secondary" disabled={report.page >= totalPages || isLoading} onClick={() => setPage((p) => p + 1)}>Next</Button>
-            </div>
+            <nav className="pagination-compact" aria-label="Navigasi halaman laporan kehadiran">
+              <button type="button" className="pagination-button" disabled={report.page <= 1 || isLoading} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</button>
+              <span className="pagination-info">Hal. {report.page} / {totalPages}</span>
+              <button type="button" className="pagination-button" disabled={report.page >= totalPages || isLoading} onClick={() => setPage((p) => p + 1)}>Next</button>
+            </nav>
           </div>
         )}
       </section>
@@ -481,7 +490,7 @@ function Th({ children }: { children: React.ReactNode }) {
     <th
       style={{
         textAlign: "left",
-        padding: "10px 12px",
+        padding: "12px 16px",
         fontSize: "12px",
         fontWeight: 700,
         color: "var(--text-secondary)",
@@ -495,7 +504,7 @@ function Th({ children }: { children: React.ReactNode }) {
 
 function Td({ children }: { children: React.ReactNode }) {
   return (
-    <td style={{ padding: "10px 12px", fontSize: "12px", whiteSpace: "nowrap" }}>{children}</td>
+    <td style={{ padding: "12px 16px", fontSize: "12px", whiteSpace: "nowrap" }}>{children}</td>
   );
 }
 

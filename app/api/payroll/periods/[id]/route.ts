@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const user = await requireAuth(request);
     const { id } = await params;
     
-    if (!['SUPERADMIN', 'ADMIN_HR'].includes(user.role)) {
+    if (!['SUPERADMIN'].includes(user.role)) {
       return forbiddenResponse('You do not have permission to view payroll periods');
     }
 
@@ -34,7 +34,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const user = await requireAuth(request);
     const { id } = await params;
     
-    if (!['SUPERADMIN', 'ADMIN_HR'].includes(user.role)) {
+    if (!['SUPERADMIN'].includes(user.role)) {
       return forbiddenResponse('You do not have permission to update payroll periods');
     }
 

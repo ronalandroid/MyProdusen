@@ -447,7 +447,7 @@ async function getSuperadminInsights(input: {
 }
 
 async function getScopedEmployeeIds(role: string, employeeId?: string): Promise<string[] | undefined> {
-  if (role === 'SUPERADMIN' || role === 'ADMIN_HR') {
+  if (role === 'SUPERADMIN') {
     return undefined;
   }
 

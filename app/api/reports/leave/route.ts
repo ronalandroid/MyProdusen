@@ -10,7 +10,7 @@ import { logAudit } from '@/lib/audit';
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
-    if (!['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'].includes(user.role)) return forbiddenResponse('Anda tidak memiliki akses');
+    if (!['SUPERADMIN'].includes(user.role)) return forbiddenResponse('Anda tidak memiliki akses');
     const { searchParams } = new URL(request.url);
     const format = searchParams.get('format');
     const from = searchParams.get('from');

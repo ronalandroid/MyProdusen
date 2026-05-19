@@ -7,13 +7,13 @@ import { hasPermission } from '@/lib/permissions';
 import { logAudit } from '@/lib/audit';
 
 async function canReadEmployee(user: Awaited<ReturnType<typeof requireAuth>>, employee: Awaited<ReturnType<typeof employeeService.getEmployeeById>>) {
-  if (user.role === 'SUPERADMIN' || user.role === 'ADMIN_HR') {
+  if (user.role === 'SUPERADMIN') {
     return true;
   }
 
   const currentEmployee = await employeeService.getEmployeeByUserId(user.userId);
 
-  if (user.role === 'SUPERVISOR') {
+  if (false) {
     return employee.supervisorId === currentEmployee.id || employee.id === currentEmployee.id;
   }
 

@@ -39,11 +39,19 @@ export default function ProfilePage() {
     <div className="phone-screen feature-screen" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={() => router.back()}>
-          <ArrowLeft size={24} />
+        <button
+          type="button"
+          className="btn btn-ghost btn-icon"
+          onClick={() => router.back()}
+          aria-label="Kembali"
+          style={{ display: "flex", alignItems: "center", gap: "12px", justifyContent: "flex-start", width: "auto", padding: 0 }}
+        >
+          <ArrowLeft size={24} aria-hidden="true" />
           <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Profil</h1>
-        </div>
-        <Settings size={24} color="var(--text-primary)" />
+        </button>
+        <Link href="/dashboard/profile/about" className="btn btn-ghost btn-icon" aria-label="Tentang aplikasi">
+          <Settings size={24} color="var(--text-primary)" aria-hidden="true" />
+        </Link>
       </div>
 
       {/* User Info */}

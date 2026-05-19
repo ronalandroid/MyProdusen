@@ -7,8 +7,8 @@ describe('document policy', () => {
     expect(canAccessEmployeeDocument({ role: 'EMPLOYEE', userEmployeeId: 'emp1', targetEmployeeId: 'emp2' })).toBe(false);
   });
 
-  it('allows HR roles to access all employee documents', () => {
-    expect(canAccessEmployeeDocument({ role: 'ADMIN_HR', targetEmployeeId: 'emp2' })).toBe(true);
+  it('allows only SUPERADMIN to access all employee documents', () => {
+    expect(canAccessEmployeeDocument({ role: 'ADMIN_HR', targetEmployeeId: 'emp2' })).toBe(false);
     expect(canAccessEmployeeDocument({ role: 'SUPERADMIN', targetEmployeeId: 'emp2' })).toBe(true);
   });
 

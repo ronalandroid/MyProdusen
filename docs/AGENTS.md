@@ -1,5 +1,8 @@
 # Agents Notes
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 Working rules for any agent or contributor. The highest source of truth is
 [`prd.md`](./prd.md). This file lists the non-negotiable guardrails that
 every code change must respect.
@@ -87,8 +90,7 @@ Success Green: #22C55E
 - New product / architecture docs go in `/docs/`.
 - The only Markdown allowed at the repo root is `README.md` and this file.
 - Do not create dated "PHASE_X_COMPLETE" memorial docs at the top level.
-  Update `IMPLEMENTATION_PLAN.md` inline; archive historical docs in
-  `docs/_archive/`.
+  Update `IMPLEMENTATION_PLAN.md` inline instead.
 - When you change behaviour, update the matching doc in the same commit.
 
 ## Reference repo research

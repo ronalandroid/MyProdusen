@@ -8,16 +8,16 @@ describe('KPI Team Scope Policy', () => {
     expect(canManageEmployeeKpi('SUPERADMIN', actor, target)).toBe(true);
   });
 
-  it('ADMIN_HR can manage any employee KPI', () => {
+  it('legacy ADMIN_HR cannot manage employee KPI', () => {
     const actor = { id: 'hr-emp-1' };
     const target = { id: 'emp-2', supervisorId: 'other-supervisor' };
-    expect(canManageEmployeeKpi('ADMIN_HR', actor, target)).toBe(true);
+    expect(canManageEmployeeKpi('ADMIN_HR', actor, target)).toBe(false);
   });
 
-  it('SUPERVISOR can manage own team KPI', () => {
+  it('legacy SUPERVISOR cannot manage own team KPI', () => {
     const actor = { id: 'supervisor-emp-1' };
     const target = { id: 'emp-2', supervisorId: 'supervisor-emp-1' };
-    expect(canManageEmployeeKpi('SUPERVISOR', actor, target)).toBe(true);
+    expect(canManageEmployeeKpi('SUPERVISOR', actor, target)).toBe(false);
   });
 
   it('SUPERVISOR cannot manage other team KPI', () => {
@@ -49,9 +49,9 @@ describe('KPI Team Scope Policy', () => {
     expect(canReadEmployeeKpi('EMPLOYEE', actor, target)).toBe(false);
   });
 
-  it('SUPERVISOR can read team KPI', () => {
+  it('legacy SUPERVISOR cannot read team KPI', () => {
     const actor = { id: 'supervisor-emp-1' };
     const target = { id: 'emp-2', supervisorId: 'supervisor-emp-1' };
-    expect(canReadEmployeeKpi('SUPERVISOR', actor, target)).toBe(true);
+    expect(canReadEmployeeKpi('SUPERVISOR', actor, target)).toBe(false);
   });
 });

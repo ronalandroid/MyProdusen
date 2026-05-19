@@ -8,7 +8,7 @@ import { eq, desc } from 'drizzle-orm';
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
-    if (!['SUPERADMIN', 'ADMIN_HR'].includes(user.role)) return forbiddenResponse('Anda tidak memiliki akses');
+    if (!['SUPERADMIN'].includes(user.role)) return forbiddenResponse('Anda tidak memiliki akses');
     const { searchParams } = new URL(request.url);
     const format = searchParams.get('format');
     const status = searchParams.get('status');

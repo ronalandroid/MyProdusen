@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
+import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 import "@/lib/init";
 import "./globals.css";
 
@@ -76,11 +77,7 @@ export default function RootLayout({
           {children}
         </div>
         <PwaInstallPrompt />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); }); }`,
-          }}
-        />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

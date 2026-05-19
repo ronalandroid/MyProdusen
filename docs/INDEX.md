@@ -1,6 +1,9 @@
 # Documentation Index
 
-Current canonical docs only. Historical docs are under `_archive/`.
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
+Current canonical docs only. Historical markdown archive has been removed to keep AI agents focused on current rules.
 
 ## Product & process
 
@@ -36,6 +39,5 @@ Current canonical docs only. Historical docs are under `_archive/`.
 
 ## Archive
 
-`_archive/` contains historical docs (restructure logs, phase summaries,
-deprecated guides, competitor research, etc.). They are kept read-only for
-traceability. New work should not reference them.
+Historical / restructure / phase memorial markdown files have been removed.
+Keep current status in canonical docs only.

@@ -1,5 +1,8 @@
 # Reference Repository Analysis — MyProdusen
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 > Purpose: extract feature patterns from external attendance projects and decide
 > what fits MyProdusen without changing the stack, UI tone, logo, or brand
 > colours. This document is **research output only**. Code is not copied; the
@@ -45,7 +48,7 @@ to**, because:
 
 - GPS attendance (employee submits coordinates).
 - QR/barcode-based attendance scan (admin generates per-employee barcode).
-- Admin and Superadmin dashboards.
+- Superadmin dashboards.
 - Per-employee attendance history.
 - Daily / weekly / monthly attendance reports.
 - Employee CRUD with seeders + factory.
@@ -86,7 +89,7 @@ These are **feature ideas worth adopting**. None require stack changes.
 | 6 | Live search across employee/location tables | o-present | Not done yet. Should be server-side `?search=` for paginated tables. | **P1** |
 | 7 | OSM map preview of work location | both | Shipped: zero-dep tiled preview in `src/components/locations/WorkLocationMap.tsx` + `lib/maps/osm-tile-math.ts`. Tile URL configurable via `NEXT_PUBLIC_OSM_TILE_URL`. | done |
 | 8 | Attendance request flow when employee missed check-in/out | absensi-* | Backend exists via `AttendanceException` + admin review page. UI for employee submission needs polish. | **P1** |
-| 9 | Multi-role auth (employee / admin / superadmin) | both | We already have SUPERADMIN, ADMIN_HR, SUPERVISOR, EMPLOYEE. | done |
+| 9 | Two-account auth (employee / superadmin) | both | Production UX is now constrained to SUPERADMIN and EMPLOYEE only; legacy HR/supervisor paths are not user-facing. | done |
 | 10 | Filterable/sortable master data tables | both | Partial: list pages exist, filters need server-side. | **P1** |
 | 11 | Profile self-service (avatar, change email, password) | o-present | Profile page exists, change email/avatar can be tightened. | **P1** |
 | 12 | QR/barcode attendance | absensi-* | Conflicts with our "realtime selfie only" rule for MVP. PRD already has it as Phase 2. | **P2** |

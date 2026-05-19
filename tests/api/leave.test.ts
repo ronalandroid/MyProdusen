@@ -117,7 +117,7 @@ describe('Leave API', () => {
       expect(Array.isArray(data.data)).toBe(true);
     });
 
-    it('should only list supervisor own team leave requests', async () => {
+    it('should deny legacy supervisor leave list access', async () => {
       const supervisor1 = await createTestUser('SUPERVISOR');
       testUserIds.push(supervisor1.id);
       const supervisor1EmpId = await createTestEmployee(supervisor1.id);
@@ -173,14 +173,13 @@ describe('Leave API', () => {
       const response = await leaveGET(request as any);
       const data = await response.json();
 
-      expect(response.status).toBe(200);
-      expect(data.data.map((leave: any) => leave.id)).toContain(teamLeaveId);
-      expect(data.data.map((leave: any) => leave.id)).not.toContain(otherLeaveId);
+      expect(response.status).toBe(403);
+      expect(data.success).toBe(false);
     });
   });
 
   describe('POST /api/leave/[id]/approve', () => {
-    it('should approve leave request as supervisor', async () => {
+    it('should deny legacy supervisor leave approval', async () => {
       const supervisor = await createTestUser('SUPERVISOR');
       testUserIds.push(supervisor.id);
       const supervisorEmpId = await createTestEmployee(supervisor.id);
@@ -213,9 +212,8 @@ describe('Leave API', () => {
       const response = await approveLeave(request as any, { params: Promise.resolve({ id: leaveId }) });
       const data = await response.json();
 
-      expect(response.status).toBe(200);
-      expect(data.success).toBe(true);
-      expect(data.data.status).toBe('APPROVED');
+      expect(response.status).toBe(403);
+      expect(data.success).toBe(false);
     });
 
     it('should fail to approve leave from other team', async () => {
@@ -296,7 +294,7 @@ describe('Leave API', () => {
   });
 
   describe('POST /api/leave/[id]/reject', () => {
-    it('should reject leave request as supervisor', async () => {
+    it('should deny legacy supervisor leave rejection', async () => {
       const supervisor = await createTestUser('SUPERVISOR');
       testUserIds.push(supervisor.id);
       const supervisorEmpId = await createTestEmployee(supervisor.id);
@@ -332,9 +330,8 @@ describe('Leave API', () => {
       const response = await rejectLeave(request as any, { params: Promise.resolve({ id: leaveId }) });
       const data = await response.json();
 
-      expect(response.status).toBe(200);
-      expect(data.success).toBe(true);
-      expect(data.data.status).toBe('REJECTED');
+      expect(response.status).toBe(403);
+      expect(data.success).toBe(false);
     });
   });
 

@@ -41,8 +41,10 @@ export default function PwaInstallPrompt() {
     if (isStandaloneMode() || window.localStorage.getItem(INSTALLED_KEY) === "true" || recentlyDismissed()) return;
 
     const onBeforeInstallPrompt = (event: Event) => {
+      if (isStandaloneMode() || recentlyDismissed() || window.localStorage.getItem(INSTALLED_KEY) === "true") return;
       event.preventDefault();
       setDeferredPrompt(event as BeforeInstallPromptEvent);
+      setShowInstructions(false);
       setIsVisible(true);
     };
 
@@ -86,6 +88,7 @@ export default function PwaInstallPrompt() {
       }
       setIsVisible(false);
       setDeferredPrompt(null);
+      setShowInstructions(false);
     } finally {
       setIsInstalling(false);
     }
@@ -93,6 +96,8 @@ export default function PwaInstallPrompt() {
 
   function dismiss() {
     window.localStorage.setItem(DISMISSED_KEY, String(Date.now()));
+    setDeferredPrompt(null);
+    setShowInstructions(false);
     setIsVisible(false);
   }
 

@@ -1,5 +1,8 @@
 # Rollback Plan — MyProdusen
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 Rollback adalah tindakan darurat untuk mengembalikan aplikasi ke kondisi aman. Jangan rollback tanpa analisis, approval, dan backup terbaru.
 
 ## Kapan Rollback Dibutuhkan

@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     
-    // Only SUPERADMIN, ADMIN_HR, and SUPERVISOR can assign KPI
-    if (!['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR'].includes(user.role)) {
+    // Only SUPERADMIN can assign KPI
+    if (!['SUPERADMIN'].includes(user.role)) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Supervisor team scope check
-    if (user.role === 'SUPERVISOR') {
+    if (false) {
       const { db, employees } = await import('@/lib/db');
       const { eq } = await import('drizzle-orm');
       const { canManageEmployeeKpi } = await import('@/lib/kpi/team-scope');

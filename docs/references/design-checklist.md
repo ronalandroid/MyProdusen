@@ -1,5 +1,8 @@
 # Design Checklist
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 Per-screen contract derived from `docs/references/screens/*.png`. Every box
 must hold for the live web app. Reference for tooling: a deviation = the
 canonical gate must fail. If you cannot match an item exactly, stop and
@@ -25,7 +28,7 @@ Conventions:
 
 ---
 
-## EMPLOYEE APP SHELL — `screens/employee-app-shell.png`
+## EMPLOYEE APP SHELL — `screens/employee-full-ui-ux-mobile.png`
 
 ### Bottom navigation (5 tabs, mobile only)
 
@@ -107,7 +110,7 @@ Forbidden:
 
 ---
 
-## SUPER ADMIN APP SHELL — `screens/superadmin-app-shell.png`
+## SUPER ADMIN APP SHELL — `screens/super-admin-full-ui-ux-mobile.png` and `screens/super-admin-full-ui-ux-desktop.png`
 
 ### Bottom navigation (5 tabs, mobile only)
 
@@ -161,7 +164,7 @@ Required:
 
 ---
 
-## EMAILING SYSTEM — `screens/emailing-system.png`
+## EMAILING SYSTEM — `screens/full-ui-ux-emailing-system.png`
 
 Detailed style/tone/copy is locked in `docs/references/email-style-guide.md`.
 Summary contract:
@@ -199,11 +202,11 @@ Forbidden:
 
 | PRD §8 acceptance criterion | Reference screen |
 | --------------------------- | ---------------- |
-| User register + activation + login | `emailing-system.png` (Register, Verify, Welcome flow) |
-| Superadmin user placement | `superadmin-app-shell.png` (Manajemen User & Role) |
+| User register + activation + login | `full-ui-ux-emailing-system.png` (Register, Verify, Welcome flow) |
+| Superadmin user placement | `super-admin-full-ui-ux-mobile.png` / `super-admin-full-ui-ux-desktop.png` (Manajemen User & Role) |
 | Employee creation with auto-NIP | Employee shell + Super Admin Karyawan |
 | Work location + shift configuration | Manajemen Cabang on Super Admin shell |
-| Check-in / check-out with GPS + realtime selfie | `employee-app-shell.png` Kehadiran |
+| Check-in / check-out with GPS + realtime selfie | `employee-full-ui-ux-mobile.png` Kehadiran |
 | Backend geofence + selfie metadata | (no UI; covered by tests) |
 | Leave / sick / permission flow | Employee Cuti screen |
 | KPI template + assignment + scoring + approval | Employee KPI + Super Admin Monitoring KPI |

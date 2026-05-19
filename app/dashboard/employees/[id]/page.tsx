@@ -108,8 +108,6 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   const getRoleBadge = (role: string) => {
     const roleMap: Record<string, { label: string; className: string }> = {
       SUPERADMIN: { label: "Superadmin", className: "badge-danger" },
-      ADMIN_HR: { label: "Admin HR", className: "badge-warning" },
-      SUPERVISOR: { label: "Supervisor", className: "badge-info" },
       EMPLOYEE: { label: "Karyawan", className: "badge-success" },
     };
     
@@ -282,14 +280,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
             style={{ appearance: "none", backgroundColor: "white" }}
           >
             <option value="EMPLOYEE">Karyawan</option>
-            <option value="SUPERVISOR">Supervisor</option>
-            <option value="ADMIN_HR">Admin HR</option>
             <option value="SUPERADMIN">Superadmin</option>
           </select>
           <div className="text-xs text-[var(--text-secondary)]">
             <p><strong>Karyawan:</strong> Akses personal (absensi, cuti, KPI sendiri)</p>
-            <p><strong>Supervisor:</strong> Kelola tim, input KPI tim, approve cuti tim</p>
-            <p><strong>Admin HR:</strong> Kelola karyawan, absensi, cuti, shift, lokasi</p>
             <p><strong>Superadmin:</strong> Akses penuh termasuk audit dan manajemen role</p>
           </div>
         </div>

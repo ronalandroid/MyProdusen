@@ -35,6 +35,36 @@ async function checkHealth() {
   return parsed;
 }
 
+async function checkVersionRoute() {
+  const response = await fetch(`${baseUrl}/api/version`, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+    cache: 'no-store',
+  });
+  const body = await readBody(response);
+
+  if (response.status !== 200) {
+    throw new Error(`GET /api/version expected 200, got ${response.status}. Body: ${body}`);
+  }
+
+  if (/DATABASE_URL|JWT_SECRET|NEXTAUTH_SECRET|RESEND_API_KEY|SUPERADMIN_PASSWORD|postgresql:\/\//i.test(body)) {
+    throw new Error('GET /api/version leaked secret-looking content');
+  }
+
+  let parsed = null;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    throw new Error(`GET /api/version did not return JSON. Body: ${body}`);
+  }
+
+  if (parsed.status !== 'ok' || parsed.appName !== 'MyProdusen') {
+    throw new Error(`GET /api/version returned unexpected metadata. Body: ${body}`);
+  }
+
+  return { status: response.status, deployed: true, ...parsed };
+}
+
 async function checkPdfRoute() {
   const response = await fetch(`${baseUrl}/api/reports/pdf`, {
     method: 'POST',
@@ -72,6 +102,16 @@ try {
     commit: health.app?.commit,
     buildTime: health.app?.buildTime,
     nodeEnv: health.app?.nodeEnv,
+  });
+
+  const version = await checkVersionRoute();
+  console.log('PASS GET /api/version safe metadata', {
+    status: version.status,
+    appName: version.appName,
+    appVersion: version.appVersion,
+    gitCommitSha: version.gitCommitSha,
+    buildTime: version.buildTime,
+    nodeEnv: version.nodeEnv,
   });
 
   const pdf = await checkPdfRoute();

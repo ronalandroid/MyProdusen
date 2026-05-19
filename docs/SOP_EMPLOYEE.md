@@ -1,5 +1,8 @@
 # SOP Employee — MyProdusen
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 Panduan ini untuk karyawan. Gunakan MyProdusen untuk absensi GPS + selfie, pengajuan izin/cuti/sakit, melihat KPI, payroll sendiri, dan notifikasi.
 
 ## 1. Register Account
@@ -57,7 +60,7 @@ Panduan ini untuk karyawan. Gunakan MyProdusen untuk absensi GPS + selfie, penga
 1. Buka Attendance History.
 2. Pilih tanggal atau periode.
 3. Cek jam check-in, check-out, status, dan catatan.
-4. Laporkan data tidak sesuai ke Supervisor/Admin HR.
+4. Laporkan data tidak sesuai ke Superadmin.
 
 ## 8. Submit Leave / Sick / Permission
 
@@ -66,14 +69,14 @@ Panduan ini untuk karyawan. Gunakan MyProdusen untuk absensi GPS + selfie, penga
 3. Isi tanggal dan alasan.
 4. Upload lampiran jika diminta perusahaan.
 5. Submit.
-6. Tunggu approval Supervisor/Admin HR.
+6. Tunggu approval Superadmin.
 
 ## 9. View KPI
 
 1. Buka KPI.
 2. Cek KPI yang assigned ke akun sendiri.
 3. Cek nilai dan status approval.
-4. Jika data tidak sesuai, hubungi Supervisor.
+4. Jika data tidak sesuai, hubungi Superadmin.
 
 ## 10. View Payroll Own Data
 

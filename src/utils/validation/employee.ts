@@ -17,7 +17,7 @@ export const createEmployeeSchema = z.object({
   emergencyContact: z.string().optional(),
   username: z.string().min(3, 'Username minimal 3 karakter'),
   password: z.string().min(6, 'Password minimal 6 karakter'),
-  role: z.enum(['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE']).default('EMPLOYEE'),
+  role: z.enum(['SUPERADMIN', 'EMPLOYEE']).default('EMPLOYEE'),
 });
 
 export const updateEmployeeSchema = z.object({

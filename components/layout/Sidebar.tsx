@@ -1,28 +1,23 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Home, Clock, Users, Calendar, User, MapPin, Clock3, BarChart3, FileText, Shield, Bell, AlertTriangle, BriefcaseBusiness } from "lucide-react";
-import { fetchProfile } from "@/lib/auth-client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Home, Clock, Users, Calendar, User, MapPin, Clock3, BarChart3, FileText, Shield, Bell, BriefcaseBusiness, CheckCircle } from "lucide-react";
 import { getNavigationForRole } from "@/lib/navigation/role-navigation";
 import type { UserRole } from "@/lib/permissions";
 
-export default function Sidebar() {
-  const pathname = usePathname();
-  const router = useRouter();
-  const [role, setRole] = useState<UserRole | null>(null);
+type SidebarProps = {
+  role: UserRole;
+};
 
-  useEffect(() => {
-    fetchProfile()
-      .then((profile) => setRole(profile.role as UserRole))
-      .catch(() => setRole('EMPLOYEE'));
-  }, []);
+export default function Sidebar({ role }: SidebarProps) {
+  const pathname = usePathname();
 
   const iconMap: Record<string, any> = {
     '/dashboard': Home,
     '/dashboard/self-service': BriefcaseBusiness,
     '/dashboard/attendance': Clock,
-    '/dashboard/attendance/exceptions': AlertTriangle,
+    '/dashboard/attendance/exceptions': CheckCircle,
     '/dashboard/users': Users,
     '/dashboard/employees': Users,
     '/dashboard/locations': MapPin,
@@ -30,6 +25,7 @@ export default function Sidebar() {
     '/dashboard/leave': Calendar,
     '/dashboard/kpi': BarChart3,
     '/dashboard/reports': FileText,
+    '/dashboard/reports/attendance': FileText,
     '/dashboard/payroll': FileText,
     '/dashboard/overtime': Clock3,
     '/dashboard/documents': FileText,
@@ -38,7 +34,7 @@ export default function Sidebar() {
     '/dashboard/profile': User,
   };
 
-  const allowedNav = role ? getNavigationForRole(role) : [];
+  const allowedNav = getNavigationForRole(role);
   const navItems = allowedNav.map((item) => ({
     name: item.name,
     icon: iconMap[item.path] || Home,
@@ -61,11 +57,11 @@ export default function Sidebar() {
         const Icon = item.icon;
         
         return (
-          <button
-            type="button"
+          <Link
             key={item.path}
+            href={item.path}
+            prefetch
             className={`nav-item ${item.primary ? "" : "nav-item-desktop"} ${isActive ? "active" : ""}`}
-            onClick={() => router.push(item.path)}
             aria-current={isActive ? "page" : undefined}
           >
             <Icon
@@ -77,7 +73,7 @@ export default function Sidebar() {
             <span className="nav-label" style={{ color: isActive ? "var(--warning)" : "var(--text-muted)" }}>
               {item.name}
             </span>
-          </button>
+          </Link>
         );
       })}
     </>

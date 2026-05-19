@@ -14,7 +14,7 @@ const reviewSchema = z.object({
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth(request);
-    if (!hasPermission(user.role, 'ATTENDANCE_MANUAL_ADJUST') && user.role !== 'SUPERVISOR') {
+    if (!hasPermission(user.role, 'ATTENDANCE_MANUAL_ADJUST') ) {
       return forbiddenResponse('Anda tidak memiliki akses review exception absensi');
     }
 

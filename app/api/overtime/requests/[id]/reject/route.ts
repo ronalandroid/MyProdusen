@@ -19,7 +19,7 @@ export async function POST(
       return unauthorizedResponse();
     }
 
-    if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR' && user.role !== 'SUPERVISOR') {
+    if (user.role !== 'SUPERADMIN' ) {
       return forbiddenResponse();
     }
 

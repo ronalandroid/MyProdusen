@@ -89,7 +89,7 @@ describe('Attendance report API', () => {
   });
 
   async function setupBaseFixtures() {
-    const adminHr = await createTestUser('ADMIN_HR');
+    const adminHr = await createTestUser('SUPERADMIN');
     userIds.push(adminHr.id);
     auditUserIds.push(adminHr.id);
 
@@ -195,24 +195,8 @@ describe('Attendance report API', () => {
     expect(JSON.stringify(listPayload)).not.toContain('data:image');
   });
 
-  it('supervisor only sees team data', async () => {
+  it('legacy supervisor cannot access attendance reports', async () => {
     const fx = await setupBaseFixtures();
-
-    const teamAttId = await seedAttendance({
-      employeeId: fx.teamEmployeeId,
-      locationId: fx.locationId,
-      shiftId: fx.shiftId,
-      checkInTime: new Date('2026-05-15T01:00:00Z'),
-      status: 'PRESENT',
-    });
-    const otherAttId = await seedAttendance({
-      employeeId: fx.otherEmployeeId,
-      locationId: fx.locationId,
-      shiftId: fx.shiftId,
-      checkInTime: new Date('2026-05-15T02:00:00Z'),
-      status: 'PRESENT',
-    });
-    attendanceIds.push(teamAttId, otherAttId);
 
     const response = await reportGET(
       createMockRequest(
@@ -222,9 +206,8 @@ describe('Attendance report API', () => {
       ) as any,
     );
     const payload = await response.json();
-    expect(payload.data.rows.length).toBe(1);
-    expect(payload.data.rows[0].employeeId).toBe(fx.teamEmployeeId);
-    expect(payload.data.scope).toBe('team');
+    expect(response.status).toBe(403);
+    expect(payload.success).toBe(false);
   });
 
   it('employee only sees own data', async () => {

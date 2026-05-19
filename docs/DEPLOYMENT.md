@@ -1,5 +1,8 @@
 # Deployment Guide — VPS + Coolify
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 > Production hosting target: a Linux VPS (Ubuntu 22.04 LTS or newer) running
 > Docker + Coolify. PostgreSQL and (optionally) Redis run as Coolify-managed
 > services on the same network.
@@ -205,7 +208,7 @@ silent regressions.
 
 ## Deployment Version Verification
 
-Healthcheck mengembalikan metadata aman untuk memastikan live menjalankan build terbaru:
+Healthcheck dan `/api/version` mengembalikan metadata aman untuk memastikan live menjalankan build terbaru:
 
 ```json
 {
@@ -232,11 +235,14 @@ Setelah deploy, verifikasi:
 
 ```bash
 curl -sS https://myprodusen.online/api/health
+curl -sS https://myprodusen.online/api/version
 BASE_URL=https://myprodusen.online npm run verify:live-routes
 E2E_BASE_URL=https://myprodusen.online npm run e2e:public
 ```
 
-Untuk kasus route live `404` tetapi local build ada, lakukan rebuild image/no-cache di Coolify dan cocokkan `app.commit` dari `/api/health`.
+`/api/version` tidak menyentuh database dan hanya boleh menampilkan app name, status, node env, app version, git commit, dan build time. Jangan tambahkan secret, connection string, password, atau private upload path.
+
+Untuk kasus route live `404` tetapi local build ada, lakukan rebuild image/no-cache di Coolify dan cocokkan `app.commit` dari `/api/health` atau `gitCommitSha` dari `/api/version`.
 
 ## Final Live Route Verification
 
@@ -250,6 +256,7 @@ E2E_BASE_URL=https://myprodusen.online npm run e2e:public
 Expected:
 
 - `/api/health` returns `200` with `status=ok` and no secrets.
+- `/api/version` returns `200` with safe metadata and no secrets after latest redeploy.
 - Unauthenticated `POST /api/reports/pdf` returns `401` or `403`, never `404` and never `200`.
 - Public Playwright smoke passes on mobile/tablet/desktop projects.
 

@@ -1,5 +1,8 @@
 # Final Checklist
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 Run through this before declaring a release ready. Every box is a real
 verification step, not a wish.
 
@@ -36,6 +39,7 @@ verification step, not a wish.
 - [ ] Build command `npm run build`. Start command `npm run start`.
 - [ ] Persistent volume mounted at `/app/uploads`.
 - [ ] Healthcheck `/api/health` returns 200.
+- [ ] Version endpoint `/api/version` returns 200 after latest redeploy and exposes only safe metadata.
 - [ ] Daily PostgreSQL `pg_dump` schedule active.
 - [ ] Daily `/app/uploads` rsync schedule active.
 - [ ] Weekly retention sweep (`find /backups -mtime +30 -delete`) active.
@@ -72,8 +76,7 @@ verification step, not a wish.
 ## 5. RBAC end-to-end
 
 - [ ] Employee can only view own attendance, own selfies, own exceptions.
-- [ ] Supervisor can only view direct reports.
-- [ ] Admin HR can view all employees, all selfies, export reports, approve leave / KPI.
+- [ ] Superadmin can view all employees, protected selfies, exports, leave approvals, and KPI approvals.
 - [ ] Superadmin has full access plus role management.
 - [ ] Superadmin new-user form separates system role from division/position placement.
 - [ ] New-user role assignment is enforced server-side with `canManageRole`.
@@ -95,8 +98,8 @@ verification step, not a wish.
 ## 6.1 Payroll security
 
 - [ ] Employee payroll page only uses `/api/payroll/me` and returns own payroll rows.
-- [ ] Supervisor cannot access payroll routes or dashboard pages by default.
-- [ ] Admin HR payroll access follows `PAYROLL_*` permission policy and cannot approve/pay final payroll.
+- [ ] Legacy Supervisor role has no production navigation access.
+- [ ] Legacy Admin HR role has no production navigation access.
 - [ ] Superadmin can approve, mark paid, export CSV, and download payslips.
 - [ ] Payroll export and payslip download create audit log rows.
 - [ ] Approved/paid payroll data cannot be edited directly.
@@ -105,7 +108,7 @@ verification step, not a wish.
 
 - [ ] Leave approval / rejection notifies the employee.
 - [ ] KPI approval notifies the employee.
-- [ ] Pending geo attendance notifies SUPERADMIN + ADMIN_HR.
+- [ ] Pending geo attendance notifies SUPERADMIN.
 - [ ] Geo approve / reject notifies the employee.
 - [ ] Notification failures never block the original mutation.
 
@@ -117,13 +120,13 @@ Run this manually before declaring a release ready.
 2. Assign work location and shift to the employee.
 3. Login as the employee, perform realtime selfie + GPS check-in.
 4. Perform realtime selfie + GPS check-out.
-5. Login as Admin HR, view the selfies via the protected endpoint.
+5. Login as Superadmin, view the selfies via the protected endpoint.
 6. If any pending geo exception was created, approve it from
    `/dashboard/attendance/exceptions` and confirm the employee receives a
    notification and `check_in_geo_status` flips to `APPROVED_MANUAL`.
 7. Submit a leave request as the employee.
-8. Approve the leave as Supervisor or Admin HR — confirm employee notification.
-9. Input + approve KPI as Supervisor / Admin HR — confirm employee notification.
+8. Approve the leave as Superadmin — confirm employee notification.
+9. Input + approve KPI as Superadmin — confirm employee notification.
 10. Open Superadmin dashboard, verify counts.
 11. Export attendance CSV from `/dashboard/reports/attendance` — confirm audit row.
 12. Inspect `AuditLog` for `CHECK_IN`, `CHECK_OUT`, `EXPORT`, `SELFIE_VIEW`,
@@ -192,7 +195,7 @@ Run this manually before declaring a release ready.
 - [ ] Superadmin PDF report tested; non-Superadmin blocked.
 - [ ] Payroll employee view, Superadmin summary, mutation RBAC, export, and audit tested.
 - [ ] Audit log tested for auth, user role, attendance, leave, KPI, payroll, report, and selfie events.
-- [ ] Unauthorized access tested for employee, supervisor, Admin HR, and public requests.
+- [ ] Unauthorized access tested for employee, legacy roles, and public requests.
 - [ ] Rollback plan ready with backup ID, operator, and restore window.
 - [ ] Production smoke test recorded in `docs/PRODUCTION_SMOKE_TEST.md` result table format.
 
@@ -200,8 +203,6 @@ Run this manually before declaring a release ready.
 
 - [ ] Go-live checklist reviewed: [`GO_LIVE_CHECKLIST.md`](./GO_LIVE_CHECKLIST.md).
 - [ ] Superadmin SOP shared: [`SOP_SUPERADMIN.md`](./SOP_SUPERADMIN.md).
-- [ ] Admin HR SOP shared: [`SOP_ADMIN_HR.md`](./SOP_ADMIN_HR.md).
-- [ ] Supervisor SOP shared: [`SOP_SUPERVISOR.md`](./SOP_SUPERVISOR.md).
 - [ ] Employee SOP shared: [`SOP_EMPLOYEE.md`](./SOP_EMPLOYEE.md).
 - [ ] Troubleshooting guide shared with HR/admin PIC: [`TROUBLESHOOTING.md`](./TROUBLESHOOTING.md).
 - [ ] Rollback plan reviewed by Owner, HR, and technical PIC: [`ROLLBACK_PLAN.md`](./ROLLBACK_PLAN.md).
@@ -209,9 +210,8 @@ Run this manually before declaring a release ready.
 
 ## Staging UAT package
 
-- [ ] Staging deploy steps reviewed: [`STAGING_DEPLOY_STEPS.md`](./STAGING_DEPLOY_STEPS.md).
-- [ ] Staging UAT result filled: [`STAGING_UAT_RESULT.md`](./STAGING_UAT_RESULT.md).
-- [ ] Staging go/no-go decision recorded: [`STAGING_GO_NO_GO.md`](./STAGING_GO_NO_GO.md).
+- [ ] Staging deploy steps reviewed using [`DEPLOYMENT.md`](./DEPLOYMENT.md) and [`COOLIFY.md`](./COOLIFY.md).
+- [ ] UAT result and go/no-go decision recorded in issue tracker or release notes.
 
 ## Live Deployment Route Verification
 
@@ -219,6 +219,12 @@ Run this manually before declaring a release ready.
 - [ ] Coolify redeployed with rebuild image/no cache.
 - [ ] `/api/health` returns `200` and `status: ok`.
 - [ ] `/api/health` app metadata shows expected `APP_VERSION` / `GIT_COMMIT_SHA` / `BUILD_TIME`.
+- [ ] `/api/version` shows expected `APP_VERSION` / `GIT_COMMIT_SHA` / `BUILD_TIME` and no secrets.
+- [ ] Superadmin live smoke command is run when `E2E_SUPERADMIN_EMAIL` and `E2E_SUPERADMIN_PASSWORD` exist; if rate-limited, wait 15 minutes.
+- [ ] Android real-device GPS+selfie smoke completed if testing mobile device flow.
+- [ ] Optional external smoke tools completed or explicitly skipped because key/tool is missing.
+- [ ] Browser matrix `npm run e2e:browsers` completed for Chromium, Firefox, and WebKit, or missing browser binaries are documented clearly.
+- [ ] Redeploy verification completed using [`DEPLOYMENT.md`](./DEPLOYMENT.md).
 - [ ] `BASE_URL=https://myprodusen.online npm run verify:live-routes` passes.
 - [ ] `POST /api/reports/pdf` unauthenticated returns `401` or `403`, never `404`.
 - [ ] `E2E_BASE_URL=https://myprodusen.online npm run e2e:public` passes.
@@ -227,7 +233,7 @@ Run this manually before declaring a release ready.
 
 ## Full E2E Automation
 
-- [ ] Review full E2E report: `docs/FULL_STAGING_E2E_REPORT.md`.
+- [ ] Review latest E2E output from CI or local terminal logs.
 
 ## One-Shot Live Verification Checklist — 2026-05-19
 
@@ -249,3 +255,21 @@ Run this manually before declaring a release ready.
 - [x] Realtime selfie camera lazy-loads and stops stream on cleanup.
 - [ ] Real Android GPS + selfie UAT after redeploy.
 - [ ] PWA install prompt verified on Android Chrome and iOS Safari.
+
+## Current Final Status — 2026-05-19
+
+- [x] Local lint/test/build/release check passed after release-blocker fixes.
+- [x] Chromium public smoke passed.
+- [ ] Firefox/WebKit browser binaries installed and browser matrix fully passed.
+- [ ] Coolify redeployed latest source so `/api/version` returns `200`.
+- [ ] Superadmin live smoke run with dedicated credentials.
+- [ ] Android real-device GPS+selfie checklist completed.
+- [ ] TestSprite safe smoke completed or skipped with configured evidence.
+
+## PWA Verification — 2026-05-19
+
+- [ ] DevTools console has no no-op service worker fetch warning after redeploy.
+- [ ] Install banner appears only when eligible and does not block login/attendance.
+- [ ] `Install App` opens native prompt when `beforeinstallprompt` exists.
+- [ ] `Nanti` suppresses banner for 7 days.
+- [ ] Service worker does not cache private API/dashboard/uploads/selfie/payroll/PDF/auth data.

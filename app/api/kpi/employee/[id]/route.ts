@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const period = searchParams.get('period') || new Date().toISOString().slice(0, 7);
     const { id } = await params;
 
-    if (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_HR') {
+    if (user.role !== 'SUPERADMIN') {
       const [currentEmployee] = await db.select().from(employees).where(eq(employees.userId, user.userId)).limit(1);
       if (!currentEmployee) return forbiddenResponse('Anda tidak memiliki akses');
 
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         return forbiddenResponse('Anda tidak memiliki akses');
       }
 
-      if (user.role === 'SUPERVISOR') {
+      if (false) {
         const [targetEmployee] = await db.select().from(employees).where(eq(employees.id, id)).limit(1);
         if (!targetEmployee || (targetEmployee.supervisorId !== currentEmployee.id && targetEmployee.id !== currentEmployee.id)) {
           return forbiddenResponse('Anda hanya dapat melihat KPI tim Anda');

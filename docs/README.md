@@ -1,5 +1,8 @@
 # MyProdusen — Documentation
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 **Project:** Employee Management System for Produsen Dimsum Medan
 **Stack:** Next.js (App Router), TypeScript, Drizzle ORM, PostgreSQL, Tailwind CSS, Docker, VPS + Coolify
 **Status:** Production-ready (verified by lint + 206 tests + production build).
@@ -30,8 +33,7 @@
 1. New product/architecture docs live in `/docs/`. The only Markdown allowed at
    the repo root is `README.md` and `AGENTS.md`.
 2. Do not create dated "PHASE_X_COMPLETE" memorial docs at the top level.
-   Keep status updates inline in `IMPLEMENTATION_PLAN.md` and historical docs
-   in `_archive/`.
+   Keep status updates inline in `IMPLEMENTATION_PLAN.md`.
 3. Treat `prd.md` as the highest source of truth. Anything that contradicts it
    loses.
 4. When you change behaviour, update the matching doc in the same commit.
@@ -47,6 +49,5 @@
 
 ## Archived docs
 
-Historical / restructure / phase memorial documents have been moved to
-[`_archive/`](./_archive/). They are kept for traceability but should not be
-referenced by new work.
+Historical / restructure / phase memorial markdown files have been removed.
+Keep current status in canonical docs only.

@@ -1,5 +1,8 @@
 # Database
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 > Drizzle ORM on PostgreSQL. Migrations are additive only. Production never
 > runs destructive Drizzle commands.
 

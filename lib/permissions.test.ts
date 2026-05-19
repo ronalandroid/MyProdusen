@@ -18,10 +18,11 @@ describe('Permissions', () => {
   });
 
   describe('canManageRole', () => {
-    it('should allow SUPERADMIN to manage all roles', () => {
-      expect(canManageRole('SUPERADMIN', 'ADMIN_HR')).toBe(true);
-      expect(canManageRole('SUPERADMIN', 'SUPERVISOR')).toBe(true);
+    it('should allow SUPERADMIN to manage production roles only', () => {
+      expect(canManageRole('SUPERADMIN', 'SUPERADMIN')).toBe(true);
       expect(canManageRole('SUPERADMIN', 'EMPLOYEE')).toBe(true);
+      expect(canManageRole('SUPERADMIN', 'ADMIN_HR')).toBe(false);
+      expect(canManageRole('SUPERADMIN', 'SUPERVISOR')).toBe(false);
     });
 
     it('should prevent lower roles from managing higher roles', () => {
@@ -32,9 +33,9 @@ describe('Permissions', () => {
   });
 
   describe('canAccessOwnData', () => {
-    it('should allow SUPERADMIN and ADMIN_HR to access all data', () => {
+    it('should allow SUPERADMIN to access all data', () => {
       expect(canAccessOwnData('SUPERADMIN', 'user1', 'user2')).toBe(true);
-      expect(canAccessOwnData('ADMIN_HR', 'user1', 'user2')).toBe(true);
+      expect(canAccessOwnData('ADMIN_HR', 'user1', 'user2')).toBe(false);
     });
 
     it('should allow users to access their own data', () => {
@@ -49,8 +50,8 @@ describe('Permissions', () => {
   });
 
   describe('canAccessTeamData', () => {
-    it('should allow supervisor to access team member data', () => {
-      expect(canAccessTeamData('SUPERVISOR', 'supervisor1', 'employee1', 'supervisor1')).toBe(true);
+    it('should not expose legacy supervisor team access', () => {
+      expect(canAccessTeamData('SUPERVISOR', 'supervisor1', 'employee1', 'supervisor1')).toBe(false);
     });
 
     it('should prevent supervisor from accessing non-team member data', () => {

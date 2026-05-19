@@ -8,7 +8,7 @@ import { logAudit } from '@/lib/audit';
 import { getUserEmailEvents, sendAuthEmail } from '@/lib/email';
 
 const updateRoleSchema = z.object({
-  role: z.enum(['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE']),
+  role: z.enum(['SUPERADMIN', 'EMPLOYEE']),
   isActive: z.boolean().optional(),
 });
 

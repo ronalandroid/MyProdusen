@@ -1,5 +1,8 @@
 # Attendance Reports & Export
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 > Single source of truth for both the on-screen report table and the
 > downloadable export. Backed by `lib/reports/attendance-history.ts` so
 > on-screen totals always match exported rows.
@@ -44,8 +47,6 @@ and `to` (HTTP 422 otherwise).
 | Role | Scope |
 | ---- | ----- |
 | Employee | Own data only. Export blocked unless `REPORT_EXPORT` is granted later. |
-| Supervisor | Only employees where `employee.supervisorId === supervisor.id`. |
-| Admin HR | All employees. Export allowed. |
 | Superadmin | All employees. Export allowed. |
 
 Backend enforcement lives in `lib/reports/attendance-history-access.ts`. The

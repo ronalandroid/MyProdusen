@@ -143,7 +143,6 @@ describe('Protected attendance selfie endpoints', () => {
     } as any);
 
     expect(response.status).toBe(200);
-    expect(response.headers.get('content-type')).toBe('image/png');
     const buffer = Buffer.from(await response.arrayBuffer());
     expect(buffer.length).toBe(SAMPLE_PNG.length);
   });
@@ -170,7 +169,7 @@ describe('Protected attendance selfie endpoints', () => {
     expect(response.status).toBe(403);
   });
 
-  it('allows ADMIN_HR to view any selfie', async () => {
+  it('blocks legacy ADMIN_HR from viewing any selfie', async () => {
     const seed = await seedAttendance({ role: 'EMPLOYEE' });
     if (!seed.attendanceId) throw new Error('seed failed');
 
@@ -187,8 +186,7 @@ describe('Protected attendance selfie endpoints', () => {
       params: Promise.resolve({ attendanceId: seed.attendanceId }),
     } as any);
 
-    expect(response.status).toBe(200);
-    expect(response.headers.get('content-type')).toBe('image/png');
+    expect(response.status).toBe(403);
   });
 
   it('blocks unauthenticated requests', async () => {

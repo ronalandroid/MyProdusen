@@ -1,5 +1,8 @@
 # Design References
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 This folder is the **canonical visual contract** for MyProdusen. Every UI
 change must match the assets here. If something looks ambiguous, stop and
 ask — do not interpret.
@@ -13,9 +16,10 @@ docs/references/
 ├── email-style-guide.md            ← full email design guide (style, tone, copy)
 ├── myprodusen-logo.png             ← official logo
 └── screens/
-    ├── employee-app-shell.png      ← gambar 1: Employee mobile shell
-    ├── superadmin-app-shell.png    ← gambar 2: Super Admin mobile shell
-    └── emailing-system.png         ← gambar 3: Email templates
+    ├── employee-full-ui-ux-mobile.png       ← Employee mobile shell
+    ├── super-admin-full-ui-ux-desktop.png   ← Super Admin desktop shell
+    ├── super-admin-full-ui-ux-mobile.png    ← Super Admin mobile shell
+    └── full-ui-ux-emailing-system.png       ← Email templates
 ```
 
 ## Rules of engagement
@@ -54,9 +58,8 @@ docs/references/
 
 ## What stays out of references
 
-- `docs/references/_archive/` does not exist — old design boards do not
-  belong here. If a design changes, replace the file in place and bump the
-  checklist; never keep stale variants.
+- Old design boards do not belong here. If a design changes, replace the file
+  in place and bump the checklist; never keep stale variants.
 - Marketing assets, social media art, partner branding — out of scope.
 
 ## How to update references

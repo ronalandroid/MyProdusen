@@ -27,18 +27,7 @@ export async function GET(request: NextRequest) {
       if (user.role === 'EMPLOYEE' && currentEmployee?.id !== targetEmployeeId) {
         return unauthorizedResponse();
       }
-      if (user.role === 'SUPERVISOR' && currentEmployee?.id !== targetEmployeeId) {
-        // Need to check if the target employee is in their team
-        const [targetEmployee] = await db
-          .select({ supervisorId: employees.supervisorId })
-          .from(employees)
-          .where(eq(employees.id, targetEmployeeId))
-          .limit(1);
-          
-        if (targetEmployee?.supervisorId !== currentEmployee?.id) {
-          return unauthorizedResponse();
-        }
-      }
+
     }
 
     const oneYearAgo = new Date();

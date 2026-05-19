@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle, RefreshCw, ShieldCheck, UserCog } from "lucide-react";
 
-type UserRole = "SUPERADMIN" | "ADMIN_HR" | "SUPERVISOR" | "EMPLOYEE";
+type UserRole = "SUPERADMIN" | "EMPLOYEE";
 
 type UserRow = {
   id: string;
@@ -17,8 +17,6 @@ type UserRow = {
 
 const roleLabels: Record<UserRole, string> = {
   SUPERADMIN: "Superadmin",
-  ADMIN_HR: "Admin HR",
-  SUPERVISOR: "Supervisor",
   EMPLOYEE: "Karyawan",
 };
 
@@ -187,7 +185,7 @@ export default function UsersPage() {
                     <ShieldCheck size={16} aria-hidden="true" />
                     {user.isActive ? "Nonaktifkan" : "Aktifkan"}
                   </button>
-                  {user.role !== "SUPERADMIN" && user.role !== "ADMIN_HR" && !user.hasEmployeeProfile && (
+                  {user.role !== "SUPERADMIN" && !user.hasEmployeeProfile && (
                     <button
                       type="button"
                       className="btn btn-primary"

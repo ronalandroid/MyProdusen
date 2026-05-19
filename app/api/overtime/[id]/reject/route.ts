@@ -15,7 +15,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const user = await requireAuth(request);
     const { id } = await params;
     
-    if (!hasPermission(user.role, 'ATTENDANCE_APPROVE') && user.role !== 'SUPERVISOR') {
+    if (!hasPermission(user.role, 'ATTENDANCE_APPROVE') ) {
       return forbiddenResponse('You do not have permission to reject overtime requests');
     }
 

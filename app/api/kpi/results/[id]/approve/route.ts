@@ -7,7 +7,7 @@ import { logAudit } from '@/lib/audit';
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth(request);
-    if (!['SUPERADMIN', 'ADMIN_HR'].includes(user.role)) {
+    if (!['SUPERADMIN'].includes(user.role)) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
     const { id } = await params;

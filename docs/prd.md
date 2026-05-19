@@ -1,5 +1,8 @@
 # PRD — MyProdusen Web App
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 **Project:** MyProdusen HRIS & Employee Operations Web App  
 **Client:** Produsen Dimsum Medan  
 **Group:** TBM Group  
@@ -41,26 +44,23 @@ Berikut persyaratan tingkat tinggi untuk sistem MyProdusen.
 
 - Aplikasi harus dapat diakses melalui web browser desktop dan mobile.
 - UI harus mobile-first karena karyawan memakai HP untuk absensi.
-- Desktop tetap optimal untuk Superadmin/Admin HR saat mengelola data dan laporan.
+- Desktop tetap optimal untuk Superadmin saat mengelola data, approval, audit, dan laporan.
 - App harus WCAG-friendly: label jelas, kontras baik, focus state, error state, empty state, dan loading state.
 - Bahasa utama UI adalah Bahasa Indonesia.
 
 ### 2.2 Pengguna dan Role
 
-Sistem memiliki empat role utama:
+Sistem produksi saat ini memiliki dua role akun utama dengan pengalaman UI/UX berbeda:
 
 | Role | Fungsi Utama |
 | --- | --- |
 | **Superadmin** | Akses penuh, user management, role, audit log, dashboard global, report, approval penting. |
-| **Admin HR** | Kelola karyawan, shift, lokasi kerja, absensi, cuti, KPI HR, report. |
-| **Supervisor** | Lihat tim, approve cuti tim, review absensi tim, input/review KPI tim. |
 | **Employee / Karyawan** | Absensi GPS + selfie, lihat dashboard pribadi, ajukan cuti/sakit/izin, lihat KPI dan notifikasi. |
 
 Aturan akses wajib:
 
 - Employee hanya melihat data sendiri.
-- Supervisor hanya melihat data tim sendiri.
-- Admin HR tidak boleh mengakses fitur khusus Superadmin.
+- Superadmin mengelola seluruh data operasional, approval, laporan, audit, dan akun.
 - User inactive tidak boleh login.
 - Protected API wajib melakukan authorization server-side.
 
@@ -188,7 +188,7 @@ Aturan NIP:
 
 - Kelola lokasi kerja/cabang.
 - Field: name, address, latitude, longitude, radiusMeters/status.
-- Superadmin/Admin HR dapat create/update/deactivate.
+- Superadmin dapat create/update/deactivate.
 - Employee dapat assigned ke work location.
 - Backend menghitung jarak memakai Haversine/reliable distance calculation.
 - Perubahan lokasi tidak boleh merusak attendance historis.
@@ -271,7 +271,7 @@ totalWorkMinutes
 ### 3.7 Attendance Exceptions
 
 - Outside geofence atau bad GPS dapat masuk pending queue.
-- Superadmin/Admin HR/Supervisor sesuai permission dapat review.
+- Superadmin dapat review.
 - Approve/reject exception wajib reason.
 - Approval/rejection create audit log dan notification.
 
@@ -289,7 +289,7 @@ Fitur:
 
 - Employee membuat request sendiri.
 - Status awal pending.
-- Supervisor/Admin HR/Superadmin approve/reject sesuai permission.
+- Superadmin approve/reject sesuai permission.
 - Rejection wajib reason.
 - Overlap active request ditolak.
 - Approval/rejection mempengaruhi status attendance.
@@ -319,7 +319,7 @@ boolean
 Aturan KPI:
 
 - Total weight template idealnya 100.
-- Supervisor hanya input/review tim sendiri.
+- Superadmin input/review KPI operasional.
 - Employee hanya view KPI sendiri.
 - Employee tidak boleh edit skor sendiri.
 - KPI approved tidak boleh diedit tanpa role authorized dan reason.
@@ -377,7 +377,7 @@ Aturan:
 
 - Export respect filters.
 - Export respect permissions.
-- Supervisor hanya export tim.
+- Superadmin dapat export data sesuai filter.
 - Employee hanya own data jika allowed.
 - Export create audit log.
 - Selfie tidak diekspor sebagai path/url/binary; cukup flag yes/no.
@@ -465,7 +465,7 @@ must be documented before scope grows further.
 10. UI menampilkan `Selamat Bergabung` dan CTA login.
 11. User login berhasil.
 12. Superadmin melihat user aktif di `/dashboard/users` dan dapat koreksi role.
-13. Admin HR/Superadmin melengkapi data karyawan di `/dashboard/employees`.
+13. Superadmin melengkapi data karyawan di `/dashboard/employees`.
 
 ### 4.2 Login / Logout
 
@@ -483,10 +483,10 @@ must be documented before scope grows further.
 2. Buka `/dashboard/users`.
 3. Lihat daftar user yang daftar sendiri.
 4. Cek status aktif/belum aktif.
-5. Set role akses: Employee, Supervisor, Admin HR, atau Superadmin.
+5. Set role akses: Employee atau Superadmin.
 6. Jika akun belum aktif, Superadmin bisa aktifkan manual.
 7. Role change mengirim email role-changed.
-8. Untuk data kerja detail, Superadmin/Admin HR buka employee module.
+8. Untuk data kerja detail, Superadmin buka employee module.
 9. Atur posisi, divisi, supervisor, shift, work location, dan status employee.
 
 ### 4.4 Attendance Check-in / Check-out
@@ -508,16 +508,16 @@ must be documented before scope grows further.
 1. Employee submit leave/sick/permission.
 2. Backend cek overlap dan permission.
 3. Request masuk pending.
-4. Supervisor/Admin HR approve/reject.
+4. Superadmin approve/reject.
 5. Jika reject wajib reason.
 6. Backend update status, leave balance, notification, audit log.
 7. Employee melihat hasil di dashboard/notifikasi.
 
 ### 4.6 KPI Workflow
 
-1. Admin HR/Superadmin membuat KPI template.
-2. Supervisor/Admin HR assign KPI ke employee/team.
-3. Supervisor input/review result.
+1. Superadmin membuat KPI template.
+2. Superadmin assign KPI ke employee/team.
+3. Superadmin input/review result.
 4. Backend menghitung score sesuai method.
 5. Authorized role approve result.
 6. Employee melihat KPI pribadi.

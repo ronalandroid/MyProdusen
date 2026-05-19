@@ -79,7 +79,7 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mime: string, quality: nu
  * Capture the current frame from a <video> element and produce a compressed
  * Blob suitable for upload. Falls back to JPEG if WebP is unsupported.
  */
-export async function captureSelfieFromVideo(video: HTMLVideoElement): Promise<CompressedSelfie> {
+export async function captureSelfieFromVideo(video: HTMLVideoElement, mirror = true): Promise<CompressedSelfie> {
   if (!video.videoWidth || !video.videoHeight) {
     throw new Error('Kamera belum siap untuk mengambil selfie.');
   }
@@ -92,7 +92,14 @@ export async function captureSelfieFromVideo(video: HTMLVideoElement): Promise<C
   if (!ctx) {
     throw new Error('Browser tidak mendukung pengolahan canvas selfie.');
   }
-  ctx.drawImage(video, 0, 0, width, height);
+  if (mirror) {
+    ctx.translate(width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, width, height);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  } else {
+    ctx.drawImage(video, 0, 0, width, height);
+  }
 
   const mime = pickOutputMime();
 

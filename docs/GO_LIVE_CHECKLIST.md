@@ -1,5 +1,8 @@
 # Go-Live Checklist — MyProdusen
 
+> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+
+
 Checklist ini dipakai sebelum MyProdusen dipakai resmi oleh karyawan. Semua poin harus dicek oleh Owner, HR, dan tim teknis sebelum tanggal go-live.
 
 ## A. Pre Go-Live
@@ -21,12 +24,10 @@ Checklist ini dipakai sebelum MyProdusen dipakai resmi oleh karyawan. Semua poin
 ## B. Account Setup
 
 - [ ] Akun Superadmin aktif.
-- [ ] Akun Admin HR aktif.
-- [ ] Akun Supervisor aktif.
 - [ ] Akun Employee aktif.
 - [ ] Akses role Superadmin diverifikasi.
-- [ ] Akses role Admin HR diverifikasi.
-- [ ] Akses role Supervisor diverifikasi.
+- [ ] Akses role Superadmin diverifikasi.
+- [ ] Akses role Employee diverifikasi.
 - [ ] Akses role Employee diverifikasi.
 - [ ] User inactive tidak bisa login.
 
@@ -38,7 +39,6 @@ Checklist ini dipakai sebelum MyProdusen dipakai resmi oleh karyawan. Semua poin
 - [ ] Shift kerja sudah dibuat.
 - [ ] Employee records sudah dibuat.
 - [ ] NIP karyawan auto-generated dan unik.
-- [ ] Supervisor assignment sudah benar.
 - [ ] Work location assignment sudah benar.
 - [ ] Shift assignment sudah benar.
 
