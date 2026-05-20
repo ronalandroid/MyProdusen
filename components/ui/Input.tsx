@@ -24,7 +24,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative">
           {leftIcon && (
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true">
               {leftIcon}
             </div>
           )}
@@ -34,11 +34,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             aria-invalid={error ? 'true' : undefined}
             aria-describedby={[errorId, helperId].filter(Boolean).join(' ') || undefined}
             className={`
-              w-full px-4 py-2.5 text-sm
+              w-full min-h-11 px-4 py-2.5 text-sm
               bg-white border rounded-lg
               transition-colors duration-200
               placeholder:text-[var(--text-muted)]
-              focus:outline-none focus:border-[var(--primary)]
+              focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--ring-focus)] focus:ring-offset-2
               disabled:bg-gray-50 disabled:cursor-not-allowed
               ${error ? 'border-[var(--danger)]' : 'border-[var(--border-color)]'}
               ${leftIcon ? 'pl-10' : ''}
@@ -48,7 +48,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true">
               {rightIcon}
             </div>
           )}

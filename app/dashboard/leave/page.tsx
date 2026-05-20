@@ -8,7 +8,7 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useToast } from "@/components/ui/Toast";
-import { getAuthHeaders } from "@/lib/auth-client";
+import { fetchProfile, getAuthHeaders } from "@/lib/auth-client";
 
 interface LeaveRequest {
   id: string;
@@ -26,6 +26,7 @@ interface LeaveRequest {
   } | null;
   approvedAt?: string | null;
   rejectedAt?: string | null;
+  rejectionReason?: string | null;
   createdAt: string;
 }
 
@@ -48,6 +49,7 @@ export default function LeavePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [role, setRole] = useState<string>("EMPLOYEE");
   const [formData, setFormData] = useState({
     type: "LEAVE",
     startDate: "",
@@ -60,6 +62,14 @@ export default function LeavePage() {
   useEffect(() => {
     fetchLeaveRequests();
   }, [statusFilter]);
+
+  useEffect(() => {
+    fetchProfile()
+      .then((profile) => setRole(profile.role || "EMPLOYEE"))
+      .catch(() => setRole("EMPLOYEE"));
+  }, []);
+
+  const canApproveLeave = role === "SUPERADMIN";
 
   const fetchLeaveRequests = async () => {
     try {
@@ -142,15 +152,22 @@ export default function LeavePage() {
     try {
       const response = await fetch(`/api/leave/${id}/approve`, {
         method: "POST",
-        headers: getAuthHeaders(),
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ overrideReason: "Persetujuan Superadmin melalui dashboard." }),
       });
 
       const data = await response.json();
 
       if (data.success) {
         success(data.message || "Pengajuan berhasil disetujui");
+        setLeaveRequests((current) => current
+          .map((leave) => leave.id === id ? { ...leave, status: "APPROVED", approvedAt: new Date().toISOString() } : leave)
+          .filter((leave) => statusFilter !== "PENDING" || leave.id !== id));
         setIsDetailModalOpen(false);
-        fetchLeaveRequests();
+        await fetchLeaveRequests();
       } else {
         showError(data.error || "Gagal menyetujui pengajuan");
       }
@@ -176,16 +193,22 @@ export default function LeavePage() {
           ...getAuthHeaders(),
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ reason: trimmedReason }),
+        body: JSON.stringify({
+          reason: trimmedReason,
+          overrideReason: "Penolakan Superadmin melalui dashboard.",
+        }),
       });
 
       const data = await response.json();
 
       if (data.success) {
         success(data.message || "Pengajuan berhasil ditolak");
+        setLeaveRequests((current) => current
+          .map((leave) => leave.id === id ? { ...leave, status: "REJECTED", rejectionReason: trimmedReason, rejectedAt: new Date().toISOString() } : leave)
+          .filter((leave) => statusFilter !== "PENDING" || leave.id !== id));
         setIsDetailModalOpen(false);
         setRejectReason("");
-        fetchLeaveRequests();
+        await fetchLeaveRequests();
       } else {
         showError(data.error || "Gagal menolak pengajuan");
       }
@@ -317,10 +340,28 @@ export default function LeavePage() {
                   {formatDate(leave.startDate)} - {formatDate(leave.endDate)} ({calculateDays(leave.startDate, leave.endDate)} hari)
                 </div>
                 <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>
-                  {leave.employee.fullName} • {leave.employee.nip}
+                  {leave.employee?.fullName || "Karyawan"} • {leave.employee?.nip || "-"}
                 </div>
+                {leave.status === "REJECTED" && leave.rejectionReason && (
+                  <div style={{ fontSize: "12px", color: "var(--danger)", marginTop: "4px" }}>
+                    Alasan penolakan: {leave.rejectionReason}
+                  </div>
+                )}
               </div>
-              <div style={{ color: "var(--text-muted)" }}>&gt;</div>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                aria-label={`Buka riwayat detail ${leave.employee?.fullName || "karyawan"}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setSelectedLeave(leave);
+                  setRejectReason(leave.rejectionReason || "");
+                  setIsDetailModalOpen(true);
+                }}
+                style={{ minHeight: "44px", padding: "8px 12px", fontSize: "12px" }}
+              >
+                Buka Riwayat Detail
+              </button>
             </div>
           ))}
         </div>
@@ -402,7 +443,7 @@ export default function LeavePage() {
         title="Detail Pengajuan"
         size="lg"
         footer={
-          selectedLeave?.status === "PENDING" ? (
+          selectedLeave?.status === "PENDING" && canApproveLeave ? (
             <>
               <Button variant="danger" onClick={() => handleReject(selectedLeave.id)} loading={submitting}>
                 Tolak
@@ -426,8 +467,8 @@ export default function LeavePage() {
             </div>
             <div>
               <p className="text-xs text-[var(--text-secondary)] mb-1">Karyawan</p>
-              <p className="text-sm font-semibold">{selectedLeave.employee.fullName}</p>
-              <p className="text-xs text-[var(--text-muted)]">{selectedLeave.employee.nip}</p>
+              <p className="text-sm font-semibold">{selectedLeave.employee?.fullName || "Karyawan"}</p>
+              <p className="text-xs text-[var(--text-muted)]">{selectedLeave.employee?.nip || "-"}</p>
             </div>
             <div>
               <p className="text-xs text-[var(--text-secondary)] mb-1">Periode</p>
@@ -438,7 +479,7 @@ export default function LeavePage() {
               <p className="text-xs text-[var(--text-secondary)] mb-1">Alasan</p>
               <p className="text-sm">{selectedLeave.reason}</p>
             </div>
-            {selectedLeave.status === "PENDING" && (
+            {selectedLeave.status === "PENDING" && canApproveLeave && (
               <div>
                 <label htmlFor="reject-reason" className="block text-xs text-[var(--text-secondary)] mb-1">
                   Alasan Penolakan
@@ -463,6 +504,13 @@ export default function LeavePage() {
                 <p className="text-xs text-[var(--text-secondary)] mb-1">Disetujui oleh</p>
                 <p className="text-sm">{selectedLeave.approvedBy.fullName}</p>
                 <p className="text-xs text-[var(--text-muted)]">{selectedLeave.approvedAt ? formatDate(selectedLeave.approvedAt) : ""}</p>
+              </div>
+            )}
+            {selectedLeave.status === "REJECTED" && selectedLeave.rejectionReason && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3" role="status">
+                <p className="text-xs text-red-700 mb-1">Riwayat penolakan</p>
+                <p className="text-sm font-semibold text-red-800">Alasan penolakan: {selectedLeave.rejectionReason}</p>
+                <p className="text-xs text-red-700">Ditolak {selectedLeave.rejectedAt ? formatDate(selectedLeave.rejectedAt) : "oleh reviewer"}</p>
               </div>
             )}
           </div>

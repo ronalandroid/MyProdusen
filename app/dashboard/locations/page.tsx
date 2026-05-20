@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Search, Plus, Edit, Trash2 } from "lucide-react";
+import { Search, Plus, Edit, Trash2, X, MapPin } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth-client";
 import { WorkLocationMap } from "@/components/locations/WorkLocationMap";
 
@@ -204,12 +204,21 @@ export default function LocationsPage() {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", gap: "12px", flexWrap: "wrap" }}>
-        <div>
-          <h1 style={{ fontSize: "24px", fontWeight: 800 }}>📌 Lokasi Kerja</h1>
-          <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "4px" }}>Kelola lokasi kerja dan radius geo-fencing.</p>
+        <div className="flex items-center gap-3 min-w-0">
+          <span
+            aria-hidden="true"
+            className="flex items-center justify-center rounded-2xl flex-shrink-0"
+            style={{ width: 44, height: 44, background: "var(--primary-light)", color: "var(--primary-dark)" }}
+          >
+            <MapPin size={22} aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <h1 style={{ fontSize: "22px", fontWeight: 800 }} className="truncate">Lokasi Kerja</h1>
+            <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "2px" }}>Kelola lokasi kerja dan radius geo-fencing.</p>
+          </div>
         </div>
         <button className="btn btn-primary" onClick={openCreate}>
-          <Plus size={16} className="mr-1" /> Tambah Lokasi
+          <Plus size={16} aria-hidden="true" /> Tambah Lokasi
         </button>
       </div>
 
@@ -254,7 +263,7 @@ export default function LocationsPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))", gap: "16px" }}>
           {locations.map((loc) => (
             <article key={loc.id} className="card" style={{ padding: "20px", position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: loc.isActive ? "var(--success)" : "var(--text-muted)" }} />
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "var(--primary)" }} aria-hidden="true" />
               <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "flex-start", marginBottom: "10px" }}>
                 <div>
                   <h2 style={{ fontSize: "15px", fontWeight: 700 }}>{loc.name}</h2>
@@ -301,7 +310,9 @@ export default function LocationsPage() {
           <div className="modal" onClick={(event) => event.stopPropagation()}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
               <h2 style={{ fontSize: "18px", fontWeight: 700 }}>{editing ? "Edit Lokasi Kerja" : "Tambah Lokasi Kerja"}</h2>
-              <button type="button" className="btn btn-ghost btn-icon" onClick={closeModal} aria-label="Tutup">✕</button>
+              <button type="button" className="btn btn-ghost btn-icon" onClick={closeModal} aria-label="Tutup">
+                <X size={18} aria-hidden="true" />
+              </button>
             </div>
             <form onSubmit={submit}>
               <div style={{ marginBottom: "12px" }}>

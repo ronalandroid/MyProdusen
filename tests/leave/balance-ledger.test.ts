@@ -9,11 +9,19 @@ describe('leave balance ledger', () => {
   it('summarizes entitlement, held, approved, and release transactions', () => {
     const summary = summarizeLeaveLedger([
       { transactionType: 'ENTITLEMENT', amount: 12 },
-      { transactionType: 'REQUEST_HOLD', amount: -2 },
-      { transactionType: 'REQUEST_APPROVED', amount: 0 },
+      { transactionType: 'REQUEST_APPROVED', amount: -2 },
       { transactionType: 'REQUEST_REJECTED_RELEASE', amount: 1 },
     ]);
 
-    expect(summary).toEqual({ entitlement: 12, used: 2, pending: 2, available: 11 });
+    expect(summary).toEqual({ entitlement: 12, used: 2, pending: 0, available: 11 });
+  });
+
+  it('does not count pending holds as used leave', () => {
+    const summary = summarizeLeaveLedger([
+      { transactionType: 'ENTITLEMENT', amount: 12 },
+      { transactionType: 'REQUEST_HOLD', amount: -2 },
+    ]);
+
+    expect(summary).toEqual({ entitlement: 12, used: 0, pending: 2, available: 10 });
   });
 });

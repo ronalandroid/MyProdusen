@@ -42,6 +42,8 @@ export default function OvertimePage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [filter, setFilter] = useState<string>('ALL');
+  const [pendingApproveId, setPendingApproveId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     overtimeDate: '',
     startTime: '',
@@ -104,19 +106,23 @@ export default function OvertimePage() {
           rateId: '',
           reason: '',
         });
+        setFeedback('Request lembur berhasil dibuat.');
         fetchData();
       } else {
         const error = await res.json();
-        alert(error.error);
+        setFeedback(typeof error.error === 'string' ? error.error : 'Request lembur gagal dibuat.');
       }
-    } catch (error) {
-      console.error('Error creating request:', error);
-      alert('Gagal membuat request lembur');
+    } catch {
+      setFeedback('Gagal membuat request lembur. Coba lagi sebentar.');
     }
   };
 
   const handleApprove = async (id: string) => {
-    if (!confirm('Approve request lembur ini?')) return;
+    if (pendingApproveId !== id) {
+      setPendingApproveId(id);
+      setFeedback('Klik Approve sekali lagi untuk konfirmasi.');
+      return;
+    }
 
     try {
       const res = await fetch(`/api/overtime/requests/${id}/approve`, {
@@ -124,14 +130,15 @@ export default function OvertimePage() {
       });
 
       if (res.ok) {
+        setPendingApproveId(null);
+        setFeedback('Request lembur berhasil disetujui.');
         fetchData();
       } else {
         const error = await res.json();
-        alert(error.error);
+        setFeedback(typeof error.error === 'string' ? error.error : 'Request lembur gagal disetujui.');
       }
-    } catch (error) {
-      console.error('Error approving request:', error);
-      alert('Gagal approve request');
+    } catch {
+      setFeedback('Gagal approve request. Coba lagi sebentar.');
     }
   };
 
@@ -150,11 +157,10 @@ export default function OvertimePage() {
         fetchData();
       } else {
         const error = await res.json();
-        alert(error.error);
+        setFeedback(typeof error.error === 'string' ? error.error : 'Request lembur gagal ditolak.');
       }
-    } catch (error) {
-      console.error('Error rejecting request:', error);
-      alert('Gagal reject request');
+    } catch {
+      setFeedback('Gagal reject request. Coba lagi sebentar.');
     }
   };
 
@@ -205,6 +211,11 @@ export default function OvertimePage() {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
+        {feedback && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900" role="status">
+            {feedback}
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Overtime Management</h1>
@@ -400,7 +411,7 @@ export default function OvertimePage() {
                             onClick={() => handleApprove(item.request.id)}
                             className="text-green-600 hover:text-green-900"
                           >
-                            Approve
+                            {pendingApproveId === item.request.id ? 'Konfirmasi Approve' : 'Approve'}
                           </button>
                           <button
                             onClick={() => handleReject(item.request.id)}

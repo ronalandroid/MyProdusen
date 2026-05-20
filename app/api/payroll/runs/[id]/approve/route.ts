@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
 import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
 import { logAudit } from '@/lib/audit';
+import { hasPermission } from '@/lib/permissions';
 import { notifyUser } from '@/lib/notifications/dispatch';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

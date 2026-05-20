@@ -24,6 +24,7 @@ export default function DashboardLayout({
   useEffect(() => {
     if (profile) {
       if (!canAccessNavigationPath(profile.role as UserRole, pathname)) {
+        setIsCheckingSession(false);
         router.replace("/dashboard");
       }
       return;
@@ -33,12 +34,16 @@ export default function DashboardLayout({
       .then((profile) => {
         setProfile(profile);
         if (!canAccessNavigationPath(profile.role as UserRole, pathname)) {
+          setIsCheckingSession(false);
           router.replace("/dashboard");
           return;
         }
         setIsCheckingSession(false);
       })
-      .catch(() => router.replace("/login"));
+      .catch(() => {
+        setIsCheckingSession(false);
+        router.replace("/login");
+      });
   }, [pathname, profile, router]);
 
   useEffect(() => {
@@ -50,8 +55,12 @@ export default function DashboardLayout({
 
   if (isCheckingSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-main)]">
-        <LoadingSpinner size="lg" message="Memeriksa sesi..." />
+      <div className="dashboard-auth-loading" role="status" aria-live="polite" aria-busy="true">
+        <div className="dashboard-auth-card">
+          <img src="/logo.png" alt="MyProdusen" className="h-16 w-16 object-contain" />
+          <LoadingSpinner size="lg" message="Memeriksa sesi..." />
+          <p className="text-xs text-[var(--text-muted)]">Menyiapkan dashboard aman Anda.</p>
+        </div>
       </div>
     );
   }
@@ -62,12 +71,13 @@ export default function DashboardLayout({
     <ToastProvider>
       <div className="layout-wrapper">
         {/* Navigation (Bottom on Mobile, Sidebar on Desktop) */}
-        <nav className="nav-container" aria-label="Main navigation">
+        <a href="#dashboard-content" className="skip-link">Lewati navigasi</a>
+        <nav className="nav-container" aria-label="Navigasi utama">
           <Sidebar role={profile.role as UserRole} />
         </nav>
 
         {/* Main Content Area */}
-        <main ref={contentRef} className="mobile-content">
+        <main id="dashboard-content" ref={contentRef} className="mobile-content" tabIndex={-1}>
           {children}
         </main>
       </div>

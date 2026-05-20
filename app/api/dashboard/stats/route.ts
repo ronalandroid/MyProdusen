@@ -416,7 +416,7 @@ async function getSuperadminInsights(input: {
       {
         label: 'Total Karyawan',
         value: Object.values(activeUsersByRole).reduce((total, count) => total + count, 0),
-        detail: `${activeUsersByRole.SUPERADMIN || 0} SA · ${activeUsersByRole.ADMIN_HR || 0} HR · ${activeUsersByRole.SUPERVISOR || 0} Leader`,
+        detail: `${activeUsersByRole.SUPERADMIN || 0} Superadmin · ${activeUsersByRole.EMPLOYEE || 0} Karyawan`,
         href: '/dashboard/employees',
         tone: 'primary',
       },
@@ -453,15 +453,6 @@ async function getScopedEmployeeIds(role: string, employeeId?: string): Promise<
 
   if (!employeeId) {
     return [];
-  }
-
-  if (role === 'SUPERVISOR') {
-    const team = await db
-      .select({ id: employees.id })
-      .from(employees)
-      .where(eq(employees.supervisorId, employeeId));
-
-    return [employeeId, ...team.map((member) => member.id)];
   }
 
   return [employeeId];

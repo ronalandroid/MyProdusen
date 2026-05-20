@@ -19,9 +19,9 @@ import path from 'node:path';
 const root = process.cwd();
 const referencesDir = path.join(root, 'docs', 'references');
 const screensDir = path.join(referencesDir, 'screens');
-const checklistPath = path.join(referencesDir, 'design-checklist.md');
+const checklistPath = path.join(referencesDir, 'design-checklist', 'README.md');
 const readmePath = path.join(referencesDir, 'README.md');
-const emailGuidePath = path.join(referencesDir, 'email-style-guide.md');
+const emailGuidePath = path.join(referencesDir, 'email-style-guide', 'README.md');
 const logoPath = path.join(referencesDir, 'myprodusen-logo.png');
 
 const REQUIRED_SCREENS = new Set([
@@ -57,8 +57,8 @@ function requireDir(target, label) {
 requireDir(referencesDir, 'docs/references directory');
 requireDir(screensDir, 'docs/references/screens directory');
 requireFile(readmePath, 'docs/references/README.md');
-requireFile(checklistPath, 'docs/references/design-checklist.md');
-requireFile(emailGuidePath, 'docs/references/email-style-guide.md');
+requireFile(checklistPath, 'docs/references/design-checklist/README.md');
+requireFile(emailGuidePath, 'docs/references/email-style-guide/README.md');
 requireFile(logoPath, 'docs/references/myprodusen-logo.png');
 
 let actualScreens = [];
@@ -89,21 +89,21 @@ if (existsSync(checklistPath)) {
   ];
   for (const screen of referencedScreens) {
     if (!checklist.includes(screen)) {
-      errors.push(`design-checklist.md does not reference ${screen}`);
+      errors.push(`design-checklist/README.md does not reference ${screen}`);
     }
   }
 
   if (!/EMPLOYEE APP SHELL/i.test(checklist)) {
-    errors.push('design-checklist.md missing "EMPLOYEE APP SHELL" section');
+    errors.push('design-checklist/README.md missing "EMPLOYEE APP SHELL" section');
   }
   if (!/SUPER ADMIN APP SHELL/i.test(checklist)) {
-    errors.push('design-checklist.md missing "SUPER ADMIN APP SHELL" section');
+    errors.push('design-checklist/README.md missing "SUPER ADMIN APP SHELL" section');
   }
   if (!/EMAILING SYSTEM/i.test(checklist)) {
-    errors.push('design-checklist.md missing "EMAILING SYSTEM" section');
+    errors.push('design-checklist/README.md missing "EMAILING SYSTEM" section');
   }
   if (!/Brand tokens/i.test(checklist)) {
-    errors.push('design-checklist.md missing "Brand tokens" section');
+    errors.push('design-checklist/README.md missing "Brand tokens" section');
   }
 }
 

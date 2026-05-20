@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { POST as loginPOST } from '@/app/api/auth/login/route';
 import { POST as registerPOST } from '@/app/api/auth/register/route';
 import { GET as profileGET } from '@/app/api/auth/profile/route';
@@ -12,6 +12,7 @@ describe('Auth API', () => {
   const testUserIds: string[] = [];
 
   afterEach(async () => {
+    vi.unstubAllEnvs();
     await cleanupTestData({ userIds: testUserIds });
     testUserIds.length = 0;
   });
@@ -46,6 +47,40 @@ describe('Auth API', () => {
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.data.user.email).toBe('login@test.com');
+    });
+
+    it('should expose TestSprite-compatible login aliases only when configured', async () => {
+      vi.stubEnv('TESTSPRITE_COMPAT_RESPONSE', 'true');
+      const hashedPassword = await hashPassword('Testpassword123!');
+      const timestamp = Date.now();
+      const userId = `test_user_${timestamp}`;
+
+      await db.insert(users).values({
+        id: userId,
+        email: 'login-compat@test.com',
+        username: 'logincompatuser',
+        password: hashedPassword,
+        role: 'EMPLOYEE',
+        isActive: true,
+      });
+      testUserIds.push(userId);
+
+      const request = createMockRequest('POST', 'http://localhost:3000/api/auth/login', {
+        body: {
+          email: 'login-compat@test.com',
+          password: 'Testpassword123!',
+        },
+      });
+
+      const response = await loginPOST(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.user.email).toBe('login-compat@test.com');
+      expect(data.email).toBe('login-compat@test.com');
+      expect(data.role).toBe('EMPLOYEE');
+      expect(data.active).toBe(true);
     });
 
     it('should fail with invalid email', async () => {
@@ -252,6 +287,25 @@ describe('Auth API', () => {
       expect(data.data.email).toBe(user.email);
     });
 
+    it('should expose TestSprite-compatible profile aliases only when configured', async () => {
+      vi.stubEnv('TESTSPRITE_COMPAT_RESPONSE', 'true');
+      const user = await createTestUser('EMPLOYEE');
+      testUserIds.push(user.id);
+
+      const request = createMockRequest('GET', 'http://localhost:3000/api/auth/profile', {
+        token: user.token,
+      });
+
+      const response = await profileGET(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.data.email).toBe(user.email);
+      expect(data.email).toBe(user.email);
+      expect(data.active).toBe(true);
+    });
+
     it('should fail without token', async () => {
       const request = createMockRequest('GET', 'http://localhost:3000/api/auth/profile');
 
@@ -299,6 +353,39 @@ describe('Auth API', () => {
           currentPassword: 'Oldpassword123!',
           newPassword: 'Newpassword123!',
           confirmPassword: 'Newpassword123!',
+        },
+      });
+
+      const response = await changePasswordPOST(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+    });
+
+    it('should accept TestSprite oldPassword alias only when configured', async () => {
+      vi.stubEnv('TESTSPRITE_COMPAT_RESPONSE', 'true');
+      const hashedPassword = await hashPassword('Oldpassword123!');
+      const timestamp = Date.now();
+      const userId = `test_user_${timestamp}`;
+
+      await db.insert(users).values({
+        id: userId,
+        email: 'changepass-compat@test.com',
+        username: 'changepasscompatuser',
+        password: hashedPassword,
+        role: 'EMPLOYEE',
+        isActive: true,
+      });
+      testUserIds.push(userId);
+
+      const testUser = await createTestUser('EMPLOYEE', { id: userId });
+
+      const request = createMockRequest('POST', 'http://localhost:3000/api/auth/change-password', {
+        token: testUser.token,
+        body: {
+          oldPassword: 'Oldpassword123!',
+          newPassword: 'Newpassword123!',
         },
       });
 

@@ -1,6 +1,6 @@
 # Design References
 
-> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+> **AI agent role source of truth:** MyProdusen production uses exactly two roles: `SUPERADMIN` and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` are historical database values only and must not be exposed in production UI or route access.
 
 
 This folder is the **canonical visual contract** for MyProdusen. Every UI
@@ -12,8 +12,8 @@ ask — do not interpret.
 ```
 docs/references/
 ├── README.md                       ← this file (rules of engagement)
-├── design-checklist.md             ← per-screen checklist agents must satisfy
-├── email-style-guide.md            ← full email design guide (style, tone, copy)
+├── design-checklist/README.md      ← per-screen checklist agents must satisfy
+├── email-style-guide/README.md     ← full email design guide (style, tone, copy)
 ├── myprodusen-logo.png             ← official logo
 └── screens/
     ├── employee-full-ui-ux-mobile.png       ← Employee mobile shell
@@ -25,8 +25,8 @@ docs/references/
 ## Rules of engagement
 
 1. **Reference-first.** Before writing UI code, open the relevant screenshot
-   and the matching section of `design-checklist.md`. If the change is to
-   email, also read `email-style-guide.md`.
+   and the matching section of `design-checklist/README.md`. If the change is to
+   email, also read `email-style-guide/README.md`.
 2. **No invention.** If a layout, copy, or interaction is not in the
    references, treat it as out of scope and ask the operator. Do not
    improvise.
@@ -38,7 +38,7 @@ docs/references/
    identity, typography rhythm, and component vocabulary.
 5. **Document the link in every commit.** Commit messages that change UI
    must reference the checklist line they satisfy, e.g.
-   `feat(ui): add greeting card per design-checklist.md §Beranda-Employee`.
+   `feat(ui): add greeting card per design-checklist/README.md §Beranda-Employee`.
 6. **No commercial / marketing language.** This is an internal HRIS, not a
    SaaS product.
 
@@ -47,7 +47,7 @@ docs/references/
 ```
 1. Receive task that touches UI.
 2. Identify screen(s) affected → open screens/<screen>.png.
-3. Open docs/references/design-checklist.md, find the matching section.
+3. Open docs/references/design-checklist/README.md, find the matching section.
 4. Read what is required AND what is forbidden.
 5. Implement.
 6. Run npm run release:check.
@@ -68,7 +68,7 @@ When the operator approves a new design:
 
 1. Drop the new image into `screens/` with the exact filename of the
    screen it replaces.
-2. Update the matching section of `design-checklist.md`.
+2. Update the matching section of `design-checklist/README.md`.
 3. Commit on a feature branch named `design/<short-desc>`.
 4. PR title must say "Design refresh — <screen>" so reviewers know to look
    at the screenshot diff specifically.

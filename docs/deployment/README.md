@@ -1,0 +1,82 @@
+# Deployment — MyProdusen
+
+> Canonical deployment, Coolify, redeploy, and production smoke guide.
+
+> Role lock: production UI/login/access uses only `SUPERADMIN` and `EMPLOYEE`; `ADMIN_HR` and `SUPERVISOR` are historical database enum values only and must be denied in production access.
+
+## Target
+
+- VPS.
+- Coolify.
+- Docker / Next.js standalone container.
+- PostgreSQL service.
+- Persistent private upload volume at `/app/uploads`.
+
+## Required Environment
+
+```env
+DATABASE_URL=
+JWT_SECRET=
+NEXTAUTH_SECRET=
+APP_URL=
+NEXT_PUBLIC_APP_URL=
+NODE_ENV=production
+UPLOAD_DIR=/app/uploads
+ATTENDANCE_SELFIE_DIR=attendance-selfies
+MAX_UPLOAD_SIZE=
+MAX_SELFIE_SIZE_MB=1
+GPS_MAX_ACCURACY_METERS=100
+DEFAULT_GEOFENCE_RADIUS_METERS=100
+REJECT_OUTSIDE_GEOFENCE=true
+GPS_TIMESTAMP_MAX_AGE_SECONDS=120
+ATTENDANCE_EXPORT_MAX_ROWS=5000
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=
+SUPERADMIN_EMAIL=
+SUPERADMIN_PASSWORD=
+PAYROLL_MODULE_ENABLED=
+PAYROLL_MUTATION_ENABLED=
+APP_VERSION=
+GIT_COMMIT_SHA=
+BUILD_TIME=
+```
+
+Secrets must be configured in Coolify, not committed.
+
+## Deploy Steps
+
+1. Push reviewed code.
+2. Configure Coolify env vars.
+3. Mount `/app/uploads` persistent volume.
+4. Build Docker image.
+5. Run `npm run db:deploy` before app start or as release command.
+6. For fresh staging only, run `npm run db:seed` after setting `SEED_SUPERADMIN_PASSWORD` and `SEED_EMPLOYEE_PASSWORD`; never print real passwords in docs or logs.
+7. Start app with production command.
+8. Check `/api/health`.
+9. Check `/api/version` if endpoint exists.
+10. Run smoke tests from `TESTING_QA.md`.
+
+## No-Cache Redeploy
+
+Use when stale build or route artifact suspected:
+
+1. Trigger Coolify rebuild with no cache.
+2. Confirm latest `GIT_COMMIT_SHA` / `BUILD_TIME` in `/api/version`.
+3. Run `BASE_URL=https://myprodusen.online npm run verify:live-routes`.
+4. Re-test login, dashboard, attendance, report/PDF auth denial, payroll RBAC.
+
+## Health And Version
+
+- `/api/health`: status only, no secrets, no DB URL, no upload path, no private filenames.
+- `/api/version`: safe metadata only: app name, status, env label, version, git SHA, build time.
+
+## Rollback
+
+- Prefer app image rollback for app-only failures.
+- Database restore requires explicit approval.
+- Never reset production DB.
+- Use `OPERATIONS.md` rollback procedure.
+
+## Signoff
+
+Release can go live only when `FINAL_CHECKLIST.md` and `TESTING_QA.md` go/no-go criteria pass.

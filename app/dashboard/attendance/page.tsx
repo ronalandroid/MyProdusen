@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, ArrowLeft, Info, MapPin, Navigation } from "lucide-react";
+import { Bell, ArrowLeft, ClipboardList, Info, MapPin, Navigation } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ClientUserProfile, fetchProfile, getAuthHeaders } from "@/lib/auth-client";
@@ -129,7 +129,7 @@ export default function AttendancePage() {
       return {
         title: "Belum Check-In",
         description: "Jangan lupa check-in saat tiba di lokasi kerja.",
-        color: "#D97706",
+        color: "var(--warning)",
       };
     }
 
@@ -308,8 +308,8 @@ export default function AttendancePage() {
       </div>
 
       <div className="card" style={{ background: "linear-gradient(135deg, #fff 0%, var(--primary-light) 100%)", padding: "16px", display: "flex", gap: "12px", alignItems: "flex-start", border: "1px solid rgba(253, 199, 4, 0.35)" }}>
-        <div style={{ backgroundColor: "var(--primary)", padding: "8px", borderRadius: "14px", boxShadow: "0 10px 20px rgba(253,199,4,.25)" }}>
-          <span style={{ fontSize: "20px" }}>📋</span>
+        <div style={{ backgroundColor: "var(--primary)", padding: "10px", borderRadius: "14px", boxShadow: "0 10px 20px rgba(253,199,4,.25)", color: "var(--text-primary)", display: "flex", alignItems: "center", justifyContent: "center" }} aria-hidden="true">
+          <ClipboardList size={20} aria-hidden="true" />
         </div>
         <div>
           <h3 style={{ fontSize: "14px", fontWeight: 700, color: statusContent.color, marginBottom: "4px" }}>{isLoading ? "Memuat..." : statusContent.title}</h3>

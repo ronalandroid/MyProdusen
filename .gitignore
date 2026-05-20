@@ -21,6 +21,7 @@ dist
 *.pem
 *.key
 *.bak
+*.orig
 
 # Debug
 npm-debug.log*

@@ -33,19 +33,23 @@
   --border-focus: #FDC704;
   
   /* Status Colors */
-  --success: #22C55E;
+  --success: #15803D;
+  --success-text: #166534;
   --success-bg: #DCFCE7;
   --success-border: #86EFAC;
   
-  --danger: #E53935;
+  --danger: #C62828;
+  --danger-text: #991B1B;
   --danger-bg: #FEE2E2;
   --danger-border: #FCA5A5;
   
-  --warning: #F59E0B;
+  --warning: #B45309;
+  --warning-text: #92400E;
   --warning-bg: #FEF3C7;
   --warning-border: #FCD34D;
   
-  --info: #3B82F6;
+  --info: #1D4ED8;
+  --info-text: #1D4ED8;
   --info-bg: #DBEAFE;
   --info-border: #93C5FD;
   
@@ -448,7 +452,7 @@ p, .body-text {
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  padding: 0.625rem 0.875rem;
+  padding: 0.5rem 0.5rem;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -456,7 +460,8 @@ p, .body-text {
   border-radius: 18px;
   text-decoration: none;
   color: var(--text-muted);
-  min-width: 60px;
+  min-width: 0;
+  flex: 1 1 0;
   min-height: 56px;
 }
 
@@ -473,11 +478,12 @@ p, .body-text {
 }
 
 .nav-item.active {
-  color: var(--primary);
+  background-color: var(--primary-light);
+  color: var(--text-primary);
 }
 
 .nav-item.active .nav-icon {
-  color: var(--primary);
+  color: var(--text-primary);
 }
 
 /* Desktop Nav Item */
@@ -897,8 +903,8 @@ p, .body-text {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-full);
   background-color: var(--bg-hover);
   border: none;
@@ -1532,17 +1538,17 @@ html {
 
 .badge-danger {
   background-color: var(--danger-bg);
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .badge-warning {
   background-color: var(--warning-bg);
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .badge-info {
   background-color: var(--info-bg);
-  color: var(--info);
+  color: var(--info-text);
 }
 
 .badge-neutral {
@@ -3133,5 +3139,277 @@ button.btn {
   .input,
   .select {
     min-height: 48px;
+  }
+}
+
+/* ============================================
+   UI/UX Pro Max polish — responsive dashboard quality
+   ============================================ */
+:root {
+  --surface-elevated: rgba(255, 255, 255, 0.94);
+  --surface-soft: rgba(255, 248, 225, 0.62);
+  --ring-focus: #9A6700;
+  --shadow-brand: 0 20px 54px rgba(255, 193, 7, 0.24);
+  --shadow-card-hover: 0 22px 58px rgba(17, 17, 17, 0.11);
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: var(--z-tooltip);
+  transform: translateY(-160%);
+  border-radius: var(--radius-lg);
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform var(--transition-fast);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+
+.layout-wrapper::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 193, 7, 0.14), transparent 18rem),
+    radial-gradient(circle at 90% 18%, rgba(229, 57, 53, 0.08), transparent 16rem),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.92), rgba(245, 245, 245, 0.96));
+}
+
+.card,
+.dashboard-header,
+.quick-action-card,
+.stat-card,
+.alert-card {
+  background: var(--surface-elevated);
+  border-color: rgba(229, 227, 230, 0.78);
+  box-shadow: 0 14px 40px rgba(17, 17, 17, 0.065);
+}
+
+.card:hover,
+.quick-action-card:hover,
+.stat-card:hover {
+  border-color: rgba(255, 193, 7, 0.42);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.hero-card {
+  border: 1px solid rgba(255, 220, 109, 0.76);
+  box-shadow: var(--shadow-brand);
+}
+
+.hero-card::before {
+  content: "";
+  position: absolute;
+  inset: auto -5rem -5rem auto;
+  width: 14rem;
+  height: 14rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  pointer-events: none;
+}
+
+.btn:focus-visible,
+a:focus-visible,
+button:focus-visible,
+.input:focus-visible,
+.select:focus-visible,
+.textarea:focus-visible {
+  outline: 3px solid var(--ring-focus);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgba(255, 193, 7, 0.24);
+}
+
+.nav-item,
+.quick-action-card,
+.btn,
+.icon-button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.nav-item:active,
+.quick-action-card:active,
+.btn:active,
+.icon-button:active {
+  transform: scale(0.98);
+}
+
+.nav-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 245, 245, 0.72);
+  transition: transform var(--transition-base), background-color var(--transition-base), color var(--transition-base);
+}
+
+.nav-item.active .nav-icon-wrapper {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.32), rgba(255, 248, 225, 0.82));
+}
+
+.section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.empty-state-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 248, 225, 0.45));
+  border: 1px dashed rgba(255, 193, 7, 0.46);
+}
+
+.dashboard-auth-loading {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 193, 7, 0.24), transparent 18rem),
+    var(--bg-main);
+}
+
+.dashboard-auth-card {
+  width: min(100%, 22rem);
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(229, 227, 230, 0.86);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 24px 70px rgba(17, 17, 17, 0.11);
+}
+
+.dashboard-skeleton-shell {
+  width: min(100%, 70rem);
+  margin-inline: auto;
+  display: grid;
+  gap: clamp(1rem, 3vw, 1.5rem);
+  padding-block: 0.25rem;
+}
+
+.dashboard-skeleton-hero,
+.dashboard-skeleton-card,
+.dashboard-skeleton-panel {
+  border: 1px solid rgba(229, 227, 230, 0.78);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 40px rgba(17, 17, 17, 0.06);
+}
+
+.dashboard-skeleton-hero {
+  min-height: 12rem;
+  display: grid;
+  align-content: center;
+  gap: 0.875rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border-radius: 1.75rem;
+  background: linear-gradient(135deg, rgba(255, 248, 225, 0.96), rgba(255, 193, 7, 0.24));
+}
+
+.dashboard-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.75rem, 3vw, 1rem);
+}
+
+.dashboard-skeleton-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1.35rem;
+}
+
+.dashboard-skeleton-panel {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  border-radius: 1.5rem;
+}
+
+.dashboard-skeleton-bars {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.75rem;
+  min-height: 10rem;
+}
+
+.skeleton-pill { height: 0.85rem; border-radius: 999px; }
+.skeleton-line { height: 0.8rem; border-radius: 999px; }
+.skeleton-heading { height: clamp(1.55rem, 5vw, 2.35rem); width: min(28rem, 86%); border-radius: 999px; }
+.skeleton-value { height: 1.75rem; width: 55%; border-radius: 999px; }
+.skeleton-icon { width: 2.65rem; height: 2.65rem; border-radius: 1rem; }
+.skeleton-bar { border-radius: 1rem 1rem 0.5rem 0.5rem; }
+
+@media (min-width: 768px) {
+  .dashboard-skeleton-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .quick-action-card,
+  .stat-card,
+  .nav-item,
+  .btn,
+  .icon-button,
+  .skeleton {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+
+/* ============================================
+   EMPLOYEE BERANDA — reference parity (2026-05-20)
+   ============================================ */
+
+.employee-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .employee-metrics-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+.employee-bar {
+  width: 100%;
+  height: 6.25rem;
+  background: var(--bg-input);
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.employee-bar-fill {
+  width: 100%;
+  display: block;
+  border-radius: 0.75rem 0.75rem 0 0;
+  transition: height var(--transition-base);
+}
+
+@media (min-width: 1440px) {
+  .mobile-content {
+    padding-inline: clamp(2rem, 4vw, 3.5rem);
   }
 }

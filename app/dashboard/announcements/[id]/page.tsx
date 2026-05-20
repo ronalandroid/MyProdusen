@@ -46,6 +46,7 @@ export default function AnnouncementDetailPage() {
   const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAnnouncement();
@@ -79,14 +80,14 @@ export default function AnnouncementDetailPage() {
 
       if (res.ok) {
         setComment('');
+        setFeedback('Komentar berhasil dikirim.');
         fetchAnnouncement();
       } else {
         const error = await res.json();
-        alert(error.error);
+        setFeedback(typeof error.error === 'string' ? error.error : 'Komentar gagal dikirim.');
       }
-    } catch (error) {
-      console.error('Error submitting comment:', error);
-      alert('Gagal mengirim komentar');
+    } catch {
+      setFeedback('Gagal mengirim komentar. Coba lagi sebentar.');
     } finally {
       setSubmitting(false);
     }
@@ -159,6 +160,11 @@ export default function AnnouncementDetailPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
+      {feedback && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900" role="status">
+          {feedback}
+        </div>
+      )}
       {/* Back Button */}
       <button
         onClick={() => router.back()}

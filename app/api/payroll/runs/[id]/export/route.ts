@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/middleware';
 import { errorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
 import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
 import { logAudit } from '@/lib/audit';
+import { hasPermission } from '@/lib/permissions';
 
 function csvEscape(value: unknown) {
   const text = String(value ?? '');

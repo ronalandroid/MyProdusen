@@ -169,7 +169,7 @@ describe('Protected attendance selfie endpoints', () => {
     expect(response.status).toBe(403);
   });
 
-  it('blocks legacy ADMIN_HR from viewing any selfie', async () => {
+  it('blocks historical ADMIN_HR from viewing attendance selfie', async () => {
     const seed = await seedAttendance({ role: 'EMPLOYEE' });
     if (!seed.attendanceId) throw new Error('seed failed');
 

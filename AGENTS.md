@@ -1,75 +1,41 @@
-# AGENTS.md — MyProdusen Web App
+# AGENTS.md — MyProdusen AI Agent Operating Manual
 
-> **AI agent role source of truth:** MyProdusen production uses exactly two user-facing account roles: `SUPERADMIN` and `EMPLOYEE`. Legacy `ADMIN_HR` and `SUPERVISOR` references are historical only and must not be used for new UI/UX, docs, tests, or route access.
+> Source of truth: `/docs/prd/README.md` defines product scope and final decisions. Current production roles are exactly `SUPERADMIN` and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` may exist only as historical database values and must not be exposed in production UI, seed accounts, tests, or new route access.
 
+## 0. Mission
 
-## 0. Prime Directive
+Build **MyProdusen Web App** for **Produsen Dimsum Medan** as a production-grade internal HRIS covering employees, NIP, attendance, geo-fencing, shifts, leave, KPI, dashboards, reports, audit logs, notifications, PostgreSQL, Docker, VPS, and Coolify.
 
-You are working on **MyProdusen Web App** for **Produsen Dimsum Medan**.
+Operate like a senior fullstack engineer, architect, security reviewer, DevOps engineer, and UI/UX reviewer. Do not guess, change product direction, alter brand tone, or add scope without documentation alignment.
 
-This project is an internal HRIS-style web app for:
-- employee management
-- NIP auto-generation
-- GPS + selfie attendance
-- geo-tagging
-- geo-fencing
-- work location management
-- shift management
-- leave/sick/permission requests
-- KPI management
-- dashboards
-- reports/export
-- audit logs
-- notifications
-- PostgreSQL database
-- VPS + Coolify deployment
+## 1. Source of Truth Order
 
-Work like a senior fullstack engineer, software architect, security reviewer, DevOps engineer, and UI/UX designer with 15+ years of experience.
+Read documentation before changing anything.
 
-Do not act randomly.
-Do not guess.
-Do not change product direction.
-Do not change UI/UX tone without explicit instruction.
-
----
-
-## 1. Source of Truth
-
-Always read `/docs` before doing any work.
-
-Canonical docs:
+Required first reads:
 
 ```txt
-/docs/prd.md
-/docs/AGENTS.md
-/docs/IMPLEMENTATION_PLAN.md
-/docs/PARALLEL_AGENTS_PLAN.md
-/docs/FINAL_CHECKLIST.md
-/docs/REFERENCE_REPO_ANALYSIS.md
+/docs/prd/README.md
+/docs/database/README.md            if exists
+/docs/ui-ux-guide/README.md         if exists
+/docs/security/README.md            if exists
+/docs/final-checklist/README.md     if exists
 ```
 
-Rules:
+Decision hierarchy:
 
-1. `/docs` is the source of truth.
-2. Before creating, changing, or adding any feature, read `/docs/prd.md`.
-3. Before changing architecture, read `/docs/IMPLEMENTATION_PLAN.md`.
-4. Before using agents/subagents, read `/docs/PARALLEL_AGENTS_PLAN.md`.
-5. Before final review, read `/docs/FINAL_CHECKLIST.md`.
-6. If a markdown document must be added, put it inside `/docs`.
-7. Do not create random `.md` files in root unless explicitly requested.
-8. If root docs already exist, sync or move them into `/docs`.
-9. Do not let documentation become scattered.
-10. Documentation must stay professional, clean, and consistent.
+1. `/docs/prd/README.md` — product scope, roles, business rules, acceptance criteria.
+2. `/docs/database/README.md` — database model, migrations, Drizzle rules.
+3. `/docs/ui-ux-guide/README.md` — approved UI/UX patterns, brand lock, responsive rules.
+4. `/docs/security/README.md` — auth, RBAC, upload, logging, production hardening.
+5. `/docs/architecture/README.md` — system architecture and execution order.
+6. `/docs/final-checklist/README.md` — release readiness.
+7. `/docs/operations/README.md` — runbook, backup, restore, rollback.
+8. Existing code patterns — implementation style when docs are silent.
 
----
+If docs conflict, stop and report conflict unless user gives clear instruction to resolve it. Do not silently override `/docs/prd/README.md`.
 
-## 2. Documentation Rule
-
-Any new documentation must go here:
-
-```txt
-/docs
-```
+## 2. Documentation Discipline
 
 Allowed root markdown files:
 
@@ -78,92 +44,101 @@ README.md
 AGENTS.md
 ```
 
-All other planning/product/technical docs must be inside `/docs`.
+All other project docs must live in `/docs`.
 
-Examples:
+Update docs when scope changes:
 
-```txt
-/docs/prd.md
-/docs/API.md
-/docs/DATABASE.md
-/docs/RBAC.md
-/docs/SECURITY.md
-/docs/DEPLOYMENT.md
-/docs/COOLIFY.md
-/docs/TESTING.md
-/docs/CHANGELOG.md
-```
+- Code behavior changes → update relevant `/docs` file.
+- Database changes → update `/docs/database/README.md`.
+- UI changes → update `/docs/ui-ux-guide/README.md`.
+- Security changes → update `/docs/security/README.md`.
+- Deploy changes → update `/docs/deployment/README.md`.
+- Operations, backup, restore, rollback changes → update `/docs/operations/README.md`.
+- Tests, fixes, investigations → update `/docs/testing-qa/README.md` and `/docs/changelog/README.md`.
 
-When adding a feature:
-1. Check docs first.
-2. Update docs if needed.
-3. Then code.
-4. Then update checklist.
+Do not create random planning, status, audit, or report markdown outside `/docs`.
 
-Never code a major feature without documentation alignment.
+## 3. Locked Product Decisions
 
----
+### Roles
 
-## 3. Skill Usage Rule
-
-Use available Codex skills when useful.
-
-### Required project skill behavior
-
-If available, use:
+Production user-facing roles are locked to the two-role model:
 
 ```txt
-superpowers
+SUPERADMIN
+EMPLOYEE
 ```
 
-for:
-- managing agents/subagents
-- breaking work into safe parallel tasks
-- preventing overlapping edits
-- planning waves
-- coordinating implementation
-- doing final review
+Rules:
 
-If available, use:
+- `SUPERADMIN` has full system access, role/permission control, audit log access, settings, reports, approvals, payroll, and audit logs.
+- `EMPLOYEE` can access own dashboard, attendance, leave, KPI, payroll, notifications, and profile.
+- Employees must never access another employee's private data.
+- `ADMIN_HR` and `SUPERVISOR` must not be used for production UI, seed accounts, tests, or new route access.
+- Inactive users must not log in.
+- Backend must enforce every permission.
+
+### Database and ORM
+
+Project uses:
 
 ```txt
-ui ux promax
+Drizzle ORM
+PostgreSQL
+Drizzle SQL migrations
+npm run db:deploy
 ```
 
-for:
-- improving UI/UX quality
-- refining layout
-- improving accessibility
-- improving visual hierarchy
-- improving dashboard clarity
-- improving forms, tables, empty states, and error states
+Required paths, files, and commands:
 
-Important:
+```txt
+/drizzle
+/drizzle/migrations
+drizzle.config.ts
+Drizzle SQL migrations
+npm run db:deploy
+```
 
-1. Skills must not override `/docs`.
-2. Skills must not change product scope.
-3. Skills must not change brand style, tone, colors, or logo unless explicitly requested.
-4. If a skill is not available, continue using the rules in this file manually.
-5. If using a skill creates conflict with `/docs`, `/docs` wins.
+Database rules:
 
----
+- Use additive Drizzle migrations.
+- Never reset production database.
+- Never run destructive migrations without explicit approval.
+- Keep historical attendance, employee, KPI, audit, and upload metadata.
+- Use deactivation or soft delete where history exists.
+- Add indexes for dashboard, report, auth, attendance, KPI, and audit queries.
 
-## 4. Brand, Logo, Style, and UI/UX Lock
+## 4. Tech Stack Lock
 
-Do not change the existing UI/UX style, tone, theme, or logo unless explicitly requested.
+Use existing stack unless docs explicitly change it:
 
-Preserve:
+```txt
+Next.js App Router
+TypeScript
+Tailwind CSS
+Drizzle ORM
+PostgreSQL
+Docker
+Coolify
+VPS
+Persistent upload storage
+```
 
-- product name
-- logo
-- brand colors
-- UI tone
-- spacing rhythm
-- typography direction
-- dashboard style
-- component style
-- interaction pattern
-- existing design system
+Do not add heavy dependencies without clear benefit. Before adding any package, check existing utilities, runtime cost, security impact, and documentation impact.
+
+## 5. Frontend-Backend-Database Sync Rule
+
+Every feature must be wired end-to-end:
+
+```txt
+UI -> API/server action -> service -> Drizzle -> PostgreSQL -> response -> UI state
+```
+
+A feature is incomplete if any layer is mocked, disconnected, frontend-only, or writes data without read-back verification. Backend remains source of truth for auth, RBAC, validation, geo-fencing, attendance timing, KPI scoring, report filters, uploads, and audit logging.
+
+## 6. UI/UX Lock
+
+Do not change product name, logo, brand colors, UI tone, spacing rhythm, typography direction, dashboard style, component style, or interaction patterns unless explicitly requested.
 
 Brand colors:
 
@@ -175,847 +150,190 @@ Soft Gray:     #F5F5F5
 Success Green: #22C55E
 ```
 
-UI/UX direction:
+UI direction:
 
-- clean
-- minimal
-- professional
-- modern internal dashboard
-- not AI-looking
-- easy for non-technical staff
-- mobile responsive
-- WCAG-friendly
-- accessible contrast
-- clear labels
-- clear errors
-- clear loading states
-- clear empty states
+- Clean, minimal, professional internal dashboard.
+- Easy for non-technical staff.
+- Mobile responsive and WCAG-friendly.
+- Clear labels, errors, loading states, empty states, and success feedback.
+- Not noisy, not AI-looking, no unnecessary animation.
 
-Color usage:
+Every UI change must pass:
 
-- Yellow = brand accent and primary CTA.
-- Red = danger, rejection, late status, critical warning.
-- Black = primary text and strong contrast.
-- Gray = background, border, card surface, neutral state.
-- Do not overuse yellow.
-- Do not overuse red.
-- Do not make the UI noisy.
+- No clipped button text.
+- No overlapping icon/text.
+- No horizontal overflow.
+- No dead buttons.
+- Tap target minimum `44px`.
+- Modal responsive on mobile and desktop.
+- Forms preserve user input after validation errors.
+- Async actions show loading state.
+- Success and error feedback visible.
+- Colors and tone match MyProdusen guide.
+- Mobile `360px` / `390px` and desktop `1440px` checked when UI changes.
 
-Before changing UI:
-1. Read `/docs/prd.md`.
-2. Check existing components.
-3. Reuse current design pattern.
-4. Improve without changing tone.
-5. Preserve logo and brand identity.
+## 7. Security and Safety Rules
 
----
+Mandatory backend rules:
 
-## 5. Max Agent Rule
+- Validate all input server-side.
+- Enforce auth and RBAC server-side.
+- Return consistent safe errors; never expose stack traces to users.
+- Never trust frontend GPS, distance, file metadata, role, user ID, or employee ID.
+- Add audit log for sensitive actions.
+- Use `no-store` for protected data.
+- Never expose private upload/selfie files publicly.
+- Never commit `.env`, secrets, dumps, upload archives, credentials, tokens, or private exports.
 
-Use maximum **5 agents** only.
+Sensitive actions requiring audit log include login, logout, failed login where feasible, user changes, role changes, employee changes, NIP generation, location changes, shift changes, attendance check-in/out, geo-fence rejection/pending, manual attendance adjustment, leave approval/rejection, KPI create/update/approval, report export, protected selfie access, and deployment-sensitive admin actions.
 
-Never create more than 5 agents.
+## 8. Production Debugging and Observability
 
-Allowed agents:
+Production behavior:
 
-### Agent 1 — Docs + Product + Competitor Research
+- No raw JavaScript errors shown to users.
+- Add safe error boundaries for user-facing failures.
+- Show human-readable Indonesian error messages.
+- Log technical details server-side only.
+- Redact secrets, tokens, passwords, cookies, PII where possible, and private file paths.
+- `/api/health` must not leak secrets, database URLs, upload paths, private filenames, or provider keys.
+- `/api/version` may expose only safe metadata such as app name, status, version, git SHA, build time, and environment label.
+- Protected data must use `Cache-Control: no-store` or equivalent private no-cache behavior.
+- Private uploads and selfies must be served only through protected endpoints with ownership/RBAC checks.
 
-Scope:
-- finalize `/docs/prd.md`
-- maintain `/docs/REFERENCE_REPO_ANALYSIS.md`
-- maintain `/docs/AGENTS.md`
-- maintain `/docs/IMPLEMENTATION_PLAN.md`
-- maintain `/docs/PARALLEL_AGENTS_PLAN.md`
-- maintain `/docs/FINAL_CHECKLIST.md`
-- ensure docs are clean, professional, and not conflicting
+Debugging process:
 
-### Agent 2 — Architecture + Database + Auth/RBAC
+1. Reproduce or identify failing path.
+2. Check client state, server logs, request payload, response code, and database state.
+3. Find root cause before patching.
+4. Fix smallest safe surface.
+5. Add or update tests for critical logic.
+6. Document production-impacting fix in relevant `/docs` file.
 
-Scope:
-- repo architecture
-- folder structure
-- Prisma/PostgreSQL schema
-- migrations
-- roles
-- permissions
-- auth
-- backend guards
-- security foundation
+## 9. Business Rules That Must Not Regress
 
-### Agent 3 — Employee + NIP + Location + Attendance
+- NIP generated automatically as `MPD-{YEAR}-{DIVISION_CODE}-{SEQUENCE}`.
+- NIP unique, stable, never reused after deactivation.
+- Attendance requires active employee, active shift, active work location, GPS, accuracy, selfie, and backend geo-fence validation.
+- One check-in and one check-out per employee per day.
+- Check-out before check-in is rejected.
+- Leave/sick/permission starts pending; rejection requires reason; overlap is rejected.
+- KPI template total weight must be `100`.
+- Employee can view own KPI only and cannot edit own score.
+- Approved KPI cannot be edited without authorized reason and audit log.
+- Exports respect filters, permissions, and audit logging.
+- Historical attendance, KPI, employee, upload, and audit data must not be hard-deleted.
 
-Scope:
-- employee management
-- NIP auto-generation
-- division/position/supervisor relation
-- work location
-- geo-fencing
-- GPS + selfie attendance
-- shift attendance rules
-- attendance audit trail
+## 10. Agent and Skill Rules
 
-### Agent 4 — KPI + Leave + Dashboard + Reports
+Use available Codex skills when useful, especially Superpowers for planning, review, debugging, verification, and safe coordination. Use UI/UX skill for UI quality reviews. Skills cannot override `/docs` or this file.
 
-Scope:
-- leave/sick/permission workflow
-- KPI template
-- KPI assignment
-- KPI scoring
-- dashboard
-- reports
-- export
-- notifications
-
-### Agent 5 — UI/UX + Testing + Security + Deployment
-
-Scope:
-- UI/UX polish
-- design system consistency
-- accessibility
-- testing
-- security review
-- Docker
-- Coolify
-- VPS deployment
-- backup/restore
-- final MVP readiness review
-
----
-
-## 6. Parallel Work Rule
-
-Use parallel agents only when safe.
-
-Rules:
-
-1. Docs first.
-2. Database before feature.
-3. Auth before protected feature.
-4. Work location before GPS attendance.
-5. Attendance before dashboard/report.
-6. KPI before KPI dashboard.
-7. Audit log must exist before final sensitive modules.
-8. Do not let agents edit the same file at the same time.
-9. Merge one agent result at a time.
-10. Run checks after merge.
-
-Safe order:
+Maximum agents:
 
 ```txt
-Wave 1:
-Agent 1
-
-Wave 2:
-Agent 2
-
-Wave 3:
-Agent 3
-
-Wave 4:
-Agent 4
-
-Wave 5:
-Agent 5
+5 agents total
 ```
 
-Parallel allowed only when files do not conflict.
+Allowed agent scopes:
 
----
+1. Docs + Product + Reference Analysis.
+2. Architecture + Database + Auth/RBAC.
+3. Employee + NIP + Location + Attendance.
+4. KPI + Leave + Dashboard + Reports.
+5. UI/UX + Testing + Security + Deployment.
 
-## 7. Product Scope
+Parallel work is allowed only when files do not overlap. Safe wave order is docs, database/auth, employee/location/attendance, KPI/leave/dashboard/reports, then UI/testing/security/deployment. Merge one result at a time and run checks after merge.
 
-MyProdusen Web App must include:
+## 11. Engineering Rules
 
-- employee management
-- auto-generated NIP
-- GPS attendance
-- selfie attendance
-- geo-tagging
-- geo-fencing
-- work location management
-- shift management
-- leave/sick/permission request
-- KPI management
-- superadmin dashboard
-- employee dashboard
-- reports/export
-- audit log
-- notification
-- PostgreSQL
-- Docker
-- VPS + Coolify
-- clean UI/UX
-- WCAG-friendly accessibility
+- Keep scope tight and aligned with PRD.
+- Prefer small, typed, modular code.
+- Separate UI, validation, service, repository, and database concerns.
+- Reuse existing components and patterns.
+- Fix root causes, not symptoms.
+- Do not remove working behavior without reason.
+- Do not hard-code secrets or environment-specific URLs.
+- Do not introduce frontend-only authorization.
+- Do not leave buttons, forms, routes, or menu items disconnected.
+- Do not add random features outside PRD.
 
-Do not add random features.
-
-Phase 2 features must be documented before implementation.
-
----
-
-## 8. Tech Stack
-
-Use existing stack if already installed.
-
-Recommended stack:
+Recommended structure:
 
 ```txt
-Next.js App Router
-TypeScript
-Tailwind CSS
-Shadcn UI or internal reusable components
-React Hook Form
-Zod
-Prisma ORM
-PostgreSQL
-Docker
-VPS
-Coolify
-Persistent volume or S3-compatible storage
-```
-
-Do not introduce heavy dependencies without reason.
-
-Before adding a package:
-1. Check if existing package can solve it.
-2. Check bundle/runtime impact.
-3. Add only if useful.
-4. Document why.
-
----
-
-## 9. Engineering Rules
-
-General rules:
-
-1. Use TypeScript.
-2. Keep code modular.
-3. Keep files small.
-4. Separate UI, validation, service, repository, and database logic.
-5. Backend must enforce business rules.
-6. Frontend-only validation is not enough.
-7. Do not reset database.
-8. Do not delete historical data.
-9. Use soft delete/deactivation where needed.
-10. Do not commit `.env`.
-11. Do not commit secrets.
-12. Use safe migrations.
-13. Write tests for critical logic.
-14. Run lint/typecheck/build before final response when available.
-
-Suggested structure:
-
-```txt
-/src
-  /app
-  /components
-  /features
-    /auth
-    /employees
-    /attendance
-    /work-locations
-    /shifts
-    /leave
-    /kpi
-    /dashboard
-    /reports
-    /notifications
-    /audit
-  /lib
-  /server
-    /services
-    /repositories
-    /validators
-  /types
-  /utils
-
-/prisma
-  schema.prisma
-  migrations
-
+/src/app
+/src/components
+/src/features
+/src/lib
+/src/server/services
+/src/server/repositories
+/src/server/validators
+/src/types
+/src/utils
+/drizzle/migrations
 /docs
-  prd.md
-  AGENTS.md
-  IMPLEMENTATION_PLAN.md
-  PARALLEL_AGENTS_PLAN.md
-  FINAL_CHECKLIST.md
 ```
 
----
-
-## 10. Auth & RBAC Rules
-
-Production user-facing roles are locked to exactly two accounts:
-
-```txt
-Superadmin
-Employee / Karyawan
-```
-
-Legacy `Admin HR` and `Supervisor` references are historical only. Do not use them for new UI/UX, docs, tests, route access, or seed/demo accounts unless product direction is explicitly changed in `/docs/prd.md`.
-
-Backend authorization is mandatory.
-
-Role behavior:
-
-### Superadmin
-
-Can:
-- access all dashboards
-- manage users
-- manage roles
-- manage employees
-- manage attendance
-- manage work locations and shifts
-- approve/reject attendance exceptions and leave/sick/permission requests
-- manage KPI templates, assignments, scoring, and approvals
-- manage reports and exports
-- manage settings
-- view audit logs
-
-### Employee
-
-Can:
-- view own dashboard
-- check-in/check-out
-- view own attendance
-- view own KPI
-- submit leave/sick/permission
-- view own payroll/slip if enabled
-- view own notifications and profile
-
-Rules:
-1. Employee cannot access other employee data.
-2. Superadmin is the only operational admin account.
-3. Inactive user cannot login.
-4. All protected APIs must verify permission server-side.
-5. New navigation must expose only Superadmin and Employee experiences.
-6. Legacy roles must be treated as migration/historical data only.
-
----
-
-## 11. Employee & NIP Rules
-
-Every employee must have an auto-generated NIP.
-
-Default format:
-
-```txt
-MPD-{YEAR}-{DIVISION_CODE}-{SEQUENCE}
-```
-
-Example:
-
-```txt
-MPD-2026-PRD-0001
-MPD-2026-PCK-0002
-MPD-2026-SLS-0003
-```
-
-Rules:
-
-1. NIP is generated automatically.
-2. NIP is unique.
-3. NIP is never reused.
-4. NIP stays stable after employee update.
-5. Deactivated/resigned employee keeps old NIP.
-6. NIP generation must be collision-safe.
-7. NIP must be validated at database level.
-8. NIP generation must have tests.
-
-Employee delete rule:
-- Do not hard delete employee with history.
-- Use deactivate/soft delete.
-
----
-
-## 12. Work Location & Geo-fencing Rules
-
-Work location fields:
-
-```txt
-name
-address
-latitude
-longitude
-radiusMeters
-status
-```
-
-Rules:
-
-1. Only Superadmin can manage work locations.
-2. Employee can be assigned to work location.
-3. Backend calculates distance.
-4. Do not trust frontend distance calculation.
-5. Use Haversine or reliable distance calculation.
-6. Store historical attendance location data.
-7. Changing work location must not corrupt old attendance.
-8. Work location changes must create audit log.
-
----
-
-## 13. Attendance Rules
-
-Attendance is critical.
-
-Check-in requires:
-- GPS permission
-- latitude
-- longitude
-- GPS accuracy
-- selfie
-- active employee
-- active shift
-- active work location
-- backend geo-fence validation
-
-Check-out requires:
-- GPS permission
-- latitude
-- longitude
-- GPS accuracy
-- selfie
-- existing check-in
-- backend geo-fence validation
-
-Rules:
-
-1. One employee can check in once per day.
-2. Employee cannot check out before check in.
-3. Employee cannot check out twice.
-4. GPS disabled = reject.
-5. Location permission denied = reject.
-6. Selfie missing = reject.
-7. Outside radius = reject or pending based on setting.
-8. Store outside-radius attempt for audit.
-9. Calculate late minutes.
-10. Calculate early leave minutes.
-11. Calculate total work minutes.
-12. Manual adjustment requires reason.
-13. Manual adjustment creates audit log.
-14. Historical attendance must not be deleted.
-
-Store attendance metadata:
-
-```txt
-checkInAt
-checkOutAt
-checkInLatitude
-checkInLongitude
-checkInAccuracy
-checkOutLatitude
-checkOutLongitude
-checkOutAccuracy
-checkInSelfieUrl
-checkOutSelfieUrl
-deviceInfo
-ipAddress
-userAgent
-status
-lateMinutes
-earlyLeaveMinutes
-totalWorkMinutes
-```
-
----
-
-## 14. File Upload Rules
-
-Selfie and attachment upload must be secure.
-
-Rules:
-
-1. Validate MIME type.
-2. Validate file size.
-3. Do not trust original filename.
-4. Generate safe filename.
-5. Store in persistent storage.
-6. Do not expose private files publicly.
-7. Use signed/protected URLs when possible.
-8. Uploaded selfies must survive deployment restart.
-9. Production storage must work with VPS + Coolify.
-
----
-
-## 15. Shift Rules
-
-Shift fields:
-
-```txt
-name
-startTime
-endTime
-lateToleranceMinutes
-checkinOpenMinutesBefore
-checkoutCloseMinutesAfter
-status
-```
-
-Rules:
-
-1. Employee can have assigned shift.
-2. Attendance uses active shift.
-3. Shift change does not corrupt historical attendance.
-4. Historical attendance should keep shift reference or snapshot.
-
----
-
-## 16. Leave / Sick / Permission Rules
-
-Request types:
-
-```txt
-leave
-sick
-permission
-```
-
-Rules:
-
-1. Employee can create own request.
-2. Request starts as pending.
-3. Superadmin can approve or reject.
-4. Rejection requires reason.
-5. Approved request affects attendance status.
-6. Overlapping active request is rejected.
-7. Approval/rejection creates notification.
-8. Approval/rejection creates audit log.
-
----
-
-## 17. KPI Rules
-
-KPI must support:
-
-- template
-- template items
-- assignment
-- result
-- scoring
-- approval
-- history
-
-Scoring methods:
-
-```txt
-higher_is_better
-lower_is_better
-boolean
-```
-
-Rules:
-
-1. KPI template total weight should be 100.
-2. Superadmin can input/review KPI results.
-3. Employee can view own KPI only.
-4. Employee cannot edit own KPI score.
-5. Approved KPI cannot be edited except by authorized role with reason.
-6. KPI edit after approval creates audit log.
-7. KPI scoring must have tests.
-
----
-
-## 18. Dashboard Rules
-
-Superadmin dashboard should show:
-
-- total active employees
-- attendance today
-- late employees today
-- leave/sick/permission today
-- absent employees today
-- average KPI this month
-- top performers
-- low performers
-- attendance trend
-- KPI by division
-- geo-fence rejected/pending alerts
-- employee risk alerts
-
-Dashboard must support useful filters:
-
-```txt
-date range
-division
-position
-work location
-employee
-attendance status
-```
-
-Rules:
-1. Dashboard must respect permissions.
-2. Dashboard must not leak data.
-3. Dashboard query must be optimized.
-4. UI must include loading, empty, error, and success states.
-
----
-
-## 19. Reports & Export Rules
-
-Required reports:
-
-- daily attendance report
-- monthly attendance report
-- late report
-- leave/sick/permission report
-- KPI individual report
-- KPI division report
-- employee performance report
-- geo-fence rejected/pending report
-
-Export:
-
-```txt
-CSV required
-Excel recommended
-PDF optional
-```
-
-Rules:
-
-1. Export respects filters.
-2. Export respects permissions.
-3. Superadmin exports all permitted data.
-4. Employee exports own data only if allowed.
-5. Export creates audit log.
-
----
-
-## 20. Audit Log Rules
-
-Sensitive actions must create audit log.
-
-Audit events:
-
-- login
-- logout
-- failed login if feasible
-- user create/update/deactivate
-- role/permission change
-- employee create/update/deactivate
-- NIP generation
-- work location create/update/deactivate
-- employee work location assignment
-- shift create/update/deactivate
-- attendance check-in
-- attendance check-out
-- rejected geo-fence attendance attempt
-- pending geo-fence attendance attempt
-- manual attendance adjustment
-- leave approval/rejection
-- KPI create/update/approval
-- report export
-
-Audit fields:
-
-```txt
-actorUserId
-action
-targetType
-targetId
-oldValueJson
-newValueJson
-ipAddress
-userAgent
-createdAt
-```
-
-Normal users must not delete audit logs.
-
----
-
-## 21. Notification Rules
-
-Create notifications for:
-
-- leave request submitted
-- leave approved
-- leave rejected
-- KPI assigned
-- KPI approved
-- attendance rejected/pending due to geo-fence
-- manual attendance adjustment if needed
-
-Rules:
-
-1. User can view own notifications.
-2. User can mark notification as read.
-3. Superadmin receives important operational alerts.
-4. Notification data is stored in database.
-
----
-
-## 22. Database Rules
-
-Use PostgreSQL for production.
-
-Rules:
-
-1. Use Prisma migrations.
-2. Never reset production database.
-3. Never run destructive migration without explicit approval.
-4. Use indexes for dashboard/report fields.
-5. Use soft delete/deactivation for historical data.
-6. Add `createdAt` and `updatedAt`.
-7. Add `deletedAt` only where soft delete is needed.
-
-Important indexes:
-
-```txt
-Employee.nip
-Employee.divisionId
-Employee.status
-Attendance.employeeId
-Attendance.attendanceDate
-Attendance.status
-WorkLocation.status
-KpiAssignment.employeeId
-KpiAssignment.periodStart
-KpiAssignment.periodEnd
-KpiResult.employeeId
-AuditLog.actorUserId
-AuditLog.createdAt
-```
-
----
-
-## 23. VPS + Coolify Rules
-
-Production target:
-
-```txt
-VPS
-Coolify
-Docker
-PostgreSQL
-Persistent storage
-```
-
-Required files:
-
-```txt
-Dockerfile
-docker-compose.yml if useful
-.env.example
-/docs/DEPLOYMENT.md
-/docs/COOLIFY.md
-/docs/BACKUP_RESTORE.md
-```
-
-Required env documentation:
-
-```env
-DATABASE_URL=
-AUTH_SECRET=
-APP_URL=
-NODE_ENV=production
-
-STORAGE_DRIVER=local
-UPLOAD_DIR=/app/uploads
-MAX_UPLOAD_SIZE=
-
-GPS_MAX_ACCURACY_METERS=100
-DEFAULT_GEOFENCE_RADIUS_METERS=100
-
-SUPERADMIN_EMAIL=
-SUPERADMIN_PASSWORD=
-```
-
-Rules:
-
-1. Never commit real `.env`.
-2. Configure production secrets in Coolify.
-3. Uploaded files must use persistent volume or object storage.
-4. Database backup must be documented.
-5. Restore process must be documented.
-6. Healthcheck endpoint is recommended.
-7. App must build and run in Docker.
-
----
-
-## 24. Testing Rules
-
-Add tests for critical logic.
-
-Required tests:
-
-### NIP
-
-- correct format
-- unique NIP
-- sequence increments
-- division code included
-- no reuse after deactivation
-
-### Geo-fencing
-
-- inside radius
-- outside radius
-- invalid coordinates
-- bad GPS accuracy
-
-### Attendance
-
-- successful check-in
-- reject double check-in
-- reject check-out before check-in
-- successful check-out
-- reject double check-out
-- late calculation
-- early leave calculation
-
-### RBAC
-
-- employee cannot access superadmin dashboard/API
-- legacy Supervisor role must not be exposed in production UI
-- inactive user cannot login
-- Legacy Admin HR/Supervisor roles must not be exposed in production UI.
-
-### KPI
-
-- higher_is_better score
-- lower_is_better score
-- boolean score
-- total score
-- approved KPI edit restriction
-
-### Leave
-
-- create request
-- reject overlap
-- approve request
-- reject request requires reason
-
-Run available checks before final response:
+## 12. Testing and Verification
+
+Required critical test coverage:
+
+- NIP format, uniqueness, sequence increment, division code, no reuse after deactivation.
+- Geo-fencing inside radius, outside radius, invalid coordinates, bad GPS accuracy.
+- Attendance check-in, double check-in rejection, check-out before check-in rejection, check-out, double check-out rejection, late and early leave calculations.
+- RBAC employee isolation, Superadmin access, inactive user login rejection, and no production exposure for `ADMIN_HR` / `SUPERVISOR`.
+- KPI scoring for higher-is-better, lower-is-better, boolean, total score, approved edit restriction.
+- Leave create, overlap rejection, approval, rejection reason requirement.
+- Upload MIME, size, safe filename, private access, persistent storage behavior.
+
+Run available checks before final response for code changes:
 
 ```bash
 npm run lint
-npm run typecheck
 npm run test
 npm run build
+npm run release:check
 ```
 
-If a command does not exist, say so clearly.
+If a command does not exist, state that clearly. If only docs changed, run a focused reference check instead of pretending code tests were required.
 
----
+## 13. Definition of Done
 
-## 25. Standard Error Response
+A task is **DONE** only when all applicable items are true:
 
-Use consistent error response if backend pattern allows:
+- Required docs checked first.
+- Scope clear and aligned with `/docs/prd/README.md`.
+- UI follows `/docs/ui-ux-guide/README.md` when UI changes.
+- Frontend action wired to backend.
+- Backend validates input.
+- Backend checks auth/RBAC.
+- Database read/write is correct through Drizzle and PostgreSQL.
+- Audit log added for sensitive action.
+- Loading, error, empty, and success states exist.
+- Mobile `360px` / `390px` and desktop `1440px` checked if UI changed.
+- `npm run lint` passes when code changes.
+- `npm run test` passes when code changes.
+- `npm run build` passes when code changes.
+- `npm run release:check` passes.
+- Relevant docs updated.
+- No secrets, private upload paths, or raw errors exposed.
+
+Do not claim completion without verification evidence.
+
+## 14. Standard Error Shape
+
+Use existing backend pattern when present. Preferred shape:
 
 ```json
 {
   "success": false,
   "error": {
     "code": "ERROR_CODE",
-    "message": "Human readable error message"
+    "message": "Human-readable Indonesian message"
   }
 }
 ```
 
-Error codes:
+Common codes:
 
 ```txt
 AUTH_INVALID_CREDENTIALS
@@ -1035,86 +353,19 @@ KPI_RESULT_ALREADY_APPROVED
 REPORT_EXPORT_FAILED
 ```
 
----
+## 15. Final Response Format
 
-## 26. Work Process
-
-Before coding:
-
-1. Read `/docs`.
-2. Read this file.
-3. Inspect repo.
-4. Understand current stack.
-5. Make a small plan.
-6. Make targeted changes only.
-
-During coding:
-
-1. Keep scope tight.
-2. Follow existing patterns.
-3. Reuse components.
-4. Add validation.
-5. Add backend authorization.
-6. Add audit log for sensitive actions.
-7. Add tests for business logic.
-8. Keep UI consistent.
-
-After coding:
-
-Return:
+After work, return:
 
 ```txt
 Summary
+Conflicts found
+Fixes applied
 Files changed
 Commands run
 How to test
 Risks / limitations
-Next recommended task
+Remaining decisions needed
 ```
 
----
-
-## 27. Do Not Do
-
-Do not:
-
-- change logo without request
-- change brand colors without request
-- change UI tone without request
-- create random docs outside `/docs`
-- create random features outside PRD
-- remove working features without reason
-- reset database
-- hard delete historical employee data
-- hard delete attendance data
-- hard delete KPI data
-- expose private selfies publicly
-- commit `.env`
-- commit secrets
-- skip backend authorization
-- rely only on frontend validation
-- create more than 5 agents
-
----
-
-## 28. Final Rule
-
-Build MyProdusen Web App like a professional internal company system.
-
-Priority order:
-
-1. Correct business logic
-2. Security
-3. Data integrity
-4. Documentation alignment
-5. Clean UI/UX
-6. Maintainability
-7. Scalability
-8. Production readiness
-
-When unsure:
-1. Read `/docs`.
-2. Follow existing style.
-3. Keep scope small.
-4. Ask for clarification only if truly blocked.
-5. Do not guess.
+For this repository, correctness, security, data integrity, documentation alignment, UI consistency, maintainability, scalability, and production readiness win in that order.

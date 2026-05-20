@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Clock, Users, Calendar, User, MapPin, Clock3, BarChart3, FileText, Shield, Bell, BriefcaseBusiness, CheckCircle } from "lucide-react";
@@ -42,6 +43,20 @@ export default function Sidebar({ role }: SidebarProps) {
     primary: item.primary,
   }));
 
+  // Longest-prefix-wins so /dashboard/attendance/exceptions doesn't also light
+  // the /dashboard/attendance tab. Compute once per pathname change.
+  const activePath = useMemo(() => {
+    let bestMatch = "";
+    for (const item of navItems) {
+      if (pathname === item.path) return item.path;
+      if (item.path !== "/dashboard" && pathname.startsWith(`${item.path}/`)) {
+        if (item.path.length > bestMatch.length) bestMatch = item.path;
+      }
+    }
+    if (!bestMatch && pathname === "/dashboard") return "/dashboard";
+    return bestMatch || pathname;
+  }, [navItems, pathname]);
+
   return (
     <>
       {/* Desktop Logo */}
@@ -53,9 +68,9 @@ export default function Sidebar({ role }: SidebarProps) {
       </div>
 
       {navItems.map((item) => {
-        const isActive = pathname === item.path || (item.path !== "/dashboard" && pathname.startsWith(item.path));
+        const isActive = activePath === item.path;
         const Icon = item.icon;
-        
+
         return (
           <Link
             key={item.path}
@@ -67,10 +82,10 @@ export default function Sidebar({ role }: SidebarProps) {
             <Icon
               className="nav-icon"
               strokeWidth={isActive ? 2.5 : 2}
-              color={isActive ? "var(--warning)" : "var(--text-muted)"}
+              color={isActive ? "var(--text-primary)" : "var(--text-muted)"}
               aria-hidden="true"
             />
-            <span className="nav-label" style={{ color: isActive ? "var(--warning)" : "var(--text-muted)" }}>
+            <span className="nav-label" style={{ color: isActive ? "var(--text-primary)" : "var(--text-muted)" }}>
               {item.name}
             </span>
           </Link>

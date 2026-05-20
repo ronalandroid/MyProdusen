@@ -1,6 +1,6 @@
 # ============================================================
 # MyProdusen — Docker Compose (local development & testing)
-# For production, deploy via Coolify (see docs/COOLIFY.md)
+# For production, deploy via Coolify (see docs/deployment/README.md)
 # ============================================================
 
 services:

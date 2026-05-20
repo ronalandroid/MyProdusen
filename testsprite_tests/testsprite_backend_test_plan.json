@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "postapiauthloginvalidcredentials",
+    "description": "Verify that POST /api/auth/login authenticates an active user with valid credentials, sets an httpOnly JWT auth cookie, and returns a 200 response with the authenticated user payload."
+  },
+  {
+    "id": "TC002",
+    "title": "postapiauthlogoutclearauthcookie",
+    "description": "Verify that POST /api/auth/logout clears the authentication cookie and returns a 200 logout success response when called with a valid auth cookie."
+  },
+  {
+    "id": "TC003",
+    "title": "getapiauthprofileauthenticateduser",
+    "description": "Verify that GET /api/auth/profile returns the current authenticated user profile with a 200 response when called with a valid auth cookie, and returns 401 Unauthorized without auth cookie."
+  },
+  {
+    "id": "TC004",
+    "title": "postapiauthpublicregistercreatesinactiveaccount",
+    "description": "Verify that POST /api/auth/public-register creates an inactive employee account, queues an activation email, and returns a 200 or 201 response without requiring authentication."
+  },
+  {
+    "id": "TC005",
+    "title": "postapiauthactivateactivatesaccountwithtoken",
+    "description": "Verify that POST /api/auth/activate activates a user account when provided a valid backend-issued activation token and returns a 200 response."
+  },
+  {
+    "id": "TC006",
+    "title": "postapiauthforgotpasswordsendsresetemail",
+    "description": "Verify that POST /api/auth/forgot-password sends a password reset email for an active user and returns a safe 200 response without revealing account existence for unknown emails."
+  },
+  {
+    "id": "TC007",
+    "title": "postapiauthchangepasswordrequiresauth",
+    "description": "Verify that POST /api/auth/change-password changes the password for an authenticated user and returns appropriate success, and returns 401 Unauthorized if called without auth cookie."
+  },
+  {
+    "id": "TC008",
+    "title": "getapiuserslistsuperadminusersafe",
+    "description": "Verify that GET /api/users returns a list of users with production-safe roles only, accessible only by authenticated Superadmin users, returning 200 on success."
+  },
+  {
+    "id": "TC009",
+    "title": "postapiusersidemployeeprofilecreatesprofile",
+    "description": "Verify that POST /api/users/[id]/employee-profile creates an employee profile linked to the registered user with the given id, returning 200 on success and 404 if user does not exist."
+  },
+  {
+    "id": "TC010",
+    "title": "postapiauthlogininvalidcredentials",
+    "description": "Verify that POST /api/auth/login with incorrect password returns 401 with AUTH_INVALID_CREDENTIALS error, and login with inactive user returns 403 with AUTH_USER_INACTIVE error."
+  }
+]

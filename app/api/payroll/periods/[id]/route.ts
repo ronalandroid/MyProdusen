@@ -4,6 +4,7 @@ import { payrollPeriodService } from '@/features/payroll/payroll-period.service'
 import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
+import { hasPermission } from '@/lib/permissions';
 
 const updatePeriodSchema = z.object({
   name: z.string().min(3).optional(),
@@ -16,8 +17,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const user = await requireAuth(request);
     const { id } = await params;
     
-    if (!['SUPERADMIN'].includes(user.role)) {
-      return forbiddenResponse('You do not have permission to view payroll periods');
+    if (!hasPermission(user.role, 'PAYROLL_READ')) {
+      return forbiddenResponse('Anda tidak memiliki akses payroll');
     }
 
     const period = await payrollPeriodService.getPeriodById(id);
@@ -34,8 +35,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const user = await requireAuth(request);
     const { id } = await params;
     
-    if (!['SUPERADMIN'].includes(user.role)) {
-      return forbiddenResponse('You do not have permission to update payroll periods');
+    if (!hasPermission(user.role, 'PAYROLL_READ')) {
+      return forbiddenResponse('Anda tidak memiliki akses payroll');
     }
 
     const body = await getRequestBody(request);
@@ -62,8 +63,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const user = await requireAuth(request);
     const { id } = await params;
     
-    if (user.role !== 'SUPERADMIN') {
-      return forbiddenResponse('You do not have permission to delete payroll periods');
+    if (!hasPermission(user.role, 'PAYROLL_MUTATE')) {
+      return forbiddenResponse('Anda tidak memiliki akses payroll');
     }
 
     const period = await payrollPeriodService.deletePeriod(id);

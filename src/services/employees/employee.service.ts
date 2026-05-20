@@ -9,6 +9,7 @@ import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
 import { CacheStrategy } from '@/lib/cache/cache-strategies';
 import { BaseService } from '@/lib/core/base-service';
 import { AppError } from '@/lib/core/app-error';
+import type { UserRole } from '@/lib/permissions';
 
 export type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
@@ -26,7 +27,7 @@ export class EmployeeService extends BaseService {
     defaultShiftId?: string;
     defaultLocationId?: string;
     joinDate?: Date | string;
-    role?: 'SUPERADMIN' | 'ADMIN_HR' | 'SUPERVISOR' | 'EMPLOYEE';
+    role?: UserRole;
   }) {
     // Check if email already exists
     const [existingEmail] = await db

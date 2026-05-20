@@ -53,7 +53,7 @@ export default function RegisterPage() {
       </div>
 
       <div className="relative z-10 p-4">
-        <Link href="/login" className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+        <Link href="/login" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-semibold text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">
           <ArrowLeft size={18} aria-hidden="true" />
           <span>Kembali ke login</span>
         </Link>
@@ -173,7 +173,7 @@ export default function RegisterPage() {
 
             <div className="mt-8 pt-6 border-t border-[var(--border-color)] text-center">
               <p className="text-sm text-[var(--text-secondary)]">
-                Sudah punya akun? <Link href="/login" className="font-bold text-[var(--text-primary)] hover:text-[var(--primary-dark)]">Masuk</Link>
+                Sudah punya akun? <Link href="/login" className="inline-flex min-h-11 items-center rounded-xl px-2 font-bold text-[var(--text-primary)] hover:text-[var(--primary-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">Masuk</Link>
               </p>
             </div>
           </div>

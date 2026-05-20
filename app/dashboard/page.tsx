@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
 import Link from "next/link";
-import { Bell, CheckCircle, Clock, TrendingUp, Users, AlertTriangle, CalendarDays, RefreshCcw, ArrowRight, ShieldCheck, BarChart3 } from "lucide-react";
+import { Bell, CheckCircle, Clock, Users, AlertTriangle, RefreshCcw, ShieldCheck, BarChart3, ThumbsUp, ThumbsDown, Eye } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { getAuthHeaders, fetchProfile } from "@/lib/auth-client";
-import AttendanceHeatmap from "@/components/attendance/AttendanceHeatmap";
-import { buildDashboardActions, type DashboardActionTone } from "@/lib/dashboard/action-cards";
-import { getRoleExperience } from "@/lib/dashboard/role-experience";
+import { getAuthHeaders, fetchProfile, type ClientUserProfile } from "@/lib/auth-client";
+import EmployeeBeranda from "@/components/dashboard/EmployeeBeranda";
+import { type DashboardActionTone } from "@/lib/dashboard/action-cards";
 import type { UserRole } from "@/lib/permissions";
 
 interface DashboardStats {
@@ -50,7 +48,7 @@ const numberFormatter = new Intl.NumberFormat("id-ID");
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<ClientUserProfile | null>(null);
   const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
@@ -106,78 +104,71 @@ export default function DashboardPage() {
 
   const displayName = profile?.employee?.fullName || profile?.username || "User";
   const initials = displayName.substring(0, 2).toUpperCase();
-  const currentHour = new Date().getHours();
-  const greeting = currentHour < 12 ? "Selamat Pagi" : currentHour < 18 ? "Selamat Siang" : "Selamat Malam";
-  const roleExperience = getRoleExperience(stats.role);
-  const canOpenPayroll = stats.role === "SUPERADMIN";
-  const canOpenReports = stats.role === "SUPERADMIN";
-  const actionCards = buildDashboardActions(stats.role, {
-    pendingLeaves: stats.pendingLeave,
-    pendingKpiApprovals: stats.pendingKpiApprovals,
-    lateToday: stats.lateToday,
-    absentToday: stats.absentToday,
-    unreadNotifications: stats.unreadNotifications,
-    pendingAttendanceExceptions: stats.pendingAttendanceExceptions,
-  });
+
+  if (stats.role !== "SUPERADMIN") {
+    return (
+      <div className="dashboard-page animate-fade-in">
+        {error && (
+          <section className="alert-card animate-slide-up" role="alert" style={{ animationDelay: "100ms" }}>
+            <AlertTriangle size={20} aria-hidden="true" />
+            <div className="flex-1">
+              <strong>Data belum lengkap</strong>
+              <p>{error}</p>
+            </div>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={loadDashboardData}>
+              <RefreshCcw size={14} aria-hidden="true" />
+              Coba lagi
+            </button>
+          </section>
+        )}
+        <EmployeeBeranda profile={profile} />
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-page animate-fade-in">
       {/* Header */}
-      {stats.role === 'SUPERADMIN' ? (
-        <header className="dashboard-header superadmin-header animate-slide-up" style={{ backgroundColor: 'var(--primary)', color: 'var(--text-primary)', backgroundImage: 'url(/logo.png)', backgroundSize: '150px', backgroundPosition: 'calc(100% + 50px) center', backgroundRepeat: 'no-repeat' }}>
-          <div className="dashboard-greeting relative z-10">
-            <h1 className="text-2xl sm:text-3xl font-bold">Selamat Datang,<br/>Super Admin! 👑</h1>
-            <p className="text-sm sm:text-base mt-2 max-w-[80%] font-medium">Kontrol penuh, informasi akurat, keputusan lebih tepat.</p>
-            {lastUpdated && (
-              <span className="last-updated mt-4 text-black/70">
-                Diperbarui {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
-              </span>
-            )}
-          </div>
-          <div className="dashboard-header-actions relative z-10">
-            <Link href="/dashboard/notifications" className="icon-button bg-white/30 hover:bg-white/50 border-none" aria-label="Lihat notifikasi">
-              <Bell size={20} aria-hidden="true" />
-              {stats.unreadNotifications > 0 && <span className="notification-dot" aria-hidden="true" />}
-            </Link>
-            <Link href="/dashboard/profile" className="avatar avatar-link border-2 border-white" aria-label="Buka profil pengguna">
-              {profile?.employee?.profilePhoto ? (
-                <img src={profile.employee.profilePhoto} alt="" />
-              ) : (
-                initials
-              )}
-            </Link>
-          </div>
-        </header>
-      ) : (
-        <header className="dashboard-header employee-header animate-slide-up">
-          <div className="dashboard-greeting">
-            <h1 className="text-2xl sm:text-3xl font-bold">Halo, {displayName}! 👋</h1>
-            <p className="text-sm sm:text-base text-[var(--text-secondary)] mt-1">Semangat bekerja hari ini!</p>
-            {lastUpdated && (
-              <span className="last-updated">
-                Diperbarui {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
-              </span>
-            )}
-          </div>
-          <div className="dashboard-header-actions">
-            <Link href="/dashboard/notifications" className="icon-button" aria-label="Lihat notifikasi">
-              <Bell size={20} aria-hidden="true" />
-              {stats.unreadNotifications > 0 && <span className="notification-dot" aria-hidden="true" />}
-            </Link>
-            <Link href="/dashboard/profile" className="avatar avatar-link" aria-label="Buka profil pengguna">
-              {profile?.employee?.profilePhoto ? (
-                <img src={profile.employee.profilePhoto} alt="" />
-              ) : (
-                initials
-              )}
-            </Link>
-          </div>
-        </header>
-      )}
+      <header
+        className="dashboard-header superadmin-header animate-slide-up"
+        style={{
+          backgroundColor: "var(--primary)",
+          color: "var(--text-primary)",
+          backgroundImage: "url(/logo.png)",
+          backgroundSize: "150px",
+          backgroundPosition: "calc(100% + 50px) center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        <div className="dashboard-greeting relative z-10">
+          <h1 className="text-2xl sm:text-3xl font-bold">
+            Selamat Datang,
+            <br />
+            Super Admin!
+          </h1>
+          <p className="text-sm sm:text-base mt-2 max-w-[80%] font-medium">
+            Kontrol penuh, informasi akurat, keputusan lebih tepat.
+          </p>
+          {lastUpdated && (
+            <span className="last-updated mt-4 text-black/70">
+              Diperbarui {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
+        </div>
+        <div className="dashboard-header-actions relative z-10">
+          <Link href="/dashboard/notifications" className="icon-button bg-white/30 hover:bg-white/50 border-none" aria-label="Lihat notifikasi">
+            <Bell size={20} aria-hidden="true" />
+            {stats.unreadNotifications > 0 && <span className="notification-dot" aria-hidden="true" />}
+          </Link>
+          <Link href="/dashboard/profile" className="avatar avatar-link border-2 border-white" aria-label="Buka profil pengguna">
+            {profile?.employee?.profilePhoto ? <img src={profile.employee.profilePhoto} alt="" /> : initials}
+          </Link>
+        </div>
+      </header>
 
       {/* Error Alert */}
       {error && (
-        <section className="alert-card animate-slide-up" role="alert" style={{ animationDelay: '100ms' }}>
+        <section className="alert-card animate-slide-up" role="alert" style={{ animationDelay: "100ms" }}>
           <AlertTriangle size={20} aria-hidden="true" />
           <div className="flex-1">
             <strong>Data belum lengkap</strong>
@@ -190,154 +181,7 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* Hero Card - Attendance */}
-      <section className="hero-card animate-slide-up" aria-labelledby="attendance-title" style={{ animationDelay: '200ms' }}>
-        <div className="flex-1">
-          <p className="eyebrow text-white/80">Prioritas Hari Ini</p>
-          <h2 id="attendance-title" className="text-white text-xl sm:text-2xl mb-2">{roleExperience.heroTitle}</h2>
-          <p className="text-white/90 text-sm sm:text-base">
-            {roleExperience.heroDescription}
-          </p>
-        </div>
-        <div className="attendance-meter">
-          <span className="text-3xl sm:text-4xl">{stats.todayAttendance.percentage}%</span>
-          <small className="text-xs sm:text-sm">Hadir</small>
-        </div>
-        <Link href="/dashboard/attendance" className="hero-action group">
-          <span>Buka Kehadiran</span>
-          <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-        </Link>
-      </section>
-
-      {/* Action Queue */}
-      <section aria-labelledby="actions-title" className="animate-slide-up" style={{ animationDelay: '260ms' }}>
-        <div className="section-heading">
-          <h2 id="actions-title">Antrian Aksi</h2>
-        </div>
-        <div className="quick-actions-grid">
-          {actionCards.map((action, index) => (
-            <ActionQueueCard key={action.label} action={action} delay={`${320 + index * 50}ms`} />
-          ))}
-        </div>
-      </section>
-
-      {/* Stats Grid */}
-      <section aria-labelledby="summary-title" className="animate-slide-up" style={{ animationDelay: '300ms' }}>
-        <div className="section-heading">
-          <h2 id="summary-title">Ringkasan Hari Ini</h2>
-        </div>
-        <div className="stats-grid">
-          <StatCard 
-            icon={<Users size={22} aria-hidden="true" />} 
-            label="Karyawan" 
-            value={stats.totalEmployees} 
-            subtitle={`${stats.activeEmployees} Total aktif`}
-            tone="info"
-            delay="400ms"
-          />
-          <StatCard 
-            icon={<Clock size={22} aria-hidden="true" />} 
-            label="Hadir Hari Ini" 
-            value={`${stats.todayAttendance.percentage}%`} 
-            subtitle={`${stats.todayAttendance.present}/${stats.totalEmployees} Hadir`}
-            tone="success"
-            delay="450ms"
-          />
-          <StatCard 
-            icon={<CalendarDays size={22} aria-hidden="true" />} 
-            label="Cuti Pengajuan" 
-            value={stats.pendingLeave} 
-            subtitle="Menunggu"
-            tone="warning"
-            delay="500ms"
-          />
-          <StatCard 
-            icon={<Bell size={22} aria-hidden="true" />} 
-            label="Notifikasi" 
-            value={stats.unreadNotifications} 
-            subtitle="Belum dibaca"
-            tone="primary"
-            delay="550ms"
-          />
-        </div>
-      </section>
-
-      {/* Quick Actions */}
-      <section aria-labelledby="quick-actions-title" className="animate-slide-up" style={{ animationDelay: '600ms' }}>
-        <div className="section-heading">
-          <h2 id="quick-actions-title">Aksi Cepat</h2>
-        </div>
-        <div className="quick-actions-grid">
-          {roleExperience.quickActions.map((action, index) => {
-            const iconMap = {
-              attendance: <Clock size={24} aria-hidden="true" />,
-              leave: <CalendarDays size={24} aria-hidden="true" />,
-              reports: <TrendingUp size={24} aria-hidden="true" />,
-              employees: <Users size={24} aria-hidden="true" />,
-              kpi: <TrendingUp size={24} aria-hidden="true" />,
-              profile: <Users size={24} aria-hidden="true" />,
-            };
-            return (
-              <QuickAction
-                key={action.href}
-                href={action.href}
-                icon={iconMap[action.icon]}
-                title={action.title}
-                description={action.description}
-                delay={`${650 + index * 50}ms`}
-              />
-            );
-          })}
-        </div>
-        <div className="card empty-state-card">
-          <div className="w-12 h-12 rounded-xl bg-[var(--warning-bg)] flex items-center justify-center mb-3">
-            <CalendarDays size={24} className="text-[var(--warning)]" aria-hidden="true" />
-          </div>
-          <h3 className="text-base sm:text-lg">Status periode payroll</h3>
-          <p className="text-xs sm:text-sm">
-            {stats.payrollPeriodStatus
-              ? `${stats.payrollPeriodStatus.period} sedang ${stats.payrollPeriodStatus.status}.`
-              : "Belum ada periode payroll berjalan."}
-          </p>
-          {canOpenPayroll && <Link href="/dashboard/payroll" className="text-link text-sm">Buka Payroll →</Link>}
-        </div>
-      </section>
-
-      {stats.role === "SUPERADMIN" && stats.superadminInsights && (
-        <SuperadminMonitoring insights={stats.superadminInsights} />
-      )}
-
-      {/* Insights Grid */}
-      {stats.role !== "SUPERADMIN" && (
-        <section className="animate-slide-up" aria-labelledby="insights-title" style={{ animationDelay: '850ms' }}>
-          <div className="section-heading full-span">
-            <h2 id="insights-title">Insight Operasional & Kehadiran</h2>
-          </div>
-          
-          <div className="mb-6 w-full">
-            <AttendanceHeatmap />
-          </div>
-
-          <div className="insights-grid">
-            <div className="card empty-state-card">
-              <div className="w-12 h-12 rounded-xl bg-[var(--primary-light)] flex items-center justify-center mb-3">
-                <TrendingUp size={24} className="text-[var(--primary-dark)]" aria-hidden="true" />
-              </div>
-              <h3 className="text-base sm:text-lg">KPI rata-rata belum tersedia</h3>
-              <p className="text-xs sm:text-sm">Dashboard tidak menampilkan angka KPI sampai API agregasi Phase 6 siap.</p>
-              <Link href="/dashboard/kpi" className="text-link text-sm">Kelola KPI →</Link>
-            </div>
-            {canOpenReports && <div className="card empty-state-card">
-              <div className="w-12 h-12 rounded-xl bg-[var(--info-bg)] flex items-center justify-center mb-3">
-                <Clock size={24} className="text-[var(--info)]" aria-hidden="true" />
-              </div>
-              <h3 className="text-base sm:text-lg">Tren mingguan belum tersedia</h3>
-              <p className="text-xs sm:text-sm">Grafik mingguan menunggu endpoint historis agar data produksi tidak memakai mock.</p>
-              <Link href="/dashboard/reports" className="text-link text-sm">Buka Laporan →</Link>
-            </div>}
-          </div>
-        </section>
-      )}
+      {stats.superadminInsights && <SuperadminMonitoring insights={stats.superadminInsights} />}
     </div>
   );
 }
@@ -354,6 +198,8 @@ function SuperadminMonitoring({ insights }: { insights: SuperadminInsights }) {
       </div>
 
       <div className="quick-actions-grid mb-5">
+        <ManagementCard card={{ label: "Pengguna", value: insights.managementCards.length, detail: "Manajemen User", href: "/dashboard/users", tone: "info" }} delay="800ms" />
+        <ManagementCard card={{ label: "KPI", value: insights.kpiOverview.pendingCount, detail: "Template KPI & assignment", href: "/dashboard/kpi/template", tone: "warning" }} delay="820ms" />
         {insights.managementCards.map((card, index) => (
           <ManagementCard key={card.label} card={card} delay={`${850 + index * 50}ms`} />
         ))}
@@ -552,88 +398,12 @@ function EmptyMiniState({ title, description }: { title: string; description: st
   );
 }
 
-function ActionQueueCard({ action, delay }: { action: ReturnType<typeof buildDashboardActions>[number]; delay?: string }) {
-  return (
-    <Link
-      href={action.href}
-      className={`card quick-action-card group animate-scale-in action-card-${action.tone}`}
-      style={{ animationDelay: delay }}
-    >
-      <span>
-        <strong className="text-sm sm:text-base">{action.label}</strong>
-        <small className="text-xs sm:text-sm">{action.description}</small>
-      </span>
-      <strong className="text-xl sm:text-2xl" style={{ color: mapToneToColor(action.tone) }}>
-        {typeof action.value === "number" ? numberFormatter.format(action.value) : action.value}
-      </strong>
-    </Link>
-  );
-}
-
 function mapToneToColor(tone: DashboardActionTone) {
   if (tone === 'danger') return 'var(--danger)';
   if (tone === 'warning') return 'var(--warning)';
   if (tone === 'success') return 'var(--success)';
   if (tone === 'info') return 'var(--info)';
   return 'var(--primary)';
-}
-
-function StatCard({ 
-  icon, 
-  label, 
-  value, 
-  subtitle,
-  tone,
-  delay 
-}: { 
-  icon: ReactNode; 
-  label: string; 
-  value: number | string; 
-  subtitle?: string;
-  tone: "primary" | "success" | "warning" | "info";
-  delay?: string;
-}) {
-  return (
-    <article 
-      className={`card stat-card stat-card-${tone} animate-scale-in hover:scale-105 transition-transform duration-200`}
-      style={{ animationDelay: delay }}
-    >
-      <div className="stat-icon">{icon}</div>
-      <div className="flex flex-col min-w-0 flex-1">
-        <p className="text-xs sm:text-sm text-[var(--text-secondary)] font-semibold truncate">{label}</p>
-        <strong className="text-xl sm:text-2xl text-[var(--text-primary)] my-0.5">{typeof value === "number" ? numberFormatter.format(value) : value}</strong>
-        {subtitle && <small className="text-[10px] sm:text-xs text-[var(--text-muted)] truncate" style={{ color: tone === 'warning' ? 'var(--warning)' : tone === 'success' ? 'var(--success)' : tone === 'info' ? 'var(--info)' : 'var(--primary)' }}>{subtitle}</small>}
-      </div>
-    </article>
-  );
-}
-
-function QuickAction({ 
-  href, 
-  icon, 
-  title, 
-  description,
-  delay 
-}: { 
-  href: string; 
-  icon: ReactNode; 
-  title: string; 
-  description: string;
-  delay?: string;
-}) {
-  return (
-    <Link 
-      href={href} 
-      className="card quick-action-card group animate-scale-in"
-      style={{ animationDelay: delay }}
-    >
-      <span className="quick-action-icon group-hover:scale-110 transition-transform">{icon}</span>
-      <span>
-        <strong className="text-sm sm:text-base">{title}</strong>
-        <small className="text-xs sm:text-sm">{description}</small>
-      </span>
-    </Link>
-  );
 }
 
 function RecentActivityPanel({ activities }: { activities: SuperadminInsights['recentActivity'] }) {
@@ -677,38 +447,110 @@ function RecentActivityPanel({ activities }: { activities: SuperadminInsights['r
 
 function PendingApprovalsPanel({ approvals }: { approvals: SuperadminInsights['pendingApprovalsList'] }) {
   if (!approvals) return null;
+  const [pendingId, setPendingId] = useState<string>("");
+  const [feedback, setFeedback] = useState<{ id: string; tone: "success" | "danger"; message: string } | null>(null);
+  const [items, setItems] = useState(approvals);
+
+  useEffect(() => {
+    setItems(approvals);
+  }, [approvals]);
+
+  async function decide(approval: NonNullable<SuperadminInsights['pendingApprovalsList']>[number], status: 'APPROVED' | 'REJECTED') {
+    if (pendingId) return;
+    setPendingId(approval.id);
+    setFeedback(null);
+    try {
+      const note = status === 'APPROVED'
+        ? 'Disetujui dari dashboard.'
+        : 'Ditolak dari dashboard. Silakan tinjau detail di Approval Center.';
+      const endpoint = approval.type === 'Cuti/Izin'
+        ? `/api/leave/${approval.id}/${status === 'APPROVED' ? 'approve' : 'reject'}`
+        : `/api/attendance/exceptions/${approval.id}/review`;
+      const response = await fetch(endpoint, {
+        method: approval.type === 'Cuti/Izin' ? 'POST' : 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(approval.type === 'Cuti/Izin' ? (status === 'APPROVED' ? {} : { reason: note }) : { status, reviewNote: note }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || 'Gagal memproses approval.');
+      }
+      setItems((current) => current?.filter((row) => row.id !== approval.id) || []);
+      setFeedback({ id: approval.id, tone: 'success', message: status === 'APPROVED' ? 'Disetujui.' : 'Ditolak.' });
+    } catch (error) {
+      setFeedback({ id: approval.id, tone: 'danger', message: error instanceof Error ? error.message : 'Gagal memproses approval.' });
+    } finally {
+      setPendingId("");
+    }
+  }
+
   return (
     <div className="card">
       <div className="flex items-start justify-between gap-3 mb-5">
         <div>
           <p className="eyebrow">Butuh Tindakan</p>
           <h3 className="text-base sm:text-lg">Approval Pending</h3>
-          <p className="text-xs sm:text-sm text-[var(--text-secondary)]">Menunggu persetujuan Anda.</p>
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)]">Setujui atau tolak langsung dari sini.</p>
         </div>
         <div className="w-11 h-11 rounded-xl bg-[var(--warning-bg)] flex items-center justify-center">
           <CheckCircle size={22} className="text-[var(--warning)]" aria-hidden="true" />
         </div>
       </div>
       <div className="space-y-3">
-        {approvals.length > 0 ? approvals.map((approval) => (
-          <div key={approval.id} className="rounded-xl border border-[var(--border-color)] p-3 hover:border-[var(--primary)] transition-colors">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <span className="badge badge-warning mb-2">{approval.type}</span>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">{approval.employeeName}</p>
+        {items && items.length > 0 ? items.map((approval) => {
+          const detailHref = approval.type === 'Cuti/Izin' ? '/dashboard/leave' : '/dashboard/attendance/exceptions';
+          const isPending = pendingId === approval.id;
+          return (
+            <div key={approval.id} className="rounded-xl border border-[var(--border-color)] p-3 hover:border-[var(--primary)] transition-colors">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="badge badge-warning mb-2">{approval.type}</span>
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">{approval.employeeName}</p>
+                </div>
+              </div>
+              <p className="mt-1 text-xs text-[var(--text-secondary)] line-clamp-2">{approval.detail}</p>
+              <p className="mt-2 text-[10px] text-[var(--text-muted)]">
+                {new Date(approval.time).toLocaleDateString('id-ID', { dateStyle: 'short' })}
+              </p>
+              {feedback?.id === approval.id && (
+                <p
+                  role="status"
+                  className="mt-2 text-[11px] font-semibold"
+                  style={{ color: feedback.tone === 'success' ? 'var(--success)' : 'var(--danger)' }}
+                >
+                  {feedback.message}
+                </p>
+              )}
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <Link
+                  href={detailHref}
+                  className="btn btn-secondary btn-sm"
+                  aria-label={`Lihat detail ${approval.type} ${approval.employeeName}`}
+                >
+                  <Eye size={14} aria-hidden="true" /> Detail
+                </Link>
+                <button
+                  type="button"
+                  className="btn btn-success btn-sm"
+                  disabled={isPending}
+                  onClick={() => decide(approval, 'APPROVED')}
+                >
+                  <ThumbsUp size={14} aria-hidden="true" /> {isPending ? '...' : 'Setujui'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger-outline btn-sm"
+                  disabled={isPending}
+                  onClick={() => decide(approval, 'REJECTED')}
+                >
+                  <ThumbsDown size={14} aria-hidden="true" /> {isPending ? '...' : 'Tolak'}
+                </button>
               </div>
             </div>
-            <p className="mt-1 text-xs text-[var(--text-secondary)] line-clamp-2">{approval.detail}</p>
-            <div className="mt-3 flex justify-between items-center">
-               <p className="text-[10px] text-[var(--text-muted)]">
-                 {new Date(approval.time).toLocaleDateString('id-ID', { dateStyle: 'short' })}
-               </p>
-               <Link href="/dashboard/attendance/exceptions" className="text-link text-xs font-semibold">Tinjau →</Link>
-            </div>
-          </div>
-        )) : <EmptyMiniState title="Semua beres!" description="Tidak ada antrian persetujuan." />}
+          );
+        }) : <EmptyMiniState title="Semua beres!" description="Tidak ada antrian persetujuan." />}
       </div>
-      {approvals.length > 0 && (
+      {items && items.length > 0 && (
         <div className="mt-4 text-center">
           <Link href="/dashboard/attendance/exceptions" className="text-link text-xs font-semibold">Lihat Semua Approval</Link>
         </div>

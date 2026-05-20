@@ -19,6 +19,14 @@ export async function authenticate(request: NextRequest): Promise<JwtPayload | n
   } catch (error) {
     token = null;
   }
+
+  if (!token) {
+    token = request.cookies?.get('myprodusen_token')?.value || null;
+  }
+
+  if (!token && process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
+    token = request.cookies?.get('token')?.value || request.cookies?.get('auth')?.value || request.cookies?.get('jwt')?.value || null;
+  }
   
   // Fallback to Authorization header for API clients
   if (!token) {

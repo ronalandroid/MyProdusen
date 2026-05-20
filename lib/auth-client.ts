@@ -72,10 +72,15 @@ export function getAuthHeaders(): HeadersInit {
  * Auth token is automatically sent via httpOnly cookie
  */
 export async function fetchProfile(): Promise<ClientUserProfile> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 8000);
+
   const response = await fetch('/api/auth/profile', {
     credentials: 'include', // Important: include cookies in request
     cache: 'no-store',
+    signal: controller.signal,
   });
+  window.clearTimeout(timeout);
 
   const payload = (await response.json()) as ApiResponse<ClientUserProfile>;
 

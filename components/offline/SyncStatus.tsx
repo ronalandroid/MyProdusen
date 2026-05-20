@@ -13,6 +13,7 @@ export function SyncStatus() {
   });
   const [syncProgress, setSyncProgress] = useState<SyncEvent | null>(null);
   const [isOnline, setIsOnline] = useState(true);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     // Initial status
@@ -49,24 +50,28 @@ export function SyncStatus() {
     try {
       const newStatus = await syncManager.getStatus();
       setStatus(newStatus);
-    } catch (error) {
-      console.error('Failed to load sync status:', error);
+    } catch {
+      setFeedback('Status sinkronisasi belum bisa dimuat. Coba lagi sebentar.');
     }
   };
 
   const handleManualSync = async () => {
     if (!isOnline) {
-      alert('Cannot sync while offline');
+      setFeedback('Tidak bisa sinkron saat offline. Periksa koneksi internet.');
       return;
     }
+
+    setFeedback(null);
     await syncManager.syncAll();
   };
 
   const handleRetryFailed = async () => {
     if (!isOnline) {
-      alert('Cannot retry while offline');
+      setFeedback('Tidak bisa mencoba ulang saat offline. Periksa koneksi internet.');
       return;
     }
+
+    setFeedback(null);
     await syncManager.retryFailed();
   };
 
@@ -77,7 +82,7 @@ export function SyncStatus() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 bg-white rounded-lg shadow-lg border border-gray-200 p-4 max-w-sm">
+    <div className="fixed bottom-4 right-4 z-40 w-[calc(100vw-2rem)] max-w-sm rounded-lg border border-gray-200 bg-white p-4 shadow-lg" role="status" aria-live="polite">
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-sm text-gray-900">Sync Status</h3>
         <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
@@ -128,11 +133,17 @@ export function SyncStatus() {
         )}
       </div>
 
-      <div className="mt-3 flex gap-2">
+      {feedback && (
+        <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+          {feedback}
+        </p>
+      )}
+
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         {isOnline && totalPending > 0 && (
           <button
             onClick={handleManualSync}
-            className="flex-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700"
+            className="min-h-11 flex-1 rounded bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
           >
             Sync Now
           </button>
@@ -141,7 +152,7 @@ export function SyncStatus() {
         {status.failed > 0 && (
           <button
             onClick={handleRetryFailed}
-            className="flex-1 px-3 py-1.5 bg-orange-600 text-white text-xs font-medium rounded hover:bg-orange-700"
+            className="min-h-11 flex-1 rounded bg-orange-600 px-3 py-2 text-xs font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-offset-2"
           >
             Retry Failed
           </button>

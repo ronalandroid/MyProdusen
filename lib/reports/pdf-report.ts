@@ -91,6 +91,7 @@ export function validatePdfDateRange(fromInput?: string, toInput?: string) {
 
 export function removeSelfieFields<T>(value: T): T {
   if (Array.isArray(value)) return value.map((entry) => removeSelfieFields(entry)) as T;
+  if (value instanceof Date) return value;
   if (!value || typeof value !== 'object') return value;
 
   const clean: Record<string, unknown> = {};

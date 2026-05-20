@@ -142,6 +142,11 @@ export default function KPIPage() {
             <p className="text-xs text-[var(--text-secondary)]">Periode {currentPeriod}</p>
           </div>
         </button>
+        {canViewTeam && (
+          <button type="button" className="btn btn-primary" onClick={() => router.push("/dashboard/kpi/template")}>
+            Template KPI
+          </button>
+        )}
       </div>
 
       {error && (
@@ -184,6 +189,18 @@ export default function KPIPage() {
               </div>
             </div>
           )}
+        </section>
+      )}
+
+      {canViewTeam && (
+        <section className="card p-4 sm:p-5" aria-label="Submit KPI result">
+          <h2 className="text-base font-bold">Input / Submit Hasil KPI</h2>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
+            Hasil KPI approved tidak bisa diedit dari kartu ringkasan. Gunakan workflow template dan assignment untuk membuat hasil KPI baru, submit aktual, lalu approve dengan audit log.
+          </p>
+          <button type="button" className="btn btn-primary mt-4" onClick={() => router.push('/dashboard/kpi/template')}>
+            Submit KPI Result
+          </button>
         </section>
       )}
 

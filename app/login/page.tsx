@@ -40,7 +40,12 @@ export default function LoginPage() {
       const payload = await response.json();
 
       if (!response.ok || !payload.success) {
-        throw new Error(payload.error || "Login gagal");
+        const message = typeof payload.message === "string"
+          ? payload.message
+          : typeof payload.error === "string"
+            ? payload.error
+            : "Email atau password salah";
+        throw new Error(message);
       }
 
       window.location.href = "/dashboard";
@@ -87,7 +92,7 @@ export default function LoginPage() {
       <div className="relative z-10 lg:hidden p-4">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-semibold text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
         >
           <ArrowLeft size={18} />
           <span>Kembali</span>
@@ -290,7 +295,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="text-right">
-                  <Link href="/forgot-password" className="text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded-md">
+                  <Link href="/forgot-password" className="inline-flex min-h-11 items-center rounded-xl px-2 text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">
                     Lupa kata sandi?
                   </Link>
                 </div>
@@ -333,9 +338,12 @@ export default function LoginPage() {
               <div className="mt-8 pt-6 border-t border-[var(--border-color)] text-center">
                 <p className="text-sm text-[var(--text-secondary)]">
                   Belum punya akun?{" "}
-                  <Link href="/register" className="font-bold text-[var(--text-primary)] hover:text-[var(--primary-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded-md">
+                  <Link href="/register" className="inline-flex min-h-11 items-center rounded-xl px-2 font-bold text-[var(--text-primary)] hover:text-[var(--primary-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">
                     Daftar di sini
                   </Link>
+                  <button type="button" className="ml-2 inline-flex min-h-11 items-center rounded-xl px-3 font-bold text-[var(--text-primary)] underline" onClick={() => router.push('/register')}>
+                    Buka Registrasi
+                  </button>
                 </p>
                 <p className="mt-2 text-xs text-[var(--text-muted)]">Akun baru perlu aktivasi Superadmin atau HRD.</p>
               </div>

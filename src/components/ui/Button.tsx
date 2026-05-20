@@ -35,7 +35,7 @@ export default function Button({
   };
   
   const sizeStyles = {
-    sm: 'px-3 py-2 text-xs gap-1.5 min-h-[36px]',
+    sm: 'px-3 py-2 text-xs gap-1.5 min-h-[44px]',
     md: 'px-5 py-2.5 text-sm gap-2 min-h-[44px]',
     lg: 'px-6 py-3.5 text-base gap-2.5 min-h-[52px]',
   };
@@ -50,6 +50,7 @@ export default function Button({
   
   return (
     <button
+      aria-busy={loading || undefined}
       className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${widthStyle} ${className}`}
       disabled={disabled || loading}
       {...props}

@@ -5,12 +5,13 @@ import { logAudit } from '@/lib/audit';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
 import { payrollPeriodService } from '@/features/payroll/payroll-period.service';
 import { db, attendances } from '@/lib/db';
+import { hasPermission } from '@/lib/permissions';
 import { eq } from 'drizzle-orm';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth(request);
-    if (!['SUPERADMIN'].includes(user.role)) {
+    if (!hasPermission(user.role, 'ATTENDANCE_MANUAL_ADJUST')) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
     const { id } = await params;

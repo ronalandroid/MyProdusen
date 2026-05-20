@@ -1,9 +1,10 @@
 import { db, leaveRequests, employees } from '@/lib/db';
-import { eq, and, gte, lte, desc, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, inArray, ne, or } from 'drizzle-orm';
 import { cacheManager } from '@/lib/cache/cache-manager';
 import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
 import { CacheStrategy } from '@/lib/cache/cache-strategies';
 import { notifyUser } from '@/lib/notifications/dispatch';
+import { leaveBalanceService } from '@/features/leave/leave-balance.service';
 
 export type LeaveType = 'LEAVE' | 'SICK' | 'PERMISSION';
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -32,6 +33,21 @@ export class LeaveService {
       throw new Error('Karyawan tidak ditemukan');
     }
 
+    const [overlap] = await db
+      .select({ id: leaveRequests.id })
+      .from(leaveRequests)
+      .where(and(
+        eq(leaveRequests.employeeId, data.employeeId),
+        ne(leaveRequests.status, 'REJECTED'),
+        lte(leaveRequests.startDate, data.endDate),
+        gte(leaveRequests.endDate, data.startDate),
+      ))
+      .limit(1);
+
+    if (overlap) {
+      throw new Error('Pengajuan cuti overlap dengan pengajuan aktif yang sudah ada');
+    }
+
     const leaveId = `leave_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     const [leave] = await db
@@ -46,6 +62,13 @@ export class LeaveService {
         status: 'PENDING',
       })
       .returning();
+
+    await leaveBalanceService.holdForRequest({
+      employeeId: data.employeeId,
+      leaveRequestId: leave.id,
+      startDate: data.startDate,
+      endDate: data.endDate,
+    });
 
     // Invalidate leave caches
     await this.invalidateLeaveCaches(data.employeeId);
@@ -188,6 +211,8 @@ export class LeaveService {
       .where(eq(leaveRequests.id, id))
       .returning();
 
+    await leaveBalanceService.approveRequest(id, approvedBy);
+
     // Invalidate leave caches
     await this.invalidateLeaveCaches(leave.employeeId, id);
 
@@ -227,6 +252,8 @@ export class LeaveService {
       })
       .where(eq(leaveRequests.id, id))
       .returning();
+
+    await leaveBalanceService.releaseRejectedRequest(id, rejectedBy);
 
     // Invalidate leave caches
     await this.invalidateLeaveCaches(leave.employeeId, id);

@@ -31,6 +31,7 @@ export default function AnnouncementsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('ALL');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -83,14 +84,14 @@ export default function AnnouncementsPage() {
           targetAudience: 'ALL',
           imageUrl: '',
         });
+        setFeedback('Announcement berhasil dibuat.');
         fetchAnnouncements();
       } else {
         const error = await res.json();
-        alert(error.error);
+        setFeedback(typeof error.error === 'string' ? error.error : 'Announcement gagal dibuat.');
       }
-    } catch (error) {
-      console.error('Error creating announcement:', error);
-      alert('Gagal membuat announcement');
+    } catch {
+      setFeedback('Gagal membuat announcement. Coba lagi sebentar.');
     }
   };
 
@@ -171,6 +172,11 @@ export default function AnnouncementsPage() {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
+        {feedback && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900" role="status">
+            {feedback}
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Announcements</h1>

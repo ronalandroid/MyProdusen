@@ -1,0 +1,1467 @@
+[
+  {
+    "id": "TC001",
+    "title": "Employee can register, activate, and access their profile",
+    "description": "Verifies that a new employee can register, activate the account, log in, and retrieve their authenticated profile successfully.",
+    "category": "Authentication API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Open the account registration form"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with a new employee username"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with a new employee email"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with a valid password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form"
+      },
+      {
+        "type": "action",
+        "description": "Open the account activation form"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a valid activation token into the token field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the activation form"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the authenticated profile is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user is shown as active"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "User sees a safe response for invalid login and protected profile access",
+    "description": "Verifies that incorrect credentials are rejected and the profile page remains inaccessible without an authenticated session.",
+    "category": "Authentication API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with an existing user email"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with an incorrect password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an invalid credentials error is visible"
+      },
+      {
+        "type": "action",
+        "description": "Open the profile view without signing in"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an unauthorized access message is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Employee can check in and later check out for today",
+    "description": "Verifies that an employee can see today’s attendance state, complete check-in, and complete check-out successfully.",
+    "category": "Attendance API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open today's attendance view"
+      },
+      {
+        "type": "action",
+        "description": "Start the check-in flow"
+      },
+      {
+        "type": "action",
+        "description": "Provide valid GPS location information"
+      },
+      {
+        "type": "action",
+        "description": "Provide valid selfie information"
+      },
+      {
+        "type": "action",
+        "description": "Submit the check-in"
+      },
+      {
+        "type": "action",
+        "description": "Start the check-out flow"
+      },
+      {
+        "type": "action",
+        "description": "Provide valid GPS location information"
+      },
+      {
+        "type": "action",
+        "description": "Provide valid selfie information"
+      },
+      {
+        "type": "action",
+        "description": "Submit the check-out"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the attendance state shows a completed workday"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the attendance record is present in today's view"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Inactive user cannot log in until activated",
+    "description": "Verifies that an inactive account is blocked from logging in and the user is told the account is inactive.",
+    "category": "Authentication API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with an inactive user email"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with the matching password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an inactive account error is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Employee can log out from an authenticated session",
+    "description": "Verifies that a signed-in user can end the session and is returned to an unauthenticated state.",
+    "category": "Authentication API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the account menu"
+      },
+      {
+        "type": "action",
+        "description": "Click the sign out action"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the session ends"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify authenticated profile access is no longer available"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Authenticated user can change password and remain signed in",
+    "description": "Verifies that a logged-in user can change their password successfully from the authenticated session.",
+    "category": "Authentication API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the change password form"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a valid current password into the current password field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a new valid password into the new password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the change password form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a password change confirmation is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user remains authenticated"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Superadmin can view users and update a user role and status",
+    "description": "Verifies that a Superadmin can open the user list and change a user’s role and active status successfully.",
+    "category": "Employees And Users API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the user management view"
+      },
+      {
+        "type": "action",
+        "description": "Select a user from the list"
+      },
+      {
+        "type": "action",
+        "description": "Update the user role"
+      },
+      {
+        "type": "action",
+        "description": "Update the user active status"
+      },
+      {
+        "type": "action",
+        "description": "Save the user changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated user record is shown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new role and status are reflected"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Employee sees validation when check-in data is incomplete",
+    "description": "Verifies that check-in is blocked when required attendance data such as GPS or selfie information is missing.",
+    "category": "Attendance API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open today's attendance view"
+      },
+      {
+        "type": "action",
+        "description": "Start the check-in flow"
+      },
+      {
+        "type": "action",
+        "description": "Submit the check-in without providing required location or selfie information"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an attendance validation error is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Employee can submit a leave request and view balance information",
+    "description": "Verifies that an employee can create a leave request and see leave balance or ledger information afterward.",
+    "category": "Leave API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the leave request view"
+      },
+      {
+        "type": "action",
+        "description": "Create a new leave request"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a valid leave date range"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a leave reason"
+      },
+      {
+        "type": "action",
+        "description": "Submit the leave request"
+      },
+      {
+        "type": "action",
+        "description": "Open the leave balance view"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the submitted leave request is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the leave balance information is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "Superadmin can create and edit an employee record",
+    "description": "Verifies that a Superadmin can create an employee record and then update the employee profile details.",
+    "category": "Employees And Users API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the employee management view"
+      },
+      {
+        "type": "action",
+        "description": "Create a new employee record"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the required employee details"
+      },
+      {
+        "type": "action",
+        "description": "Save the employee record"
+      },
+      {
+        "type": "action",
+        "description": "Open the newly created employee record"
+      },
+      {
+        "type": "action",
+        "description": "Update the employee profile details"
+      },
+      {
+        "type": "action",
+        "description": "Save the employee changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the employee record is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated employee details are reflected"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC011",
+    "title": "Employee submits a leave request",
+    "description": "An employee can submit a leave request with valid details and the request is created in pending state with balance held.",
+    "category": "Leave API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for an employee account"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the leave request screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a valid leave type"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a valid date range"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a leave reason"
+      },
+      {
+        "type": "action",
+        "description": "Submit the leave request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new leave request is visible in pending state"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the leave balance is reduced or held for the submitted request"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC012",
+    "title": "User can request password recovery safely",
+    "description": "Verifies that requesting password recovery with an unknown email completes without revealing whether the account exists.",
+    "category": "Authentication API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Open the forgot password form"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with an unknown email address"
+      },
+      {
+        "type": "action",
+        "description": "Submit the forgot password form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a safe success confirmation is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC013",
+    "title": "Superadmin can approve or reject a pending leave request",
+    "description": "Verifies that a Superadmin can review a pending leave request and complete an approval decision successfully.",
+    "category": "Leave API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the leave approvals view"
+      },
+      {
+        "type": "action",
+        "description": "Select a pending leave request"
+      },
+      {
+        "type": "action",
+        "description": "Approve or reject the request"
+      },
+      {
+        "type": "action",
+        "description": "Save the leave decision"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the leave request shows the final decision"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the audit status is reflected in the review view"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC014",
+    "title": "Superadmin approves a pending leave request",
+    "description": "A superadmin can review a pending leave request and approve it, resulting in an approved status and updated balance.",
+    "category": "Leave API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for a superadmin account"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the leave management screen"
+      },
+      {
+        "type": "action",
+        "description": "Open a pending leave request"
+      },
+      {
+        "type": "action",
+        "description": "Approve the leave request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the leave request is shown as approved"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the employee leave balance reflects the approval"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC015",
+    "title": "Superadmin can link a registered user to an employee profile",
+    "description": "Verifies that a Superadmin can create an employee profile for an existing registered user successfully.",
+    "category": "Employees And Users API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the user management view"
+      },
+      {
+        "type": "action",
+        "description": "Select a registered user without an employee profile"
+      },
+      {
+        "type": "action",
+        "description": "Create an employee profile for the selected user"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the linked employee profile is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC016",
+    "title": "Superadmin creates and approves a KPI result",
+    "description": "A superadmin can create KPI setup data, assign it, submit a result, and approve it so the result is shown as approved.",
+    "category": "KPI API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for a superadmin account"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the KPI template screen"
+      },
+      {
+        "type": "action",
+        "description": "Create a KPI template with valid items and total weight"
+      },
+      {
+        "type": "action",
+        "description": "Assign the KPI template to an employee"
+      },
+      {
+        "type": "action",
+        "description": "Open the KPI results screen"
+      },
+      {
+        "type": "action",
+        "description": "Create or update a KPI result score"
+      },
+      {
+        "type": "action",
+        "description": "Approve the KPI result"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the KPI result is shown as approved"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the assigned KPI item is visible in the results flow"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC017",
+    "title": "Employee can create and submit a KPI result",
+    "description": "Verifies that an employee can open assigned KPI work, enter results, and submit them for review.",
+    "category": "KPI API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the KPI assignments view"
+      },
+      {
+        "type": "action",
+        "description": "Open an assigned KPI item"
+      },
+      {
+        "type": "action",
+        "description": "Enter KPI result details"
+      },
+      {
+        "type": "action",
+        "description": "Submit the KPI result"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the KPI result is shown as submitted"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC018",
+    "title": "Superadmin rejects a pending leave request with a reason",
+    "description": "A superadmin can reject a pending leave request by providing a reason and the request is marked rejected with an audit trail outcome.",
+    "category": "Leave API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for a superadmin account"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the leave management screen"
+      },
+      {
+        "type": "action",
+        "description": "Open a pending leave request"
+      },
+      {
+        "type": "action",
+        "description": "Reject the leave request"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a rejection reason"
+      },
+      {
+        "type": "action",
+        "description": "Submit the rejection"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the leave request is shown as rejected"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the rejection outcome is recorded in the request history"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC019",
+    "title": "Superadmin can create a KPI template and assign it",
+    "description": "Verifies that a Superadmin can create a KPI template and assign it to an employee or group successfully.",
+    "category": "KPI API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the KPI template management view"
+      },
+      {
+        "type": "action",
+        "description": "Create a KPI template"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the KPI template details"
+      },
+      {
+        "type": "action",
+        "description": "Save the KPI template"
+      },
+      {
+        "type": "action",
+        "description": "Assign the KPI template to a target employee"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the KPI template is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the assignment is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC020",
+    "title": "Employee can view own payroll and notifications",
+    "description": "An authenticated employee can access their own payroll data and current notifications from the app.",
+    "category": "Reports Payroll Overtime Notifications API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for an employee account"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the own payroll screen"
+      },
+      {
+        "type": "action",
+        "description": "Open the notifications screen"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify own payroll data is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify current notifications are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC021",
+    "title": "Superadmin can review and approve a submitted KPI result",
+    "description": "Verifies that a Superadmin can open a submitted KPI result and approve it successfully.",
+    "category": "KPI API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the KPI review view"
+      },
+      {
+        "type": "action",
+        "description": "Select a submitted KPI result"
+      },
+      {
+        "type": "action",
+        "description": "Approve the KPI result"
+      },
+      {
+        "type": "action",
+        "description": "Save the KPI review"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the KPI result shows an approved status"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC022",
+    "title": "Employee can access their protected selfie history",
+    "description": "Verifies that an employee can open protected selfie access for their own attendance record and view the selfie history successfully.",
+    "category": "Attendance API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the attendance history view"
+      },
+      {
+        "type": "action",
+        "description": "Open the selfie for one of the user's own attendance records"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the protected selfie is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the selfie belongs to the current user"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC023",
+    "title": "Employee views leave balance summary and history",
+    "description": "An employee can open leave balance views and see the current summary plus ledger history.",
+    "category": "Leave API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for an employee account"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the leave balance screen"
+      },
+      {
+        "type": "action",
+        "description": "Open the leave history view"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the current leave balance summary is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify leave balance ledger history is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC024",
+    "title": "Superadmin can review attendance reports and generate a PDF",
+    "description": "A superadmin can open attendance reporting and generate the protected report output for the same scope.",
+    "category": "Reports Payroll Overtime Notifications API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for a superadmin account"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the attendance reports screen"
+      },
+      {
+        "type": "action",
+        "description": "Apply a valid report filter"
+      },
+      {
+        "type": "action",
+        "description": "Generate the attendance report PDF"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify attendance report data is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a report PDF is available for the current report scope"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC025",
+    "title": "Superadmin can review attendance exceptions",
+    "description": "Verifies that a Superadmin can open the attendance exceptions queue and see pending items for review.",
+    "category": "Attendance API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the attendance exceptions view"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the exceptions list is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC026",
+    "title": "Superadmin can view attendance reports and generate a PDF export",
+    "description": "Verifies that a Superadmin can open attendance reporting and generate a printable or PDF export view successfully.",
+    "category": "Reports API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the attendance reports view"
+      },
+      {
+        "type": "action",
+        "description": "Generate the report for a valid period"
+      },
+      {
+        "type": "action",
+        "description": "Open the export option"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify attendance report data is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an export-ready report view is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC027",
+    "title": "Employee can create an overtime request and view rates",
+    "description": "An employee can submit an overtime request with valid details and view the available overtime rates.",
+    "category": "Reports Payroll Overtime Notifications API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for an employee account"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the overtime request screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a valid overtime request"
+      },
+      {
+        "type": "action",
+        "description": "Submit the overtime request"
+      },
+      {
+        "type": "action",
+        "description": "Open the overtime rates screen"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the overtime request is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify overtime rates are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC028",
+    "title": "Superadmin can view payroll and overtime information",
+    "description": "Verifies that a Superadmin can access payroll period listings and review overtime-related data successfully.",
+    "category": "Payroll API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the payroll view"
+      },
+      {
+        "type": "action",
+        "description": "Open the overtime view"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify payroll period information is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify overtime information is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC029",
+    "title": "User cannot access another employee’s protected data",
+    "description": "Verifies that RBAC prevents an authenticated user from opening another employee’s record or protected selfie content.",
+    "category": "Authentication API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_USER}} into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in {{LOGIN_PASSWORD}} into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open another employee's record or protected file from the UI"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is denied"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the protected record is not displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC030",
+    "title": "Employee cannot submit overlapping leave dates",
+    "description": "An employee is prevented from creating a leave request that overlaps an existing active leave request and sees a validation error.",
+    "category": "Leave API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for an employee account"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the leave request screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a leave type"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a date range that overlaps an existing leave request"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a leave reason"
+      },
+      {
+        "type": "action",
+        "description": "Submit the leave request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a leave overlap validation error is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC031",
+    "title": "Superadmin cannot create a KPI template with invalid total weight",
+    "description": "A KPI template with an invalid total weight is rejected and the validation error is shown before any template is created.",
+    "category": "KPI API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for a superadmin account"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the KPI template screen"
+      },
+      {
+        "type": "action",
+        "description": "Create a KPI template with items whose total weight does not match policy"
+      },
+      {
+        "type": "action",
+        "description": "Submit the KPI template"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a KPI template weight validation error is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC032",
+    "title": "Superadmin must provide a rejection reason",
+    "description": "A rejection cannot be submitted without a reason and the form shows a validation error instead of changing the request state.",
+    "category": "Leave API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials for a superadmin account"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the leave management screen"
+      },
+      {
+        "type": "action",
+        "description": "Open a pending leave request"
+      },
+      {
+        "type": "action",
+        "description": "Choose to reject the leave request"
+      },
+      {
+        "type": "action",
+        "description": "Submit the rejection without entering a reason"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a rejection reason validation error is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the leave request remains pending"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC033",
+    "title": "Public health and version pages are accessible without login",
+    "description": "Anyone can open the health and version pages and see safe public status information without signing in.",
+    "category": "Reports Payroll Overtime Notifications API",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the health page"
+      },
+      {
+        "type": "action",
+        "description": "Open the version page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a public health status is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify public version metadata is displayed"
+      }
+    ],
+    "priority": "Low"
+  }
+]

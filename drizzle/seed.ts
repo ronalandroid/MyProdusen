@@ -1,92 +1,114 @@
-import { db, users, employees, workLocations, shifts, kpiTemplates, kpiItems } from '@/lib/db';
+import 'dotenv/config';
+import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 import * as bcrypt from 'bcryptjs';
+import { employees, kpiItems, kpiTemplates, shifts, users, workLocations } from './schema';
 
-async function main() {
-  console.log('🌱 Starting seed...');
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required');
+}
 
-  // Create Superadmin
-  const seedPassword = process.env.SEED_SUPERADMIN_PASSWORD;
-  const seedHrPassword = process.env.SEED_ADMIN_HR_PASSWORD;
-  const seedSupervisorPassword = process.env.SEED_SUPERVISOR_PASSWORD;
-  const seedEmployeePassword = process.env.SEED_EMPLOYEE_PASSWORD;
+function normalizeDatabaseUrl(databaseUrl: string) {
+  const url = new URL(databaseUrl);
+  url.searchParams.delete('schema');
+  return url.toString();
+}
 
-  if (
-    !seedPassword ||
-    !seedHrPassword ||
-    !seedSupervisorPassword ||
-    !seedEmployeePassword ||
-    [seedPassword, seedHrPassword, seedSupervisorPassword, seedEmployeePassword].some((value) => value.length < 12)
-  ) {
-    throw new Error('Seed passwords must be set and at least 12 characters');
-  }
+function makeId(prefix: string) {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+}
 
-  const superadminPassword = await bcrypt.hash(seedPassword, 10);
-  const superadminId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
-  const [superadmin] = await db
+const client = postgres(normalizeDatabaseUrl(process.env.DATABASE_URL));
+const db = drizzle(client);
+
+async function upsertUser(input: {
+  email: string;
+  username: string;
+  password: string;
+  role: 'SUPERADMIN' | 'EMPLOYEE';
+}) {
+  const [user] = await db
     .insert(users)
     .values({
-      id: superadminId,
-      email: 'admin@myprodusen.com',
-      username: 'superadmin',
-      password: superadminPassword,
-      role: 'SUPERADMIN',
+      id: makeId('user'),
+      email: input.email,
+      username: input.username,
+      password: input.password,
+      role: input.role,
+      isActive: true,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: users.email,
+      set: {
+        username: input.username,
+        password: input.password,
+        role: input.role,
+        isActive: true,
+        updatedAt: new Date(),
+      },
     })
     .returning();
 
-  const superadminEmpId = `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  await db.insert(employees).values({
-    id: superadminEmpId,
-    nip: '260514-0001',
-    userId: superadmin.id,
-    fullName: 'Super Admin',
-    email: 'admin@myprodusen.com',
-    phone: '081234567890',
-    address: 'Medan, Sumatera Utara',
-    joinDate: new Date('2026-05-14'),
-    division: 'Management',
-    position: 'Owner',
-    status: 'ACTIVE',
-  });
-  console.log('✅ Superadmin created:', superadmin.email);
+  return user;
+}
 
-  // Create Admin HR
-  const hrPassword = await bcrypt.hash(seedHrPassword, 10);
-  const hrId = `user_${Date.now() + 1}_${Math.random().toString(36).substr(2, 9)}`;
-  
-  const [adminHR] = await db
-    .insert(users)
+async function upsertEmployee(input: {
+  nip: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  address: string;
+  division: string;
+  position: string;
+  defaultShiftId?: string;
+  defaultLocationId?: string;
+}) {
+  await db
+    .insert(employees)
     .values({
-      id: hrId,
-      email: 'hr@myprodusen.com',
-      username: 'adminhr',
-      password: hrPassword,
-      role: 'ADMIN_HR',
+      id: makeId('emp'),
+      nip: input.nip,
+      userId: input.userId,
+      fullName: input.fullName,
+      email: input.email,
+      phone: input.phone,
+      address: input.address,
+      joinDate: new Date('2026-05-14'),
+      division: input.division,
+      position: input.position,
+      status: 'ACTIVE',
+      defaultShiftId: input.defaultShiftId,
+      defaultLocationId: input.defaultLocationId,
+      updatedAt: new Date(),
     })
-    .returning();
+    .onConflictDoUpdate({
+      target: employees.userId,
+      set: {
+        fullName: input.fullName,
+        email: input.email,
+        phone: input.phone,
+        address: input.address,
+        division: input.division,
+        position: input.position,
+        status: 'ACTIVE',
+        defaultShiftId: input.defaultShiftId,
+        defaultLocationId: input.defaultLocationId,
+        updatedAt: new Date(),
+      },
+    });
+}
 
-  const hrEmpId = `emp_${Date.now() + 1}_${Math.random().toString(36).substr(2, 9)}`;
-  await db.insert(employees).values({
-    id: hrEmpId,
-    nip: '260514-0002',
-    userId: adminHR.id,
-    fullName: 'Admin HR',
-    email: 'hr@myprodusen.com',
-    phone: '081234567891',
-    address: 'Medan, Sumatera Utara',
-    joinDate: new Date('2026-05-14'),
-    division: 'Human Resources',
-    position: 'HR Manager',
-    status: 'ACTIVE',
-  });
-  console.log('✅ Admin HR created:', adminHR.email);
+async function getOrCreateWorkLocation() {
+  const [existing] = await db.select().from(workLocations).where(eq(workLocations.name, 'Pabrik Dimsum Medan')).limit(1);
+  if (existing) return existing;
 
-  // Create Work Location
-  const locationId = `loc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const [workLocation] = await db
+  const [created] = await db
     .insert(workLocations)
     .values({
-      id: locationId,
+      id: makeId('loc'),
       name: 'Pabrik Dimsum Medan',
       address: 'Jl. Gatot Subroto No. 123, Medan',
       latitude: 3.5952,
@@ -95,150 +117,46 @@ async function main() {
       isActive: true,
     })
     .returning();
-  console.log('✅ Work location created:', workLocation.name);
 
-  // Create Shifts
-  const morningShiftId = `shift_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const [morningShift] = await db
+  return created;
+}
+
+async function getOrCreateShift(name: string, startTime: string, endTime: string) {
+  const [existing] = await db.select().from(shifts).where(eq(shifts.name, name)).limit(1);
+  if (existing) return existing;
+
+  const [created] = await db
     .insert(shifts)
     .values({
-      id: morningShiftId,
-      name: 'Shift Pagi',
-      startTime: '08:00',
-      endTime: '16:00',
+      id: makeId('shift'),
+      name,
+      startTime,
+      endTime,
       isActive: true,
     })
     .returning();
-  console.log('✅ Morning shift created:', morningShift.name);
 
-  const afternoonShiftId = `shift_${Date.now() + 1}_${Math.random().toString(36).substr(2, 9)}`;
-  const [afternoonShift] = await db
-    .insert(shifts)
-    .values({
-      id: afternoonShiftId,
-      name: 'Shift Siang',
-      startTime: '14:00',
-      endTime: '22:00',
-      isActive: true,
-    })
-    .returning();
-  console.log('✅ Afternoon shift created:', afternoonShift.name);
+  return created;
+}
 
-  // Create Supervisor
-  const supervisorPassword = await bcrypt.hash(seedSupervisorPassword, 10);
-  const supervisorId = `user_${Date.now() + 2}_${Math.random().toString(36).substr(2, 9)}`;
-  
-  const [supervisor] = await db
-    .insert(users)
-    .values({
-      id: supervisorId,
-      email: 'supervisor@myprodusen.com',
-      username: 'supervisor',
-      password: supervisorPassword,
-      role: 'SUPERVISOR',
-    })
-    .returning();
+async function ensureKpiTemplate() {
+  const [existing] = await db.select().from(kpiTemplates).where(eq(kpiTemplates.name, 'KPI Produksi Bulanan')).limit(1);
+  if (existing) return existing;
 
-  const supervisorEmpId = `emp_${Date.now() + 2}_${Math.random().toString(36).substr(2, 9)}`;
-  await db.insert(employees).values({
-    id: supervisorEmpId,
-    nip: '260514-0003',
-    userId: supervisor.id,
-    fullName: 'Supervisor Produksi',
-    email: 'supervisor@myprodusen.com',
-    phone: '081234567892',
-    address: 'Medan, Sumatera Utara',
-    joinDate: new Date('2026-05-14'),
-    division: 'Produksi',
-    position: 'Supervisor',
-    status: 'ACTIVE',
-    defaultShiftId: morningShift.id,
-    defaultLocationId: workLocation.id,
-  });
-  console.log('✅ Supervisor created:', supervisor.email);
-
-  // Create Employees
-  const employeePassword = await bcrypt.hash(seedEmployeePassword, 10);
-  
-  const employee1Id = `user_${Date.now() + 3}_${Math.random().toString(36).substr(2, 9)}`;
-  const [employee1] = await db
-    .insert(users)
-    .values({
-      id: employee1Id,
-      email: 'employee1@myprodusen.com',
-      username: 'employee1',
-      password: employeePassword,
-      role: 'EMPLOYEE',
-    })
-    .returning();
-
-  const emp1Id = `emp_${Date.now() + 3}_${Math.random().toString(36).substr(2, 9)}`;
-  await db.insert(employees).values({
-    id: emp1Id,
-    nip: '260514-0004',
-    userId: employee1.id,
-    fullName: 'Karyawan Satu',
-    email: 'employee1@myprodusen.com',
-    phone: '081234567893',
-    address: 'Medan, Sumatera Utara',
-    joinDate: new Date('2026-05-14'),
-    division: 'Produksi',
-    position: 'Operator',
-    status: 'ACTIVE',
-    supervisorId: supervisorEmpId,
-    defaultShiftId: morningShift.id,
-    defaultLocationId: workLocation.id,
-  });
-  console.log('✅ Employee 1 created:', employee1.email);
-
-  const employee2Id = `user_${Date.now() + 4}_${Math.random().toString(36).substr(2, 9)}`;
-  const [employee2] = await db
-    .insert(users)
-    .values({
-      id: employee2Id,
-      email: 'employee2@myprodusen.com',
-      username: 'employee2',
-      password: employeePassword,
-      role: 'EMPLOYEE',
-    })
-    .returning();
-
-  const emp2Id = `emp_${Date.now() + 4}_${Math.random().toString(36).substr(2, 9)}`;
-  await db.insert(employees).values({
-    id: emp2Id,
-    nip: '260514-0005',
-    userId: employee2.id,
-    fullName: 'Karyawan Dua',
-    email: 'employee2@myprodusen.com',
-    phone: '081234567894',
-    address: 'Medan, Sumatera Utara',
-    joinDate: new Date('2026-05-14'),
-    division: 'Produksi',
-    position: 'Operator',
-    status: 'ACTIVE',
-    supervisorId: supervisorEmpId,
-    defaultShiftId: afternoonShift.id,
-    defaultLocationId: workLocation.id,
-  });
-  console.log('✅ Employee 2 created:', employee2.email);
-
-  // Create KPI Template
-  const kpiTemplateId = `kpi_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const [kpiTemplate] = await db
+  const [template] = await db
     .insert(kpiTemplates)
     .values({
-      id: kpiTemplateId,
+      id: makeId('kpi'),
       name: 'KPI Produksi Bulanan',
       description: 'Template KPI untuk karyawan produksi',
       isActive: true,
     })
     .returning();
 
-  // Create KPI Items
   await db.insert(kpiItems).values([
     {
-      id: `kpi_item_${Date.now()}_1`,
-      templateId: kpiTemplate.id,
+      id: makeId('kpi_item'),
+      templateId: template.id,
       name: 'Target Produksi',
       description: 'Jumlah dimsum yang diproduksi',
       weight: 0.4,
@@ -249,8 +167,8 @@ async function main() {
       unit: 'pcs',
     },
     {
-      id: `kpi_item_${Date.now()}_2`,
-      templateId: kpiTemplate.id,
+      id: makeId('kpi_item'),
+      templateId: template.id,
       name: 'Kualitas Produk',
       description: 'Persentase produk yang lolos QC',
       weight: 0.3,
@@ -261,8 +179,8 @@ async function main() {
       unit: '%',
     },
     {
-      id: `kpi_item_${Date.now()}_3`,
-      templateId: kpiTemplate.id,
+      id: makeId('kpi_item'),
+      templateId: template.id,
       name: 'Kehadiran',
       description: 'Persentase kehadiran',
       weight: 0.2,
@@ -273,8 +191,8 @@ async function main() {
       unit: '%',
     },
     {
-      id: `kpi_item_${Date.now()}_4`,
-      templateId: kpiTemplate.id,
+      id: makeId('kpi_item'),
+      templateId: template.id,
       name: 'Keterlambatan',
       description: 'Total menit terlambat',
       weight: 0.1,
@@ -285,22 +203,99 @@ async function main() {
       unit: 'menit',
     },
   ]);
-  console.log('✅ KPI Template created:', kpiTemplate.name);
 
-  console.log('🎉 Seed completed successfully!');
-  console.log('\n📝 Login credentials use seed password environment variables.');
-  console.log('Superadmin: admin@myprodusen.com / <SEED_SUPERADMIN_PASSWORD>');
-  console.log('Admin HR: hr@myprodusen.com / <SEED_ADMIN_HR_PASSWORD>');
-  console.log('Supervisor: supervisor@myprodusen.com / <SEED_SUPERVISOR_PASSWORD>');
-  console.log('Employee 1: employee1@myprodusen.com / <SEED_EMPLOYEE_PASSWORD>');
-  console.log('Employee 2: employee2@myprodusen.com / <SEED_EMPLOYEE_PASSWORD>');
+  return template;
+}
+
+async function main() {
+  console.log('🌱 Starting idempotent seed...');
+
+  const seedPassword = process.env.SEED_SUPERADMIN_PASSWORD;
+  const seedEmployeePassword = process.env.SEED_EMPLOYEE_PASSWORD;
+
+  if (!seedPassword || !seedEmployeePassword || [seedPassword, seedEmployeePassword].some((value) => value.length < 12)) {
+    throw new Error('Seed passwords must be set and at least 12 characters');
+  }
+
+  const superadminPassword = await bcrypt.hash(seedPassword, 10);
+  const employeePassword = await bcrypt.hash(seedEmployeePassword, 10);
+
+  const workLocation = await getOrCreateWorkLocation();
+  const morningShift = await getOrCreateShift('Shift Pagi', '08:00', '16:00');
+  const afternoonShift = await getOrCreateShift('Shift Siang', '14:00', '22:00');
+
+  const superadmin = await upsertUser({
+    email: 'admin@myprodusen.com',
+    username: 'superadmin',
+    password: superadminPassword,
+    role: 'SUPERADMIN',
+  });
+  await upsertEmployee({
+    nip: '260514-0001',
+    userId: superadmin.id,
+    fullName: 'Super Admin',
+    email: 'admin@myprodusen.com',
+    phone: '081234567890',
+    address: 'Medan, Sumatera Utara',
+    division: 'Management',
+    position: 'Owner',
+  });
+
+  const employee1 = await upsertUser({
+    email: 'employee1@myprodusen.com',
+    username: 'employee1',
+    password: employeePassword,
+    role: 'EMPLOYEE',
+  });
+  await upsertEmployee({
+    nip: '260514-0004',
+    userId: employee1.id,
+    fullName: 'Karyawan Satu',
+    email: 'employee1@myprodusen.com',
+    phone: '081234567893',
+    address: 'Medan, Sumatera Utara',
+    division: 'Produksi',
+    position: 'Operator',
+    defaultShiftId: morningShift.id,
+    defaultLocationId: workLocation.id,
+  });
+
+  const employee2 = await upsertUser({
+    email: 'employee2@myprodusen.com',
+    username: 'employee2',
+    password: employeePassword,
+    role: 'EMPLOYEE',
+  });
+  await upsertEmployee({
+    nip: '260514-0005',
+    userId: employee2.id,
+    fullName: 'Karyawan Dua',
+    email: 'employee2@myprodusen.com',
+    phone: '081234567894',
+    address: 'Medan, Sumatera Utara',
+    division: 'Produksi',
+    position: 'Operator',
+    defaultShiftId: afternoonShift.id,
+    defaultLocationId: workLocation.id,
+  });
+
+  const kpiTemplate = await ensureKpiTemplate();
+
+  console.log('✅ Superadmin ready:', superadmin.email);
+  console.log('✅ Employee 1 ready:', employee1.email);
+  console.log('✅ Employee 2 ready:', employee2.email);
+  console.log('✅ Work location ready:', workLocation.name);
+  console.log('✅ Shifts ready:', morningShift.name, '/', afternoonShift.name);
+  console.log('✅ KPI template ready:', kpiTemplate.name);
+  console.log('🎉 Seed completed successfully. Passwords stay in environment variables.');
 }
 
 main()
-  .catch((e) => {
-    console.error('❌ Seed failed:', e);
+  .catch((error) => {
+    console.error('❌ Seed failed:', error);
     process.exit(1);
   })
-  .finally(() => {
+  .finally(async () => {
+    await client.end({ timeout: 5 });
     process.exit(0);
   });

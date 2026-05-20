@@ -2,14 +2,14 @@ import { NextRequest } from 'next/server';
 import { kpiService } from '@/services/kpi/kpi.service';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
+import { hasPermission } from '@/lib/permissions';
 import { logAudit } from '@/lib/audit';
 
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     
-    // Only SUPERADMIN can view templates
-    if (!['SUPERADMIN'].includes(user.role)) {
+    if (!hasPermission(user.role, 'KPI_TEMPLATE_READ')) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
 
@@ -35,8 +35,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     
-    // Only SUPERADMIN can create templates
-    if (!['SUPERADMIN'].includes(user.role)) {
+    if (!hasPermission(user.role, 'KPI_TEMPLATE_CREATE')) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
 
@@ -51,6 +50,17 @@ export async function POST(request: NextRequest) {
       name,
       description,
       createdBy: user.userId,
+    });
+    await kpiService.createItem({
+      templateId: template.id,
+      name: 'KPI Operasional Utama',
+      description: 'Item default agar template langsung dapat dipakai untuk input hasil KPI.',
+      weight: 100,
+      scoringType: 'HIGHER_IS_BETTER',
+      targetValue: 100,
+      minValue: 0,
+      maxValue: 100,
+      unit: '%',
     });
     await logAudit(user.userId, 'CREATE', 'KpiTemplate', template.id, undefined, template, request);
 

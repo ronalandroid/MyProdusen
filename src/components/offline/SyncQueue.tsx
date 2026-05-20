@@ -22,7 +22,7 @@ export function SyncQueue() {
         .toArray();
       setQueueItems(items);
     } catch (error) {
-      console.error('Failed to load queue:', error);
+      setQueueItems([]);
     }
   };
 

@@ -4,6 +4,7 @@ import { payrollPeriodService } from '@/features/payroll/payroll-period.service'
 import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
+import { hasPermission } from '@/lib/permissions';
 
 const createPeriodSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
@@ -15,8 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     
-    if (!['SUPERADMIN'].includes(user.role)) {
-      return forbiddenResponse('You do not have permission to view payroll periods');
+    if (!hasPermission(user.role, 'PAYROLL_READ')) {
+      return forbiddenResponse('Anda tidak memiliki akses payroll');
     }
 
     const periods = await payrollPeriodService.getPeriods();
@@ -32,8 +33,8 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     
-    if (!['SUPERADMIN'].includes(user.role)) {
-      return forbiddenResponse('You do not have permission to create payroll periods');
+    if (!hasPermission(user.role, 'PAYROLL_READ')) {
+      return forbiddenResponse('Anda tidak memiliki akses payroll');
     }
 
     const body = await getRequestBody(request);

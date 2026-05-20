@@ -18,6 +18,8 @@ export default function PayrollStructuresPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -61,14 +63,14 @@ export default function PayrollStructuresPage() {
         setShowModal(false);
         setEditingId(null);
         setFormData({ name: '', description: '', baseSalary: 0 });
+        setFeedback('Struktur gaji berhasil disimpan.');
         fetchStructures();
       } else {
         const error = await res.json();
-        alert(error.error);
+        setFeedback(typeof error.error === 'string' ? error.error : 'Struktur gaji gagal disimpan.');
       }
-    } catch (error) {
-      console.error('Error saving structure:', error);
-      alert('Gagal menyimpan struktur gaji');
+    } catch {
+      setFeedback('Gagal menyimpan struktur gaji. Coba lagi sebentar.');
     }
   };
 
@@ -83,7 +85,11 @@ export default function PayrollStructuresPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Hapus struktur gaji ini?')) return;
+    if (pendingDeleteId !== id) {
+      setPendingDeleteId(id);
+      setFeedback('Klik Hapus sekali lagi untuk konfirmasi.');
+      return;
+    }
 
     try {
       const res = await fetch(`/api/payroll/structures/${id}`, {
@@ -91,14 +97,15 @@ export default function PayrollStructuresPage() {
       });
 
       if (res.ok) {
+        setPendingDeleteId(null);
+        setFeedback('Struktur gaji berhasil dihapus.');
         fetchStructures();
       } else {
         const error = await res.json();
-        alert(error.error);
+        setFeedback(typeof error.error === 'string' ? error.error : 'Struktur gaji gagal dihapus.');
       }
-    } catch (error) {
-      console.error('Error deleting structure:', error);
-      alert('Gagal menghapus struktur gaji');
+    } catch {
+      setFeedback('Gagal menghapus struktur gaji. Coba lagi sebentar.');
     }
   };
 
@@ -111,10 +118,12 @@ export default function PayrollStructuresPage() {
       });
 
       if (res.ok) {
+        setPendingDeleteId(null);
+        setFeedback('Struktur gaji berhasil dihapus.');
         fetchStructures();
       }
-    } catch (error) {
-      console.error('Error toggling active:', error);
+    } catch {
+      setFeedback('Status struktur gaji gagal diubah. Coba lagi sebentar.');
     }
   };
 
@@ -137,6 +146,11 @@ export default function PayrollStructuresPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">
+        {feedback && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900" role="status">
+            {feedback}
+          </div>
+        )}
         <button
           onClick={() => router.back()}
           className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
@@ -208,7 +222,7 @@ export default function PayrollStructuresPage() {
                 onClick={() => handleDelete(structure.id)}
                 className="flex-1 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm"
               >
-                Hapus
+                {pendingDeleteId === structure.id ? 'Konfirmasi Hapus' : 'Hapus'}
               </button>
             </div>
           </div>

@@ -1,61 +1,48 @@
 import { describe, it, expect } from 'vitest';
 import { hasPermission, canManageRole, canAccessOwnData, canAccessTeamData } from './permissions';
-import type { UserRole } from './permissions';
 
 describe('Permissions', () => {
   describe('hasPermission', () => {
-    it('should allow SUPERADMIN to access all permissions', () => {
+    it('allows SUPERADMIN to access admin permissions', () => {
       expect(hasPermission('SUPERADMIN', 'USER_CREATE')).toBe(true);
       expect(hasPermission('SUPERADMIN', 'EMPLOYEE_DELETE')).toBe(true);
       expect(hasPermission('SUPERADMIN', 'AUDIT_READ')).toBe(true);
     });
 
-    it('should restrict EMPLOYEE permissions', () => {
+    it('restricts EMPLOYEE permissions to self-service', () => {
       expect(hasPermission('EMPLOYEE', 'USER_CREATE')).toBe(false);
       expect(hasPermission('EMPLOYEE', 'ATTENDANCE_CREATE')).toBe(true);
       expect(hasPermission('EMPLOYEE', 'EMPLOYEE_READ_OWN')).toBe(true);
     });
+
+    it('does not grant historical roles any production permission', () => {
+      expect(hasPermission('ADMIN_HR', 'EMPLOYEE_READ')).toBe(false);
+      expect(hasPermission('SUPERVISOR', 'LEAVE_APPROVE')).toBe(false);
+    });
   });
 
   describe('canManageRole', () => {
-    it('should allow SUPERADMIN to manage production roles only', () => {
+    it('allows SUPERADMIN to manage only two production roles', () => {
       expect(canManageRole('SUPERADMIN', 'SUPERADMIN')).toBe(true);
       expect(canManageRole('SUPERADMIN', 'EMPLOYEE')).toBe(true);
-      expect(canManageRole('SUPERADMIN', 'ADMIN_HR')).toBe(false);
-      expect(canManageRole('SUPERADMIN', 'SUPERVISOR')).toBe(false);
     });
 
-    it('should prevent lower roles from managing higher roles', () => {
-      expect(canManageRole('ADMIN_HR', 'SUPERADMIN')).toBe(false);
-      expect(canManageRole('SUPERVISOR', 'ADMIN_HR')).toBe(false);
-      expect(canManageRole('EMPLOYEE', 'SUPERVISOR')).toBe(false);
+    it('prevents non-production roles from role management', () => {
+      expect(canManageRole('ADMIN_HR' as any, 'EMPLOYEE')).toBe(false);
+      expect(canManageRole('SUPERVISOR' as any, 'EMPLOYEE')).toBe(false);
+      expect(canManageRole('EMPLOYEE', 'SUPERADMIN')).toBe(false);
     });
   });
 
-  describe('canAccessOwnData', () => {
-    it('should allow SUPERADMIN to access all data', () => {
+  describe('data access helpers', () => {
+    it('allows SUPERADMIN all data and EMPLOYEE own data only', () => {
       expect(canAccessOwnData('SUPERADMIN', 'user1', 'user2')).toBe(true);
-      expect(canAccessOwnData('ADMIN_HR', 'user1', 'user2')).toBe(false);
-    });
-
-    it('should allow users to access their own data', () => {
       expect(canAccessOwnData('EMPLOYEE', 'user1', 'user1')).toBe(true);
-      expect(canAccessOwnData('SUPERVISOR', 'user1', 'user1')).toBe(true);
-    });
-
-    it('should prevent users from accessing other users data', () => {
       expect(canAccessOwnData('EMPLOYEE', 'user1', 'user2')).toBe(false);
-      expect(canAccessOwnData('SUPERVISOR', 'user1', 'user2')).toBe(false);
     });
-  });
 
-  describe('canAccessTeamData', () => {
-    it('should not expose legacy supervisor team access', () => {
+    it('does not expose historical supervisor team access', () => {
       expect(canAccessTeamData('SUPERVISOR', 'supervisor1', 'employee1', 'supervisor1')).toBe(false);
-    });
-
-    it('should prevent supervisor from accessing non-team member data', () => {
-      expect(canAccessTeamData('SUPERVISOR', 'supervisor1', 'employee1', 'supervisor2')).toBe(false);
     });
   });
 });

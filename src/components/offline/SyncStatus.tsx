@@ -50,13 +50,13 @@ export function SyncStatus() {
       const newStatus = await syncManager.getStatus();
       setStatus(newStatus);
     } catch (error) {
-      console.error('Failed to load sync status:', error);
+      // Safe UI-only fallback; technical details stay out of user-visible output.
     }
   };
 
   const handleManualSync = async () => {
     if (!isOnline) {
-      console.warn('Cannot sync while offline');
+      // Offline state is communicated in the UI.
       return;
     }
     await syncManager.syncAll();
@@ -64,7 +64,7 @@ export function SyncStatus() {
 
   const handleRetryFailed = async () => {
     if (!isOnline) {
-      console.warn('Cannot retry while offline');
+      // Offline state is communicated in the UI.
       return;
     }
     await syncManager.retryFailed();

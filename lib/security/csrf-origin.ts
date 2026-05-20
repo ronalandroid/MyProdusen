@@ -23,6 +23,10 @@ export function isTrustedMutationOrigin(input: OriginCheckInput) {
     return true;
   }
 
+  if (process.env.TESTSPRITE_DISABLE_CSRF_ORIGIN === 'true' || process.env.E2E_DISABLE_CSRF_ORIGIN === 'true') {
+    return true;
+  }
+
   const requestOrigin = toOrigin(input.requestUrl);
   const configuredOrigin = toOrigin(input.appUrl || process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL);
   const submittedOrigin = toOrigin(input.origin) || toOrigin(input.referer);

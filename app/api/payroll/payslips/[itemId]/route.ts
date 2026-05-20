@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/middleware';
 import { errorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
 import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
 import { logAudit } from '@/lib/audit';
+import { hasPermission } from '@/lib/permissions';
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);

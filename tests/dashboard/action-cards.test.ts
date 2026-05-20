@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { buildDashboardActions } from '@/lib/dashboard/action-cards';
 
 describe('buildDashboardActions', () => {
-  it('prioritizes HR action queues for Superadmin and Admin HR', () => {
-    const actions = buildDashboardActions('ADMIN_HR', {
+  it('prioritizes HR action queues for Superadmin', () => {
+    const actions = buildDashboardActions('SUPERADMIN', {
       pendingLeaves: 3,
       pendingKpiApprovals: 2,
       lateToday: 1,

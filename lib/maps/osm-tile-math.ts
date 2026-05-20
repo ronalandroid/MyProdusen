@@ -2,7 +2,7 @@
  * Pure helpers for the work-location OpenStreetMap preview. Kept in lib/ so
  * they can be unit-tested without bringing in React.
  *
- * Tile usage policy: see /docs/UI_ALIGNMENT.md and /docs/REFERENCE_REPO_ANALYSIS.md.
+ * Tile usage policy: see /docs/ui-ux-guide/README.md and /docs/architecture/README.md.
  */
 
 export const TILE_SIZE = 256;

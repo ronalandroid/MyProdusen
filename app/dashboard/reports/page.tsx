@@ -139,6 +139,15 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      <section className="card" aria-label="Laporan payroll dan lembur" style={{ padding: "16px" }}>
+        <h2 className="text-base font-bold">Laporan Payroll dan Lembur</h2>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">Akses periode payroll, penggajian, overtime/lembur, dan detail lembur dari laporan HRIS.</p>
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Button variant="secondary" onClick={() => router.push('/dashboard/payroll')} fullWidth>Periode Payroll / Penggajian</Button>
+          <Button variant="secondary" onClick={() => router.push('/dashboard/overtime')} fullWidth>Laporan Lembur / Overtime</Button>
+        </div>
+      </section>
+
       {/* Report Presets */}
       <div className="card" style={{ padding: "16px" }}>
         <h3 className="text-sm font-semibold mb-3">Preset Cepat</h3>
@@ -282,6 +291,12 @@ export default function ReportsPage() {
             </div>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Button variant="secondary" onClick={() => router.push('/dashboard/leave/balance')} fullWidth>
+              Saldo Cuti & Riwayat
+            </Button>
+            <Button variant="secondary" onClick={() => router.push('/dashboard/leave')} fullWidth>
+              Pengajuan Cuti Aktif
+            </Button>
             <Button variant="secondary" onClick={() => handleExport('csv')} fullWidth>
               <Download size={16} className="shrink-0" aria-hidden="true" />
               Export CSV

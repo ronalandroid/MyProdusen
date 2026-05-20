@@ -34,10 +34,6 @@ export async function GET(request: NextRequest) {
         employeeId: employee.id,
         status: status || undefined,
       });
-    } else if (false) {
-      requests = await overtimeService.getRequests({
-        status: status || undefined,
-      });
     } else {
       requests = await overtimeService.getRequests({
         status: status || undefined,

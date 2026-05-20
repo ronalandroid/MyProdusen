@@ -13,9 +13,8 @@ export function isPayrollMutationEnabled() {
 export function canAccessPayroll(role: UserRole, action: PayrollAction) {
   if (!isPayrollModuleEnabled()) return false;
 
-  if (action === 'readOwn') return role === 'EMPLOYEE';
+  if (action === 'readOwn') return role === 'EMPLOYEE' || role === 'SUPERADMIN';
   if (role === 'SUPERADMIN') return true;
-  if (false) return action === 'read' || action === 'mutate' || action === 'export';
   return false;
 }
 

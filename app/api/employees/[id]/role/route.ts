@@ -21,8 +21,8 @@ export async function PATCH(
     const body = await request.json();
     const { role } = body;
     
-    if (!role || !['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE'].includes(role)) {
-      return validationErrorResponse('Role tidak valid. Pilih: SUPERADMIN, ADMIN_HR, SUPERVISOR, atau EMPLOYEE');
+    if (!role || !['SUPERADMIN', 'EMPLOYEE'].includes(role)) {
+      return validationErrorResponse('Role tidak valid. Pilih: SUPERADMIN atau EMPLOYEE');
     }
     
     // Get employee to find userId
@@ -52,7 +52,7 @@ export async function PATCH(
     const [updatedUser] = await db
       .update(users)
       .set({ 
-        role: role as any,
+        role,
         updatedAt: new Date(),
       })
       .where(eq(users.id, employee.userId))

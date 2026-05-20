@@ -114,7 +114,12 @@ export default function PayrollPage() {
         {error && <div className="alert-card" role="alert"><strong>Gagal</strong><p>{error}</p></div>}
         <section className="card">
           <h2 className="text-base font-bold mb-4">Riwayat Payslip</h2>
-          {myItems.length === 0 ? <p className="text-sm text-[var(--text-secondary)]">Belum ada payroll tersedia.</p> : (
+          {myItems.length === 0 ? (
+            <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-main)] p-4" role="status">
+              <p className="text-sm font-semibold">Slip gaji / payroll pribadi belum diterbitkan.</p>
+              <p className="mt-1 text-xs text-[var(--text-secondary)]">Halaman ini hanya menampilkan payroll milik akun login saat ini. Data payroll karyawan lain tetap terlindungi.</p>
+            </div>
+          ) : (
             <div className="flex flex-col gap-3">
               {myItems.map(({ item, run }) => (
                 <div key={item.id} className="rounded-2xl border border-[var(--border-color)] p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -137,6 +142,19 @@ export default function PayrollPage() {
 
       {error && <div className="alert-card" role="alert"><strong>Gagal</strong><p>{error}</p></div>}
       {message && <div className="card border-[var(--success)] text-[var(--success)]" role="status">{message}</div>}
+
+      <section className="card" aria-label="Payroll pribadi dan notifikasi saat ini">
+        <h2 className="text-base font-bold">Slip gaji pribadi & notifikasi saat ini</h2>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">Gaji / Penggajian akun login tersambung ke menu payroll, payslip, slip gaji, dan Notifikasi.</p>
+        <div className="mt-3 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-main)] p-4" role="status">
+          <p className="text-sm font-semibold">Slip gaji pribadi</p>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">Payslip personal muncul di sini saat payroll sudah diterbitkan. Data pengguna lain tidak ditampilkan.</p>
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <button type="button" className="btn btn-secondary" onClick={() => router.push('/dashboard/payroll/me')}>Buka Gaji Saya</button>
+          <button type="button" className="btn btn-secondary" onClick={() => router.push('/dashboard/notifications')}>Buka Notifikasi Saat Ini</button>
+        </div>
+      </section>
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="stat-card"><p>Total Runs</p><strong>{summary.totalRuns}</strong></div>

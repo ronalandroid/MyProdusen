@@ -5,14 +5,6 @@ const credentials = {
     email: process.env.E2E_SUPERADMIN_EMAIL,
     password: process.env.E2E_SUPERADMIN_PASSWORD,
   },
-  adminHr: {
-    email: process.env.E2E_ADMIN_HR_EMAIL,
-    password: process.env.E2E_ADMIN_HR_PASSWORD,
-  },
-  supervisor: {
-    email: process.env.E2E_SUPERVISOR_EMAIL,
-    password: process.env.E2E_SUPERVISOR_PASSWORD,
-  },
   employee: {
     email: process.env.E2E_EMPLOYEE_EMAIL,
     password: process.env.E2E_EMPLOYEE_PASSWORD,
@@ -108,18 +100,6 @@ test.describe('MyProdusen full staging read-only gate', () => {
     await login(page, credentials.employee);
     await expectPageAvailable(page, '/dashboard', /Dashboard|Absensi|Kehadiran|Payroll|KPI/i);
     await expectPageAvailable(page, '/dashboard/payroll', /Payroll|Gaji|Akses ditolak|Forbidden|Tidak memiliki akses/i);
-  });
-
-  test('admin HR and supervisor role smoke when credentials exist', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop-1440', 'Run live credential login once to avoid rate limit.');
-    test.skip(!credentials.adminHr.email || !credentials.adminHr.password || !credentials.supervisor.email || !credentials.supervisor.password, 'Set E2E_ADMIN_HR_* and E2E_SUPERVISOR_* credentials.');
-
-    await login(page, credentials.adminHr);
-    await expectPageAvailable(page, '/dashboard/employees', /Karyawan|Employee|NIP/i);
-
-    await page.context().clearCookies();
-    await login(page, credentials.supervisor);
-    await expectPageAvailable(page, '/dashboard', /Dashboard|Tim|KPI|Cuti|Absensi/i);
   });
 });
 

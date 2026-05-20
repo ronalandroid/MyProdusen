@@ -49,9 +49,11 @@ function writeEmailGuide(target: string) {
 function seedHappyPath(workdir: string) {
   const refsDir = path.join(workdir, 'docs', 'references');
   const screensDir = path.join(refsDir, 'screens');
+  mkdirSync(path.join(refsDir, 'design-checklist'), { recursive: true });
+  mkdirSync(path.join(refsDir, 'email-style-guide'), { recursive: true });
   writeReadme(path.join(refsDir, 'README.md'));
-  writeChecklist(path.join(refsDir, 'design-checklist.md'));
-  writeEmailGuide(path.join(refsDir, 'email-style-guide.md'));
+  writeChecklist(path.join(refsDir, 'design-checklist', 'README.md'));
+  writeEmailGuide(path.join(refsDir, 'email-style-guide', 'README.md'));
   writeFakePng(path.join(refsDir, 'myprodusen-logo.png'));
   writeFakePng(path.join(screensDir, 'employee-full-ui-ux-mobile.png'));
   writeFakePng(path.join(screensDir, 'super-admin-full-ui-ux-desktop.png'));
@@ -88,9 +90,11 @@ describe('check-references script', () => {
   it('errors when the screens directory is missing', () => {
     const refsDir = path.join(workdir, 'docs', 'references');
     rmSync(path.join(refsDir, 'screens'), { recursive: true, force: true });
+    mkdirSync(path.join(refsDir, 'design-checklist'), { recursive: true });
+    mkdirSync(path.join(refsDir, 'email-style-guide'), { recursive: true });
     writeReadme(path.join(refsDir, 'README.md'));
-    writeChecklist(path.join(refsDir, 'design-checklist.md'));
-    writeEmailGuide(path.join(refsDir, 'email-style-guide.md'));
+    writeChecklist(path.join(refsDir, 'design-checklist', 'README.md'));
+    writeEmailGuide(path.join(refsDir, 'email-style-guide', 'README.md'));
     writeFakePng(path.join(refsDir, 'myprodusen-logo.png'));
 
     const result = runIn(workdir);
@@ -109,7 +113,7 @@ describe('check-references script', () => {
   it('errors when the checklist no longer references all screens', () => {
     seedHappyPath(workdir);
     writeFileSync(
-      path.join(workdir, 'docs', 'references', 'design-checklist.md'),
+      path.join(workdir, 'docs', 'references', 'design-checklist', 'README.md'),
       '# Design Checklist\n## Brand tokens\n## EMPLOYEE APP SHELL\n',
     );
     const result = runIn(workdir);

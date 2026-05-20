@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { kpiService } from '@/services/kpi/kpi.service';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
+import { hasPermission } from '@/lib/permissions';
 import { logAudit } from '@/lib/audit';
 
 export async function GET(request: NextRequest) {
@@ -56,8 +57,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     
-    // Only SUPERADMIN can submit results
-    if (!['SUPERADMIN'].includes(user.role)) {
+    if (!hasPermission(user.role, 'KPI_INPUT')) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
 
@@ -66,29 +66,6 @@ export async function POST(request: NextRequest) {
 
     if (!employeeId || !itemId || !period || actualValue === undefined) {
       return errorResponse('employeeId, itemId, period, dan actualValue wajib diisi', 422);
-    }
-
-    // Supervisor team scope check
-    if (false) {
-      const { db, employees } = await import('@/lib/db');
-      const { eq } = await import('drizzle-orm');
-      const { canManageEmployeeKpi } = await import('@/lib/kpi/team-scope');
-      
-      const [actorEmployee] = await db
-        .select()
-        .from(employees)
-        .where(eq(employees.userId, user.userId))
-        .limit(1);
-      
-      const [targetEmployee] = await db
-        .select()
-        .from(employees)
-        .where(eq(employees.id, employeeId))
-        .limit(1);
-      
-      if (!canManageEmployeeKpi(user.role, actorEmployee, targetEmployee)) {
-        return forbiddenResponse('Anda hanya dapat input KPI untuk tim sendiri');
-      }
     }
 
     const result = await kpiService.submitResult({

@@ -92,7 +92,7 @@ export async function GET(
     }
 
 
-    const allowedRoles = ['EMPLOYEE', 'SUPERADMIN'];
+    const allowedRoles = ['SUPERADMIN', 'EMPLOYEE'];
     if (!allowedRoles.includes(user.role) && !hasPermission(user.role, 'ATTENDANCE_READ')) {
       return forbiddenResponse('Anda tidak memiliki akses melihat selfie absensi');
     }

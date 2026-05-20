@@ -4,6 +4,7 @@ import { payrollPeriodService } from '@/features/payroll/payroll-period.service'
 import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
+import { hasPermission } from '@/lib/permissions';
 
 const lockSchema = z.object({
   reason: z.string().min(10, 'Reason must be at least 10 characters'),
@@ -14,8 +15,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const user = await requireAuth(request);
     const { id } = await params;
     
-    if (!['SUPERADMIN'].includes(user.role)) {
-      return forbiddenResponse('You do not have permission to lock payroll periods');
+    if (!hasPermission(user.role, 'PAYROLL_READ')) {
+      return forbiddenResponse('Anda tidak memiliki akses payroll');
     }
 
     const body = await getRequestBody(request);

@@ -6,7 +6,11 @@ import jwt from 'jsonwebtoken';
 import { BaseService } from '@/lib/core/base-service';
 import { AppError } from '@/lib/core/app-error';
 
-export type UserRole = 'SUPERADMIN' | 'ADMIN_HR' | 'SUPERVISOR' | 'EMPLOYEE';
+export type UserRole = 'SUPERADMIN' | 'EMPLOYEE';
+
+export function toProductionUserRole(role: string): UserRole {
+  return role === 'SUPERADMIN' ? 'SUPERADMIN' : 'EMPLOYEE';
+}
 
 export class AuthService extends BaseService {
   async login(email: string, password: string) {
@@ -136,7 +140,7 @@ export class AuthService extends BaseService {
       id: row.id,
       email: row.email,
       username: row.username,
-      role: row.role,
+      role: toProductionUserRole(row.role),
       isActive: row.isActive,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -161,7 +165,7 @@ export class AuthService extends BaseService {
       throw AppError.notFound('User tidak ditemukan');
     }
 
-    return user;
+    return { ...user, role: toProductionUserRole(user.role) };
   }
 
   async updateUserRole(userId: string, role: UserRole, isActive?: boolean) {

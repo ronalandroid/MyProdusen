@@ -60,7 +60,7 @@ describe('Employees API', () => {
       expect(data.success).toBe(false);
     });
 
-    it('should deny legacy supervisor employee list access', async () => {
+    it('should deny historical supervisor employee list access', async () => {
       const supervisor1 = await createTestUser('SUPERVISOR');
       testUserIds.push(supervisor1.id);
       const supervisor1EmpId = await createTestEmployee(supervisor1.id);
@@ -101,13 +101,14 @@ describe('Employees API', () => {
     it('should create employee as SUPERADMIN', async () => {
       const adminHr = await createTestUser('SUPERADMIN');
       testUserIds.push(adminHr.id);
+      const unique = Date.now().toString(36);
 
       const request = createMockRequest('POST', 'http://localhost:3000/api/employees', {
         token: adminHr.token,
         body: {
-          email: 'newemployee@test.com',
-          username: 'newemployee',
-          password: 'password123',
+          email: `newemployee-${unique}@test.com`,
+          username: `newemployee${unique}`,
+          password: 'Password123!',
           fullName: 'New Employee',
           phone: '081234567890',
           division: 'IT',
@@ -141,7 +142,7 @@ describe('Employees API', () => {
         body: {
           email: `operator-expedition-${unique}@test.com`,
           username: `operatorexpedition${unique}`,
-          password: 'password123',
+          password: 'Password123!',
           fullName: 'Operator Expedition',
           phone: '081234567891',
           division: 'Expedition',

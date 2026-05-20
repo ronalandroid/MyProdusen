@@ -3,12 +3,13 @@ import { db, employees } from '@/lib/db';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
 import { rowsToCsv, csvResponse } from '@/utils/csv-export';
+import { hasPermission } from '@/lib/permissions';
 import { eq, desc } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
-    if (!['SUPERADMIN'].includes(user.role)) return forbiddenResponse('Anda tidak memiliki akses');
+    if (!hasPermission(user.role, 'REPORT_VIEW')) return forbiddenResponse('Anda tidak memiliki akses');
     const { searchParams } = new URL(request.url);
     const format = searchParams.get('format');
     const status = searchParams.get('status');

@@ -79,6 +79,43 @@ describe('Leave API', () => {
       expect(response.status).toBe(401);
       expect(data.success).toBe(false);
     });
+
+    it('should reject overlapping active leave dates', async () => {
+      const user = await createTestUser('EMPLOYEE');
+      testUserIds.push(user.id);
+
+      const employeeId = await createTestEmployee(user.id);
+      testEmployeeIds.push(employeeId);
+
+      const existingLeaveId = `leave_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await db.insert(leaveRequests).values({
+        id: existingLeaveId,
+        employeeId,
+        type: 'LEAVE',
+        startDate: new Date('2026-06-01T00:00:00.000Z'),
+        endDate: new Date('2026-06-03T00:00:00.000Z'),
+        reason: 'Existing pending leave',
+        status: 'PENDING',
+      });
+      testLeaveIds.push(existingLeaveId);
+
+      const request = createMockRequest('POST', 'http://localhost:3000/api/leave', {
+        token: user.token,
+        body: {
+          type: 'LEAVE',
+          startDate: '2026-06-02T00:00:00.000Z',
+          endDate: '2026-06-04T00:00:00.000Z',
+          reason: 'Overlapping leave request',
+        },
+      });
+
+      const response = await leavePOST(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.error).toContain('overlap');
+    });
   });
 
   describe('GET /api/leave', () => {
@@ -117,7 +154,7 @@ describe('Leave API', () => {
       expect(Array.isArray(data.data)).toBe(true);
     });
 
-    it('should deny legacy supervisor leave list access', async () => {
+    it('should deny historical supervisor leave list access', async () => {
       const supervisor1 = await createTestUser('SUPERVISOR');
       testUserIds.push(supervisor1.id);
       const supervisor1EmpId = await createTestEmployee(supervisor1.id);
@@ -179,7 +216,7 @@ describe('Leave API', () => {
   });
 
   describe('POST /api/leave/[id]/approve', () => {
-    it('should deny legacy supervisor leave approval', async () => {
+    it('should deny historical supervisor leave approval', async () => {
       const supervisor = await createTestUser('SUPERVISOR');
       testUserIds.push(supervisor.id);
       const supervisorEmpId = await createTestEmployee(supervisor.id);
@@ -294,7 +331,7 @@ describe('Leave API', () => {
   });
 
   describe('POST /api/leave/[id]/reject', () => {
-    it('should deny legacy supervisor leave rejection', async () => {
+    it('should deny historical supervisor leave rejection', async () => {
       const supervisor = await createTestUser('SUPERVISOR');
       testUserIds.push(supervisor.id);
       const supervisorEmpId = await createTestEmployee(supervisor.id);

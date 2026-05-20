@@ -1,4 +1,4 @@
-import { getRedisClient } from './redis';
+import { getRedisClient, isRedisConfigured } from './redis';
 import { logger } from '../logger';
 import { CACHE_ENABLED, DEFAULT_CACHE_TTL, CacheOptions } from './cache-strategies';
 
@@ -6,7 +6,7 @@ export class CacheManager {
   private enabled: boolean;
 
   constructor() {
-    this.enabled = CACHE_ENABLED;
+    this.enabled = CACHE_ENABLED && isRedisConfigured();
   }
 
   async get<T>(key: string): Promise<T | null> {

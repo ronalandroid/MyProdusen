@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { isTrustedMutationOrigin } from '@/lib/security/csrf-origin';
 
 describe('CSRF mutation origin guard', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('allows safe methods without origin checks', () => {
     expect(isTrustedMutationOrigin({ method: 'GET', requestUrl: 'https://app.test/api/profile' })).toBe(true);
     expect(isTrustedMutationOrigin({ method: 'HEAD', requestUrl: 'https://app.test/api/profile' })).toBe(true);
@@ -37,5 +41,15 @@ describe('CSRF mutation origin guard', () => {
       method: 'DELETE',
       requestUrl: 'https://myprodusen.online/api/employees/1',
     })).toBe(false);
+  });
+
+  it('allows explicit local TestSprite origin bypass only when configured', () => {
+    vi.stubEnv('TESTSPRITE_DISABLE_CSRF_ORIGIN', 'true');
+
+    expect(isTrustedMutationOrigin({
+      method: 'POST',
+      requestUrl: 'http://localhost:3000/api/employees',
+      origin: 'https://testsprite-tunnel.example',
+    })).toBe(true);
   });
 });

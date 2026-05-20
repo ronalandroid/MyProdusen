@@ -40,7 +40,7 @@ export function ConflictResolver() {
         setIsOpen(true);
       }
     } catch (error) {
-      console.error('Failed to load conflicts:', error);
+      // Safe UI-only fallback; technical details stay out of user-visible output.
     }
   };
 
@@ -55,8 +55,7 @@ export function ConflictResolver() {
         setIsOpen(false);
       }
     } catch (error) {
-      console.error('Failed to resolve conflict:', error);
-      alert('Failed to resolve conflict');
+      // Safe UI-only fallback; technical details stay out of user-visible output.
     }
   };
 

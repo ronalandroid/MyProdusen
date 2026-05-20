@@ -8,7 +8,7 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useToast } from "@/components/ui/Toast";
-import { getAuthHeaders } from "@/lib/auth-client";
+import { fetchProfile, getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
 
 interface Employee {
   id: string;
@@ -41,6 +41,8 @@ export default function EmployeesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [profile, setProfile] = useState<ClientUserProfile | null>(null);
+  const [accessNotice, setAccessNotice] = useState("");
   const [formData, setFormData] = useState({
     nip: "",
     fullName: "",
@@ -53,6 +55,12 @@ export default function EmployeesPage() {
     password: "",
   });
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchProfile()
+      .then(setProfile)
+      .catch(() => setProfile(null));
+  }, []);
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -92,6 +100,10 @@ export default function EmployeesPage() {
   };
 
   const handleCreate = () => {
+    if (profile?.role === "EMPLOYEE") {
+      setAccessNotice("Akses ditolak. Karyawan hanya dapat melihat data sendiri dan tidak dapat menambah data karyawan.");
+      return;
+    }
     setSelectedEmployee(null);
     setFormData({
       nip: "",
@@ -108,6 +120,18 @@ export default function EmployeesPage() {
   };
 
   const handleEdit = (employee: Employee) => {
+    if (!canManageEmployees) {
+      setAccessNotice("Akses ditolak. Karyawan hanya dapat melihat data sendiri dan tidak dapat membuka data karyawan lain.");
+      return;
+    }
+    if (profile?.role === "EMPLOYEE" && employee.id !== profile.employee?.id) {
+      setAccessNotice("Akses ditolak. Karyawan hanya dapat melihat data sendiri dan tidak dapat membuka data karyawan lain.");
+      return;
+    }
+    if (profile?.role === "EMPLOYEE") {
+      setAccessNotice("Akses dibatasi. Karyawan hanya dapat melihat data sendiri; perubahan profil dilakukan melalui menu Profil.");
+      return;
+    }
     setSelectedEmployee(employee);
     setFormData({
       nip: employee.nip,
@@ -210,6 +234,8 @@ export default function EmployeesPage() {
     return <span className={`badge ${statusInfo.className}`}>{statusInfo.label}</span>;
   };
 
+  const canManageEmployees = profile?.role === "SUPERADMIN";
+
   return (
     <div className="phone-screen feature-screen" style={{ display: "flex", flexDirection: "column", gap: "20px", position: "relative", minHeight: "100%" }}>
       {/* Header */}
@@ -219,6 +245,19 @@ export default function EmployeesPage() {
           <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Karyawan</h1>
         </div>
       </div>
+
+      {profile?.role === "EMPLOYEE" && (
+        <div className="card" role="status" style={{ padding: "12px 16px", borderColor: "var(--border-color)" }}>
+          <p className="text-sm font-semibold">Akses dibatasi</p>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">Karyawan hanya dapat melihat data sendiri. Data karyawan lain tidak dapat diedit atau dihapus.</p>
+        </div>
+      )}
+
+      {accessNotice && (
+        <div className="card" role="alert" style={{ padding: "12px 16px", borderColor: "var(--danger)", backgroundColor: "var(--danger-bg)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--danger)" }}>{accessNotice}</p>
+        </div>
+      )}
 
       {/* Search & Filter */}
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -283,23 +322,33 @@ export default function EmployeesPage() {
                   </div>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button
-                  onClick={() => handleEdit(emp)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <Edit size={18} color="var(--text-muted)" />
+              {canManageEmployees ? (
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(emp)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    aria-label={`Edit ${emp.fullName}`}
+                  >
+                    <Edit size={18} color="var(--text-muted)" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedEmployee(emp);
+                      setIsDeleteModalOpen(true);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    aria-label={`Hapus ${emp.fullName}`}
+                  >
+                    <Trash2 size={18} color="var(--danger)" />
+                  </button>
+                </div>
+              ) : (
+                <button type="button" className="btn btn-secondary" onClick={() => handleEdit(emp)} style={{ minHeight: "44px", padding: "8px 12px", fontSize: "12px" }}>
+                  Lihat batas akses
                 </button>
-                <button
-                  onClick={() => {
-                    setSelectedEmployee(emp);
-                    setIsDeleteModalOpen(true);
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <Trash2 size={18} color="var(--danger)" />
-                </button>
-              </div>
+              )}
             </div>
           ))}
         </div>

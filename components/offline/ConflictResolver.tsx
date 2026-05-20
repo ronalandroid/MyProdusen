@@ -8,6 +8,7 @@ export function ConflictResolver() {
   const [conflicts, setConflicts] = useState<SyncConflict[]>([]);
   const [selectedConflict, setSelectedConflict] = useState<SyncConflict | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     loadConflicts();
@@ -26,8 +27,8 @@ export function ConflictResolver() {
       if (unresolved.length > 0 && !isOpen) {
         setIsOpen(true);
       }
-    } catch (error) {
-      console.error('Failed to load conflicts:', error);
+    } catch {
+      setFeedback('Konflik sinkronisasi belum bisa dimuat. Coba lagi sebentar.');
     }
   };
 
@@ -36,14 +37,14 @@ export function ConflictResolver() {
       await conflictResolver.manuallyResolve(conflictId, resolution);
       await loadConflicts();
       setSelectedConflict(null);
+      setFeedback('Konflik berhasil diselesaikan.');
       
       // Close if no more conflicts
       if (conflicts.length <= 1) {
         setIsOpen(false);
       }
-    } catch (error) {
-      console.error('Failed to resolve conflict:', error);
-      alert('Failed to resolve conflict');
+    } catch {
+      setFeedback('Konflik belum bisa diselesaikan. Coba ulangi.');
     }
   };
 
@@ -66,7 +67,7 @@ export function ConflictResolver() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-36 right-4 z-40 bg-orange-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium hover:bg-orange-700 animate-pulse"
+        className="fixed bottom-36 right-4 z-40 min-h-11 rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-offset-2"
       >
         {conflicts.length} Conflict{conflicts.length > 1 ? 's' : ''}
       </button>
@@ -74,29 +75,36 @@ export function ConflictResolver() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" role="dialog" aria-modal="true" aria-labelledby="sync-conflicts-title">
+      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-lg bg-white shadow-xl">
         <div className="flex items-center justify-between p-4 border-b bg-orange-50">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Sync Conflicts</h2>
+            <h2 id="sync-conflicts-title" className="text-lg font-semibold text-gray-900">Sync Conflicts</h2>
             <p className="text-sm text-gray-600">
               {conflicts.length} conflict{conflicts.length > 1 ? 's' : ''} need{conflicts.length === 1 ? 's' : ''} resolution
             </p>
           </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="text-gray-400 hover:text-gray-600"
+            className="min-h-11 min-w-11 rounded-md text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            aria-label="Tutup konflik sinkronisasi"
           >
             ✕
           </button>
         </div>
+
+        {feedback && (
+          <p className="mx-4 mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900" role="status">
+            {feedback}
+          </p>
+        )}
 
         <div className="flex-1 overflow-y-auto p-4">
           {selectedConflict ? (
             <div className="space-y-4">
               <button
                 onClick={() => setSelectedConflict(null)}
-                className="text-sm text-blue-600 hover:text-blue-700"
+                className="min-h-11 rounded-md px-2 text-sm font-medium text-blue-700 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
               >
                 ← Back to list
               </button>
@@ -111,7 +119,7 @@ export function ConflictResolver() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="border border-gray-200 rounded-lg p-4 bg-white">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-sm text-gray-900">Your Changes</h4>
@@ -124,7 +132,7 @@ export function ConflictResolver() {
                     </pre>
                     <button
                       onClick={() => handleResolve(selectedConflict.id!, 'client')}
-                      className="mt-3 w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
+                      className="mt-3 min-h-11 w-full rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
                     >
                       Use My Changes
                     </button>
@@ -142,7 +150,7 @@ export function ConflictResolver() {
                     </pre>
                     <button
                       onClick={() => handleResolve(selectedConflict.id!, 'server')}
-                      className="mt-3 w-full px-4 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700"
+                      className="mt-3 min-h-11 w-full rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2"
                     >
                       Use Server Version
                     </button>

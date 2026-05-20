@@ -139,6 +139,8 @@ export default function AttendanceReportPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const queryFilters = useMemo(
@@ -227,6 +229,7 @@ export default function AttendanceReportPage() {
     }
     setIsExporting(true);
     setError(null);
+    setExportMessage(null);
     try {
       const url = `/api/reports/attendance?${buildQueryString({ ...queryFilters, format: "csv" })}`;
       const response = await fetch(url, { headers: getAuthHeaders() });
@@ -249,10 +252,47 @@ export default function AttendanceReportPage() {
       link.download = filename;
       link.click();
       URL.revokeObjectURL(objectUrl);
+      setExportMessage(`CSV laporan kehadiran berhasil dibuat: ${filename}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal export laporan");
     } finally {
       setIsExporting(false);
+    }
+  }
+
+  async function handleExportPdf() {
+    if (!from || !to) {
+      setError("Tanggal awal dan akhir wajib diisi sebelum export PDF.");
+      return;
+    }
+    setIsExportingPdf(true);
+    setError(null);
+    setExportMessage(null);
+    try {
+      const response = await fetch("/api/reports/pdf", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({ reportType: "attendance_summary", from, to, division: division.trim() || undefined }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error || "Gagal export PDF laporan kehadiran");
+      }
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const filename = `attendance-report-${from}-to-${to}.pdf`;
+      link.href = objectUrl;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(objectUrl);
+      setExportMessage(`PDF laporan kehadiran berhasil dibuat: ${filename}. Gunakan file ini sebagai print preview atau cetak PDF.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal export PDF laporan kehadiran");
+    } finally {
+      setIsExportingPdf(false);
     }
   }
 
@@ -299,7 +339,7 @@ export default function AttendanceReportPage() {
           <ArrowLeft size={24} aria-hidden="true" />
           <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Laporan Kehadiran</h1>
         </button>
-        <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
+        <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-3">
           <Button
             variant="secondary"
             onClick={() => loadReport()}
@@ -317,8 +357,23 @@ export default function AttendanceReportPage() {
           >
             {isExporting ? "Mengekspor..." : "Export CSV"}
           </Button>
+          <Button
+            variant="secondary"
+            onClick={handleExportPdf}
+            disabled={isExportingPdf || isLoading}
+            fullWidth
+            icon={<Download size={16} aria-hidden="true" />}
+          >
+            {isExportingPdf ? "Membuat PDF..." : "Export PDF"}
+          </Button>
         </div>
       </div>
+
+      {exportMessage && (
+        <div className="card" role="status" style={{ padding: "12px 16px", borderColor: "var(--success)", backgroundColor: "rgba(34,197,94,0.08)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--success)" }}>{exportMessage}</p>
+        </div>
+      )}
 
       {error && (
         <div role="alert" className="card" style={{ padding: "12px 16px", borderColor: "var(--danger)", color: "var(--danger)", fontSize: "13px", fontWeight: 600 }}>
@@ -449,8 +504,20 @@ export default function AttendanceReportPage() {
                   <Td>{row.earlyLeaveMinutes > 0 ? `${row.earlyLeaveMinutes} mnt` : "-"}</Td>
                   <Td><Badge tone={STATUS_BADGE[row.status]} /></Td>
                   <Td><Badge tone={GEO_BADGE[row.geoStatus]} /></Td>
-                  <Td>{row.hasCheckInSelfie ? "Ya" : "Tidak"}</Td>
-                  <Td>{row.hasCheckOutSelfie ? "Ya" : "Tidak"}</Td>
+                  <Td>
+                    {row.hasCheckInSelfie ? (
+                      <a className="text-link" href={`/api/attendances/${row.id}/selfie/check-in`} target="_blank" rel="noreferrer">
+                        Buka selfie masuk
+                      </a>
+                    ) : "Tidak"}
+                  </Td>
+                  <Td>
+                    {row.hasCheckOutSelfie ? (
+                      <a className="text-link" href={`/api/attendances/${row.id}/selfie/check-out`} target="_blank" rel="noreferrer">
+                        Buka selfie pulang
+                      </a>
+                    ) : "Tidak"}
+                  </Td>
                 </tr>
               ))}
             </tbody>

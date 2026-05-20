@@ -34,7 +34,7 @@ export function summarizeLeaveLedger(entries: LeaveLedgerEntry[]): LeaveBalanceS
     .reduce((total, entry) => total + entry.amount, 0));
   const used = Math.abs(entries
     .filter((entry) => entry.transactionType === 'REQUEST_APPROVED')
-    .reduce((total, entry) => total + entry.amount, 0)) || pending;
+    .reduce((total, entry) => total + entry.amount, 0));
   const available = entries.reduce((total, entry) => total + entry.amount, 0);
 
   return { entitlement, used, pending, available };

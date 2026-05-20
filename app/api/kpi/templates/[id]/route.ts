@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { kpiService } from '@/services/kpi/kpi.service';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
+import { hasPermission } from '@/lib/permissions';
 import { logAudit } from '@/lib/audit';
 
 export async function GET(
@@ -10,7 +11,7 @@ export async function GET(
 ) {
   try {
     const user = await requireAuth(request);
-    if (!['SUPERADMIN'].includes(user.role)) {
+    if (!hasPermission(user.role, 'KPI_TEMPLATE_READ')) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
     const { id } = await params;
@@ -28,7 +29,7 @@ export async function PATCH(
 ) {
   try {
     const user = await requireAuth(request);
-    if (!['SUPERADMIN'].includes(user.role)) {
+    if (!hasPermission(user.role, 'KPI_TEMPLATE_UPDATE')) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
     const { id } = await params;
@@ -50,7 +51,7 @@ export async function DELETE(
 ) {
   try {
     const user = await requireAuth(request);
-    if (!['SUPERADMIN'].includes(user.role)) {
+    if (!hasPermission(user.role, 'KPI_TEMPLATE_DELETE')) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
     const { id } = await params;

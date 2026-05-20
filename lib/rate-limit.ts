@@ -23,6 +23,14 @@ export interface RateLimitResult {
   headers: Record<string, string>;
 }
 
+function isRateLimitBypassEnabled(): boolean {
+  return (
+    process.env.NODE_ENV === 'test' ||
+    process.env.TESTSPRITE_DISABLE_RATE_LIMITS === 'true' ||
+    process.env.E2E_DISABLE_RATE_LIMITS === 'true'
+  );
+}
+
 /**
  * Apply rate limiting to a Next.js request
  */
@@ -31,7 +39,7 @@ export async function rateLimit(
   config: typeof RATE_LIMITS[keyof typeof RATE_LIMITS],
   identifier?: string
 ): Promise<RateLimitResult> {
-  if (process.env.NODE_ENV === 'test') {
+  if (isRateLimitBypassEnabled()) {
     return { limited: false, remaining: 999, resetAt: Date.now() + 60_000, headers: {} };
   }
 

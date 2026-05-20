@@ -23,7 +23,9 @@ export async function GET(request: NextRequest) {
     if (!employee && user.role !== 'SUPERADMIN') {
       return errorResponse('Data karyawan tidak ditemukan');
     }
-    if (!['SUPERADMIN', 'EMPLOYEE'].includes(user.role)) return forbiddenResponse('Anda tidak memiliki akses');
+    if (!hasPermission(user.role, 'ATTENDANCE_READ') && !hasPermission(user.role, 'ATTENDANCE_READ_OWN')) {
+      return forbiddenResponse('Anda tidak memiliki akses');
+    }
 
     const rows = await attendanceExceptionService.listExceptions({
       status: status || undefined,

@@ -13,11 +13,6 @@ async function canAccessLeave(user: Awaited<ReturnType<typeof requireAuth>>, emp
 
   const currentEmployee = await employeeService.getEmployeeByUserId(user.userId);
 
-  if (false) {
-    const targetEmployee = await employeeService.getEmployeeById(employeeId);
-    return targetEmployee.supervisorId === currentEmployee.id || targetEmployee.id === currentEmployee.id;
-  }
-
   return currentEmployee.id === employeeId;
 }
 

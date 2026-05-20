@@ -145,7 +145,7 @@ export function RealtimeSelfieCamera({
       </div>
 
       {cameraError && (
-        <div role="alert" style={{ color: "var(--danger)", fontSize: "12px", fontWeight: 600 }}>
+        <div role="alert" style={{ color: "var(--danger-text)", fontSize: "12px", fontWeight: 600 }}>
           {cameraError}
         </div>
       )}
@@ -201,7 +201,7 @@ export function RealtimeSelfieCamera({
         >
           Selfie {captureInfo.width}×{captureInfo.height}px · {formatKb(captureInfo.size)} · format {captureInfo.mimeType.replace("image/", "").toUpperCase()}
           {captureInfo.exceedsTarget && (
-            <span style={{ color: "var(--warning)", marginLeft: "6px", fontWeight: 600 }}>
+            <span style={{ color: "var(--warning-text)", marginLeft: "6px", fontWeight: 600 }}>
               · sedikit di atas target 300KB
             </span>
           )}

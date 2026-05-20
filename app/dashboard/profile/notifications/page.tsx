@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Bell, Mail, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Button from "@/components/ui/Button";
 
 const preferences = [
   { icon: Bell, title: "Notifikasi aplikasi", text: "Cuti, KPI, attendance exception, dan pengumuman tampil di menu Notifikasi." },
@@ -27,6 +28,12 @@ export default function NotificationSettingsPage() {
       <section className="card" aria-label="Status preferensi">
         <h2 className="text-base font-bold">Preferensi standar aktif</h2>
         <p className="text-sm text-[var(--text-secondary)] mt-1">Saat ini notifikasi mengikuti role dan event penting perusahaan. Pengaturan granular bisa ditambahkan di fase berikutnya.</p>
+      </section>
+
+      <section className="card" aria-label="Daftar notifikasi saat ini">
+        <h2 className="text-base font-bold">Daftar notifikasi saat ini</h2>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">Lihat notifikasi cuti, KPI, attendance exception, payroll, dan pengumuman terbaru.</p>
+        <Button className="mt-4" fullWidth onClick={() => router.push("/dashboard/notifications")}>Buka Daftar Notifikasi</Button>
       </section>
 
       <section className="grid gap-3" aria-label="Jenis notifikasi">

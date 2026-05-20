@@ -13,6 +13,14 @@ export type RouteContext<TParams = unknown> = TParams extends undefined
 export function handleApiError(error: unknown) {
   if (error instanceof AppError) {
     const message = error.expose ? error.message : 'Terjadi kesalahan pada server';
+    if (process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
+      return NextResponse.json({
+        success: false,
+        error: error.code,
+        code: error.code,
+        message,
+      }, { status: error.status });
+    }
     return errorResponse(message, error.status);
   }
 

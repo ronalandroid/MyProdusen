@@ -1,9 +1,11 @@
 "use client";
 
-import { ArrowLeft, Settings, ChevronRight, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, ChevronRight, LogOut, Settings } from "lucide-react";
+import Modal from "@/components/ui/Modal";
+import Button from "@/components/ui/Button";
 import { ClientUserProfile, fetchProfile, logout } from "@/lib/auth-client";
 
 export default function ProfilePage() {
@@ -11,6 +13,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ClientUserProfile | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     fetchProfile()
@@ -19,12 +22,11 @@ export default function ProfilePage() {
   }, [router]);
 
   const employee = profile?.employee;
+  const initials = (employee?.fullName || profile?.username || "U").charAt(0).toUpperCase();
+  const roleLabel = profile?.role === "SUPERADMIN" ? "Super Admin" : "Karyawan";
 
-  const handleLogout = async () => {
+  async function performLogout() {
     if (isLoggingOut) return;
-    const confirmed = window.confirm("Keluar dari akun MyProdusen sekarang?");
-    if (!confirmed) return;
-
     setLogoutError("");
     setIsLoggingOut(true);
     try {
@@ -33,95 +35,137 @@ export default function ProfilePage() {
       setLogoutError(error instanceof Error ? error.message : "Gagal logout. Coba ulangi.");
       setIsLoggingOut(false);
     }
-  };
+  }
 
   return (
     <div className="phone-screen feature-screen" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="flex items-center justify-between">
         <button
           type="button"
-          className="btn btn-ghost btn-icon"
           onClick={() => router.back()}
+          className="flex items-center gap-3 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] rounded-xl"
           aria-label="Kembali"
-          style={{ display: "flex", alignItems: "center", gap: "12px", justifyContent: "flex-start", width: "auto", padding: 0 }}
         >
           <ArrowLeft size={24} aria-hidden="true" />
-          <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Profil</h1>
+          <h1 className="text-xl font-bold">Akun</h1>
         </button>
-        <Link href="/dashboard/profile/about" className="btn btn-ghost btn-icon" aria-label="Tentang aplikasi">
-          <Settings size={24} color="var(--text-primary)" aria-hidden="true" />
+        <Link
+          href="/dashboard/profile/about"
+          className="btn btn-ghost btn-icon"
+          aria-label="Tentang aplikasi"
+        >
+          <Settings size={20} aria-hidden="true" />
         </Link>
       </div>
 
-      {/* User Info */}
-      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        <div className="avatar" style={{ width: "64px", height: "64px", background: "linear-gradient(135deg, #FFC107 0%, #FF8F00 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px", fontWeight: 700, color: "white", borderRadius: "50%", flexShrink: 0 }}>
-          {(employee?.fullName || profile?.username || "U").charAt(0).toUpperCase()}
+      {/* Brand strip */}
+      <section
+        className="card"
+        style={{
+          background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)",
+          color: "var(--text-primary)",
+          padding: "16px",
+          display: "flex",
+          alignItems: "center",
+          gap: "14px",
+          border: "none",
+        }}
+      >
+        <img
+          src="/logo.png"
+          alt="MyProdusen"
+          style={{ width: 48, height: 48, objectFit: "contain", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.18))" }}
+        />
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "rgba(17,17,17,0.7)" }}>
+            MyProdusen
+          </p>
+          <p className="text-sm font-bold leading-tight">Produsen Dimsum Medan</p>
         </div>
-        <div>
-          <h2 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "4px" }}>{employee?.fullName || profile?.username || "Pengguna"}</h2>
-          <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{employee?.position || profile?.role || "-"}</p>
-          <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>NIP: {employee?.nip || "-"}</p>
+      </section>
+
+      {/* Identity */}
+      <section className="flex items-center gap-4">
+        <div
+          className="avatar"
+          style={{
+            width: 64,
+            height: 64,
+            background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)",
+            color: "var(--text-primary)",
+            fontSize: 24,
+            fontWeight: 700,
+            borderRadius: "50%",
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+          }}
+        >
+          {employee?.profilePhoto ? <img src={employee.profilePhoto} alt="" /> : initials}
         </div>
-      </div>
-
-      {/* Informasi Pribadi */}
-      <div>
-        <h3 style={{ fontSize: "14px", fontWeight: 600, marginBottom: "16px" }}>Informasi Pribadi</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Email</span>
-            <span style={{ fontSize: "12px", fontWeight: 500 }}>{employee?.email || profile?.email || "-"}</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>No. HP</span>
-            <span style={{ fontSize: "12px", fontWeight: 500 }}>{employee?.phone || "-"}</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Tanggal Lahir</span>
-            <span style={{ fontSize: "12px", fontWeight: 500 }}>{employee?.division || "-"}</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Alamat</span>
-            <span style={{ fontSize: "12px", fontWeight: 500 }}>{employee?.address || "-"}</span>
-          </div>
+        <div className="min-w-0">
+          <h2 className="text-base font-bold truncate">
+            {employee?.fullName || profile?.username || "Pengguna"}
+          </h2>
+          <p className="text-xs text-[var(--text-secondary)]">{employee?.position || roleLabel}</p>
+          <p className="text-xs text-[var(--text-muted)]">NIP: {employee?.nip || "-"}</p>
         </div>
-      </div>
+      </section>
 
-      <div style={{ height: "1px", backgroundColor: "var(--border-color)", margin: "8px 0" }} />
+      {/* Identity details */}
+      <section aria-labelledby="profile-identity-title">
+        <h3 id="profile-identity-title" className="text-sm font-semibold mb-3">
+          Informasi Pribadi
+        </h3>
+        <div className="card" style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <ProfileRow label="Email" value={employee?.email || profile?.email || "-"} />
+          <ProfileRow label="No. HP" value={employee?.phone || "-"} />
+          <ProfileRow label="Divisi" value={employee?.division || "-"} />
+          <ProfileRow label="Posisi" value={employee?.position || "-"} />
+          <ProfileRow label="Alamat" value={employee?.address || "-"} />
+        </div>
+      </section>
 
-      {/* Menu Options */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        <Link href="/dashboard/profile/password" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: "44px" }}>
-          <span style={{ fontSize: "14px", fontWeight: 600 }}>Ubah Kata Sandi</span>
-          <ChevronRight size={18} color="var(--text-muted)" />
-        </Link>
-        <Link href="/dashboard/profile/notifications" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: "44px" }}>
-          <span style={{ fontSize: "14px", fontWeight: 600 }}>Notifikasi</span>
-          <ChevronRight size={18} color="var(--text-muted)" />
-        </Link>
-        <Link href="/dashboard/profile/about" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: "44px" }}>
-          <span style={{ fontSize: "14px", fontWeight: 600 }}>Tentang Aplikasi</span>
-          <ChevronRight size={18} color="var(--text-muted)" />
-        </Link>
-      </div>
+      {/* Menu */}
+      <section aria-labelledby="profile-menu-title">
+        <h3 id="profile-menu-title" className="sr-only">Menu akun</h3>
+        <div className="card" style={{ padding: "8px", display: "flex", flexDirection: "column" }}>
+          {profile?.role === "SUPERADMIN" && <ProfileLink href="/dashboard/users" label="Pengguna" />}
+          {profile?.role === "SUPERADMIN" && <ProfileLink href="/dashboard/employees" label="Karyawan" />}
+          <ProfileLink href="/dashboard/leave" label="Cuti & Saldo Cuti" />
+          <ProfileLink href="/dashboard/leave/balance" label="Riwayat Saldo Cuti" />
+          <ProfileLink href="/dashboard/attendance" label="Riwayat Absensi & Selfie" />
+          <ProfileLink href="/dashboard/reports" label="Laporan Payroll & Lembur" />
+          <ProfileLink href="/dashboard/kpi" label="KPI" />
+          <ProfileLink href="/dashboard/payroll" label="Gaji / Payroll" />
+          <ProfileLink href="/dashboard/overtime" label="Pengajuan Lembur" />
+          <ProfileLink href="/dashboard/profile/password" label="Ubah Kata Sandi" />
+          <ProfileLink href="/dashboard/profile/notifications" label="Notifikasi" />
+          <ProfileLink href="/dashboard/profile/about" label="Tentang Aplikasi" />
+        </div>
+      </section>
 
-      {/* Logout Button */}
+      {/* Logout */}
       {logoutError && (
         <div role="alert" className="card" style={{ padding: "12px", color: "var(--danger)", fontSize: "13px", fontWeight: 600 }}>
           {logoutError}
         </div>
       )}
 
-      <div className="card" style={{ marginTop: "8px", padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+      <section className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
         <div>
-          <h3 style={{ fontSize: "14px", fontWeight: 700 }}>Akun</h3>
-          <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Keluar hanya dari perangkat ini. Anda bisa masuk kembali kapan saja.</p>
+          <h3 className="text-sm font-bold">Keluar dari MyProdusen</h3>
+          <p className="text-xs text-[var(--text-secondary)]">
+            Anda dapat masuk kembali kapan saja dengan email dan kata sandi perusahaan.
+          </p>
         </div>
-        <button 
-          className="btn btn-danger-outline" 
-          onClick={handleLogout}
+        <button
+          type="button"
+          className="btn btn-danger-outline"
+          onClick={() => setShowLogoutModal(true)}
           disabled={isLoggingOut}
           aria-busy={isLoggingOut}
           style={{ width: "100%" }}
@@ -129,7 +173,53 @@ export default function ProfilePage() {
           <LogOut size={18} aria-hidden="true" />
           {isLoggingOut ? "Keluar..." : "Keluar"}
         </button>
-      </div>
+      </section>
+
+      <Modal
+        isOpen={showLogoutModal}
+        onClose={() => (!isLoggingOut ? setShowLogoutModal(false) : undefined)}
+        title="Keluar dari akun?"
+        size="sm"
+        footer={
+          <div className="modal-footer-actions">
+            <Button variant="secondary" onClick={() => setShowLogoutModal(false)} disabled={isLoggingOut}>
+              Batal
+            </Button>
+            <Button variant="danger" onClick={performLogout} loading={isLoggingOut}>
+              <LogOut size={16} aria-hidden="true" />
+              Keluar sekarang
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-[var(--text-secondary)]">
+          Sesi Anda di perangkat ini akan diakhiri. Anda bisa masuk lagi kapan saja menggunakan email perusahaan.
+        </p>
+      </Modal>
     </div>
+  );
+}
+
+function ProfileRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 flex-wrap">
+      <span className="text-xs text-[var(--text-muted)]">{label}</span>
+      <span className="text-xs font-medium text-[var(--text-primary)] text-right break-words" style={{ minWidth: 0 }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function ProfileLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center justify-between gap-3 px-2 py-3 rounded-xl hover:bg-[var(--bg-hover)] transition-colors"
+      style={{ minHeight: 44 }}
+    >
+      <span className="text-sm font-semibold">{label}</span>
+      <ChevronRight size={18} color="var(--text-muted)" aria-hidden="true" />
+    </Link>
   );
 }

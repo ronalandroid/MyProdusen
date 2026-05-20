@@ -43,10 +43,11 @@ describe('payroll access policy', () => {
     expect(() => assertPayrollAccess('SUPERADMIN', 'approve')).toThrow('PAYROLL_MUTATION_DISABLED');
 
     process.env.PAYROLL_MUTATION_ENABLED = 'true';
+    expect(canAccessPayroll('SUPERADMIN', 'readOwn')).toBe(true);
     expect(() => assertPayrollAccess('SUPERADMIN', 'approve')).not.toThrow();
   });
 
-  it('blocks legacy Admin HR payroll access', () => {
+  it('blocks historical Admin HR payroll access when payroll is enabled', () => {
     process.env.PAYROLL_MODULE_ENABLED = 'true';
     process.env.PAYROLL_MUTATION_ENABLED = 'true';
 

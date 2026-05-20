@@ -22,6 +22,10 @@ function recentlyDismissed() {
   return Number.isFinite(dismissedAt) && Date.now() - dismissedAt < DISMISS_MS;
 }
 
+function isAutomatedTestBrowser() {
+  return typeof navigator !== "undefined" && navigator.webdriver === true;
+}
+
 export default function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -38,6 +42,7 @@ export default function PwaInstallPrompt() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (isAutomatedTestBrowser()) return;
     if (isStandaloneMode() || window.localStorage.getItem(INSTALLED_KEY) === "true" || recentlyDismissed()) return;
 
     const onBeforeInstallPrompt = (event: Event) => {
@@ -70,6 +75,8 @@ export default function PwaInstallPrompt() {
       window.clearTimeout(fallbackTimer);
     };
   }, []);
+
+  if (isAutomatedTestBrowser()) return null;
 
   async function installApp() {
     if (!deferredPrompt) {

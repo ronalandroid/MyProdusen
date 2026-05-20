@@ -21,8 +21,8 @@ export function SyncQueue() {
         .limit(50)
         .toArray();
       setQueueItems(items);
-    } catch (error) {
-      console.error('Failed to load queue:', error);
+    } catch {
+      setQueueItems([]);
     }
   };
 
@@ -51,7 +51,7 @@ export function SyncQueue() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 right-4 z-40 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium hover:bg-gray-700"
+        className="fixed bottom-20 right-4 z-40 min-h-11 rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2"
       >
         View Queue
       </button>
@@ -59,13 +59,14 @@ export function SyncQueue() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" role="dialog" aria-modal="true" aria-labelledby="sync-queue-title">
+      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg bg-white shadow-xl">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">Sync Queue</h2>
+          <h2 id="sync-queue-title" className="text-lg font-semibold text-gray-900">Sync Queue</h2>
           <button
             onClick={() => setIsOpen(false)}
-            className="text-gray-400 hover:text-gray-600"
+            className="min-h-11 min-w-11 rounded-md text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            aria-label="Tutup antrean sinkronisasi"
           >
             ✕
           </button>
@@ -127,7 +128,7 @@ export function SyncQueue() {
             onClick={() => {
               loadQueue();
             }}
-            className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
+            className="min-h-11 w-full rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
           >
             Refresh
           </button>

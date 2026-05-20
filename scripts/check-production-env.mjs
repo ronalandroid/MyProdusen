@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Static check of the production env surface documented in
- * /docs/DEPLOYMENT.md and /docs/COOLIFY.md.
+ * /docs/deployment/README.md.
  *
  *   node scripts/check-production-env.mjs
  *

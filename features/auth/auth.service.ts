@@ -3,7 +3,7 @@ import { hashPassword, verifyPassword, generateToken } from '@/lib/auth';
 import { validatePassword } from '@/lib/password-policy';
 import { eq } from 'drizzle-orm';
 
-export type UserRole = 'SUPERADMIN' | 'ADMIN_HR' | 'SUPERVISOR' | 'EMPLOYEE';
+export type UserRole = 'SUPERADMIN' | 'EMPLOYEE';
 
 export class AuthService {
   async login(email: string, password: string) {

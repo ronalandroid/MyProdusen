@@ -101,7 +101,7 @@ function renderEmail(input: BrandedEmailInput) {
                       </table>
                     </td>
                     <td align="right" style="vertical-align:middle;">
-                      <div style="display:inline-block;background:#111111;color:#FFC107;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800;">HRIS</div>
+                      <div style="display:inline-block;background:#111111;color:#FFC107;border-radius:999px;padding:8px 12px;font-size:11px;font-weight:800;letter-spacing:0.04em;">by TBM Group</div>
                     </td>
                   </tr>
                 </table>

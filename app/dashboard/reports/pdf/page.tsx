@@ -29,10 +29,12 @@ export default function PdfReportsPage() {
   const [division, setDivision] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
   async function downloadPdf() {
     setIsSubmitting(true);
     setError('');
+    setMessage('');
     try {
       const response = await fetch('/api/reports/pdf', {
         method: 'POST',
@@ -54,6 +56,7 @@ export default function PdfReportsPage() {
       link.download = `myprodusen-${reportType}-${from}-to-${to}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
+      setMessage(`PDF berhasil dibuat: ${link.download}. File siap dibuka sebagai print preview atau dicetak.`);
     } catch (err: any) {
       setError(err.message || 'Gagal download PDF');
     } finally {
@@ -73,6 +76,7 @@ export default function PdfReportsPage() {
       </section>
 
       {error && <section className="alert-card" role="alert"><strong>Download gagal</strong><p>{error}</p></section>}
+      {message && <section className="card border-[var(--success)] text-[var(--success)]" role="status"><strong>Download PDF berhasil</strong><p>{message}</p></section>}
 
       <section className="card">
         <div className="flex items-center gap-3 mb-5">

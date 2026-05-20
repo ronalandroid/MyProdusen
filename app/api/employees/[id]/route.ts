@@ -13,10 +13,6 @@ async function canReadEmployee(user: Awaited<ReturnType<typeof requireAuth>>, em
 
   const currentEmployee = await employeeService.getEmployeeByUserId(user.userId);
 
-  if (false) {
-    return employee.supervisorId === currentEmployee.id || employee.id === currentEmployee.id;
-  }
-
   return employee.id === currentEmployee.id;
 }
 
