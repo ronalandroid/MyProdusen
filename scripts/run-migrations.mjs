@@ -2,8 +2,15 @@ import { createHash } from 'node:crypto';
 import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import 'dotenv/config';
 import postgres from 'postgres';
+
+try {
+  await import('dotenv/config');
+} catch (error) {
+  if (error?.code !== 'ERR_MODULE_NOT_FOUND') {
+    throw error;
+  }
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

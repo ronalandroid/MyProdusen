@@ -114,3 +114,9 @@ Use when stale build or route artifact suspected:
 ## Signoff
 
 Release can go live only when `FINAL_CHECKLIST.md` and `TESTING_QA.md` go/no-go criteria pass.
+
+## Coolify migration startup hotfix — 2026-05-21
+
+The production runtime image intentionally installs only production dependencies plus traced Next.js output. `scripts/run-migrations.mjs` must not require dev-only packages at startup. The migration runner now loads `dotenv/config` opportunistically for local development and continues without it in Coolify, where env vars come from the platform.
+
+If Coolify logs show `ERR_MODULE_NOT_FOUND: Cannot find package 'dotenv' imported from /app/scripts/run-migrations.mjs`, redeploy a commit that includes this hotfix.

@@ -160,3 +160,8 @@
 - Raised Vitest timeout for DB-backed tests to reduce parallel-run flakiness.
 - Standardized reimbursement API responses through shared response helpers with safe Indonesian errors.
 - Re-ran migration deploy locally; all migrations were skipped/applied as expected and deployment runner completed.
+
+## 2026-05-21 — Coolify Migration Startup Hotfix
+
+- Made `scripts/run-migrations.mjs` tolerate production runtime images without the dev-only `dotenv` package.
+- Coolify runtime now uses process environment directly and will not fail startup migrations with `ERR_MODULE_NOT_FOUND: dotenv`.
