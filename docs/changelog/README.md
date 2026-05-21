@@ -196,5 +196,5 @@
 
 ## 2026-05-22 — Migration Checksum Compatibility Hotfix
 
-- Allowed the approved legacy checksum for `0004_attendance_exceptions.sql` after its SQL was made idempotent without changing created schema objects.
+- Allowed approved legacy checksums for `0004_attendance_exceptions.sql` and `0005_leave_balance_ledger.sql` after their SQL was made idempotent without changing created schema objects.
 - Kept checksum mismatch protection active for all other migrations and unexpected checksum values.

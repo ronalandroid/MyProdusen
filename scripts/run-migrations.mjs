@@ -24,6 +24,12 @@ const legacyChecksums = new Map([
       '3ead212f6c826c22df01708203b68bc0f3c9c1d55ea84125d65a6905055c15ac',
     ]),
   ],
+  [
+    '0005_leave_balance_ledger.sql',
+    new Set([
+      '9a42caa30bef8e94b9fc1a9c52892047a88daf4110972dc0048846c147d11734',
+    ]),
+  ],
 ]);
 
 if (!databaseUrl) {
