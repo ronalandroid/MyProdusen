@@ -5,6 +5,7 @@ import { errorResponse, successResponse, validationErrorResponse } from '@/utils
 import { getRequestBody } from '@/lib/middleware';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { sendAuthEmail } from '@/lib/email';
+import { getCanonicalAppUrl } from '@/lib/app-url';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     const activation = await authService.createAccountActivationToken(validation.data.identifier);
     if (activation) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || request.nextUrl.origin;
+      const appUrl = getCanonicalAppUrl(request.nextUrl.origin);
       const activationUrl = `${appUrl}/activate-account?token=${encodeURIComponent(activation.token)}`;
       await sendAuthEmail('register', activation.email, { activationUrl });
     }

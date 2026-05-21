@@ -5,6 +5,7 @@ import { errorResponse, successResponse, validationErrorResponse } from '@/utils
 import { getRequestBody } from '@/lib/middleware';
 import { sendAuthEmail } from '@/lib/email';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { getCanonicalAppUrl } from '@/lib/app-url';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     const token = await authService.createPasswordResetToken(normalizedEmail);
     if (token) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || request.nextUrl.origin;
+      const appUrl = getCanonicalAppUrl(request.nextUrl.origin);
       await sendAuthEmail('forgot-password', normalizedEmail, {
         resetUrl: `${appUrl}/reset-password?token=${encodeURIComponent(token)}`,
       });

@@ -5,6 +5,7 @@ import { errorResponse, successResponse, validationErrorResponse } from '@/utils
 import { getRequestBody } from '@/lib/middleware';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { sendAuthEmail } from '@/lib/email';
+import { getCanonicalAppUrl } from '@/lib/app-url';
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     const result = await authService.register({ ...validation.data, role: 'EMPLOYEE', isActive: false });
     const activation = await authService.createAccountActivationToken(result.email);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || request.nextUrl.origin;
+    const appUrl = getCanonicalAppUrl(request.nextUrl.origin);
     const activationUrl = activation ? `${appUrl}/activate-account?token=${encodeURIComponent(activation.token)}` : undefined;
     await sendAuthEmail('register', result.email, { name: result.username, ...(activationUrl ? { activationUrl } : {}) });
 

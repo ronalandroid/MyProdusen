@@ -1,4 +1,5 @@
 import { db, emailLogs } from '@/lib/db';
+import { getCanonicalAppUrl } from '@/lib/app-url';
 
 export type EmailTemplate = 'register' | 'forgot-password' | 'reset-password' | 'role-changed' | 'account-approved' | 'notification-center';
 type UserEmailEvent = Extract<EmailTemplate, 'account-approved' | 'role-changed'>;
@@ -50,7 +51,7 @@ export function getUserEmailEvents(previous: UserEmailState, next: UserEmailStat
 }
 
 function getAppUrl() {
-  return process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  return getCanonicalAppUrl();
 }
 
 function escapeHtml(value = '') {
@@ -85,28 +86,28 @@ function renderEmail(input: BrandedEmailInput) {
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>${escapeHtml(input.title)}</title>
   </head>
-  <body style="margin:0;padding:0;background:#FFF9E6;font-family:Poppins,Arial,'Helvetica Neue',Helvetica,sans-serif;color:#111111;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFF9E6;padding:28px 12px;">
+  <body style="margin:0;padding:0;background:#FFF8E1;font-family:Poppins,Arial,'Helvetica Neue',Helvetica,sans-serif;color:#111111;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFF8E1;padding:28px 12px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#FFFFFF;border-radius:20px;overflow:hidden;border:1px solid #E5E7EB;box-shadow:0 8px 24px rgba(17,17,17,0.08);">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#FFFFFF;border-radius:22px;overflow:hidden;border:1px solid #F3D46B;box-shadow:0 10px 28px rgba(17,17,17,0.08);">
             <tr>
-              <td style="background:#FFC107;padding:22px 28px 20px;">
+              <td style="background:#FFC107;padding:20px 30px;border-bottom:1px solid #E5AE06;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr>
                     <td style="vertical-align:middle;">
                       <table role="presentation" cellspacing="0" cellpadding="0">
                         <tr>
-                          <td style="vertical-align:middle;padding-right:10px;"><img src="${escapeHtml(logoUrl)}" width="44" height="44" alt="MyProdusen" style="display:block;width:44px;height:44px;border:0;object-fit:contain;"></td>
+                          <td style="vertical-align:middle;padding-right:12px;"><span style="display:block;width:50px;height:50px;background:#FFFFFF;border:1px solid rgba(17,17,17,0.10);border-radius:16px;text-align:center;box-shadow:0 6px 14px rgba(17,17,17,0.10);"><img src="${escapeHtml(logoUrl)}" width="34" height="34" alt="MyProdusen" style="display:block;width:34px;height:34px;border:0;object-fit:contain;margin:8px auto 0;"></span></td>
                           <td style="vertical-align:middle;">
-                            <div style="font-size:24px;font-weight:900;letter-spacing:-0.5px;color:#111111;line-height:1;">My<span style="color:#FFFFFF;text-shadow:0 1px 0 rgba(17,17,17,0.12);">Produsen</span></div>
-                            <div style="margin-top:5px;font-size:11px;font-weight:700;color:#4B5563;">${companyName}</div>
+                            <div style="font-size:25px;font-weight:900;letter-spacing:-0.5px;color:#111111;line-height:1;">My<span style="color:#FFFFFF;text-shadow:0 1px 1px rgba(17,17,17,0.16);">Produsen</span></div>
+                            <div style="margin-top:6px;font-size:12px;font-weight:800;color:#5F4200;">${companyName}</div>
                           </td>
                         </tr>
                       </table>
                     </td>
                     <td align="right" style="vertical-align:middle;">
-                      <div style="display:inline-block;background:#111111;color:#FFC107;border-radius:999px;padding:8px 12px;font-size:11px;font-weight:800;letter-spacing:0.04em;">by TBM Group</div>
+                      <div style="display:inline-block;background:#FFFFFF;color:#111111;border:1px solid rgba(17,17,17,0.12);border-radius:999px;padding:8px 13px;font-size:11px;font-weight:900;letter-spacing:0.04em;box-shadow:0 4px 10px rgba(17,17,17,0.08);">by TBM Group</div>
                     </td>
                   </tr>
                 </table>
@@ -114,7 +115,7 @@ function renderEmail(input: BrandedEmailInput) {
             </tr>
             <tr>
               <td style="padding:30px 28px 28px;">
-                <div style="display:inline-block;margin-bottom:12px;padding:7px 11px;border-radius:999px;background:#FFF7CC;color:#8A6400;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;">${escapeHtml(input.eyebrow)}</div>
+                <div style="display:inline-block;margin-bottom:12px;padding:7px 12px;border-radius:999px;background:#FFF7CC;color:#7A5600;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.04em;border:1px solid #FDE68A;">${escapeHtml(input.eyebrow)}</div>
                 <h1 style="margin:0 0 12px;color:#111111;font-size:24px;line-height:1.25;font-weight:900;">${escapeHtml(input.title)}</h1>
                 <p style="margin:0 0 18px;color:#111111;font-size:16px;line-height:1.7;font-weight:700;">${escapeHtml(input.intro)}</p>
                 ${bodyHtml}
@@ -124,10 +125,10 @@ function renderEmail(input: BrandedEmailInput) {
               </td>
             </tr>
             <tr>
-              <td style="background:#FFF9E6;border-top:1px solid #E5E7EB;padding:20px 28px;">
+              <td style="background:#FFF9E6;border-top:1px solid #FDE68A;padding:20px 28px;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr>
-                    <td style="vertical-align:top;width:42px;"><img src="${escapeHtml(logoUrl)}" width="34" height="34" alt="" style="display:block;width:34px;height:34px;border:0;object-fit:contain;"></td>
+                    <td style="vertical-align:top;width:48px;"><span style="display:block;width:36px;height:36px;background:#FFFFFF;border:1px solid #FDE68A;border-radius:12px;text-align:center;"><img src="${escapeHtml(logoUrl)}" width="24" height="24" alt="" style="display:block;width:24px;height:24px;border:0;object-fit:contain;margin:6px auto 0;"></span></td>
                     <td style="vertical-align:top;">
                       <p style="margin:0 0 5px;color:#111111;font-size:13px;font-weight:800;">${appName}</p>
                       <p style="margin:0;color:#6B7280;font-size:12px;line-height:1.6;">Sistem internal perusahaan by TBM Group<br>${companyName}<br>Medan, Sumatera Utara</p>

@@ -198,3 +198,9 @@
 
 - Allowed approved legacy checksums for `0004_attendance_exceptions.sql` and `0005_leave_balance_ledger.sql` after their SQL was made idempotent without changing created schema objects.
 - Kept checksum mismatch protection active for all other migrations and unexpected checksum values.
+
+## 2026-05-22 — Email Activation Link And UI Polish
+
+- Fixed activation and reset email links to prefer canonical `APP_URL` over `NEXT_PUBLIC_APP_URL`, preventing `localhost:3000` links in production email.
+- Refined MyProdusen email header/footer visual treatment with a lighter logo tile and TBM Group badge for better Gmail readability.
+- Added regression tests for canonical app URL precedence and branded email HTML output.
