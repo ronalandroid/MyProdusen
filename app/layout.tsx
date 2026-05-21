@@ -1,16 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins } from "next/font/google";
 import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 import "@/lib/init";
 import "./globals.css";
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
-  display: "swap",
-  variable: "--font-poppins",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || "https://myprodusen.online"),
@@ -72,7 +64,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.webmanifest" />
       </head>
-      <body className={`${poppins.variable} antialiased`} suppressHydrationWarning>
+      <body className="antialiased" suppressHydrationWarning>
         <div className="mobile-container">
           {children}
         </div>

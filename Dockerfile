@@ -31,6 +31,10 @@ ENV NEXT_PRIVATE_BUILD_WORKER=1
 # Dummy DATABASE_URL keeps build-time imports safe.
 # The real value is injected at runtime via Coolify env vars.
 ENV DATABASE_URL="postgresql://build@localhost:5432/build"
+ENV JWT_SECRET="build-only-jwt-secret-0000000000000000000000000000000000000000"
+ENV NEXTAUTH_SECRET="build-only-nextauth-secret-0000000000000000000000000000000000"
+ENV APP_URL="http://localhost:3000"
+ENV NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
