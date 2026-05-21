@@ -161,7 +161,7 @@ Note: first sandboxed `npm run release:check` attempt failed with `EPERM 127.0.0
 
 ## Final Release Candidate Gate — 2026-05-22
 
-Release candidate commit: `d987fa7` (`main`).
+Release candidate code commit: `d987fa7` (`main`). Redeploy from latest `main` HEAD.
 
 ### Code Gate
 

@@ -314,7 +314,7 @@ Remaining production-only checks: Coolify deployment, live-domain smoke, backup 
 
 ## Final Release Candidate Gate — 2026-05-22
 
-Release candidate commit: `d987fa7` (`main`).
+Release candidate code commit: `d987fa7` (`main`). Redeploy from latest `main` HEAD.
 
 ### Verified Evidence
 

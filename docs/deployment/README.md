@@ -135,13 +135,13 @@ Employee document uploads must use the same private persistent upload volume as 
 
 ## Final Release Candidate Redeploy Checklist — 2026-05-22
 
-Release candidate commit: `d987fa7` (`main`).
+Release candidate code commit: `d987fa7` (`main`). Deploy the latest `main` HEAD, including documentation-only gate commits after this code commit.
 
 Current live status: `https://myprodusen.online` responds to safe route checks, but `/api/version` reports `gitCommitSha: unknown`; latest commit cannot be proven live until Coolify redeploy completes.
 
 Required Coolify steps:
 
-1. Redeploy latest `main` commit `d987fa7`.
+1. Redeploy latest `main` HEAD from GitHub.
 2. Use rebuild/no-cache so Docker image includes latest production dependencies and scripts.
 3. Confirm `/app/uploads` persistent volume is mounted and writable.
 4. Run `npm run release:env` in Coolify shell.

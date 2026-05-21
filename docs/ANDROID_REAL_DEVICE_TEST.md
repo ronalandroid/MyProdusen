@@ -1,7 +1,7 @@
 # Android Real Device Test — MyProdusen
 
 Status date: 2026-05-22
-Release candidate commit: d987fa7
+Release candidate code commit: `d987fa7`; run against latest `main` HEAD after Coolify redeploy.
 Status: PENDING — not run in this session.
 
 ## Scope

@@ -188,7 +188,7 @@
 
 ## 2026-05-22 — Final Release Candidate Gate
 
-- Documented release candidate commit `d987fa7` for Coolify redeploy.
+- Documented release candidate code commit `d987fa7` and instructed Coolify redeploy from latest `main` HEAD.
 - Documented live safe route result: health `200`, version `200`, unauthenticated report PDF `401`.
 - Documented live public responsive smoke result: 20/20 pass across 360/390/768/1440.
 - Added Android real-device GPS/selfie checklist.
