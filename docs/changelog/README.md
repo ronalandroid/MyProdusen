@@ -165,3 +165,23 @@
 
 - Made `scripts/run-migrations.mjs` tolerate production runtime images without the dev-only `dotenv` package.
 - Coolify runtime now uses process environment directly and will not fail startup migrations with `ERR_MODULE_NOT_FOUND: dotenv`.
+
+## 2026-05-22 — CI/CD Readiness Gate
+
+- Added GitHub Actions CI for PostgreSQL-backed release checks on push and pull request.
+- Added Docker image build validation using Buildx without publishing images.
+- Documented CI as a validation gate before Coolify deployment.
+
+## 2026-05-22 — Fullstack Platform Readiness Hardening
+
+- Added GitHub Actions release-check and Docker-build validation gates.
+- Added global API CSRF middleware for cookie-authenticated mutations.
+- Added password-reset rate limiting.
+- Moved employee document uploads to private `UPLOAD_DIR` storage with protected download endpoint.
+- Added migration checksum mismatch detection to the deployment runner.
+- Added private no-store headers to shared API response helpers.
+
+## 2026-05-22 — Backup Restore Compatibility Fix
+
+- Updated restore script to use `pg_restore` for custom-format database dumps created by the backup script.
+- Aligned upload restore default with production private volume `/app/uploads`.

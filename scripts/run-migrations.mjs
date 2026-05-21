@@ -131,19 +131,20 @@ try {
   }
 
   for (const file of files) {
-    const [{ count }] = await sql.unsafe(
-      `select count(*)::int as count from "${trackingTable}" where filename = $1`,
+    const content = await readFile(path.join(migrationsDir, file), 'utf8');
+    const digest = checksum(content);
+    const [existingMigration] = await sql.unsafe(
+      `select checksum from "${trackingTable}" where filename = $1 limit 1`,
       [file],
     );
 
-    if (count > 0) {
+    if (existingMigration) {
+      if (existingMigration.checksum !== digest) {
+        throw new Error(`Migration checksum mismatch for ${file}`);
+      }
       console.log(`Migration skipped: ${file}`);
       continue;
     }
-
-    const fullPath = path.join(migrationsDir, file);
-    const content = await readFile(fullPath, 'utf8');
-    const digest = checksum(content);
 
     const createdObjects = extractCreatedObjects(content);
     if (await createdObjectsExist(createdObjects)) {

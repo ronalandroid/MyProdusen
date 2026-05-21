@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
 
+const PRIVATE_NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, private',
+  Pragma: 'no-cache',
+  Expires: '0',
+};
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -13,7 +19,7 @@ export function successResponse<T>(data: T, message?: string, status: number = 2
     success: true,
     data,
     message,
-  }, { status });
+  }, { status, headers: PRIVATE_NO_STORE_HEADERS });
 }
 
 export function errorResponse(error: string, status: number = 400): NextResponse<ApiResponse> {
@@ -23,7 +29,7 @@ export function errorResponse(error: string, status: number = 400): NextResponse
       error,
       message: error,
     },
-    { status }
+    { status, headers: PRIVATE_NO_STORE_HEADERS }
   );
 }
 

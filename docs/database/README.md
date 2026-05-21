@@ -11,12 +11,12 @@
 Run with `npm run db:deploy`. The migration runner reads `DATABASE_URL` from
 the process environment and falls back to local `.env` for developer machines.
 Each file is tracked in `_myprodusen_migrations` with a SHA-256 checksum.
+Applied migration checksums are verified on every `npm run db:deploy`; edit-by-place of applied SQL files is rejected. Add a new migration instead.
 
 | File | Purpose |
 | ---- | ------- |
 | `0000_clean_mad_thinker.sql` | Initial schema (User, Employee, Attendance, WorkLocation, Shift, AuditLog, Notification, ...). |
 | `0001_productive_captain_flint.sql` | Schema follow-ups. |
-| `0002_add_attendance_unique_constraint.sql` | One-attendance-per-employee-per-day. |
 | `0002_condemned_jubilee.sql` | Concurrent-safe schema follow-ups. |
 | `0003_nappy_hydra.sql` | Schema additions. |
 | `0004_attendance_exceptions.sql` | `AttendanceException` workflow. |
@@ -179,3 +179,7 @@ Transactional Resend delivery attempts are now stored in `EmailLog` for audit an
 Migration: `drizzle/migrations/0019_email_delivery_logs.sql`.
 
 The migration is additive and uses `CREATE TABLE IF NOT EXISTS` plus `CREATE INDEX IF NOT EXISTS`.
+
+## Migration checksum guard — 2026-05-22
+
+`scripts/run-migrations.mjs` now compares each already-applied migration checksum against the SQL file on disk. If an applied migration file changes, deployment fails instead of silently skipping it. Add new migrations for schema changes; do not edit applied migration files.

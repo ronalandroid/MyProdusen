@@ -216,3 +216,10 @@ Attendance Wave 2 keeps backend authority for attendance decisions:
 - Employee API compatibility payload normalization no longer falls back to `Password123!`; missing password fails validation.
 - `/api/sync/queue` no longer returns synthetic success records for attendance or leave. Offline queue operations fail closed until a real service-backed implementation exists.
 - Production env check now fails if TestSprite/E2E compatibility bypass flags are enabled, including `TESTSPRITE_COMPAT_RESPONSE`.
+
+## Final platform hardening — 2026-05-22
+
+- All shared `successResponse` / `errorResponse` API helpers now attach `Cache-Control: no-store, private` by default for protected JSON payloads.
+- Global API middleware rejects cross-site cookie-authenticated mutating requests before route handlers run; bearer-token API clients remain supported.
+- Forgot-password and reset-password endpoints use the `PASSWORD_RESET` rate-limit preset.
+- Employee document multipart uploads are stored under private `UPLOAD_DIR/employee-documents` and served through authenticated `/api/documents/file/:employeeId/:storedName` endpoints with RBAC checks, `no-store`, and `nosniff`.

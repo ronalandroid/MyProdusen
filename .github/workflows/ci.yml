@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-check:
+    name: Release check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: myprodusen_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d myprodusen_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/myprodusen_ci
+      JWT_SECRET: ci-jwt-secret-000000000000000000000000000000000000000000000000
+      NEXTAUTH_SECRET: ci-nextauth-secret-00000000000000000000000000000000000000000000
+      APP_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      UPLOAD_DIR: /tmp/myprodusen-uploads
+      ATTENDANCE_SELFIE_DIR: attendance-selfies
+      MAX_UPLOAD_SIZE: '5242880'
+      MAX_SELFIE_SIZE_MB: '1'
+      GPS_MAX_ACCURACY_METERS: '100'
+      DEFAULT_GEOFENCE_RADIUS_METERS: '100'
+      REJECT_OUTSIDE_GEOFENCE: 'true'
+      GPS_TIMESTAMP_MAX_AGE_SECONDS: '120'
+      ATTENDANCE_EXPORT_MAX_ROWS: '5000'
+      SESSION_TIMEOUT_HOURS: '8'
+      PAYROLL_MODULE_ENABLED: 'true'
+      PAYROLL_MUTATION_ENABLED: 'true'
+      PDF_REPORT_MAX_ROWS: '1000'
+      PDF_REPORT_MAX_DATE_RANGE_MONTHS: '12'
+      RESEND_API_KEY: re_ci_placeholder
+      RESEND_FROM_EMAIL: 'MyProdusen CI <noreply@example.com>'
+      TESTSPRITE_DISABLE_RATE_LIMITS: 'false'
+      E2E_DISABLE_RATE_LIMITS: 'false'
+      TESTSPRITE_DISABLE_CSRF_ORIGIN: 'false'
+      E2E_DISABLE_CSRF_ORIGIN: 'false'
+      TESTSPRITE_DISABLE_SECURE_COOKIES: 'false'
+      TESTSPRITE_COMPAT_RESPONSE: 'false'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare upload directory
+        run: mkdir -p "$UPLOAD_DIR"
+
+      - name: Deploy database migrations
+        run: npm run db:deploy
+
+      - name: Run release check
+        run: npm run release:check
+
+  docker-build:
+    name: Docker build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build production image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: myprodusen:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

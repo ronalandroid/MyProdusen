@@ -91,3 +91,7 @@ Do not proceed if `release:env` reports errors or any TestSprite/E2E bypass flag
 - Seed is idempotent: it updates the Superadmin and Employee seed accounts instead of creating duplicate user rows.
 - Password values stay in environment variables: `SEED_SUPERADMIN_PASSWORD` and `SEED_EMPLOYEE_PASSWORD`.
 - Never run seed as a production data reset.
+
+## Restore script compatibility — 2026-05-22
+
+`scripts/backup.sh` creates PostgreSQL custom-format `.dump` files with `pg_dump --format=custom`. `scripts/restore.sh` restores `.dump` files with `pg_restore --clean --if-exists --no-owner --no-acl` and restores uploads to `UPLOAD_DIR` (default `/app/uploads`). Run restore drills only on staging or an explicitly approved recovery target.

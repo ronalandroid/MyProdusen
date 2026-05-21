@@ -64,8 +64,8 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Examples:"
             echo "  $0 --list"
-            echo "  $0 --db /backups/database/myprodusen_db_20260515.sql.gz"
-            echo "  $0 --db backup.sql.gz --uploads uploads.tar.gz"
+            echo "  $0 --db /backups/database/myprodusen_db_20260515.dump"
+            echo "  $0 --db backup.dump --uploads uploads.tar.gz"
             exit 0
             ;;
         *)
@@ -101,8 +101,15 @@ if [ -n "$DB_BACKUP_FILE" ]; then
     
     log_info "Restoring database from: $DB_BACKUP_FILE"
     
-    # Check if file is gzipped
-    if [[ "$DB_BACKUP_FILE" == *.gz ]]; then
+    # Backups created by scripts/backup.sh use pg_dump --format=custom.
+    if [[ "$DB_BACKUP_FILE" == *.dump ]]; then
+        if pg_restore --clean --if-exists --no-owner --no-acl --dbname="$DATABASE_URL" "$DB_BACKUP_FILE"; then
+            log_info "Database restored successfully"
+        else
+            log_error "Database restore failed"
+            exit 1
+        fi
+    elif [[ "$DB_BACKUP_FILE" == *.gz ]]; then
         if gunzip < "$DB_BACKUP_FILE" | psql "$DATABASE_URL"; then
             log_info "Database restored successfully"
         else
@@ -127,7 +134,7 @@ if [ -n "$UPLOADS_BACKUP_FILE" ]; then
     fi
     
     log_info "Restoring uploads from: $UPLOADS_BACKUP_FILE"
-    UPLOADS_DIR="${UPLOAD_DIR:-./public/uploads}"
+    UPLOADS_DIR="${UPLOAD_DIR:-/app/uploads}"
     
     # Backup current uploads before restore
     if [ -d "$UPLOADS_DIR" ]; then

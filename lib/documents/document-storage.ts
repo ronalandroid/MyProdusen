@@ -1,11 +1,18 @@
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { isAllowedDocumentMimeType } from './document-policy';
 
-const DOCUMENT_UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'employee-documents');
-const PUBLIC_DOCUMENT_PATH = '/uploads/employee-documents';
+const DOCUMENT_STORAGE_FOLDER = 'employee-documents';
 const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
+
+function getUploadRoot(): string {
+  return path.resolve(process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads'));
+}
+
+function getDocumentUploadDir(): string {
+  return path.join(getUploadRoot(), DOCUMENT_STORAGE_FOLDER);
+}
 
 export function sanitizeOriginalFilename(filename: string): string {
   const baseName = path.basename(filename).trim().toLowerCase();
@@ -19,6 +26,27 @@ export function buildDocumentStoragePath(employeeId: string, documentId: string,
   return `employee-documents/${employeeId}/${documentId}-${sanitizeOriginalFilename(filename)}`;
 }
 
+export function buildProtectedDocumentUrl(employeeId: string, storedName: string): string {
+  return `/api/documents/file/${encodeURIComponent(employeeId)}/${encodeURIComponent(storedName)}`;
+}
+
+export async function readEmployeeDocumentFile(employeeId: string, storedName: string) {
+  const safeStoredName = sanitizeOriginalFilename(storedName);
+  if (safeStoredName !== storedName) {
+    throw new Error('Nama file dokumen tidak valid');
+  }
+
+  const root = getDocumentUploadDir();
+  const fullPath = path.resolve(root, employeeId, safeStoredName);
+  const employeeDir = path.resolve(root, employeeId);
+
+  if (!fullPath.startsWith(`${employeeDir}${path.sep}`)) {
+    throw new Error('Path dokumen tidak valid');
+  }
+
+  return readFile(fullPath);
+}
+
 export async function saveEmployeeDocumentFile(employeeId: string, file: File) {
   if (!isAllowedDocumentMimeType(file.type)) {
     throw new Error('Tipe dokumen tidak diizinkan');
@@ -30,7 +58,7 @@ export async function saveEmployeeDocumentFile(employeeId: string, file: File) {
 
   const documentId = randomUUID();
   const safeName = sanitizeOriginalFilename(file.name);
-  const employeeDir = path.join(DOCUMENT_UPLOAD_DIR, employeeId);
+  const employeeDir = path.join(getDocumentUploadDir(), employeeId);
   await mkdir(employeeDir, { recursive: true });
 
   const storedName = `${documentId}-${safeName}`;
@@ -40,7 +68,7 @@ export async function saveEmployeeDocumentFile(employeeId: string, file: File) {
   return {
     documentId,
     fileName: safeName,
-    fileUrl: `${PUBLIC_DOCUMENT_PATH}/${employeeId}/${storedName}`,
+    fileUrl: buildProtectedDocumentUrl(employeeId, storedName),
     fileSize: file.size,
     mimeType: file.type,
   };
