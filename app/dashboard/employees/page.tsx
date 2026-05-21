@@ -376,8 +376,8 @@ export default function EmployeesPage() {
       )}
 
       {/* FAB */}
-      <button className="fab" onClick={handleCreate}>
-        <Plus size={24} />
+      <button className="fab" onClick={handleCreate} aria-label="Tambah karyawan baru">
+        <Plus size={24} aria-hidden="true" />
       </button>
 
       {/* Create/Edit Modal */}

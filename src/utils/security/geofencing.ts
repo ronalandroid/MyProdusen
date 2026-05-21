@@ -37,9 +37,19 @@ export function isWithinGeofence(
 }
 
 /**
- * Validate GPS accuracy
+ * Get the configured maximum GPS accuracy threshold in meters.
+ * Reads from GPS_MAX_ACCURACY_METERS env var, defaults to 100m.
  */
-export function isGpsAccuracyAcceptable(accuracy: number): boolean {
-  // Accept GPS accuracy up to 50 meters
-  return accuracy <= 50;
+export function getMaxGpsAccuracyMeters(): number {
+  const raw = Number(process.env.GPS_MAX_ACCURACY_METERS || '');
+  if (Number.isFinite(raw) && raw > 0) return raw;
+  return 100;
+}
+
+/**
+ * Validate GPS accuracy against the configured threshold (GPS_MAX_ACCURACY_METERS).
+ */
+export function isGpsAccuracyAcceptable(accuracy: number, maxMeters?: number): boolean {
+  const threshold = maxMeters ?? getMaxGpsAccuracyMeters();
+  return accuracy <= threshold;
 }

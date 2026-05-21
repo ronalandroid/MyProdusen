@@ -141,3 +141,16 @@
 - Added Coolify release/start command guidance for `release:env`, `db:deploy`, and `start:prod`.
 - Documented standalone static asset behavior and local-only secure-cookie E2E override.
 - Added post-bootstrap cleanup and go-live command order to deployment/operations docs.
+
+## 2026-05-21 — Test-Support Production Guard Fix
+
+- Blocked activation-token and cleanup test-support helpers in production regardless of TestSprite compatibility flags.
+- Added regression tests proving production returns 404 for public register-token and test-support helper routes.
+- Kept TestSprite compatibility route behavior available only outside production.
+
+## 2026-05-21 — Local Production-Readiness Smoke
+
+- Ran full local release gate and local production server smoke checks.
+- Verified public responsive smoke across 360, 390, 768, and 1440 viewports.
+- Verified local credential staging smoke, health/version safety, and unauthenticated protected PDF behavior.
+- Documented remaining external gates: Coolify deploy, live-domain smoke, backup restore drill, and stakeholder signoff.

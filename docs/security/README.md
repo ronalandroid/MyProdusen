@@ -138,6 +138,8 @@ Triggered by:
 - [ ] Login rate limit verified end-to-end (5 attempts / 15 minutes per IP+username).
 - [ ] `TESTSPRITE_DISABLE_RATE_LIMITS`, `E2E_DISABLE_RATE_LIMITS`, `TESTSPRITE_DISABLE_CSRF_ORIGIN`, and `E2E_DISABLE_CSRF_ORIGIN` are unset or `false` in production/Coolify.
 - [x] Cookie-authenticated state-changing routes have Origin/Referer CSRF guard.
+- [x] Test-support routes (`/api/test-support/*`) and activation-token helpers return 404 in production regardless of `TESTSPRITE_COMPAT_RESPONSE`; compat mode is non-production only.
+- [x] GPS accuracy validation uses `GPS_MAX_ACCURACY_METERS` env (default 100m) instead of hardcoded value.
 - [ ] No PII or secret in logs; `lib/logger` redacts known keys.
 - [ ] Periodic restore drill on staging (quarterly).
 

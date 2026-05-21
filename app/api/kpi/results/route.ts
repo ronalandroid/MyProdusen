@@ -31,6 +31,8 @@ export async function GET(request: NextRequest) {
       }
       
       filters.employeeId = employee.id;
+    } else if (!hasPermission(user.role, 'KPI_READ')) {
+      return forbiddenResponse('Anda tidak memiliki akses untuk melihat KPI');
     } else if (employeeId) {
       filters.employeeId = employeeId;
     }

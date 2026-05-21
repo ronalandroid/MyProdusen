@@ -279,3 +279,29 @@ Verified commands:
 set -a; source .env; set +a; TESTSPRITE_DISABLE_SECURE_COOKIES=true npm run e2e:staging -- --project desktop-1440
 set -a; source .env; set +a; TESTSPRITE_DISABLE_SECURE_COOKIES=true E2E_ALLOW_MUTATION=true npm run e2e:full-staging -- --project desktop-1440
 ```
+
+## Production Test-Support Guard Regression — 2026-05-21
+
+Coverage added in `tests/api/auth.test.ts` verifies these routes return 404 in production even when `TESTSPRITE_COMPAT_RESPONSE=true`:
+
+- `/api/auth/public-register-token`
+- `/api/test-support/activation-token`
+- `/api/test-support/cleanup-user`
+
+Focused verification:
+
+```bash
+npm run test -- tests/api/auth.test.ts lib/geofencing.test.ts
+```
+
+## Local Production-Readiness Smoke — 2026-05-21
+
+Verified against local production server at `http://127.0.0.1:3015`:
+
+- `npm run release:check` passed: lint, Vitest, Next build, migration coverage, and reference checks.
+- `E2E_BASE_URL=http://127.0.0.1:3015 npm run e2e:public` passed: 20/20 tests across 360, 390, 768, and 1440 viewports.
+- `E2E_BASE_URL=http://127.0.0.1:3015 npm run e2e:full-staging` with local E2E credentials passed: 14 tests; 10 expected skips for repeated credential checks on non-desktop viewports and mutation gate.
+- `BASE_URL=http://127.0.0.1:3015 npm run verify:live-routes` passed: health route, version route, and unauthenticated PDF protection.
+- `npm run release:env` passed with local production-like `.env`; bootstrap `SUPERADMIN_*` values must be removed or rotated after first login.
+
+Remaining production-only checks: Coolify deployment, live-domain smoke, backup restore drill, and stakeholder signoff.

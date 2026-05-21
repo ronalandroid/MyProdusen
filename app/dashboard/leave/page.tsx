@@ -388,8 +388,8 @@ export default function LeavePage() {
       )}
 
       {/* FAB */}
-      <button className="fab" onClick={handleCreate}>
-        <Plus size={24} />
+      <button className="fab" onClick={handleCreate} aria-label="Ajukan cuti baru">
+        <Plus size={24} aria-hidden="true" />
       </button>
 
       {/* Create Modal */}

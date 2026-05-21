@@ -5,7 +5,7 @@ import { db, users } from '@/lib/db';
 import { and, desc, eq, like } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
-  if (process.env.TESTSPRITE_COMPAT_RESPONSE !== 'true') {
+  if (process.env.NODE_ENV === 'production' || process.env.TESTSPRITE_COMPAT_RESPONSE !== 'true') {
     return NextResponse.json({ success: false, error: 'NOT_FOUND' }, { status: 404 });
   }
 

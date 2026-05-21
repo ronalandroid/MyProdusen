@@ -3,6 +3,9 @@ import { POST as loginPOST } from '@/app/api/auth/login/route';
 import { POST as registerPOST } from '@/app/api/auth/register/route';
 import { GET as profileGET } from '@/app/api/auth/profile/route';
 import { POST as changePasswordPOST } from '@/app/api/auth/change-password/route';
+import { GET as publicRegisterTokenGET } from '@/app/api/auth/public-register-token/route';
+import { GET as testSupportActivationTokenGET } from '@/app/api/test-support/activation-token/route';
+import { POST as testSupportCleanupUserPOST } from '@/app/api/test-support/cleanup-user/route';
 import { createTestUser, createMockRequest, cleanupTestData } from '../helpers/test-utils';
 import { hashPassword } from '@/lib/auth';
 import { db, users } from '@/lib/db';
@@ -267,6 +270,48 @@ describe('Auth API', () => {
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
       expect(data.message).toContain('Email sudah terdaftar');
+    });
+  });
+
+  describe('Test support route guards', () => {
+    it('blocks public register token in production even when TestSprite compatibility is enabled', async () => {
+      vi.stubEnv('NODE_ENV', 'production');
+      vi.stubEnv('TESTSPRITE_COMPAT_RESPONSE', 'true');
+
+      const request = createMockRequest('GET', 'http://localhost:3000/api/auth/public-register-token?email=test@example.com');
+
+      const response = await publicRegisterTokenGET(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('NOT_FOUND');
+    });
+
+    it('blocks test-support activation token in production even when TestSprite compatibility is enabled', async () => {
+      vi.stubEnv('NODE_ENV', 'production');
+      vi.stubEnv('TESTSPRITE_COMPAT_RESPONSE', 'true');
+
+      const request = createMockRequest('GET', 'http://localhost:3000/api/test-support/activation-token?email=test@example.com');
+
+      const response = await testSupportActivationTokenGET(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('NOT_FOUND');
+    });
+
+    it('blocks test-support cleanup user in production even when TestSprite compatibility is enabled', async () => {
+      vi.stubEnv('NODE_ENV', 'production');
+      vi.stubEnv('TESTSPRITE_COMPAT_RESPONSE', 'true');
+
+      const response = await testSupportCleanupUserPOST();
+      const data = await response.json();
+
+      expect(response.status).toBe(404);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('NOT_FOUND');
     });
   });
 

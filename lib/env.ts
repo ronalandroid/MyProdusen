@@ -8,6 +8,7 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().min(1, 'UPLOAD_DIR is required').default('./uploads'),
   MAX_UPLOAD_SIZE: z.coerce.number().int().positive().default(5 * 1024 * 1024),
   DEFAULT_GEOFENCE_RADIUS: z.coerce.number().int().positive().default(100),
+  GPS_MAX_ACCURACY_METERS: z.coerce.number().int().positive().default(100),
   SESSION_TIMEOUT_HOURS: z.coerce.number().int().positive().default(8),
   SUPERADMIN_EMAIL: z.string().email().optional(),
   SUPERADMIN_PASSWORD: z.string().min(12).optional(),

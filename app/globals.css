@@ -739,7 +739,7 @@ p, .body-text {
 .btn-sm {
   padding: 0.5rem 1rem;
   font-size: 0.75rem;
-  min-height: 36px;
+  min-height: 44px;
 }
 
 .btn-lg {
@@ -1925,7 +1925,7 @@ html {
   align-items: center;
   justify-content: center;
   min-width: 72px;
-  min-height: 40px;
+  min-height: 44px;
   height: auto;
   padding: 0.5rem 0.875rem;
   font-size: 0.875rem;
@@ -3454,5 +3454,51 @@ button:focus-visible,
 @media (min-width: 1440px) {
   .mobile-content {
     padding-inline: clamp(2rem, 4vw, 3.5rem);
+  }
+}
+
+/* ============================================
+   FAB (Floating Action Button)
+   ============================================ */
+
+.fab {
+  position: fixed;
+  bottom: calc(6rem + env(safe-area-inset-bottom));
+  right: 1.25rem;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--text-primary);
+  box-shadow: 0 8px 24px rgba(255, 193, 7, 0.4), 0 4px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 12px 32px rgba(255, 193, 7, 0.5), 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+.fab:focus-visible {
+  outline: 3px solid var(--ring-focus);
+  outline-offset: 3px;
+}
+
+@media (min-width: 1024px) {
+  .fab {
+    bottom: 2rem;
+    right: 2rem;
   }
 }
