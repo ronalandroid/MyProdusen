@@ -67,3 +67,25 @@
 - [ ] Owner/HR/technical PIC signoff.
 - [ ] Production smoke passed.
 - [ ] Release is `READY`.
+
+## Final Release Candidate Status — 2026-05-22
+
+Release candidate commit: `d987fa7` (`main`).
+
+### Verified
+
+- [x] Code gate passed before this docs update: `npm run release:check`.
+- [x] Live safe routes passed: `/api/health` `200`, `/api/version` `200`, unauthenticated `POST /api/reports/pdf` `401`.
+- [x] Live public responsive smoke passed: `E2E_BASE_URL=https://myprodusen.online npm run e2e:public` 20/20 across 360/390/768/1440.
+- [x] Deployment checklist updated for Coolify no-cache redeploy, upload volume, env validation, health/version, protected PDF, Android, and backup/restore.
+- [x] Android real-device test checklist added in `docs/ANDROID_REAL_DEVICE_TEST.md`.
+
+### Pending Before Production Signoff
+
+- [ ] Redeploy latest `main` commit and prove live commit SHA; current `/api/version` reports `gitCommitSha: unknown`.
+- [ ] Run authenticated live Superadmin/Employee E2E with approved `E2E_*` credentials.
+- [ ] Run Android real-device GPS/selfie check-in and check-out.
+- [ ] Run PostgreSQL plus `/app/uploads` backup/restore drill to staging/test.
+- [ ] Record Owner/HR/Technical PIC signoff.
+
+Final GO/NO-GO: `READY FOR REDEPLOY` and `READY FOR STAGING UAT`; not full `READY FOR PRODUCTION` yet.

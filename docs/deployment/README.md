@@ -132,3 +132,28 @@ Repository pushes and pull requests run `.github/workflows/ci.yml` before produc
 ## Private document storage — 2026-05-22
 
 Employee document uploads must use the same private persistent upload volume as attendance selfies. Configure `UPLOAD_DIR=/app/uploads` in Coolify and mount that path as a persistent volume. Document files are no longer written under `public/uploads`; they are served only through authenticated document API endpoints.
+
+## Final Release Candidate Redeploy Checklist — 2026-05-22
+
+Release candidate commit: `d987fa7` (`main`).
+
+Current live status: `https://myprodusen.online` responds to safe route checks, but `/api/version` reports `gitCommitSha: unknown`; latest commit cannot be proven live until Coolify redeploy completes.
+
+Required Coolify steps:
+
+1. Redeploy latest `main` commit `d987fa7`.
+2. Use rebuild/no-cache so Docker image includes latest production dependencies and scripts.
+3. Confirm `/app/uploads` persistent volume is mounted and writable.
+4. Run `npm run release:env` in Coolify shell.
+5. Check `https://myprodusen.online/api/health` returns `200` and no secrets.
+6. Check `https://myprodusen.online/api/version` returns safe metadata only and current commit SHA if configured.
+7. Check unauthenticated `POST /api/reports/pdf` returns `401` or `403`; `200` is a critical security bug, `404` means redeploy mismatch.
+8. Run live Playwright public smoke.
+9. Run Android real-device GPS/selfie test from `docs/ANDROID_REAL_DEVICE_TEST.md`.
+10. Run backup/restore drill from `docs/operations/README.md` against staging/test restore target.
+
+Go/no-go after redeploy:
+
+- `READY FOR REDEPLOY`: code gate passed and docs updated.
+- `READY FOR STAGING UAT`: live public smoke passed; authenticated Superadmin/Employee UAT still needs credentials.
+- `READY FOR PRODUCTION`: only after redeploy proof, authenticated live E2E, Android test, backup/restore drill, and stakeholder signoff pass.

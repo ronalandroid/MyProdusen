@@ -311,3 +311,26 @@ Remaining production-only checks: Coolify deployment, live-domain smoke, backup 
 - Increased Vitest timeout to 15 seconds for DB-backed test stability; full suite passed with 64 files and 331 tests.
 - Reimbursement category and claim routes now use shared safe response helpers with Indonesian messages instead of raw `NextResponse.json({ error })` payloads.
 - Local Docker image build could not be executed in this environment because the `docker` CLI is not installed; verify `docker build -t myprodusen .` in Coolify/VPS or a Docker-enabled workstation.
+
+## Final Release Candidate Gate — 2026-05-22
+
+Release candidate commit: `d987fa7` (`main`).
+
+### Verified Evidence
+
+- `npm run release:check` passed before this docs update: lint, Vitest, Next build, migration coverage, and reference checks.
+- `BASE_URL=https://myprodusen.online npm run verify:live-routes` passed: `/api/health` `200`, `/api/version` `200`, unauthenticated `POST /api/reports/pdf` `401`.
+- `E2E_BASE_URL=https://myprodusen.online npm run e2e:public` passed: 20/20 across 360, 390, 768, and 1440 viewports.
+
+### Skipped Or Pending
+
+- Authenticated live Superadmin/Employee E2E skipped because `E2E_SUPERADMIN_EMAIL`, `E2E_SUPERADMIN_PASSWORD`, `E2E_EMPLOYEE_EMAIL`, and `E2E_EMPLOYEE_PASSWORD` were not present in shell env.
+- TestSprite account/tool is available, but safe production mutation was not approved; safe smoke only remains optional for owner QA signoff.
+- Android real-device GPS/selfie test not run; see `docs/ANDROID_REAL_DEVICE_TEST.md`.
+- Backup/restore drill not run; see `docs/operations/README.md`.
+
+### Current QA Status
+
+- Code gate: ready.
+- Live public smoke: ready.
+- Full production signoff: not ready until redeploy proof, authenticated live E2E, Android test, backup/restore drill, and stakeholder signoff pass.

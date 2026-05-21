@@ -158,3 +158,34 @@ Note: first sandboxed `npm run release:check` attempt failed with `EPERM 127.0.0
   - TC026 was marked failed although TestSprite text says PDF export completed successfully.
   - TC001 generated account activation succeeded, but generated login password did not match app credential state.
   - Attendance check-in remains a real camera/GPS/device prerequisite and must be tested with Employee account on Android HTTPS.
+
+## Final Release Candidate Gate — 2026-05-22
+
+Release candidate commit: `d987fa7` (`main`).
+
+### Code Gate
+
+- `npm run release:check` passed before this docs update: lint, Vitest, Next build, migration coverage, and reference checks.
+- Migration runner no longer requires dev-only `dotenv` in production startup.
+- Production image, private upload storage, CSRF proxy, protected cache headers, password-reset rate limit, document download auth, migration checksum guard, restore script, and CI gate were hardened in the release candidate commit.
+
+### Live Safe Route Gate
+
+- `BASE_URL=https://myprodusen.online npm run verify:live-routes` passed.
+- `/api/health` returned `200`.
+- `/api/version` returned `200`.
+- Unauthenticated `POST /api/reports/pdf` returned `401`.
+- `/api/version` reported `gitCommitSha: unknown`, so latest commit cannot be proven live until redeploy.
+
+### Live Public UI Gate
+
+- `E2E_BASE_URL=https://myprodusen.online npm run e2e:public` passed 20/20 across 360, 390, 768, and 1440 viewports.
+
+### Pending Signoff Gates
+
+- Authenticated live Superadmin/Employee E2E skipped because credentials were missing in shell env.
+- Android real-device GPS/selfie flow not run.
+- Backup/restore drill not run.
+- Stakeholder signoff not recorded.
+
+Final status: `READY FOR REDEPLOY` and `READY FOR STAGING UAT`; not `READY FOR PRODUCTION` until all pending signoff gates pass.

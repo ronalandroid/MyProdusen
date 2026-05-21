@@ -95,3 +95,21 @@ Do not proceed if `release:env` reports errors or any TestSprite/E2E bypass flag
 ## Restore script compatibility — 2026-05-22
 
 `scripts/backup.sh` creates PostgreSQL custom-format `.dump` files with `pg_dump --format=custom`. `scripts/restore.sh` restores `.dump` files with `pg_restore --clean --if-exists --no-owner --no-acl` and restores uploads to `UPLOAD_DIR` (default `/app/uploads`). Run restore drills only on staging or an explicitly approved recovery target.
+
+## Final Release Candidate Backup/Restore Drill — 2026-05-22
+
+Status: PENDING — not run in this session.
+
+Required drill before production signoff:
+
+1. Create PostgreSQL backup with `pg_dump "$DATABASE_URL" --format=custom --file=myprodusen-$(date +%F).dump`.
+2. Create upload backup with `tar -czf myprodusen-uploads-$(date +%F).tar.gz /app/uploads`.
+3. Restore database backup into staging/test database only; never reset production.
+4. Restore upload archive into staging/test upload volume only.
+5. Verify login works with staging-safe Superadmin and Employee accounts.
+6. Verify attendance history loads from restored database.
+7. Verify protected selfie endpoint can read restored `/app/uploads/attendance-selfies` file for authorized user.
+8. Verify reports and audit logs load from restored database.
+9. Record backup filename, restore target, tester, timestamp, and result.
+
+Go/no-go impact: backup/restore drill is required for `READY FOR PRODUCTION`; until completed, status remains `READY FOR REDEPLOY` / `READY FOR STAGING UAT` only.

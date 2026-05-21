@@ -185,3 +185,11 @@
 
 - Updated restore script to use `pg_restore` for custom-format database dumps created by the backup script.
 - Aligned upload restore default with production private volume `/app/uploads`.
+
+## 2026-05-22 — Final Release Candidate Gate
+
+- Documented release candidate commit `d987fa7` for Coolify redeploy.
+- Documented live safe route result: health `200`, version `200`, unauthenticated report PDF `401`.
+- Documented live public responsive smoke result: 20/20 pass across 360/390/768/1440.
+- Added Android real-device GPS/selfie checklist.
+- Marked authenticated live E2E, Android real-device test, backup/restore drill, redeploy proof, and stakeholder signoff as pending before full production signoff.
