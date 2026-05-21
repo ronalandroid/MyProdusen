@@ -4,6 +4,8 @@ import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistratio
 import "@/lib/init";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || "https://myprodusen.online"),
   title: "MyProdusen — Sistem Internal Produsen Dimsum Medan",

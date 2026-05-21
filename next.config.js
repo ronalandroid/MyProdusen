@@ -74,7 +74,7 @@ const nextConfig = {
         '10.0.0.3:3000',
       ],
     },
-    cpus: 1,
+    cpus: Number(process.env.NEXT_BUILD_CPUS || '1'),
   },
 
   outputFileTracingExcludes: {

@@ -133,6 +133,10 @@ Repository pushes and pull requests run `.github/workflows/ci.yml` before produc
 
 Employee document uploads must use the same private persistent upload volume as attendance selfies. Configure `UPLOAD_DIR=/app/uploads` in Coolify and mount that path as a persistent volume. Document files are no longer written under `public/uploads`; they are served only through authenticated document API endpoints.
 
+## Coolify Build Timeout Hardening — 2026-05-22
+
+The Docker builder sets build-only safe env values and `NEXT_BUILD_CPUS=2` so `npm run build:next` can finish inside Coolify's deploy window. The root app layout is forced dynamic to avoid static page-data generation for protected dashboard pages; runtime auth and RBAC remain server-enforced.
+
 ## Final Release Candidate Redeploy Checklist — 2026-05-22
 
 Release candidate code commit: `d987fa7` (`main`). Deploy the latest `main` HEAD, including documentation-only gate commits after this code commit.

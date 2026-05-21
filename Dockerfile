@@ -27,6 +27,7 @@ ENV HOSTNAME=0.0.0.0
 ENV NODE_OPTIONS=--max-old-space-size=1024
 ENV BUILD_HEARTBEAT_MS=5000
 ENV NEXT_PRIVATE_BUILD_WORKER=1
+ENV NEXT_BUILD_CPUS=2
 
 # Dummy DATABASE_URL keeps build-time imports safe.
 # The real value is injected at runtime via Coolify env vars.
