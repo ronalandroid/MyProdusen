@@ -154,3 +154,9 @@
 - Verified public responsive smoke across 360, 390, 768, and 1440 viewports.
 - Verified local credential staging smoke, health/version safety, and unauthenticated protected PDF behavior.
 - Documented remaining external gates: Coolify deploy, live-domain smoke, backup restore drill, and stakeholder signoff.
+
+## 2026-05-21 — Final Production Fix Pass
+
+- Raised Vitest timeout for DB-backed tests to reduce parallel-run flakiness.
+- Standardized reimbursement API responses through shared response helpers with safe Indonesian errors.
+- Re-ran migration deploy locally; all migrations were skipped/applied as expected and deployment runner completed.

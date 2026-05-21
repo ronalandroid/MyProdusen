@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { reimbursementService } from '@/src/services/reimbursement/reimbursement.service';
 import { getCurrentUser } from '@/lib/auth-context';
+import { errorResponse, forbiddenResponse, successResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { z } from 'zod';
 
 const createCategorySchema = z.object({
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse('Silakan login terlebih dahulu');
     }
 
     const { searchParams } = new URL(request.url);
@@ -24,13 +25,10 @@ export async function GET(request: NextRequest) {
       isActive === 'true' ? true : isActive === 'false' ? false : undefined
     );
 
-    return NextResponse.json({ data: categories });
+    return successResponse(categories);
   } catch (error: any) {
     console.error('Get expense categories error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse('Gagal mengambil kategori reimbursement', 500);
   }
 }
 
@@ -38,11 +36,11 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse('Silakan login terlebih dahulu');
     }
 
     if (user.role !== 'SUPERADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return forbiddenResponse('Anda tidak memiliki akses membuat kategori reimbursement');
     }
 
     const body = await request.json();
@@ -50,20 +48,14 @@ export async function POST(request: NextRequest) {
 
     const category = await reimbursementService.createCategory(validated);
 
-    return NextResponse.json({ data: category }, { status: 201 });
+    return successResponse(category, 'Kategori reimbursement berhasil dibuat', 201);
   } catch (error: any) {
     console.error('Create expense category error:', error);
     
     if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      );
+      return validationErrorResponse('Data kategori reimbursement tidak valid');
     }
 
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse('Gagal membuat kategori reimbursement', 500);
   }
 }

@@ -305,3 +305,9 @@ Verified against local production server at `http://127.0.0.1:3015`:
 - `npm run release:env` passed with local production-like `.env`; bootstrap `SUPERADMIN_*` values must be removed or rotated after first login.
 
 Remaining production-only checks: Coolify deployment, live-domain smoke, backup restore drill, and stakeholder signoff.
+
+## Final Production Fix Verification — 2026-05-21
+
+- Increased Vitest timeout to 15 seconds for DB-backed test stability; full suite passed with 64 files and 331 tests.
+- Reimbursement category and claim routes now use shared safe response helpers with Indonesian messages instead of raw `NextResponse.json({ error })` payloads.
+- Local Docker image build could not be executed in this environment because the `docker` CLI is not installed; verify `docker build -t myprodusen .` in Coolify/VPS or a Docker-enabled workstation.

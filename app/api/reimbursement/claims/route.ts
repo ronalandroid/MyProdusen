@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { reimbursementService } from '@/src/services/reimbursement/reimbursement.service';
 import { getCurrentUser } from '@/lib/auth-context';
+import { errorResponse, successResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { z } from 'zod';
 
 const createClaimSchema = z.object({
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse('Silakan login terlebih dahulu');
     }
 
     const { searchParams } = new URL(request.url);
@@ -53,13 +54,10 @@ export async function GET(request: NextRequest) {
 
     const claims = await reimbursementService.getClaims(filters);
 
-    return NextResponse.json({ data: claims });
+    return successResponse(claims);
   } catch (error: any) {
     console.error('Get expense claims error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse('Gagal mengambil klaim reimbursement', 500);
   }
 }
 
@@ -67,14 +65,11 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse('Silakan login terlebih dahulu');
     }
 
     if (!user.employeeId) {
-      return NextResponse.json(
-        { error: 'User tidak terhubung dengan karyawan' },
-        { status: 400 }
-      );
+      return errorResponse('User tidak terhubung dengan karyawan');
     }
 
     const body = await request.json();
@@ -85,20 +80,14 @@ export async function POST(request: NextRequest) {
       employeeId: user.employeeId,
     });
 
-    return NextResponse.json({ data: claim }, { status: 201 });
+    return successResponse(claim, 'Klaim reimbursement berhasil dibuat', 201);
   } catch (error: any) {
     console.error('Create expense claim error:', error);
     
     if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      );
+      return validationErrorResponse('Data klaim reimbursement tidak valid');
     }
 
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return errorResponse('Gagal membuat klaim reimbursement', 500);
   }
 }
