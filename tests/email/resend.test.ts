@@ -177,4 +177,32 @@ describe('Resend email integration', () => {
     expect(payload.html).toContain('Pengingat Kehadiran');
     expect(payload.html).toContain('Buka MyProdusen');
   });
+
+  it('uses canonical production URLs across auth templates', async () => {
+    process.env.RESEND_API_KEY = 're_test_key';
+    process.env.RESEND_FROM_EMAIL = 'MyProdusen <noreply@example.com>';
+    process.env.APP_URL = 'https://myprodusen.online';
+    process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'email_url_check' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await sendAuthEmail('register', 'user@example.com', { name: 'Deni' });
+    await sendAuthEmail('forgot-password', 'user@example.com', { resetUrl: 'https://myprodusen.online/reset-password?token=abc' });
+    await sendAuthEmail('reset-password', 'user@example.com');
+    await sendAuthEmail('role-changed', 'user@example.com', { role: 'EMPLOYEE' });
+    await sendAuthEmail('account-approved', 'user@example.com');
+    await sendAuthEmail('notification-center', 'user@example.com');
+
+    for (const call of fetchMock.mock.calls) {
+      const payload = JSON.parse(call[1].body);
+      expect(payload.html).toContain('https://myprodusen.online');
+      expect(payload.text || '').toContain('https://myprodusen.online');
+      expect(payload.html).not.toContain('http://localhost:3000');
+      expect(payload.text || '').not.toContain('http://localhost:3000');
+    }
+  });
 });

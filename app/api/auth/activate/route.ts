@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await authService.activateAccount(validation.data.token);
-    await sendAuthEmail('account-approved', result.email);
+    await sendAuthEmail('account-approved', result.email).catch(() => undefined);
 
     return successResponse(result, 'Akun berhasil diaktivasi. Silakan login.');
   } catch (error: any) {

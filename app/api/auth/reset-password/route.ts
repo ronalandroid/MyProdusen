@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await authService.resetPassword(validation.data.token, validation.data.password);
-    await sendAuthEmail('reset-password', result.email);
+    await sendAuthEmail('reset-password', result.email).catch(() => undefined);
 
     return successResponse({ userId: result.userId }, 'Password berhasil direset');
   } catch (error: any) {

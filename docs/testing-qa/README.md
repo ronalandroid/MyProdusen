@@ -334,3 +334,11 @@ Release candidate code commit: `d987fa7` (`main`). Redeploy from latest `main` H
 - Code gate: ready.
 - Live public smoke: ready.
 - Full production signoff: not ready until redeploy proof, authenticated live E2E, Android test, backup/restore drill, and stakeholder signoff pass.
+
+## Email System Verification — 2026-05-22
+
+- Canonical URL coverage: `APP_URL` wins over `NEXT_PUBLIC_APP_URL`, so production auth email links do not fall back to `localhost:3000`.
+- Template coverage: register, activation, forgot password, reset password, role changed, account approved, and notification center emails render branded HTML and production links.
+- Delivery logging coverage: successful and failed Resend sends create `EmailLog` rows with template, recipient, provider, provider message ID, status, error message, and metadata.
+- Non-critical notification sends after successful account activation or password reset do not block the completed user action if Resend is unavailable.
+- Focused verification: `npm test -- tests/email/resend.test.ts tests/email/email-logs.test.ts tests/unit/app-url.test.ts` passed with 3 files and 12 tests.
