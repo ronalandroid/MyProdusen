@@ -49,12 +49,46 @@ Secrets must be configured in Coolify, not committed.
 2. Configure Coolify env vars.
 3. Mount `/app/uploads` persistent volume.
 4. Build Docker image.
-5. Run `npm run db:deploy` before app start or as release command.
-6. For fresh staging only, run `npm run db:seed` after setting `SEED_SUPERADMIN_PASSWORD` and `SEED_EMPLOYEE_PASSWORD`; never print real passwords in docs or logs.
-7. Start app with production command.
-8. Check `/api/health`.
-9. Check `/api/version` if endpoint exists.
-10. Run smoke tests from `TESTING_QA.md`.
+5. Run `npm run release:env` inside the production shell/Coolify environment; fix every error before migration or app start.
+6. Run `npm run db:deploy` before app start or as release command; Coolify must provide `DATABASE_URL` as an environment variable, while local developer runs may use `.env`.
+7. For fresh staging only, run `npm run db:seed` after setting `SEED_SUPERADMIN_PASSWORD` and `SEED_EMPLOYEE_PASSWORD`; never print real passwords in docs or logs.
+8. Start app with production command.
+9. Check `/api/health`.
+10. Check `/api/version` if endpoint exists.
+11. Run smoke tests from `TESTING_QA.md`.
+
+## Coolify Release Command
+
+Recommended release command before app start:
+
+```bash
+npm run release:env && npm run db:deploy
+```
+
+Recommended start command:
+
+```bash
+npm run start:prod
+```
+
+`npm run build` copies `.next/static` and `public` into `.next/standalone` so the standalone server can serve JavaScript, CSS, fonts, manifest, and icons.
+
+## Production Verification Commands
+
+Run from production-like shell after env is configured:
+
+```bash
+npm run release:check:full
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+```
+
+If running local HTTP E2E against `start:prod`, `TESTSPRITE_DISABLE_SECURE_COOKIES=true` may be used only in the command environment. Never set it in Coolify production env.
+
+## Post-Bootstrap Cleanup
+
+- Remove or rotate `SUPERADMIN_PASSWORD` after first successful Superadmin login.
+- Keep `TESTSPRITE_COMPAT_RESPONSE=false`, `TESTSPRITE_DISABLE_RATE_LIMITS=false`, `E2E_DISABLE_RATE_LIMITS=false`, `TESTSPRITE_DISABLE_CSRF_ORIGIN=false`, `E2E_DISABLE_CSRF_ORIGIN=false`, and `TESTSPRITE_DISABLE_SECURE_COOKIES=false` in production.
+- Keep `E2E_*` credentials dedicated to staging-safe accounts only.
 
 ## No-Cache Redeploy
 

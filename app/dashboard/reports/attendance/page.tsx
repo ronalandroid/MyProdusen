@@ -369,6 +369,26 @@ export default function AttendanceReportPage() {
         </div>
       </div>
 
+      <section className="sync-strip" aria-label="Alur data laporan kehadiran">
+        <span>Frontend</span><span aria-hidden="true">→</span><span>/api/reports/attendance</span><span aria-hidden="true">→</span><span>Report Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
+      </section>
+
+      <section className="card" aria-labelledby="attendance-report-sync-title" style={{ padding: "16px", borderColor: "rgba(59,130,246,.32)" }}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">Laporan Kehadiran</p>
+            <h2 id="attendance-report-sync-title" className="text-lg font-bold">Filter, selfie privat, export audit</h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">Query laporan memakai indeks employee/tanggal/status. Selfie dibuka lewat endpoint terproteksi, CSV/PDF respect filter dan permission.</p>
+          </div>
+          <span className="badge badge-info">No-store export</span>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="api-pill">DB: Attendance_employeeId_checkInTime_idx</span>
+          <span className="api-pill">DB: Attendance_status_checkInTime_idx</span>
+          <span className="api-pill">DB: Attendance_shiftId_idx</span>
+        </div>
+      </section>
+
       {exportMessage && (
         <div className="card" role="status" style={{ padding: "12px 16px", borderColor: "var(--success)", backgroundColor: "rgba(34,197,94,0.08)" }}>
           <p className="text-sm font-semibold" style={{ color: "var(--success)" }}>{exportMessage}</p>

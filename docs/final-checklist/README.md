@@ -42,6 +42,7 @@
 ## Deployment
 
 - [ ] Coolify env configured.
+- [ ] `npm run release:env` passes in production shell/Coolify environment.
 - [ ] `/app/uploads` volume mounted and private.
 - [ ] `/api/health` healthy and secret-free.
 - [ ] `/api/version` safe if present.
@@ -55,6 +56,7 @@
 - [ ] `npm run test` passes.
 - [ ] `npm run build` passes.
 - [ ] `npm run release:check` passes.
+- [ ] `npm run release:check:full` passes in production-like env before promotion.
 - [ ] `npm run release:migrations` passes.
 - [ ] `npm run e2e:public` passes or skipped with reason.
 - [ ] `npm run e2e:staging` passes or skipped with reason.

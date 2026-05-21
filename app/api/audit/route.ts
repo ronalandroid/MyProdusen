@@ -41,7 +41,9 @@ export async function GET(request: NextRequest) {
     if (search) filters.search = search.trim().slice(0, 100);
 
     const logs = await auditService.getLogs(filters);
-    return successResponse(logs);
+    const response = successResponse(logs);
+    response.headers.set('Cache-Control', 'no-store, private');
+    return response;
   } catch (error: any) {
     if (error.message === 'Unauthorized') {
       return unauthorizedResponse();

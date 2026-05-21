@@ -68,7 +68,7 @@ function toTestSpriteEmployeePayload(body: any) {
       fullName: body?.fullName ?? body?.name,
       email,
       username,
-      password: body?.password ?? 'Password123!',
+      password: body?.password,
       role: typeof body?.role === 'string' ? body.role.toUpperCase() : body?.role,
       joinDate: body?.joinDate ?? body?.join_date,
       division: body?.division ?? body?.department,

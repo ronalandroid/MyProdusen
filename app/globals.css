@@ -825,6 +825,49 @@ p, .body-text {
   gap: 1.5rem;
 }
 
+.sync-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-2xl);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.sync-strip span:not([aria-hidden="true"]) {
+  border-radius: var(--radius-full);
+  background: var(--primary-light);
+  color: var(--text-primary);
+  padding: 0.25rem 0.625rem;
+}
+
+.api-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(130, 118, 96, 0.28);
+  background: rgba(255, 248, 225, 0.92);
+  color: var(--text-secondary);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.stitch-attendance-card {
+  background: linear-gradient(180deg, #fffdf8 0%, #ffffff 100%);
+  border-color: rgba(255, 193, 7, 0.42);
+}
+
 @media (min-width: 768px) {
   .dashboard-page {
     gap: 2rem;

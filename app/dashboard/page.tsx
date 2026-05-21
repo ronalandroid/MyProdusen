@@ -181,8 +181,86 @@ export default function DashboardPage() {
         </section>
       )}
 
+      <section className="sync-strip" aria-label="Alur data dashboard superadmin">
+        <span>Frontend</span><ArrowRightIcon /><span>API</span><ArrowRightIcon /><span>Service</span><ArrowRightIcon /><span>Drizzle</span><ArrowRightIcon /><span>PostgreSQL</span>
+      </section>
+
+      <SuperadminSyncPanels stats={stats} />
+
       {stats.superadminInsights && <SuperadminMonitoring insights={stats.superadminInsights} />}
     </div>
+  );
+}
+
+function ArrowRightIcon() {
+  return <span aria-hidden="true" className="text-[var(--text-muted)]">→</span>;
+}
+
+function SuperadminSyncPanels({ stats }: { stats: DashboardStats }) {
+  const panels = [
+    {
+      title: "Karyawan, User, NIP",
+      eyebrow: "Master Data",
+      description: "NIP otomatis MPD-{YEAR}-{DIVISION_CODE}-{SEQUENCE}, user inactive perlu review, role produksi hanya Superadmin dan Karyawan.",
+      href: "/dashboard/employees",
+      api: "/api/employees · /api/users",
+      value: `${numberFormatter.format(stats.activeEmployees)} aktif`,
+      tone: "info" as DashboardActionTone,
+    },
+    {
+      title: "Absensi & Geo-fence",
+      eyebrow: "Operasional Harian",
+      description: "Check-in/out, akurasi GPS, radius lokasi, selfie privat, dan koreksi manual wajib alasan + audit.",
+      href: "/dashboard/attendance",
+      api: "/api/attendance · /api/attendance/exceptions",
+      value: `${numberFormatter.format(stats.todayAttendance.present)} hadir`,
+      tone: "success" as DashboardActionTone,
+    },
+    {
+      title: "Cuti & KPI Approval",
+      eyebrow: "Persetujuan",
+      description: "Penolakan wajib alasan, overlap cuti ditolak, bobot template KPI harus 100, hasil approved terkunci.",
+      href: "/dashboard/leave",
+      api: "/api/leave · /api/kpi/templates · /api/kpi/results",
+      value: `${numberFormatter.format(stats.pendingLeave + stats.pendingKpiApprovals)} pending`,
+      tone: "warning" as DashboardActionTone,
+    },
+    {
+      title: "Laporan & Audit Log",
+      eyebrow: "Kontrol Produksi",
+      description: "Export respect filter + permission, laporan PDF no-store, aksi sensitif tercatat tanpa stack trace ke user.",
+      href: "/dashboard/reports",
+      api: "/api/reports/* · /api/audit · /api/version",
+      value: stats.payrollPeriodStatus?.period || "Siap audit",
+      tone: "primary" as DashboardActionTone,
+    },
+  ];
+
+  return (
+    <section aria-labelledby="superadmin-sync-title" className="mb-5">
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">Sinkron Frontend Backend</p>
+          <h2 id="superadmin-sync-title">Control Center Produksi</h2>
+        </div>
+        <span className="api-pill">API: /api/dashboard/stats · /api/dashboard/heatmap</span>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {panels.map((panel) => (
+          <Link key={panel.title} href={panel.href} className="card group flex min-h-[218px] flex-col gap-3 p-4 transition-transform hover:-translate-y-0.5 hover:shadow-md" style={{ borderColor: mapToneToColor(panel.tone) }}>
+            <div className="flex items-start justify-between gap-3">
+              <span className="eyebrow">{panel.eyebrow}</span>
+              <span className={`badge badge-${panel.tone === "primary" ? "primary" : panel.tone}`}>{panel.value}</span>
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[var(--text-primary)]">{panel.title}</h3>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">{panel.description}</p>
+            </div>
+            <span className="api-pill mt-auto w-fit">API: {panel.api}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 

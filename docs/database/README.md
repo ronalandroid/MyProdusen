@@ -8,8 +8,9 @@
 
 ## Migration register
 
-Run with `npm run db:deploy`. Each file is tracked in
-`_myprodusen_migrations` with a SHA-256 checksum.
+Run with `npm run db:deploy`. The migration runner reads `DATABASE_URL` from
+the process environment and falls back to local `.env` for developer machines.
+Each file is tracked in `_myprodusen_migrations` with a SHA-256 checksum.
 
 | File | Purpose |
 | ---- | ------- |
@@ -95,3 +96,86 @@ DATABASE_URL=postgresql://staging:... npm run perf:explain
 4. Test every migration against staging first.
 5. Never share the `myprodusen_production` schema with another Coolify app.
 6. Backups run daily; restore drills run quarterly.
+
+## Core HR Lookup Indexes — 2026-05-21
+
+Wave 1 core HR sync added additive lookup indexes for employee master-data joins and active master-data screens:
+
+- `Employee_defaultShiftId_idx` supports employee-to-shift lookup, dashboard filters, and attendance prerequisite checks.
+- `Employee_defaultLocationId_idx` supports employee-to-work-location lookup, dashboard filters, and attendance prerequisite checks.
+- `WorkLocation_name_idx` supports work-location master list lookup and operational review.
+- `Shift_isActive_idx` supports active-shift selectors and attendance prerequisite checks.
+- `Shift_name_idx` supports shift master list lookup.
+
+Migration: `drizzle/migrations/0014_core_hr_lookup_indexes.sql`.
+
+The migration is additive and uses `CREATE INDEX IF NOT EXISTS`. It does not drop, rewrite, or reset historical employee, attendance, KPI, upload, or audit data.
+
+## Attendance Sync Indexes — 2026-05-21
+
+Wave 2 attendance sync aligned Drizzle schema with attendance report/history indexes and added additive operational lookup indexes:
+
+- Existing migration-backed schema indexes now include `Attendance_employeeId_checkInTime_idx` and `Attendance_status_checkInTime_idx` for history/report pagination.
+- New additive index `Attendance_shiftId_idx` supports shift-based attendance filtering and diagnostics.
+- New additive index `AttendanceException_status_createdAt_idx` supports pending/review queues by status and recency.
+
+Migration: `drizzle/migrations/0015_attendance_sync_indexes.sql`.
+
+The migration uses `CREATE INDEX IF NOT EXISTS` only. It does not modify or delete historical attendance, selfie metadata, exception, employee, KPI, upload, or audit data.
+
+## Leave + KPI Sync Indexes — 2026-05-21
+
+Wave 3 Leave + KPI sync added additive lookup indexes for approval queues, overlap checks, assignment lookups, and KPI approval dashboards:
+
+- `LeaveRequest_status_createdAt_idx` supports pending leave approval queues by recency.
+- `LeaveRequest_employeeId_status_startDate_endDate_idx` supports employee overlap checks and leave history filters.
+- `KpiTemplate_isActive_idx` supports active template selectors.
+- `KpiAssignment_templateId_period_idx` supports template-period assignment review.
+- `KpiResult_employeeId_period_idx` supports employee KPI detail and summary queries.
+- `KpiResult_isApproved_period_idx` supports KPI approval queues and approval-status dashboards.
+
+Migration: `drizzle/migrations/0016_leave_kpi_sync_indexes.sql`.
+
+The migration is additive and uses `CREATE INDEX IF NOT EXISTS`. It does not delete leave, KPI, employee, audit, payroll, upload, or attendance history.
+
+## Payroll + Reports Sync Indexes — 2026-05-21
+
+Wave 4 Payroll + Reports sync added additive lookup indexes for payroll selectors, runs, employee payslips, and export/report flows:
+
+- `PayrollStructure_isActive_idx` supports active salary-template selectors.
+- `EmployeePayroll_structureId_idx` supports structure-to-employee assignment review.
+- `EmployeePayroll_effectiveDate_idx` supports effective-date diagnostics and history.
+- `PayrollRun_status_period_idx` supports payroll status dashboards and period filters.
+- `PayrollItem_employeeId_runId_idx` supports employee payslip lookup and private payroll history.
+
+Migration: `drizzle/migrations/0017_payroll_reports_sync_indexes.sql`.
+
+The migration is additive and uses `CREATE INDEX IF NOT EXISTS`. It does not delete payroll, payslip, employee, attendance, leave, KPI, upload, or audit history.
+
+## Notifications + Audit Sync Indexes — 2026-05-21
+
+Wave 5 Notifications + Audit sync added additive indexes for per-user notification feeds and audit timelines:
+
+- `Notification_userId_isRead_createdAt_idx` supports unread notification lists and mark-all-read review.
+- `Notification_userId_createdAt_idx` supports paginated per-user notification history.
+- `AuditLog_action_idx` supports action filters.
+- `AuditLog_entity_createdAt_idx` supports entity timelines.
+- `AuditLog_userId_createdAt_idx` supports actor timelines.
+
+Migration: `drizzle/migrations/0018_notifications_audit_sync_indexes.sql`.
+
+The migration is additive and uses `CREATE INDEX IF NOT EXISTS`. It does not delete notification or audit history.
+
+## Email Delivery Logs — 2026-05-21
+
+Transactional Resend delivery attempts are now stored in `EmailLog` for audit and manual retry investigation:
+
+- `template`, `recipient`, and `subject` identify the email type and target.
+- `provider` and `providerMessageId` store Resend delivery reference when available.
+- `status` stores `SENT`, `FAILED`, or `SKIPPED`.
+- `errorMessage` stores sanitized provider failure text.
+- `metadata` stores non-secret context only, such as template flags or role names.
+
+Migration: `drizzle/migrations/0019_email_delivery_logs.sql`.
+
+The migration is additive and uses `CREATE TABLE IF NOT EXISTS` plus `CREATE INDEX IF NOT EXISTS`.

@@ -5,10 +5,8 @@ import { config } from 'dotenv';
 // Load environment variables from .env file
 config();
 
-// Set test environment variables
-if (!process.env.NODE_ENV) {
-  (process.env as any).NODE_ENV = 'test';
-}
+// Test suite must not inherit production mode from local `.env`.
+(process.env as any).NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
 process.env.CACHE_ENABLED = 'false';
 

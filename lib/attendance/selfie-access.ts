@@ -9,7 +9,6 @@
  * Rules:
  *   - Auth required (JWT cookie or Authorization header).
  *   - Employee: only own selfie.
- *   - Supervisor/Admin HR: scoped attendance permission.
  *   - Superadmin: all selfies.
  *   - All non-self viewing creates an audit log entry (`SELFIE_VIEW`).
  *   - Path traversal blocked, no public access.

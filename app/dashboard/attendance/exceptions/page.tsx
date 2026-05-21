@@ -153,6 +153,26 @@ export default function AttendanceExceptionsPage() {
         </Button>
       </header>
 
+      <section className="sync-strip" aria-label="Alur data exception absensi">
+        <span>Frontend</span><span aria-hidden="true">→</span><span>/api/attendance/exceptions</span><span aria-hidden="true">→</span><span>Exception Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
+      </section>
+
+      <section className="card" aria-labelledby="attendance-exception-sync-title" style={{ padding: "16px", borderColor: "rgba(245,158,11,.34)" }}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">Review Geo-fence</p>
+            <h2 id="attendance-exception-sync-title" className="text-lg font-bold">Pending, approved, rejected, audit</h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">Exception dibuat oleh backend saat GPS buruk, luar radius, selfie hilang, atau koreksi manual. Penolakan wajib catatan dan review tercatat audit.</p>
+          </div>
+          <span className="badge badge-warning">Indexed review</span>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="api-pill">API: /api/attendance/exceptions</span>
+          <span className="api-pill">API: /api/attendance/exceptions/:id/review</span>
+          <span className="api-pill">DB: AttendanceException_status_createdAt_idx</span>
+        </div>
+      </section>
+
       <section className="card" aria-labelledby="approval-filter-title" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
         <h2 id="approval-filter-title" className="text-sm font-semibold">Filter</h2>
         <div className="flex flex-wrap gap-2">

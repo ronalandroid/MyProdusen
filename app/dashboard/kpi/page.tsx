@@ -149,6 +149,26 @@ export default function KPIPage() {
         )}
       </div>
 
+      <section className="sync-strip" aria-label="Alur data KPI">
+        <span>Frontend</span><span aria-hidden="true">→</span><span>API</span><span aria-hidden="true">→</span><span>KPI Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
+      </section>
+
+      <section className="card" aria-labelledby="kpi-sync-title" style={{ padding: "16px", borderColor: "rgba(34,197,94,.32)" }}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">KPI Terkontrol</p>
+            <h2 id="kpi-sync-title" className="text-lg font-bold">Read-only karyawan, approval Superadmin</h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">Karyawan hanya melihat KPI sendiri. Template wajib total bobot 100, hasil approved terkunci tanpa alasan dan audit.</p>
+          </div>
+          <span className="badge badge-success">{role === "SUPERADMIN" ? "Superadmin" : "Karyawan"}</span>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="api-pill">API: /api/kpi/results</span>
+          <span className="api-pill">API: /api/kpi/templates</span>
+          <span className="api-pill">API: /api/kpi/assignments</span>
+        </div>
+      </section>
+
       {error && (
         <div className="card border border-red-200 bg-red-50 p-4 text-sm text-[var(--danger)]" role="alert">
           {error}

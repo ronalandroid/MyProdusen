@@ -246,6 +246,27 @@ export default function EmployeesPage() {
         </div>
       </div>
 
+      <section className="sync-strip" aria-label="Alur data karyawan dan NIP">
+        <span>Frontend</span><span aria-hidden="true">→</span><span>/api/employees</span><span aria-hidden="true">→</span><span>Employee Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
+      </section>
+
+      <section className="card" aria-labelledby="employee-sync-title" style={{ padding: "16px", borderColor: "rgba(255,193,7,.42)" }}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">Core HR Sync</p>
+            <h2 id="employee-sync-title" className="text-lg font-bold">NIP otomatis, user akun, shift, lokasi</h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">Data karyawan tersimpan melalui service dan Drizzle. NIP stabil, unik, tidak dipakai ulang, dan role produksi hanya Superadmin atau Karyawan.</p>
+          </div>
+          <span className="badge badge-primary">MPD-YYYY-DIV-SEQ</span>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="api-pill">API: /api/employees</span>
+          <span className="api-pill">API: /api/users</span>
+          <span className="api-pill">DB: Employee_defaultShiftId_idx</span>
+          <span className="api-pill">DB: Employee_defaultLocationId_idx</span>
+        </div>
+      </section>
+
       {profile?.role === "EMPLOYEE" && (
         <div className="card" role="status" style={{ padding: "12px 16px", borderColor: "var(--border-color)" }}>
           <p className="text-sm font-semibold">Akses dibatasi</p>

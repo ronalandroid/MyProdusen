@@ -53,6 +53,8 @@ export const employees = pgTable('Employee', {
   divisionIdx: index('Employee_division_idx').on(table.division),
   statusIdx: index('Employee_status_idx').on(table.status),
   supervisorIdIdx: index('Employee_supervisorId_idx').on(table.supervisorId),
+  defaultShiftIdIdx: index('Employee_defaultShiftId_idx').on(table.defaultShiftId),
+  defaultLocationIdIdx: index('Employee_defaultLocationId_idx').on(table.defaultLocationId),
 }));
 
 // Work Location table
@@ -68,6 +70,7 @@ export const workLocations = pgTable('WorkLocation', {
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
   isActiveIdx: index('WorkLocation_isActive_idx').on(table.isActive),
+  nameIdx: index('WorkLocation_name_idx').on(table.name),
 }));
 
 // Shift table
@@ -79,7 +82,10 @@ export const shifts = pgTable('Shift', {
   isActive: boolean('isActive').default(true).notNull(),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
-});
+}, (table) => ({
+  isActiveIdx: index('Shift_isActive_idx').on(table.isActive),
+  nameIdx: index('Shift_name_idx').on(table.name),
+}));
 
 // Attendance table
 export const attendances = pgTable('Attendance', {
@@ -129,9 +135,12 @@ export const attendances = pgTable('Attendance', {
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
   employeeIdIdx: index('Attendance_employeeId_idx').on(table.employeeId),
+  employeeIdCheckInTimeIdx: index('Attendance_employeeId_checkInTime_idx').on(table.employeeId, table.checkInTime),
   workLocationIdIdx: index('Attendance_workLocationId_idx').on(table.workLocationId),
+  shiftIdIdx: index('Attendance_shiftId_idx').on(table.shiftId),
   checkInTimeIdx: index('Attendance_checkInTime_idx').on(table.checkInTime),
   statusIdx: index('Attendance_status_idx').on(table.status),
+  statusCheckInTimeIdx: index('Attendance_status_checkInTime_idx').on(table.status, table.checkInTime),
   checkInGeoStatusIdx: index('Attendance_check_in_geo_status_idx').on(table.checkInGeoStatus),
   checkOutGeoStatusIdx: index('Attendance_check_out_geo_status_idx').on(table.checkOutGeoStatus),
   employeeCheckInDateUnique: uniqueIndex('Attendance_employeeId_checkInDate_key').on(
@@ -158,6 +167,7 @@ export const attendanceExceptions = pgTable('AttendanceException', {
   attendanceIdIdx: index('AttendanceException_attendanceId_idx').on(table.attendanceId),
   employeeIdIdx: index('AttendanceException_employeeId_idx').on(table.employeeId),
   statusIdx: index('AttendanceException_status_idx').on(table.status),
+  statusCreatedAtIdx: index('AttendanceException_status_createdAt_idx').on(table.status, table.createdAt),
   typeIdx: index('AttendanceException_type_idx').on(table.type),
   createdAtIdx: index('AttendanceException_createdAt_idx').on(table.createdAt),
 }));
@@ -181,6 +191,8 @@ export const leaveRequests = pgTable('LeaveRequest', {
 }, (table) => ({
   employeeIdIdx: index('LeaveRequest_employeeId_idx').on(table.employeeId),
   statusIdx: index('LeaveRequest_status_idx').on(table.status),
+  statusCreatedAtIdx: index('LeaveRequest_status_createdAt_idx').on(table.status, table.createdAt),
+  employeeStatusDateIdx: index('LeaveRequest_employeeId_status_startDate_endDate_idx').on(table.employeeId, table.status, table.startDate, table.endDate),
   startDateIdx: index('LeaveRequest_startDate_idx').on(table.startDate),
 }));
 
@@ -209,7 +221,9 @@ export const kpiTemplates = pgTable('KpiTemplate', {
   isActive: boolean('isActive').default(true).notNull(),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
-});
+}, (table) => ({
+  isActiveIdx: index('KpiTemplate_isActive_idx').on(table.isActive),
+}));
 
 // KPI Item table
 export const kpiItems = pgTable('KpiItem', {
@@ -241,6 +255,7 @@ export const kpiAssignments = pgTable('KpiAssignment', {
 }, (table) => ({
   employeeIdIdx: index('KpiAssignment_employeeId_idx').on(table.employeeId),
   periodIdx: index('KpiAssignment_period_idx').on(table.period),
+  templatePeriodIdx: index('KpiAssignment_templateId_period_idx').on(table.templateId, table.period),
   uniqueAssignment: uniqueIndex('KpiAssignment_employeeId_templateId_period_key').on(table.employeeId, table.templateId, table.period),
 }));
 
@@ -261,6 +276,8 @@ export const kpiResults = pgTable('KpiResult', {
 }, (table) => ({
   employeeIdIdx: index('KpiResult_employeeId_idx').on(table.employeeId),
   periodIdx: index('KpiResult_period_idx').on(table.period),
+  employeePeriodIdx: index('KpiResult_employeeId_period_idx').on(table.employeeId, table.period),
+  approvalPeriodIdx: index('KpiResult_isApproved_period_idx').on(table.isApproved, table.period),
   uniqueResult: uniqueIndex('KpiResult_employeeId_itemId_period_key').on(table.employeeId, table.itemId, table.period),
 }));
 
@@ -279,6 +296,9 @@ export const auditLogs = pgTable('AuditLog', {
 }, (table) => ({
   userIdIdx: index('AuditLog_userId_idx').on(table.userId),
   entityIdx: index('AuditLog_entity_idx').on(table.entity),
+  actionIdx: index('AuditLog_action_idx').on(table.action),
+  entityCreatedAtIdx: index('AuditLog_entity_createdAt_idx').on(table.entity, table.createdAt),
+  userCreatedAtIdx: index('AuditLog_userId_createdAt_idx').on(table.userId, table.createdAt),
   createdAtIdx: index('AuditLog_createdAt_idx').on(table.createdAt),
 }));
 
@@ -293,8 +313,30 @@ export const notifications = pgTable('Notification', {
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
   userIdIdx: index('Notification_userId_idx').on(table.userId),
+  userReadCreatedAtIdx: index('Notification_userId_isRead_createdAt_idx').on(table.userId, table.isRead, table.createdAt),
+  userCreatedAtIdx: index('Notification_userId_createdAt_idx').on(table.userId, table.createdAt),
   isReadIdx: index('Notification_isRead_idx').on(table.isRead),
   createdAtIdx: index('Notification_createdAt_idx').on(table.createdAt),
+}));
+
+// Email Log table
+export const emailLogs = pgTable('EmailLog', {
+  id: text('id').primaryKey(),
+  template: text('template').notNull(),
+  recipient: text('recipient').notNull(),
+  subject: text('subject').notNull(),
+  provider: text('provider').default('resend').notNull(),
+  providerMessageId: text('providerMessageId'),
+  status: text('status').notNull(),
+  errorMessage: text('errorMessage'),
+  metadata: jsonb('metadata').$type<Record<string, unknown>>(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  templateCreatedAtIdx: index('EmailLog_template_createdAt_idx').on(table.template, table.createdAt),
+  recipientCreatedAtIdx: index('EmailLog_recipient_createdAt_idx').on(table.recipient, table.createdAt),
+  statusCreatedAtIdx: index('EmailLog_status_createdAt_idx').on(table.status, table.createdAt),
+  providerMessageIdIdx: index('EmailLog_providerMessageId_idx').on(table.providerMessageId),
 }));
 
 // Relations
@@ -468,7 +510,9 @@ export const payrollStructures = pgTable('PayrollStructure', {
   isActive: boolean('isActive').default(true).notNull(),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
-});
+}, (table) => ({
+  isActiveIdx: index('PayrollStructure_isActive_idx').on(table.isActive),
+}));
 
 // Payroll Components (Allowances, Deductions, Benefits)
 export const payrollComponents = pgTable('PayrollComponent', {
@@ -504,6 +548,8 @@ export const employeePayrolls = pgTable('EmployeePayroll', {
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
   employeeIdIdx: index('EmployeePayroll_employeeId_idx').on(table.employeeId),
+  structureIdIdx: index('EmployeePayroll_structureId_idx').on(table.structureId),
+  effectiveDateIdx: index('EmployeePayroll_effectiveDate_idx').on(table.effectiveDate),
   uniqueEmployeeActive: uniqueIndex('EmployeePayroll_employeeId_active_key').on(table.employeeId).where(sql`${table.endDate} IS NULL`),
 }));
 
@@ -529,6 +575,7 @@ export const payrollRuns = pgTable('PayrollRun', {
 }, (table) => ({
   periodIdx: index('PayrollRun_period_idx').on(table.period),
   statusIdx: index('PayrollRun_status_idx').on(table.status),
+  statusPeriodIdx: index('PayrollRun_status_period_idx').on(table.status, table.period),
   uniquePeriod: uniqueIndex('PayrollRun_period_key').on(table.period),
 }));
 
@@ -559,6 +606,7 @@ export const payrollItems = pgTable('PayrollItem', {
 }, (table) => ({
   runIdIdx: index('PayrollItem_runId_idx').on(table.runId),
   employeeIdIdx: index('PayrollItem_employeeId_idx').on(table.employeeId),
+  employeeRunIdx: index('PayrollItem_employeeId_runId_idx').on(table.employeeId, table.runId),
   uniqueRunEmployee: uniqueIndex('PayrollItem_runId_employeeId_key').on(table.runId, table.employeeId),
 }));
 

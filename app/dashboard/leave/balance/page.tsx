@@ -131,6 +131,26 @@ export default function LeaveBalancePage() {
         </div>
       </header>
 
+      <section className="sync-strip" aria-label="Alur data saldo cuti">
+        <span>Frontend</span><span aria-hidden="true">→</span><span>/api/leave/balance</span><span aria-hidden="true">→</span><span>Leave Balance Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
+      </section>
+
+      <section className="card" aria-labelledby="leave-balance-sync-title" style={{ padding: "16px", borderColor: "rgba(255,193,7,.42)" }}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">Ledger Cuti</p>
+            <h2 id="leave-balance-sync-title" className="text-lg font-bold">Entitlement, hold, approved, release</h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">Saldo cuti dihitung dari ledger backend. Pending menahan saldo, approval memakai saldo, rejection melepas saldo kembali.</p>
+          </div>
+          <span className="badge badge-warning">Ledger indexed</span>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="api-pill">API: /api/leave/balance</span>
+          <span className="api-pill">API: /api/leave/balance/history</span>
+          <span className="api-pill">DB: LeaveRequest_employeeId_status_startDate_endDate_idx</span>
+        </div>
+      </section>
+
       {/* Error Alert */}
       {error && (
         <div className="card" role="alert" style={{ padding: "16px", borderColor: "var(--danger)", display: "flex", gap: "12px", alignItems: "center" }}>

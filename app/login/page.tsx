@@ -279,7 +279,7 @@ export default function LoginPage() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="
                         absolute right-3 top-1/2 -translate-y-1/2
-                        p-2 rounded-lg
+                        flex h-11 w-11 items-center justify-center rounded-lg
                         text-[var(--text-muted)] hover:text-[var(--text-primary)]
                         hover:bg-[var(--bg-hover)]
                         transition-all duration-200

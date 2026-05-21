@@ -63,7 +63,10 @@ export default function UsersPage() {
       const formData = new FormData(e.currentTarget);
       const fullName = String(formData.get("fullName") || "").trim();
       const email = String(formData.get("email") || "").trim();
-      const password = String(formData.get("password") || "Password123!");
+      const password = String(formData.get("password") || "");
+      if (!password) {
+        throw new Error("Password awal wajib diisi dan tidak boleh memakai nilai bawaan.");
+      }
       const username = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_").slice(0, 24) || fullName.replace(/\s+/g, "_").toLowerCase();
       const response = await fetch("/api/auth/public-register", {
         method: "POST",
@@ -155,6 +158,26 @@ export default function UsersPage() {
         <p>Pantau user yang daftar sendiri, status aktivasi email, dan tempatkan role akses sesuai posisi kerja.</p>
       </div>
 
+      <section className="sync-strip" aria-label="Alur data user dan role">
+        <span>Frontend</span><span aria-hidden="true">→</span><span>/api/users</span><span aria-hidden="true">→</span><span>Auth/User Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
+      </section>
+
+      <section className="card" aria-labelledby="user-sync-title" style={{ borderColor: "rgba(255,193,7,.42)" }}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">Akses Produksi</p>
+            <h2 id="user-sync-title" className="text-lg font-bold">Aktivasi, deaktifasi, role aman</h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">Public register membuat Employee inactive. Superadmin review akun, aktif/nonaktifkan user, dan memilih hanya role Superadmin atau Karyawan.</p>
+          </div>
+          <span className="badge badge-success">2 role</span>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="api-pill">API: /api/users</span>
+          <span className="api-pill">API: /api/auth/profile</span>
+          <span className="api-pill">Allowed: SUPERADMIN · EMPLOYEE</span>
+        </div>
+      </section>
+
       <section className="grid grid-cols-2 gap-3">
         <div className="card">
           <p className="text-xs font-semibold text-[var(--text-secondary)]">Total User</p>
@@ -191,7 +214,8 @@ export default function UsersPage() {
             <h3 className="text-sm font-bold">Buat Pengguna Baru</h3>
             <input className="input" name="fullName" placeholder="Nama lengkap" required />
             <input className="input" name="email" type="email" placeholder="email@myprodusen.com" required />
-            <input className="input" name="password" type="password" placeholder="Password awal" minLength={8} defaultValue="Password123!" required />
+            <input className="input" name="password" type="password" placeholder="Password awal unik" minLength={8} autoComplete="new-password" required />
+            <p className="text-xs font-medium text-[var(--text-muted)]">Gunakan password awal unik, lalu minta user mengganti setelah login pertama.</p>
             <div className="flex justify-end gap-2">
               <button type="button" className="btn btn-secondary" onClick={() => setShowCreateUser(false)}>Batal</button>
               <button type="submit" className="btn btn-primary" disabled={isCreatingUser}>{isCreatingUser ? "Menyimpan..." : "Buat Pengguna"}</button>

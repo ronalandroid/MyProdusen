@@ -36,6 +36,15 @@ export default function MyPayrollPage() {
         <ArrowLeft size={24} aria-hidden="true" />
         <span id="my-payroll-title" className="text-xl font-bold">Slip Gaji Saya</span>
       </button>
+      <section className="sync-strip" aria-label="Alur data slip gaji pribadi">
+        <span>Frontend</span><span aria-hidden="true">→</span><span>/api/payroll/me</span><span aria-hidden="true">→</span><span>Payroll Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
+      </section>
+      <section className="card" aria-labelledby="my-payroll-sync-title" style={{ borderColor: "rgba(59,130,246,.32)" }}>
+        <p className="eyebrow">Private Payslip</p>
+        <h2 id="my-payroll-sync-title" className="text-lg font-bold">Download aman dan ter-audit</h2>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">Payslip hanya untuk pemilik akun atau Superadmin. Response memakai no-store dan `nosniff`.</p>
+        <div className="mt-3 flex flex-wrap gap-2"><span className="api-pill">API: /api/payroll/me</span><span className="api-pill">API: /api/payroll/payslips/:itemId</span></div>
+      </section>
       {error && <section className="alert-card" role="alert"><strong>Gagal</strong><p>{error}</p></section>}
       {items.length === 0 ? (
         <section className="card" role="status">

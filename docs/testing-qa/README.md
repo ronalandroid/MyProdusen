@@ -150,3 +150,132 @@ No-Go if any critical auth, RBAC, migration, payroll privacy, private upload, or
 - Superadmin Users page may link to attendance/selfie history, but protected selfie content still requires endpoint authorization and fixture data.
 - TestSprite overtime setup: in local `TESTSPRITE_COMPAT_RESPONSE=true`, `/api/overtime/rates?isActive=true` may create a default staging rate if master data is empty; production should seed real rates explicitly.
 - Attendance report selfie verification should click `Buka selfie masuk` / `Buka selfie pulang`; endpoint still enforces auth, ownership/RBAC, private storage, and `no-store`.
+
+## UI Sync Verification — 2026-05-21
+
+Implemented Stitch-inspired dashboard sync indicators and route-mapped cards.
+
+Focused checks:
+
+- `npm run lint` passed after dashboard UI changes.
+- Employee dashboard cards point to existing protected routes and APIs without adding frontend-only authorization.
+- Superadmin dashboard panels annotate existing API/service/data flow responsibilities.
+- No database schema or migration changes were introduced.
+
+Full release checks still required before production merge:
+
+```bash
+npm run test
+npm run build
+npm run release:check
+```
+
+## Feature Page UI Sync Verification — 2026-05-21
+
+Stitch sync sections were added to attendance, leave, KPI, and reports pages.
+
+Focused manual checks:
+
+- `/dashboard/attendance` shows backend validation context before selfie/GPS actions.
+- `/dashboard/leave` shows workflow context and role-specific approval mode label.
+- `/dashboard/kpi` shows read-only/approval context with route badges.
+- `/dashboard/reports` shows protected export context and report endpoint badges.
+
+Automated checks required after this change:
+
+```bash
+npm run lint
+npm run test
+npm run build
+npm run release:check
+```
+
+## Core HR Sync Verification — 2026-05-21
+
+Wave 1 core HR sync covers users, employees/NIP, work locations, and shifts.
+
+Checks to verify:
+
+- Role choices in production UI remain limited to `Superadmin` and `Karyawan`.
+- Employee page uses `/api/employees` and service-generated NIP; no manual NIP input is exposed.
+- User page updates activation/role through `/api/users`.
+- Location page uses `/api/work-locations` and explains backend geo-fence ownership.
+- Shift page uses `/api/shifts` and explains attendance dependency.
+- Migration `0014_core_hr_lookup_indexes.sql` is additive and non-destructive.
+
+## Attendance Wave 2 Sync Verification — 2026-05-21
+
+Wave 2 attendance sync covers check-in/out, geo-fence review, protected selfie access, and report indexes.
+
+Checks to verify:
+
+- `/dashboard/attendance` displays backend validation context and still submits through `/api/attendance/check-in` and `/api/attendance/check-out`.
+- `/dashboard/attendance/exceptions` displays review sync context and uses `/api/attendance/exceptions/:id/review`.
+- `/dashboard/reports/attendance` displays report/index context and uses protected selfie links.
+- `lib/attendance/selfie-access.ts` documents only production roles and protected access.
+- Migration `0015_attendance_sync_indexes.sql` is additive and non-destructive.
+
+## Leave + KPI Wave 3 Sync Verification — 2026-05-21
+
+Wave 3 covers leave balance/ledger, leave approval queues, KPI templates, KPI assignments, KPI results, and approval locks.
+
+Checks to verify:
+
+- `/dashboard/leave` uses `/api/leave` and approval/rejection endpoints; rejection reason remains required.
+- `/dashboard/leave/balance` uses `/api/leave/balance` and `/api/leave/balance/history`.
+- `/dashboard/kpi` uses `/api/kpi/results` and employee isolation remains enforced.
+- `/dashboard/kpi/template` uses template, assignment, result, and approval endpoints.
+- Approved KPI results cannot be edited via service/API.
+- Migration `0016_leave_kpi_sync_indexes.sql` is additive and non-destructive.
+
+## Payroll + Reports Wave 4 Sync Verification — 2026-05-21
+
+Wave 4 covers payroll run, structures, employee payslips, exports, PDF reports, security headers, and indexes.
+
+Checks to verify:
+
+- `/dashboard/payroll` shows Superadmin payroll sync and Employee private payroll sync based on role.
+- `/dashboard/payroll/me` reads only `/api/payroll/me` and downloads via protected payslip endpoint.
+- `/dashboard/payroll/structures` uses `/api/payroll/structures` and active structure selectors.
+- `/dashboard/reports/pdf` exports via `/api/reports/pdf` with no-store response.
+- Payslip and payroll CSV response headers include private no-store and nosniff.
+- Migration `0017_payroll_reports_sync_indexes.sql` is additive and non-destructive.
+
+## Notifications + Audit Wave 5 Sync Verification — 2026-05-21
+
+Wave 5 covers notifications, realtime read states, audit log access, and QA hardening.
+
+Checks to verify:
+
+- `/dashboard/notifications` uses `/api/notifications`, mark-all-read, per-item read, and delete routes.
+- Notification API responses are scoped to session user and no-store.
+- Realtime status displays active/standby and events target current user.
+- `/dashboard/audit` uses `/api/audit` with no-store fetch and remains Superadmin-only.
+- Migration `0018_notifications_audit_sync_indexes.sql` is additive and non-destructive.
+
+## Email Delivery Verification — 2026-05-21
+
+Email system checks cover professional Resend readiness:
+
+- `tests/email/resend.test.ts` verifies Resend payloads, production config enforcement, and branded templates.
+- `tests/email/email-logs.test.ts` verifies `EmailLog` entries for sent and failed deliveries.
+- `tests/email/user-email-events.test.ts` verifies account-approved and role-changed event selection.
+- `npm run db:deploy` verifies `0019_email_delivery_logs.sql` applies through the production migration runner.
+
+## Production Blocker Verification — 2026-05-21
+
+- `tests/security/production-blockers.test.ts` prevents default password fallbacks in user creation and employee API compatibility paths.
+- The same guard verifies `/api/sync/queue` does not return synthetic attendance/leave success responses.
+- `.env.example` now includes both Superadmin and Employee E2E credentials for authenticated staging verification.
+- `scripts/check-production-env.mjs` now blocks TestSprite/E2E compatibility flags in production, including `TESTSPRITE_COMPAT_RESPONSE=true`.
+
+## Authenticated E2E Completion — 2026-05-21
+
+Local production-like E2E now uses generated ignored `.env` credentials for one Superadmin and one Employee account. For local HTTP standalone smoke, run with `TESTSPRITE_DISABLE_SECURE_COOKIES=true` only in the command environment; production env checks still require this flag to be unset or `false`.
+
+Verified commands:
+
+```bash
+set -a; source .env; set +a; TESTSPRITE_DISABLE_SECURE_COOKIES=true npm run e2e:staging -- --project desktop-1440
+set -a; source .env; set +a; TESTSPRITE_DISABLE_SECURE_COOKIES=true E2E_ALLOW_MUTATION=true npm run e2e:full-staging -- --project desktop-1440
+```

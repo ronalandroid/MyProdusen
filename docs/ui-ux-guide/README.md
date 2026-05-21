@@ -461,3 +461,35 @@ modals are scrollable on small devices.
 - Icon-only or close buttons need Indonesian `aria-label` and minimum 44px hit area.
 - Decorative input icons must be `aria-hidden`; field errors must be connected through `aria-describedby` / `aria-invalid` where component pattern supports it.
 - Status colors used as text must meet WCAG contrast; prefer `--success-text`, `--danger-text`, `--warning-text`, and `--info-text` on light backgrounds.
+
+## Stitch UI Sync Update — 2026-05-21
+
+Dashboard UI now includes Stitch-aligned frontend/backend sync patterns for the MyProdusen role model:
+
+- Employee beranda shows role-safe identity, NIP, attendance proof requirements, API route labels, and a visible `Frontend -> API -> Service -> Drizzle -> PostgreSQL` sync strip.
+- Employee feature cards map personal modules to protected backend routes: attendance, leave balance, KPI results, payroll me, notifications, and sync status.
+- Superadmin dashboard shows a production control center for employee/NIP/user review, attendance/geofence, leave/KPI approvals, reports/export, audit logs, and safe version metadata.
+- All added cards use existing brand tokens: `#FFC107`, warm white surfaces, rounded cards, semantic badges, 44px minimum action height, and Indonesian labels.
+- Legacy roles remain hidden from production UI. User-facing role labels stay limited to `Superadmin` and `Karyawan`.
+
+## Feature Page Stitch Sync — 2026-05-21
+
+Feature pages now use the same Stitch-aligned sync language as the dashboard:
+
+- `/dashboard/attendance` explains GPS, geo-fence, selfie realtime, no-store, and protected selfie endpoints before the attendance action flow.
+- `/dashboard/leave` explains pending request workflow, balance read-back, overlap rejection, approval/rejection endpoints, rejection reason, and audit requirement.
+- `/dashboard/kpi` explains employee read-only KPI access, Superadmin approval, template weight `100`, approved result lock, and audit reason rules.
+- `/dashboard/reports` explains protected exports, filters, permissions, no-store PDF/report access, and audit logging.
+
+These additions are informational UI sections only; backend remains source of truth for auth, RBAC, validation, attendance, KPI, leave, exports, and audit logs.
+
+## Core HR Stitch Sync — 2026-05-21
+
+Core HR pages now follow the same Stitch-aligned sync pattern:
+
+- `/dashboard/employees` shows NIP generation, user-account linkage, default shift/location, and database index context.
+- `/dashboard/users` shows activation/deactivation and production-safe role rules. UI remains limited to `Superadmin` and `Karyawan`.
+- `/dashboard/locations` shows geo-fence master-data ownership, radius constraints, and backend-source-of-truth rules.
+- `/dashboard/shifts` shows active shift ownership and attendance dependency.
+
+These sections do not create frontend-only authorization. Backend APIs and services remain the source of truth.

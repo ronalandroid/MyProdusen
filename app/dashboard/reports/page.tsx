@@ -120,6 +120,27 @@ export default function ReportsPage() {
         </button>
       </div>
 
+      <section className="sync-strip" aria-label="Alur data laporan">
+        <span>Frontend</span><span aria-hidden="true">→</span><span>API</span><span aria-hidden="true">→</span><span>Report Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
+      </section>
+
+      <section className="card" aria-labelledby="report-sync-title" style={{ padding: "16px", borderColor: "rgba(59,130,246,.32)" }}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">Export Aman</p>
+            <h2 id="report-sync-title" className="text-lg font-bold">Filter, permission, audit log</h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">Laporan mengikuti filter dan role. Export PDF/CSV wajib melalui endpoint backend, no-store, dan tercatat audit.</p>
+          </div>
+          <span className="badge badge-info">Protected</span>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="api-pill">/api/reports/attendance</span>
+          <span className="api-pill">/api/reports/leave</span>
+          <span className="api-pill">/api/reports/kpi</span>
+          <span className="api-pill">/api/reports/pdf</span>
+        </div>
+      </section>
+
       {/* Info Banner */}
       <div style={{ 
         backgroundColor: "var(--info-bg)", 

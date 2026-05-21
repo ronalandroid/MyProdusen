@@ -34,6 +34,12 @@ function run(env: Record<string, string | undefined>) {
     'RESEND_API_KEY',
     'RESEND_FROM_EMAIL',
     'SUPERADMIN_PASSWORD',
+    'TESTSPRITE_COMPAT_RESPONSE',
+    'TESTSPRITE_DISABLE_RATE_LIMITS',
+    'E2E_DISABLE_RATE_LIMITS',
+    'TESTSPRITE_DISABLE_CSRF_ORIGIN',
+    'E2E_DISABLE_CSRF_ORIGIN',
+    'TESTSPRITE_DISABLE_SECURE_COOKIES',
   ];
   const cleaned: NodeJS.ProcessEnv = { PATH: process.env.PATH };
   for (const key of Object.keys(process.env)) {
@@ -113,5 +119,11 @@ describe('check-production-env script', () => {
     const result = run({ ...VALID_ENV, RESEND_API_KEY: undefined });
     expect(result.status).toBe(1);
     expect(result.stdout + result.stderr).toContain('RESEND_API_KEY');
+  });
+
+  it('fails when TestSprite compatibility is enabled in production', () => {
+    const result = run({ ...VALID_ENV, TESTSPRITE_COMPAT_RESPONSE: 'true' });
+    expect(result.status).toBe(1);
+    expect(result.stdout + result.stderr).toContain('TESTSPRITE_COMPAT_RESPONSE');
   });
 });

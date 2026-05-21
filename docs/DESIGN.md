@@ -695,6 +695,9 @@ Daftar `code` baku ada di `docs/prd/README.md` §5.6 (mis.
   Badge kanan = "by TBM Group", bukan "HRIS".
 - **Aturan copy.** Bahasa Indonesia, satu CTA per email, tidak ada
   bahasa marketing, footer berisi disclaimer internal.
+- **Delivery log.** Semua percobaan kirim Resend dicatat di `EmailLog`
+  dengan `template`, `recipient`, `subject`, `providerMessageId`, `status`,
+  error aman, metadata non-rahasia, dan timestamp untuk audit/retry manual.
 
 ## 13. Cache, rate limit, observability
 
@@ -785,7 +788,7 @@ Strategi:
   `docs/references/email-style-guide/README.md` (saat ini disatukan
   dalam template `register`).
 - Tambahkan template **Waiting Assignment** dan **KPI Production**.
-- Tabel `email_logs` untuk audit pengiriman email + retry pipeline.
+- Retry pipeline terjadwal untuk email gagal.
 - Period selector untuk halaman KPI (lihat KPI bulan lalu).
 - Server-side pagination di halaman Cuti, KPI, dan Approval Center.
 - Migrasi storage selfie ke S3-compatible saat volume bertumbuh.

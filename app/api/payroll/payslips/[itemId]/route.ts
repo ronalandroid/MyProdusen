@@ -42,6 +42,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'Content-Disposition': `attachment; filename="payslip-${data.employee.nip}-${data.run.period}.txt"`,
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (error: any) {

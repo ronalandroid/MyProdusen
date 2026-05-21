@@ -166,3 +166,51 @@ employee module.
 - `/api/version` is public but must only expose safe operational metadata: app name, status, node env, app version, git commit SHA, and build time.
 - Never expose secrets, database URLs, email provider keys, passwords, upload paths, selfie paths, or private file names from health/version endpoints.
 - Use `/api/health` for health status and `/api/version` for deploy traceability after Coolify redeploy.
+
+## Attendance Sync Security — 2026-05-21
+
+Attendance Wave 2 keeps backend authority for attendance decisions:
+
+- Frontend GPS/selfie status is UX only. Backend validates active employee, default location, active location, default shift, active shift, GPS accuracy, timestamp freshness, Haversine distance, selfie file type/size/signature, and duplicate daily check-in/out.
+- Protected selfie endpoints remain authenticated and use ownership/RBAC checks. Employee can access only own selfie, Superadmin can access protected operational selfies.
+- Selfie responses use `Cache-Control: no-store, private` and `X-Content-Type-Options: nosniff`.
+- Non-owner selfie views and invalid selfie path attempts are audit logged.
+- Attendance exception review requires backend endpoint processing and audit logging; rejected review needs a note in UI.
+
+## Leave + KPI Sync Security — 2026-05-21
+
+- Leave approval/rejection remains backend-authorized. Rejection requires a human-readable reason and audit log.
+- Leave overlap and balance holds are checked server-side; frontend only shows status and guidance.
+- KPI result update now rejects edits once a result is approved. Approved KPI changes require a future explicit authorized override flow with reason and audit log.
+- KPI template and assignment actions remain Superadmin-only.
+
+## Payroll + Reports Sync Security — 2026-05-21
+
+- Employee payroll reads remain limited to `/api/payroll/me` and the employee attached to the authenticated session.
+- Payslip download checks ownership for Employee and privileged access for Superadmin.
+- Payslip and payroll export responses now send `Cache-Control: no-store, no-cache, must-revalidate, private` and `X-Content-Type-Options: nosniff`.
+- Payroll CSV export and payslip download are audit logged.
+- PDF reports remain Superadmin-only, private/no-store, and do not export private selfie files.
+
+## Notifications + Audit Sync Security — 2026-05-21
+
+- Notification list, read, mark-all-read, and delete actions are scoped to the authenticated user ID.
+- Realtime events are filtered by target user/scope before delivery.
+- Notification list responses now use `Cache-Control: no-store, private`.
+- Audit log API remains Superadmin-only and now returns `Cache-Control: no-store, private`.
+- Audit UI uses no-store fetch and server-side pagination/search.
+
+## Email Delivery Security — 2026-05-21
+
+- Resend remains the only transactional email provider.
+- Production email requires `RESEND_API_KEY` and `RESEND_FROM_EMAIL`; missing config fails loudly.
+- Email delivery attempts are logged in `EmailLog` with template, recipient, subject, status, provider message id, sanitized error, and non-secret metadata.
+- Tokens, API keys, raw passwords, cookies, and private URLs must not be stored in email metadata.
+- Provider API errors are logged server-side only and returned to users through existing safe Indonesian API errors.
+
+## Production Blocker Hardening — 2026-05-21
+
+- User creation UI no longer ships a default password value; Superadmin must enter a unique initial password.
+- Employee API compatibility payload normalization no longer falls back to `Password123!`; missing password fails validation.
+- `/api/sync/queue` no longer returns synthetic success records for attendance or leave. Offline queue operations fail closed until a real service-backed implementation exists.
+- Production env check now fails if TestSprite/E2E compatibility bypass flags are enabled, including `TESTSPRITE_COMPAT_RESPONSE`.

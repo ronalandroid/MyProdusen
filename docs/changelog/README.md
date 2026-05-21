@@ -70,3 +70,74 @@
 - Added TestSprite/local fallback active overtime rate creation when no rates exist, gated by `TESTSPRITE_COMPAT_RESPONSE=true`.
 - Added protected selfie links in attendance reports for rows with selfie metadata.
 - Added auditable Superadmin override reason for leave rejection UI requests.
+
+## 2026-05-21 — Stitch Dashboard UI Sync
+
+- Added Stitch-aligned Employee dashboard sync strip, NIP/role API badges, attendance proof card, and personal feature cards for leave, KPI, payroll, notifications, and offline sync.
+- Added Superadmin dashboard control-center panels mapping UI modules to employees/users, attendance exceptions, leave/KPI approvals, reports, audit logs, and dashboard stats APIs.
+- Added shared `sync-strip`, `api-pill`, and attendance-card styling using existing MyProdusen brand tokens.
+
+## 2026-05-21 — Feature Page Stitch UI Sync
+
+- Added Stitch sync strips and route badges to attendance, leave, KPI, and reports pages.
+- Clarified backend-source-of-truth rules in UI copy for GPS/geofence/selfie, leave overlap/approval, KPI approval locks, and protected report exports.
+
+## 2026-05-21 — Core HR Wave 1 Sync
+
+- Added additive Core HR lookup indexes for employee default shift/location, work-location name, and shift active/name queries.
+- Added Stitch sync strips and route/database badges to employees, users, work locations, and shifts pages.
+- Documented Wave 1 Core HR sync behavior, role lock, and migration safety.
+
+## 2026-05-21 — Attendance Wave 2 Sync
+
+- Aligned Drizzle attendance schema with report/history indexes and added additive indexes for `Attendance.shiftId` and `AttendanceException(status, createdAt)`.
+- Added Stitch sync sections to attendance exception review and attendance report screens.
+- Updated protected selfie access documentation to match the two-role production model.
+
+## 2026-05-21 — Leave + KPI Wave 3 Sync
+
+- Added additive Leave/KPI indexes for approval queues, overlap checks, active templates, assignment review, employee-period summaries, and approval-status dashboards.
+- Added backend guard preventing edits to approved KPI results through submit/update paths.
+- Added Stitch sync sections to leave balance and KPI template/assignment pages.
+
+## 2026-05-21 — Payroll + Reports Wave 4 Sync
+
+- Added additive payroll/report indexes for active salary templates, payroll assignments, run status/period filters, and employee payslip lookups.
+- Added no-store/nosniff headers to protected payslip downloads and payroll CSV exports.
+- Added Stitch sync sections to payroll, personal payslip, payroll structures, and PDF report pages.
+
+## 2026-05-21 — Notifications + Audit Wave 5 Sync
+
+- Added additive indexes for notification unread/history feeds and audit action/entity/user timelines.
+- Added no-store headers to notification list and audit log API responses.
+- Added Stitch sync sections to notifications and audit log pages.
+
+## 2026-05-21 — Professional Email Delivery Logs
+
+- Added `EmailLog` schema and migration `0019_email_delivery_logs.sql` for Resend delivery auditability.
+- Added delivery logging for sent, failed, and skipped email attempts without storing secrets or tokens.
+- Updated migration runner to load local `.env` while preserving production process environment behavior.
+- Added focused tests for email delivery logging.
+
+## 2026-05-21 — Production Blocker Hardening
+
+- Removed default `Password123!` fallback from user creation UI and employee API normalization.
+- Replaced mock offline sync queue success responses with fail-closed production messaging.
+- Added regression tests for password and sync production blockers.
+- Added employee E2E credential placeholders to `.env.example`.
+
+## 2026-05-21 — Production Release Gate Docs
+
+- Updated deployment and final checklist docs to require `npm run release:env` and `npm run release:check:full` before promotion.
+
+## 2026-05-21 — Authenticated E2E Risk Closure
+
+- Added local production-like E2E credentials in ignored `.env` and seeded Superadmin/Employee accounts in the local database.
+- Fixed standalone build asset copying so `npm run start:prod` serves `_next/static` and `public` assets correctly.
+- Forced Vitest setup to use `NODE_ENV=test` so production-like local `.env` values do not change unit-test runtime behavior.
+
+## 2026-05-21 — Final Coolify Go-Live Runbook
+
+- Added Coolify release/start command guidance for `release:env`, `db:deploy`, and `start:prod`.
+- Documented standalone static asset behavior and local-only secure-cookie E2E override.
+- Added post-bootstrap cleanup and go-live command order to deployment/operations docs.

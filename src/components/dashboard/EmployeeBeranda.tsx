@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { CheckCircle2, FileWarning, MapPin, ArrowRight, Clock, Calendar, Stethoscope, Banknote, TimerReset } from "lucide-react";
+import { Bell, Camera, CheckCircle2, FileWarning, LockKeyhole, MapPin, ArrowRight, Clock, Calendar, Stethoscope, Banknote, TimerReset } from "lucide-react";
 import { getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
 
 const WorkLocationMap = dynamic(
@@ -184,6 +184,14 @@ export default function EmployeeBeranda({ profile }: Props) {
   const greetingName = (profile?.employee?.fullName || profile?.username || "Karyawan").split(" ")[0];
   const initials = (profile?.employee?.fullName || profile?.username || "U").charAt(0).toUpperCase();
   const roleLabel = profile?.role === "SUPERADMIN" ? "Super Admin" : "Karyawan";
+  const nip = profile?.employee?.nip || "NIP belum tersedia";
+  const todayRecord = history[0];
+  const attendanceCta = todayRecord?.checkInTime && !todayRecord?.checkOutTime ? "Absen Keluar" : todayRecord?.checkOutTime ? "Absensi Selesai" : "Absen Masuk";
+  const attendanceHint = todayRecord?.checkOutTime
+    ? "Satu check-in dan check-out hari ini sudah tercatat."
+    : todayRecord?.checkInTime
+      ? "Selfie pulang, GPS, dan radius lokasi tetap divalidasi backend."
+      : "GPS, akurasi, radius, shift aktif, dan selfie realtime wajib valid.";
 
   return (
     <div className="flex flex-col gap-5">
@@ -216,8 +224,12 @@ export default function EmployeeBeranda({ profile }: Props) {
             Halo, {greetingName}
           </h2>
           <p className="text-xs sm:text-sm" style={{ color: "rgba(17,17,17,0.85)" }}>
-            Selamat bekerja hari ini.
+            NIP: {nip}
           </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span className="api-pill bg-white/65 text-black">Role: Karyawan</span>
+            <span className="api-pill bg-white/65 text-black">API: /api/auth/profile</span>
+          </div>
         </div>
       </section>
 
@@ -226,6 +238,31 @@ export default function EmployeeBeranda({ profile }: Props) {
           {loadError}
         </div>
       )}
+
+      <section className="sync-strip" aria-label="Alur data karyawan">
+        <span>Frontend</span><ArrowRight size={14} aria-hidden="true" /><span>API</span><ArrowRight size={14} aria-hidden="true" /><span>Service</span><ArrowRight size={14} aria-hidden="true" /><span>Drizzle</span><ArrowRight size={14} aria-hidden="true" /><span>PostgreSQL</span>
+      </section>
+
+      <section className="card stitch-attendance-card" aria-labelledby="employee-attendance-sync-title">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">Absensi Hari Ini</p>
+            <h2 id="employee-attendance-sync-title" className="text-xl sm:text-2xl">{attendanceCta}</h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">{attendanceHint}</p>
+          </div>
+          <span className="h-11 w-11 rounded-2xl bg-white/80 flex items-center justify-center text-[var(--primary-dark)]"><Camera size={22} aria-hidden="true" /></span>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <SyncMini label="Masuk" value={formatTime(todayRecord?.checkInTime)} tone="success" />
+          <SyncMini label="Pulang" value={formatTime(todayRecord?.checkOutTime)} tone={todayRecord?.checkOutTime ? "success" : "warning"} />
+          <SyncMini label="GPS" value={workLocation?.radius ? `Radius ${workLocation.radius}m` : "Perlu lokasi"} tone={workLocation?.radius ? "info" : "warning"} />
+          <SyncMini label="Selfie" value="Realtime saja" tone="primary" />
+        </div>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Link href="/dashboard/attendance" className="btn btn-primary min-h-[44px] flex-1">Buka Absensi</Link>
+          <span className="api-pill">API: /api/attendance/today · /check-in · /check-out</span>
+        </div>
+      </section>
 
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-label="Aksi karyawan">
         <Link href="/dashboard/payroll" className="card flex min-h-[88px] items-center justify-between gap-3 p-4">
@@ -255,6 +292,13 @@ export default function EmployeeBeranda({ profile }: Props) {
           <MetricCard tone="primary" icon={<Calendar size={18} aria-hidden="true" />} label="Cuti" value={monthCounts.cuti} />
           <MetricCard tone="danger" icon={<Stethoscope size={18} aria-hidden="true" />} label="Sakit" value={monthCounts.sakit} />
         </div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2" aria-label="Fitur pribadi tersinkron">
+        <FeatureSyncCard icon={<Calendar size={20} />} title="Cuti, Izin, Sakit" description="Saldo, overlap, status pending/disetujui/ditolak, dan alasan penolakan diproses server-side." href="/dashboard/leave" api="/api/leave · /api/leave/balance" tone="warning" />
+        <FeatureSyncCard icon={<CheckCircle2 size={20} />} title="KPI Pribadi" description="Karyawan hanya melihat KPI sendiri. Skor read-only dan approval tidak bisa diedit sendiri." href="/dashboard/kpi" api="/api/kpi/results" tone="success" />
+        <FeatureSyncCard icon={<LockKeyhole size={20} />} title="Payroll Pribadi" description="Slip gaji privat, tanpa URL publik. Akses lewat endpoint terproteksi dan no-store." href="/dashboard/payroll/me" api="/api/payroll/me" tone="info" />
+        <FeatureSyncCard icon={<Bell size={20} />} title="Notifikasi & Sinkron" description="Notifikasi, mark-all-read, antrean offline, dan konflik tetap balik ke backend sebagai sumber kebenaran." href="/dashboard/notifications" api="/api/notifications · /api/sync/status" tone="primary" />
       </section>
 
       {/* 7-day attendance bar chart */}
@@ -389,5 +433,32 @@ function MetricCard({ tone, icon, label, value }: MetricCardProps) {
         <strong className="block text-xl sm:text-2xl text-[var(--text-primary)]">{value}</strong>
       </div>
     </article>
+  );
+}
+
+function SyncMini({ label, value, tone }: { label: string; value: string; tone: "success" | "warning" | "info" | "primary" }) {
+  const toneClass = tone === "success" ? "badge-success" : tone === "warning" ? "badge-warning" : tone === "info" ? "badge-info" : "badge-primary";
+  return (
+    <div className="rounded-2xl border border-[var(--border-color)] bg-white/75 p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">{label}</p>
+      <span className={`badge ${toneClass} mt-2 inline-flex`}>{value}</span>
+    </div>
+  );
+}
+
+function FeatureSyncCard({ icon, title, description, href, api, tone }: { icon: React.ReactNode; title: string; description: string; href: string; api: string; tone: "success" | "warning" | "info" | "primary" }) {
+  const toneClass = tone === "success" ? "badge-success" : tone === "warning" ? "badge-warning" : tone === "info" ? "badge-info" : "badge-primary";
+  return (
+    <Link href={href} className="card group flex min-h-[156px] flex-col gap-3 p-4 transition-transform hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <span className={`badge ${toneClass} h-10 w-10 justify-center rounded-2xl p-0`} aria-hidden="true">{icon}</span>
+        <ArrowRight size={18} className="text-[var(--text-muted)] transition-transform group-hover:translate-x-1" aria-hidden="true" />
+      </div>
+      <div>
+        <h3 className="text-base font-bold text-[var(--text-primary)]">{title}</h3>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">{description}</p>
+      </div>
+      <span className="api-pill mt-auto w-fit">API: {api}</span>
+    </Link>
   );
 }

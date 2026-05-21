@@ -75,6 +75,17 @@ export default function PdfReportsPage() {
         <ShieldCheck className="text-white" size={42} aria-hidden="true" />
       </section>
 
+      <section className="sync-strip" aria-label="Alur data laporan PDF">
+        <span>Frontend</span><span aria-hidden="true">→</span><span>/api/reports/pdf</span><span aria-hidden="true">→</span><span>Report Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
+      </section>
+
+      <section className="card" aria-labelledby="pdf-report-sync-title" style={{ borderColor: "rgba(59,130,246,.32)" }}>
+        <p className="eyebrow">PDF Export</p>
+        <h2 id="pdf-report-sync-title" className="text-lg font-bold">Filter, permission, no-store, audit</h2>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">PDF dibuat server-side dari data database nyata. Export wajib Superadmin, tidak menyertakan selfie, response private no-store, dan audit log tercatat.</p>
+        <div className="mt-3 flex flex-wrap gap-2"><span className="api-pill">API: /api/reports/pdf</span><span className="api-pill">Cache-Control: no-store</span><span className="api-pill">Audit: EXPORT</span></div>
+      </section>
+
       {error && <section className="alert-card" role="alert"><strong>Download gagal</strong><p>{error}</p></section>}
       {message && <section className="card border-[var(--success)] text-[var(--success)]" role="status"><strong>Download PDF berhasil</strong><p>{message}</p></section>}
 

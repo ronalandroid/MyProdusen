@@ -118,6 +118,19 @@ if (ENV.DATABASE_URL && /:postgres(@|:postgres@)/.test(ENV.DATABASE_URL)) {
   warnings.push('DATABASE_URL: looks like the default postgres user/password — confirm this is intentional');
 }
 
+for (const flag of [
+  'TESTSPRITE_COMPAT_RESPONSE',
+  'TESTSPRITE_DISABLE_RATE_LIMITS',
+  'E2E_DISABLE_RATE_LIMITS',
+  'TESTSPRITE_DISABLE_CSRF_ORIGIN',
+  'E2E_DISABLE_CSRF_ORIGIN',
+  'TESTSPRITE_DISABLE_SECURE_COOKIES',
+]) {
+  if (String(ENV[flag] || '').toLowerCase() === 'true') {
+    errors.push(`${flag}: must not be true in production`);
+  }
+}
+
 // ---------------- Output -----------------------------------------------------
 
 const summary = (label, lines) => {

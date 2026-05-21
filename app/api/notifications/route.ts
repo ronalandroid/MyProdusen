@@ -20,6 +20,7 @@ export const GET = withApiHandler(async (request: NextRequest) => {
   const result = paginated(rows, total, pagination);
   const response = successResponse(result.items);
   response.headers.set('X-Pagination', JSON.stringify(result.pagination));
+  response.headers.set('Cache-Control', 'no-store, private');
 
   return response;
 });

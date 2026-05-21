@@ -311,6 +311,10 @@ export class KpiService {
       .limit(1);
 
     if (existing) {
+      if (existing.isApproved) {
+        throw new Error('Hasil KPI sudah disetujui dan tidak dapat diubah tanpa alasan otorisasi');
+      }
+
       // Update existing
       const [result] = await db
         .update(kpiResults)
@@ -412,6 +416,10 @@ export class KpiService {
       throw new Error('Hasil KPI tidak ditemukan');
     }
 
+    if (existing.isApproved) {
+      throw new Error('Hasil KPI sudah disetujui dan tidak dapat diubah tanpa alasan otorisasi');
+    }
+
     let score = existing.score;
 
     // Recalculate score if actualValue changed
@@ -448,6 +456,20 @@ export class KpiService {
   }
 
   async approveResult(id: string, approvedBy: string) {
+    const [existing] = await db
+      .select()
+      .from(kpiResults)
+      .where(eq(kpiResults.id, id))
+      .limit(1);
+
+    if (!existing) {
+      throw new Error('Hasil KPI tidak ditemukan');
+    }
+
+    if (existing.isApproved) {
+      throw new Error('Hasil KPI sudah disetujui');
+    }
+
     const [result] = await db
       .update(kpiResults)
       .set({

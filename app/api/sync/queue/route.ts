@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     for (const op of operations) {
       try {
-        const result = await processSyncOperation(op, user.userId);
+        const result = await processSyncOperation(op);
         results.push({
           clientId: op.clientId,
           success: true,
@@ -55,42 +55,15 @@ export async function POST(req: NextRequest) {
 /**
  * Process a single sync operation
  */
-async function processSyncOperation(operation: any, userId: string) {
-  const { entity, operation: op, data, clientId } = operation;
+async function processSyncOperation(operation: any) {
+  const { entity } = operation;
 
-  // Route to appropriate handler based on entity type
   switch (entity) {
     case 'attendance':
-      return await syncAttendance(op, data, userId);
-    
     case 'leave':
-      return await syncLeave(op, data, userId);
-    
+      throw new Error('Offline sync queue belum aktif di production. Gunakan halaman fitur online agar data tersimpan langsung ke server.');
+
     default:
       throw new Error(`Unknown entity type: ${entity}`);
   }
-}
-
-/**
- * Sync attendance operation
- */
-async function syncAttendance(operation: string, data: any, userId: string) {
-  // This would call the actual attendance service
-  // For now, return a mock response
-  return {
-    id: `att_${Date.now()}`,
-    synced: true
-  };
-}
-
-/**
- * Sync leave operation
- */
-async function syncLeave(operation: string, data: any, userId: string) {
-  // This would call the actual leave service
-  // For now, return a mock response
-  return {
-    id: `leave_${Date.now()}`,
-    synced: true
-  };
 }

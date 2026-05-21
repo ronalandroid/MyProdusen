@@ -74,6 +74,17 @@ Rules:
 - Smoke tests passed.
 - Owner/HR/technical PIC approve go-live.
 
+## Go-Live Command Order
+
+1. Run `npm run release:env` in Coolify shell.
+2. Run `npm run db:deploy`.
+3. Run `npm run start:prod` or let Coolify start the configured process.
+4. Verify `/api/health` and `/api/version`.
+5. Run `BASE_URL=https://myprodusen.online npm run verify:live-routes`.
+6. Run authenticated smoke with dedicated `E2E_SUPERADMIN_*` and `E2E_EMPLOYEE_*` staging-safe accounts.
+
+Do not proceed if `release:env` reports errors or any TestSprite/E2E bypass flag is `true`.
+
 ## Seed Recovery
 
 - Use `npm run db:seed` only for local or approved staging bootstrap.

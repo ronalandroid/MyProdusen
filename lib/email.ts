@@ -1,5 +1,8 @@
+import { db, emailLogs } from '@/lib/db';
+
 export type EmailTemplate = 'register' | 'forgot-password' | 'reset-password' | 'role-changed' | 'account-approved' | 'notification-center';
 type UserEmailEvent = Extract<EmailTemplate, 'account-approved' | 'role-changed'>;
+type EmailStatus = 'SKIPPED' | 'SENT' | 'FAILED';
 
 interface UserEmailState {
   role: string;
@@ -11,6 +14,8 @@ interface SendEmailInput {
   subject: string;
   html: string;
   text?: string;
+  template?: EmailTemplate | 'custom';
+  metadata?: Record<string, unknown>;
 }
 
 interface BrandedEmailInput {
@@ -161,6 +166,7 @@ export async function sendEmail(input: SendEmailInput) {
     if (process.env.NODE_ENV !== 'production') {
       console.info('[email:disabled]', { to: input.to, subject: input.subject });
     }
+    await logEmailAttempt(input, 'SKIPPED', { errorMessage: 'Email disabled outside production' });
     return { skipped: true };
   }
 
@@ -181,13 +187,39 @@ export async function sendEmail(input: SendEmailInput) {
 
   if (!response.ok) {
     const detail = await response.text().catch(() => 'Unknown Resend error');
+    await logEmailAttempt(input, 'FAILED', { errorMessage: detail });
     console.error('[email:resend-error]', { to: input.to, subject: input.subject, detail });
     throw new Error(`Gagal mengirim email via Resend: ${detail}`);
   }
 
   const result = await response.json();
+  await logEmailAttempt(input, 'SENT', { providerMessageId: typeof result?.id === 'string' ? result.id : null });
   console.info('[email:sent]', { to: input.to, subject: input.subject, id: result?.id });
   return result;
+}
+
+async function logEmailAttempt(
+  input: SendEmailInput,
+  status: EmailStatus,
+  result: { providerMessageId?: string | null; errorMessage?: string | null } = {},
+) {
+  try {
+    await db.insert(emailLogs).values({
+      id: crypto.randomUUID(),
+      template: input.template || 'custom',
+      recipient: input.to,
+      subject: input.subject,
+      provider: 'resend',
+      providerMessageId: result.providerMessageId || null,
+      status,
+      errorMessage: result.errorMessage || null,
+      metadata: input.metadata || null,
+      updatedAt: new Date(),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown email log error';
+    console.error('[email:log-error]', { status, template: input.template || 'custom', message });
+  }
 }
 
 export async function sendAuthEmail(template: EmailTemplate, to: string, data: Record<string, string> = {}) {
@@ -198,6 +230,8 @@ export async function sendAuthEmail(template: EmailTemplate, to: string, data: R
   const templates: Record<EmailTemplate, SendEmailInput> = {
     register: {
       to,
+      template,
+      metadata: { name: data.name || null, hasActivationUrl: Boolean(data.activationUrl) },
       subject: isActivationRegister ? `${appName} - Aktivasi akun Anda` : `${appName} - Akun Anda berhasil dibuat`,
       html: renderEmail({
         eyebrow: isActivationRegister ? 'Aktivasi akun' : 'Selamat datang',
@@ -220,6 +254,8 @@ export async function sendAuthEmail(template: EmailTemplate, to: string, data: R
     },
     'forgot-password': {
       to,
+      template,
+      metadata: { hasResetUrl: Boolean(data.resetUrl) },
       subject: `${appName} - Reset password`,
       html: renderEmail({
         eyebrow: 'Keamanan akun',
@@ -237,6 +273,7 @@ export async function sendAuthEmail(template: EmailTemplate, to: string, data: R
     },
     'reset-password': {
       to,
+      template,
       subject: `${appName} - Password berhasil diubah`,
       html: renderEmail({
         eyebrow: 'Password aman',
@@ -254,6 +291,8 @@ export async function sendAuthEmail(template: EmailTemplate, to: string, data: R
     },
     'role-changed': {
       to,
+      template,
+      metadata: { role: data.role || null },
       subject: `${appName} - Role akun diperbarui`,
       html: renderEmail({
         eyebrow: 'Akses diperbarui',
@@ -271,6 +310,7 @@ export async function sendAuthEmail(template: EmailTemplate, to: string, data: R
     },
     'account-approved': {
       to,
+      template,
       subject: `${appName} - Akun aktif`,
       html: renderEmail({
         eyebrow: 'Akun aktif',
@@ -288,6 +328,8 @@ export async function sendAuthEmail(template: EmailTemplate, to: string, data: R
     },
     'notification-center': {
       to,
+      template,
+      metadata: { name: data.name || null },
       subject: `${appName} - Pusat Notifikasi Anda`,
       html: renderEmail({
         eyebrow: 'Pusat notifikasi',
