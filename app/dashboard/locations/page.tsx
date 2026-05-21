@@ -222,26 +222,6 @@ export default function LocationsPage() {
         </button>
       </div>
 
-      <section className="sync-strip" aria-label="Alur data lokasi kerja">
-        <span>Frontend</span><span aria-hidden="true">→</span><span>/api/work-locations</span><span aria-hidden="true">→</span><span>Location Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
-      </section>
-
-      <section className="card" aria-labelledby="location-sync-title" style={{ padding: "16px", borderColor: "rgba(59,130,246,.32)", marginBottom: "16px" }}>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="eyebrow">Geo-fence Master</p>
-            <h2 id="location-sync-title" className="text-lg font-bold">Latitude, longitude, radius aktif</h2>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">Lokasi aktif dipakai attendance backend untuk validasi radius. Frontend hanya preview; keputusan geo-fence tetap di server.</p>
-          </div>
-          <span className="badge badge-info">Radius 10-1000m</span>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="api-pill">API: /api/work-locations</span>
-          <span className="api-pill">DB: WorkLocation_isActive_idx</span>
-          <span className="api-pill">DB: WorkLocation_name_idx</span>
-        </div>
-      </section>
-
       {error && (
         <div role="alert" className="card" style={{ padding: "12px 16px", borderColor: "var(--danger)", color: "var(--danger)", fontSize: "13px", fontWeight: 600, marginBottom: "16px" }}>
           {error}

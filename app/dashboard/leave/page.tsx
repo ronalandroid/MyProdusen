@@ -262,26 +262,6 @@ export default function LeavePage() {
         </div>
       </div>
 
-      <section className="sync-strip" aria-label="Alur data cuti">
-        <span>Frontend</span><span aria-hidden="true">→</span><span>API</span><span aria-hidden="true">→</span><span>Leave Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
-      </section>
-
-      <section className="card" aria-labelledby="leave-sync-title" style={{ padding: "16px", borderColor: "rgba(255,193,7,.42)" }}>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="eyebrow">Workflow Cuti</p>
-            <h2 id="leave-sync-title" className="text-lg font-bold">Pengajuan, saldo, overlap, approval</h2>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">Pengajuan mulai pending. Overlap ditolak backend, penolakan wajib alasan, dan Superadmin approval tercatat audit.</p>
-          </div>
-          <span className="badge badge-warning">{canApproveLeave ? "Mode Approval" : "Mode Karyawan"}</span>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="api-pill">API: /api/leave</span>
-          <span className="api-pill">API: /api/leave/balance</span>
-          <span className="api-pill">Approval: /approve · /reject</span>
-        </div>
-      </section>
-
       {leaveBalance && (
         <section className="card" style={{ padding: "16px" }} aria-label="Saldo cuti">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>

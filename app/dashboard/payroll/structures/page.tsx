@@ -177,15 +177,6 @@ export default function PayrollStructuresPage() {
             + Tambah Struktur
           </button>
         </div>
-        <section className="sync-strip mt-5" aria-label="Alur data struktur gaji">
-          <span>Frontend</span><span aria-hidden="true">→</span><span>/api/payroll/structures</span><span aria-hidden="true">→</span><span>Payroll Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
-        </section>
-        <section className="card mt-4" aria-labelledby="payroll-structure-sync-title" style={{ borderColor: "rgba(34,197,94,.32)" }}>
-          <p className="eyebrow">Salary Template</p>
-          <h2 id="payroll-structure-sync-title" className="text-lg font-bold">Struktur aktif untuk assignment payroll</h2>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">Struktur aktif dipakai assignment employee payroll. Index aktif dan structure lookup mempercepat selector dan kalkulasi.</p>
-          <div className="mt-3 flex flex-wrap gap-2"><span className="api-pill">DB: PayrollStructure_isActive_idx</span><span className="api-pill">DB: EmployeePayroll_structureId_idx</span></div>
-        </section>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -12,8 +12,8 @@ const dashboardFiles = [
 describe('account logout placement', () => {
   it('keeps the only visible logout action inside Akun/Profile', () => {
     expect(profilePage).toContain('Keluar');
-    expect(profilePage).toContain('title="Keluar dari akun?"');
-    expect(profilePage).toContain('Keluar sekarang');
+    expect(profilePage).toContain('title="Anda yakin ingin keluar?"');
+    expect(profilePage).not.toContain('Keluar sekarang');
     expect(profilePage).toContain('await logout()');
     expect(dashboardFiles).not.toContain('<LogOut');
     expect(dashboardFiles).not.toContain('await logout()');

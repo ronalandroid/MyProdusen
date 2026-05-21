@@ -307,27 +307,6 @@ export default function AttendancePage() {
         <Info size={18} color="var(--text-muted)" />
       </div>
 
-      <section className="sync-strip" aria-label="Alur data absensi">
-        <span>Frontend</span><span aria-hidden="true">→</span><span>API</span><span aria-hidden="true">→</span><span>Attendance Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
-      </section>
-
-      <section className="card stitch-attendance-card" aria-labelledby="attendance-sync-title" style={{ padding: "16px" }}>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="eyebrow">Validasi Backend</p>
-            <h2 id="attendance-sync-title" className="text-lg font-bold">GPS, Geo-fence, Selfie Realtime</h2>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">Frontend membantu bukti. Server tetap memutuskan shift aktif, lokasi aktif, akurasi GPS, radius, selfie, dan satu absensi per hari.</p>
-          </div>
-          <span className="badge badge-primary">No-store</span>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="api-pill">API: /api/attendance/today</span>
-          <span className="api-pill">API: /api/attendance/check-in</span>
-          <span className="api-pill">API: /api/attendance/check-out</span>
-          <span className="api-pill">Selfie: endpoint terproteksi</span>
-        </div>
-      </section>
-
       <div className="card" style={{ background: "linear-gradient(135deg, #fff 0%, var(--primary-light) 100%)", padding: "16px", display: "flex", gap: "12px", alignItems: "flex-start", border: "1px solid rgba(253, 199, 4, 0.35)" }}>
         <div style={{ backgroundColor: "var(--primary)", padding: "10px", borderRadius: "14px", boxShadow: "0 10px 20px rgba(253,199,4,.25)", color: "var(--text-primary)", display: "flex", alignItems: "center", justifyContent: "center" }} aria-hidden="true">
           <ClipboardList size={20} aria-hidden="true" />

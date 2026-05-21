@@ -189,3 +189,22 @@ Release candidate code commit: `d987fa7` (`main`). Redeploy from latest `main` H
 - Stakeholder signoff not recorded.
 
 Final status: `READY FOR REDEPLOY` and `READY FOR STAGING UAT`; not `READY FOR PRODUCTION` until all pending signoff gates pass.
+
+## Responsive UI Cleanup — 2026-05-22
+
+### Scope
+
+- Removed production-visible engineering/debug UI from dashboard feature pages.
+- Tightened primary bottom navigation to five mobile items per role.
+- Kept desktop sidebar navigation for secondary admin/employee features.
+- Fixed Akun logout copy and kept real logout flow through `/api/auth/logout`.
+
+### Guard Tests
+
+- `tests/ui/navigation-policy.test.ts` verifies Superadmin and Employee primary mobile nav item lists.
+- `tests/ui/no-production-debug-ui.test.ts` verifies dashboard source does not render debug pipeline classes or forbidden debug strings.
+- `tests/rbac/role-navigation.test.ts` verifies primary tabs stay bounded to five items per production role.
+
+### Focused Verification
+
+- `npm test -- tests/rbac/role-navigation.test.ts tests/ui/navigation-policy.test.ts tests/ui/no-production-debug-ui.test.ts tests/ui/account-logout-placement.test.ts` passed: 4 files, 12 tests.

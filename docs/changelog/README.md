@@ -210,3 +210,9 @@
 - Added canonical URL regression coverage across all auth email templates.
 - Kept Resend delivery attempts wired to `EmailLog` for sent and failed emails.
 - Made account-approved and reset-password notification emails non-blocking after the core user action succeeds.
+
+## 2026-05-22 — Responsive Dashboard UI Cleanup
+
+- Removed production-visible engineering/debug pipeline cards and endpoint/database chips from dashboard feature pages.
+- Limited mobile bottom navigation to five role-specific primary items and kept desktop-only logo out of mobile nav.
+- Updated Akun logout confirmation copy and added UI regression tests for forbidden debug labels and primary nav policy.

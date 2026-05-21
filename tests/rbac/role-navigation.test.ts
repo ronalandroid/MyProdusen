@@ -57,17 +57,17 @@ describe('Role Navigation Policy', () => {
     for (const role of ['SUPERADMIN', 'EMPLOYEE'] as const) {
       const primary = getPrimaryNavigationForRole(role);
       expect(primary.length).toBeGreaterThan(0);
-      expect(primary.length).toBeLessThanOrEqual(7);
+      expect(primary.length).toBeLessThanOrEqual(5);
     }
   });
 
   it('EMPLOYEE primary tabs match the design', () => {
     const keys = getPrimaryNavigationForRole('EMPLOYEE').map((item) => item.key);
-    expect(keys).toEqual(['dashboard', 'attendance', 'leave', 'kpi', 'overtime', 'profile']);
+    expect(keys).toEqual(['dashboard', 'attendance', 'leave', 'kpi', 'profile']);
   });
 
   it('SUPERADMIN primary tabs match the design', () => {
     const keys = getPrimaryNavigationForRole('SUPERADMIN').map((item) => item.key);
-    expect(keys).toEqual(['dashboard', 'locations', 'attendance-exceptions', 'users', 'leave', 'kpi', 'reports']);
+    expect(keys).toEqual(['dashboard', 'locations', 'attendance-exceptions', 'users', 'profile']);
   });
 });

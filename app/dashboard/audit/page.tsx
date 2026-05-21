@@ -141,26 +141,6 @@ export default function AuditPage() {
         </button>
       </div>
 
-      <section className="sync-strip" aria-label="Alur data audit log">
-        <span>Frontend</span><span aria-hidden="true">→</span><span>/api/audit</span><span aria-hidden="true">→</span><span>Audit Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
-      </section>
-
-      <section className="card" aria-labelledby="audit-sync-title" style={{ borderColor: "rgba(229,57,53,.28)" }}>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="eyebrow">Security Trail</p>
-            <h2 id="audit-sync-title" className="text-lg font-bold">Superadmin only, no-store, searchable</h2>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">Audit log hanya untuk Superadmin. Filter/search diproses server-side, response private no-store, dan index mendukung entity/action/user timeline.</p>
-          </div>
-          <span className="badge badge-danger">Protected</span>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="api-pill">API: /api/audit</span>
-          <span className="api-pill">DB: AuditLog_entity_createdAt_idx</span>
-          <span className="api-pill">DB: AuditLog_userId_createdAt_idx</span>
-        </div>
-      </section>
-
       <div className="card p-4 sm:p-5">
         <label className="mb-2 block text-xs font-bold text-[var(--text-secondary)]" htmlFor="audit-search">Cari audit log</label>
         <div className="input-group max-w-xl">

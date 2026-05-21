@@ -111,15 +111,6 @@ export default function PayrollPage() {
     return (
       <div className="phone-screen feature-screen">
         <section className="hero-card"><h1 className="text-xl font-bold text-white">Payroll Saya</h1><p className="text-sm text-white/90">Lihat slip gaji pribadi. Data karyawan lain tidak ditampilkan.</p></section>
-        <section className="sync-strip" aria-label="Alur data payroll pribadi">
-          <span>Frontend</span><span aria-hidden="true">→</span><span>/api/payroll/me</span><span aria-hidden="true">→</span><span>Payroll Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
-        </section>
-        <section className="card" aria-labelledby="payroll-me-sync-title" style={{ borderColor: "rgba(59,130,246,.32)" }}>
-          <p className="eyebrow">Private Payroll</p>
-          <h2 id="payroll-me-sync-title" className="text-lg font-bold">Payslip akun login saja</h2>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">Endpoint payroll pribadi membaca employee dari session. Payslip pakai ownership check, no-store, dan audit download.</p>
-          <div className="mt-3 flex flex-wrap gap-2"><span className="api-pill">API: /api/payroll/me</span><span className="api-pill">API: /api/payroll/payslips/:itemId</span></div>
-        </section>
         {error && <div className="alert-card" role="alert"><strong>Gagal</strong><p>{error}</p></div>}
         <section className="card">
           <h2 className="text-base font-bold mb-4">Riwayat Payslip</h2>
@@ -147,17 +138,6 @@ export default function PayrollPage() {
     <div className="phone-screen feature-screen">
       <section className="hero-card">
         <div><p className="eyebrow text-white/80">Payroll aktif</p><h1 className="text-2xl font-bold text-white">Payroll Management</h1><p className="text-sm text-white/90">Generate, kalkulasi, approve, paid, export CSV, dan payslip.</p></div>
-      </section>
-
-      <section className="sync-strip" aria-label="Alur data payroll">
-        <span>Frontend</span><span aria-hidden="true">→</span><span>/api/payroll/*</span><span aria-hidden="true">→</span><span>Payroll Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
-      </section>
-
-      <section className="card" aria-labelledby="payroll-sync-title" style={{ borderColor: "rgba(255,193,7,.42)" }}>
-        <p className="eyebrow">Payroll Sync</p>
-        <h2 id="payroll-sync-title" className="text-lg font-bold">Run, calculate, approve, paid, export</h2>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">Payroll run, item, payslip, dan export CSV diproses backend. Export dan payslip private memakai no-store dan audit log.</p>
-        <div className="mt-3 flex flex-wrap gap-2"><span className="api-pill">DB: PayrollRun_status_period_idx</span><span className="api-pill">DB: PayrollItem_employeeId_runId_idx</span><span className="api-pill">No-store export</span></div>
       </section>
 
       {error && <div className="alert-card" role="alert"><strong>Gagal</strong><p>{error}</p></div>}

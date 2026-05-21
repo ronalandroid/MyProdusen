@@ -81,15 +81,13 @@ Employee mobile bottom navigation should prioritize:
 4. KPI
 5. Profile
 
-Superadmin navigation should prioritize:
+Superadmin mobile bottom navigation should prioritize:
 
-1. Dashboard
-2. Employees
-3. Attendance
-4. Leave
-5. KPI
-6. Reports
-7. Settings / Audit, depending on role
+1. Beranda
+2. Cabang
+3. Approval
+4. Pengguna
+5. Akun
 
 Navigation rules:
 
@@ -97,6 +95,16 @@ Navigation rules:
 - Disabled or unauthorized items must not appear as accessible routes.
 - Backend RBAC remains source of truth even if navigation hides items.
 - Navigation labels should be short and understandable in Indonesian UI.
+- Mobile bottom navigation must contain at most five primary items, one row only, safe-area aware, and no mascot or marketing copy.
+- Superadmin mobile primary items are `Beranda`, `Cabang`, `Approval`, `Pengguna`, and `Akun`.
+- Employee mobile primary items are `Beranda`, `Absensi`, `Cuti`, `KPI`, and `Akun`.
+- Secondary items such as KPI management, reports, payroll, audit, documents, shifts, and notifications belong in desktop sidebar, dashboard shortcuts, or Akun menu.
+
+## Production UI Cleanliness
+
+Production pages must not show engineering/debug labels such as `Frontend`, `API`, `Service`, `Drizzle`, `PostgreSQL`, endpoint chips, database index names, or implementation pipeline cards. Keep those details in documentation or tests, not user-facing UI.
+
+The Akun page owns logout. It must show a real `Keluar` button, danger/outline styling, confirmation text `Anda yakin ingin keluar?`, loading state, error state, and redirect to `/login` after logout.
 
 ## 5. Required Screens
 

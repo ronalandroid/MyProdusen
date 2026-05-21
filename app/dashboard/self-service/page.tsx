@@ -80,7 +80,7 @@ export default function SelfServicePage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" message="Memuat self-service..." />
+        <LoadingSpinner size="lg" message="Memuat layanan mandiri..." />
       </div>
     );
   }
@@ -92,7 +92,7 @@ export default function SelfServicePage() {
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
         <button type="button" onClick={() => router.back()} className="flex items-center gap-3 text-[var(--text-primary)]">
           <ArrowLeft size={24} />
-          <span className="text-xl font-bold">Employee Self-Service</span>
+          <span className="text-xl font-bold">Layanan Mandiri Karyawan</span>
         </button>
       </header>
 
@@ -111,7 +111,7 @@ export default function SelfServicePage() {
         </div>
         <div className="attendance-meter">
           <User size={28} />
-          <small className="text-xs sm:text-sm">ESS</small>
+          <small className="text-xs sm:text-sm">Akun</small>
         </div>
       </section>
 

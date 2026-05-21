@@ -140,26 +140,6 @@ export default function NotificationsPage() {
         </div>
       </header>
 
-      <section className="sync-strip" aria-label="Alur data notifikasi">
-        <span>Frontend</span><span aria-hidden="true">→</span><span>/api/notifications</span><span aria-hidden="true">→</span><span>Notification Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
-      </section>
-
-      <section className="card" aria-labelledby="notification-sync-title" style={{ padding: "16px", borderColor: "rgba(59,130,246,.32)" }}>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="eyebrow">Realtime + Read State</p>
-            <h2 id="notification-sync-title" className="text-lg font-bold">Per-user, unread, mark all, delete</h2>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">Notifikasi difilter dari user session. Read state dan delete diproses backend, realtime event hanya untuk user target.</p>
-          </div>
-          <span className={`badge ${realtime.connected ? "badge-success" : "badge-neutral"}`}>{realtime.connected ? "Realtime aktif" : "SSE standby"}</span>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="api-pill">API: /api/notifications</span>
-          <span className="api-pill">API: /api/notifications/mark-all-read</span>
-          <span className="api-pill">DB: Notification_userId_isRead_createdAt_idx</span>
-        </div>
-      </section>
-
       {/* Filter Tabs */}
       <div role="tablist" aria-label="Filter notifikasi" style={{ display: "flex", gap: "8px", borderBottom: "1px solid var(--border-color)", paddingBottom: "8px" }}>
         <button

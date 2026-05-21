@@ -111,26 +111,6 @@ export default function ShiftsPage() {
         <button type="button" className="btn btn-primary w-full sm:w-auto" onClick={openCreateModal}>➕ Tambah Shift</button>
       </div>
 
-      <section className="sync-strip" aria-label="Alur data shift kerja">
-        <span>Frontend</span><span aria-hidden="true">→</span><span>/api/shifts</span><span aria-hidden="true">→</span><span>Shift Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
-      </section>
-
-      <section className="card" aria-labelledby="shift-sync-title" style={{ padding: "16px", borderColor: "rgba(34,197,94,.32)" }}>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="eyebrow">Shift Master</p>
-            <h2 id="shift-sync-title" className="text-lg font-bold">Jadwal aktif untuk validasi absensi</h2>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">Shift aktif tersimpan di database dan dipakai employee default shift. Check-in/out tetap divalidasi backend.</p>
-          </div>
-          <span className="badge badge-success">Active indexed</span>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="api-pill">API: /api/shifts</span>
-          <span className="api-pill">DB: Shift_isActive_idx</span>
-          <span className="api-pill">DB: Shift_name_idx</span>
-        </div>
-      </section>
-
       {message && <div className="card border border-green-200 bg-green-50 p-4 text-sm text-[var(--success)]" role="status">{message}</div>}
       {error && (
         <div className="card border border-red-200 bg-red-50 p-4 text-sm text-[var(--danger)]" role="alert">

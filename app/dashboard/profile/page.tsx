@@ -178,7 +178,7 @@ export default function ProfilePage() {
       <Modal
         isOpen={showLogoutModal}
         onClose={() => (!isLoggingOut ? setShowLogoutModal(false) : undefined)}
-        title="Keluar dari akun?"
+        title="Anda yakin ingin keluar?"
         size="sm"
         footer={
           <div className="modal-footer-actions">
@@ -187,7 +187,7 @@ export default function ProfilePage() {
             </Button>
             <Button variant="danger" onClick={performLogout} loading={isLoggingOut}>
               <LogOut size={16} aria-hidden="true" />
-              Keluar sekarang
+              Keluar
             </Button>
           </div>
         }

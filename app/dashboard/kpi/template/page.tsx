@@ -140,26 +140,6 @@ export default function KpiTemplatePage() {
         <span id="kpi-template-title" className="text-xl font-bold">Template KPI & Assignment</span>
       </button>
 
-      <section className="sync-strip" aria-label="Alur data template KPI">
-        <span>Frontend</span><span aria-hidden="true">→</span><span>/api/kpi/templates</span><span aria-hidden="true">→</span><span>KPI Service</span><span aria-hidden="true">→</span><span>Drizzle</span><span aria-hidden="true">→</span><span>PostgreSQL</span>
-      </section>
-
-      <section className="card" aria-labelledby="kpi-template-sync-title" style={{ borderColor: "rgba(34,197,94,.32)" }}>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="eyebrow">KPI Template Sync</p>
-            <h2 id="kpi-template-sync-title" className="text-lg font-bold">Bobot 100, assignment, approval lock</h2>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">Template baru dibuat dengan item default bobot 100. Result approved dikunci backend dan tidak bisa diubah tanpa otorisasi.</p>
-          </div>
-          <span className="badge badge-success">Weight 100</span>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="api-pill">API: /api/kpi/templates</span>
-          <span className="api-pill">API: /api/kpi/assignments</span>
-          <span className="api-pill">DB: KpiResult_isApproved_period_idx</span>
-        </div>
-      </section>
-
       {message && <section className="card border-[var(--success)] text-[var(--success)]" role="status">{message}</section>}
       {error && <section className="alert-card" role="alert"><strong>Gagal</strong><p>{error}</p></section>}
       {loading && <section className="card" role="status">Memuat template KPI...</section>}
