@@ -183,3 +183,5 @@ The migration is additive and uses `CREATE TABLE IF NOT EXISTS` plus `CREATE IND
 ## Migration checksum guard — 2026-05-22
 
 `scripts/run-migrations.mjs` now compares each already-applied migration checksum against the SQL file on disk. If an applied migration file changes, deployment fails instead of silently skipping it. Add new migrations for schema changes; do not edit applied migration files.
+
+Exception: `0004_attendance_exceptions.sql` has one approved legacy checksum from the pre-idempotent file version (`3ead212f6c826c22df01708203b68bc0f3c9c1d55ea84125d65a6905055c15ac`). The current file only wraps the same objects with `IF NOT EXISTS` / duplicate-object guards for safe redeploy. The deployment runner allows that legacy checksum and still blocks any other checksum mismatch.

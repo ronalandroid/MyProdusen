@@ -193,3 +193,8 @@
 - Documented live public responsive smoke result: 20/20 pass across 360/390/768/1440.
 - Added Android real-device GPS/selfie checklist.
 - Marked authenticated live E2E, Android real-device test, backup/restore drill, redeploy proof, and stakeholder signoff as pending before full production signoff.
+
+## 2026-05-22 — Migration Checksum Compatibility Hotfix
+
+- Allowed the approved legacy checksum for `0004_attendance_exceptions.sql` after its SQL was made idempotent without changing created schema objects.
+- Kept checksum mismatch protection active for all other migrations and unexpected checksum values.

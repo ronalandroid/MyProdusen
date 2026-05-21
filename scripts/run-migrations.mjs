@@ -17,6 +17,14 @@ const __dirname = path.dirname(__filename);
 const migrationsDir = path.resolve(__dirname, '..', 'drizzle', 'migrations');
 const trackingTable = '_myprodusen_migrations';
 const databaseUrl = process.env.DATABASE_URL;
+const legacyChecksums = new Map([
+  [
+    '0004_attendance_exceptions.sql',
+    new Set([
+      '3ead212f6c826c22df01708203b68bc0f3c9c1d55ea84125d65a6905055c15ac',
+    ]),
+  ],
+]);
 
 if (!databaseUrl) {
   console.error('ERROR: DATABASE_URL is required to run migrations');
@@ -31,6 +39,10 @@ function normalizeDatabaseUrl(value) {
 
 function checksum(content) {
   return createHash('sha256').update(content).digest('hex');
+}
+
+function isAllowedLegacyChecksum(file, storedChecksum) {
+  return legacyChecksums.get(file)?.has(storedChecksum) === true;
 }
 
 function extractCreatedObjects(content) {
@@ -140,6 +152,10 @@ try {
 
     if (existingMigration) {
       if (existingMigration.checksum !== digest) {
+        if (isAllowedLegacyChecksum(file, existingMigration.checksum)) {
+          console.log(`Migration skipped with approved legacy checksum: ${file}`);
+          continue;
+        }
         throw new Error(`Migration checksum mismatch for ${file}`);
       }
       console.log(`Migration skipped: ${file}`);
