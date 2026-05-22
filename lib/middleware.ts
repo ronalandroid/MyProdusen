@@ -96,11 +96,19 @@ export async function getRequestBody<T>(request: NextRequest): Promise<T> {
  * Get client IP address
  */
 export function getClientIp(request: NextRequest): string {
-  return (
-    request.headers.get('x-forwarded-for')?.split(',')[0] ||
-    request.headers.get('x-real-ip') ||
-    'unknown'
-  );
+  const cfConnectingIp = request.headers.get('cf-connecting-ip')?.trim();
+  const hasCloudflareTrace = Boolean(request.headers.get('cf-ray') || request.headers.get('cf-visitor'));
+
+  if (cfConnectingIp && hasCloudflareTrace) {
+    return cfConnectingIp;
+  }
+
+  const forwardedFor = request.headers.get('x-forwarded-for')
+    ?.split(',')
+    .map((value) => value.trim())
+    .find(Boolean);
+
+  return forwardedFor || request.headers.get('x-real-ip')?.trim() || 'unknown';
 }
 
 /**

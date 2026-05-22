@@ -29,3 +29,11 @@ Pass criteria:
 - No clipped button or search text.
 - No stuck scroll or frozen camera stream.
 - No engineering labels visible to production users.
+
+## CDN Performance And Cache Policy — 2026-05-22
+
+- Cloudflare caches public static assets such as `/_next/static/*` and `logo-fast.webp` with long-lived public cache headers.
+- Dashboard and API responses are explicitly `no-store, private` to prevent stale user state after login/logout.
+- `/uploads/*` is explicitly `no-store, private` to prevent legacy public upload objects from being cached by browsers or Cloudflare.
+- `public/sw.js` stays install/activate-only and does not intercept fetches, preventing stale dashboard, payroll, selfie, PDF, and API responses.
+- Validate CDN behavior after redeploy with `BASE_URL=https://myprodusen.online npm run verify:cdn`.

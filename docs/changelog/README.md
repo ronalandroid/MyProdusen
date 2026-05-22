@@ -216,3 +216,15 @@
 - Removed production-visible engineering/debug pipeline cards and endpoint/database chips from dashboard feature pages.
 - Limited mobile bottom navigation to five role-specific primary items and kept desktop-only logo out of mobile nav.
 - Updated Akun logout confirmation copy and added UI regression tests for forbidden debug labels and primary nav policy.
+
+## 2026-05-22 — Cloudflare CDN Sync
+
+- Added global no-store headers for protected API, dashboard, and upload paths.
+- Added `npm run verify:cdn` to validate static cache, private no-store, Cloudflare cache status, and secret-free responses.
+- Made client IP extraction Cloudflare-aware for rate limiting and audit logs.
+- Documented Cloudflare DNS, SSL, cache bypass, static cache, purge, and emergency DNS-only rollback rules.
+
+## 2026-05-22 — Dashboard CDN Header Hotfix
+
+- Added exact `/dashboard` no-store header rule because live Cloudflare audit found the unauthenticated redirect was dynamic but missing `Cache-Control`.
+- Kept nested `/dashboard/:path*`, `/api/:path*`, `/uploads`, and `/uploads/:path*` protected with `no-store, private`.

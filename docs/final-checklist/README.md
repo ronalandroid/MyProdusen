@@ -89,3 +89,15 @@ Release candidate code commit: `d987fa7` (`main`). Redeploy from latest `main` H
 - [ ] Record Owner/HR/Technical PIC signoff.
 
 Final GO/NO-GO: `READY FOR REDEPLOY` and `READY FOR STAGING UAT`; not full `READY FOR PRODUCTION` yet.
+
+## Cloudflare Production Gate — 2026-05-22
+
+- [ ] Cloudflare DNS active: `@` and `www` proxied; email records DNS-only.
+- [ ] SSL Full strict, Always HTTPS, Brotli enabled.
+- [ ] `BASE_URL=https://myprodusen.online npm run verify:cdn` passes.
+- [ ] Static assets return public cache headers.
+- [ ] `/api/health`, `/dashboard`, `/api/reports/pdf`, payroll, attendance, document, selfie, and upload paths are `no-store, private` and not `cf-cache-status: HIT`.
+- [ ] Login/logout tested behind Cloudflare with no redirect loop and no stale dashboard after logout.
+- [ ] Android/iPhone attendance GPS+selfie tested behind Cloudflare.
+- [ ] Protected selfie, document, payroll, and PDF routes require auth/RBAC behind Cloudflare.
+- [ ] Cloudflare cache purged after redeploy when static assets change.

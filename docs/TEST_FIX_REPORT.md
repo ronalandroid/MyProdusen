@@ -208,3 +208,36 @@ Final status: `READY FOR REDEPLOY` and `READY FOR STAGING UAT`; not `READY FOR P
 ### Focused Verification
 
 - `npm test -- tests/rbac/role-navigation.test.ts tests/ui/navigation-policy.test.ts tests/ui/no-production-debug-ui.test.ts tests/ui/account-logout-placement.test.ts` passed: 4 files, 12 tests.
+
+## Cloudflare CDN Sync — 2026-05-22
+
+### Scope
+
+- Added global Next.js header rules for `/api/*`, `/dashboard/*`, and `/uploads/*` to force `Cache-Control: no-store, private`.
+- Added CDN verification script `scripts/verify-cdn-cache.mjs` and package command `npm run verify:cdn`.
+- Updated Cloudflare-aware client IP extraction for rate limiting and audit logging.
+- Verified service worker remains fetch-free and does not cache private routes.
+
+### Verification
+
+- `npm test -- tests/security/cdn-proxy-cache.test.ts tests/ui/pwa-source.test.ts tests/security/csrf-origin.test.ts tests/unit/rate-limit.test.ts` passed: 4 files, 15 tests.
+- Local `curl` to `https://myprodusen.online` could not run from this sandbox due DNS resolution failure: `Could not resolve host: myprodusen.online`.
+- Live CDN verification must be rerun from network-enabled host after redeploy: `BASE_URL=https://myprodusen.online npm run verify:cdn`.
+
+Final CDN code status: `READY FOR REDEPLOY`; final production validation remains pending until live Cloudflare checks pass from a network-enabled environment.
+
+### Live Finding
+
+- Live `BASE_URL=https://myprodusen.online npm run verify:cdn` reached Cloudflare and found `/dashboard` redirect missing `Cache-Control: no-store, private` while `/logo-fast.webp` was `HIT` and `/api/health` was `DYNAMIC`.
+- Fixed by adding exact `/dashboard` no-store header rule in `next.config.js`; existing `/dashboard/:path*` rule covered nested dashboard paths only.
+
+### Live Header Evidence Before Redeploy
+
+- `curl -I https://myprodusen.online/logo-fast.webp`: `cache-control: public, max-age=31536000, immutable`, `cf-cache-status: HIT`.
+- `curl -I https://myprodusen.online/api/health`: `cache-control: no-store, private`, `cf-cache-status: DYNAMIC`.
+- `curl -I https://myprodusen.online/dashboard`: `307` to `/login?redirect=%2Fdashboard`, `cf-cache-status: DYNAMIC`, but missing `Cache-Control`; fixed in code and requires redeploy.
+- `POST https://myprodusen.online/api/reports/pdf` unauthenticated: `401`, `cache-control: no-store, private`, `cf-cache-status: DYNAMIC`.
+- `BASE_URL=https://myprodusen.online npm run verify:live-routes` passed on current live deployment.
+- `E2E_BASE_URL=https://myprodusen.online npm run e2e:public` passed: 20/20.
+- `E2E_BASE_URL=https://myprodusen.online npm run e2e:staging` passed public/security checks: 12 passed, 4 skipped because Superadmin E2E credentials were not configured in shell env.
+- TTFB sample after Cloudflare: first run `0.535769s`; warm runs mostly around `0.09s–0.14s`.

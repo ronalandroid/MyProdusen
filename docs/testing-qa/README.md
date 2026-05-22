@@ -342,3 +342,22 @@ Release candidate code commit: `d987fa7` (`main`). Redeploy from latest `main` H
 - Delivery logging coverage: successful and failed Resend sends create `EmailLog` rows with template, recipient, provider, provider message ID, status, error message, and metadata.
 - Non-critical notification sends after successful account activation or password reset do not block the completed user action if Resend is unavailable.
 - Focused verification: `npm test -- tests/email/resend.test.ts tests/email/email-logs.test.ts tests/unit/app-url.test.ts` passed with 3 files and 12 tests.
+
+## Cloudflare CDN QA — 2026-05-22
+
+Run after redeploy:
+
+```bash
+BASE_URL=https://myprodusen.online npm run verify:cdn
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+E2E_BASE_URL=https://myprodusen.online npm run e2e:public
+```
+
+Manual browser checks:
+
+- Login, logout, register activation, forgot password, and reset password.
+- Dashboard after logout must redirect to login and must not show stale profile data.
+- Attendance GPS/selfie upload on Android/iPhone.
+- Protected selfie/document preview must require auth and ownership/RBAC.
+- Payroll, PDF report export, KPI, leave, audit, and notifications must load fresh data from API.
+- Cloudflare `cf-cache-status` must not be `HIT` for private paths.

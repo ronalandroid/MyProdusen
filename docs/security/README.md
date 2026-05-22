@@ -223,3 +223,13 @@ Attendance Wave 2 keeps backend authority for attendance decisions:
 - Global API middleware rejects cross-site cookie-authenticated mutating requests before route handlers run; bearer-token API clients remain supported.
 - Forgot-password and reset-password endpoints use the `PASSWORD_RESET` rate-limit preset.
 - Employee document multipart uploads are stored under private `UPLOAD_DIR/employee-documents` and served through authenticated `/api/documents/file/:employeeId/:storedName` endpoints with RBAC checks, `no-store`, and `nosniff`.
+
+## Cloudflare Cache And Proxy Security — 2026-05-22
+
+- Protected paths must return `Cache-Control: no-store, private`: `/api/*`, `/dashboard/*`, `/uploads/*`, payroll, PDF reports, document files, attendance, and selfie endpoints.
+- Private responses must never return Cloudflare `cf-cache-status: HIT`.
+- Public static assets may use `public, max-age=31536000, immutable` when they are logo/static/image/font assets.
+- Service worker must not register a fetch handler and must not cache `/api/*`, `/dashboard/*`, `/uploads/*`, selfie, document, payroll, or PDF responses.
+- Client IP extraction prefers `CF-Connecting-IP` only when Cloudflare trace headers are present, otherwise falls back to the first `X-Forwarded-For` value and then `X-Real-IP`.
+- Rate limiting and audit logging use the shared `getClientIp()` helper, so Cloudflare proxy traffic still maps to the real client IP when Cloudflare headers are present.
+- Keep Bot Fight Mode off until login, activation, attendance selfie upload, and PDF export have been tested behind Cloudflare.

@@ -161,3 +161,47 @@ Go/no-go after redeploy:
 - `READY FOR REDEPLOY`: code gate passed and docs updated.
 - `READY FOR STAGING UAT`: live public smoke passed; authenticated Superadmin/Employee UAT still needs credentials.
 - `READY FOR PRODUCTION`: only after redeploy proof, authenticated live E2E, Android test, backup/restore drill, and stakeholder signoff pass.
+
+## Cloudflare CDN Rules — 2026-05-22
+
+Cloudflare is active for `myprodusen.online` and `www.myprodusen.online`.
+
+DNS:
+
+- `A @` points to the VPS IP and is proxied.
+- `CNAME www` points to `myprodusen.online` and is proxied.
+- Email MX/TXT/Resend records stay DNS-only.
+
+SSL and speed:
+
+- SSL mode: Full strict.
+- Always HTTPS: ON.
+- Brotli: ON.
+- HTTP/3: ON, but may be disabled if login, upload, or Android device tests become unstable.
+
+Cache bypass rules required:
+
+- `/api/*`
+- `/dashboard/*`
+- `/uploads/*`
+- `/api/auth/*`
+- `/api/attendance/*`
+- `/api/attendance/selfie/*`
+- `/api/reports/pdf*`
+- `/api/payroll/*`
+- `/api/documents/file/*`
+
+Static cache rules allowed:
+
+- `/_next/static/*`
+- `*.webp`, `*.png`, `*.jpg`, `*.jpeg`, `*.svg`, `*.ico`
+- `*.css`, `*.js`, `*.woff2`
+
+After every redeploy:
+
+```bash
+BASE_URL=https://myprodusen.online npm run verify:cdn
+BASE_URL=https://myprodusen.online npm run verify:live-routes
+```
+
+Purge Cloudflare cache after image/static-asset changes. If Cloudflare causes login, upload, or private route failures, emergency rollback is switching `@` and `www` to DNS-only while app image rollback stays available in Coolify.

@@ -39,7 +39,8 @@
     "verify:live-routes": "node scripts/verify-live-routes.mjs",
     "e2e:full-staging": "playwright test tests/e2e/full-staging.spec.ts",
     "e2e:browsers": "node scripts/run-e2e-browsers.mjs",
-    "e2e:live": "E2E_BASE_URL=${E2E_BASE_URL:-https://myprodusen.online} playwright test tests/e2e/public-smoke.spec.ts"
+    "e2e:live": "E2E_BASE_URL=${E2E_BASE_URL:-https://myprodusen.online} playwright test tests/e2e/public-smoke.spec.ts",
+    "verify:cdn": "node scripts/verify-cdn-cache.mjs"
   },
   "keywords": [
     "attendance",
