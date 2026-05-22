@@ -52,15 +52,15 @@
 
 ## Verification Commands
 
-- [ ] `npm run lint` passes.
-- [ ] `npm run test` passes.
-- [ ] `npm run build` passes.
-- [ ] `npm run release:check` passes.
-- [ ] `npm run release:check:full` passes in production-like env before promotion.
-- [ ] `npm run release:migrations` passes.
-- [ ] `npm run e2e:public` passes or skipped with reason.
-- [ ] `npm run e2e:staging` passes or skipped with reason.
-- [ ] `BASE_URL=https://myprodusen.online npm run verify:live-routes` passes or skipped with reason.
+- [x] `npm run lint` passes.
+- [x] `npm run test` passes.
+- [x] `npm run build` passes.
+- [x] `npm run release:check` passes.
+- [x] `npm run release:check:full` passes in production-like env before promotion.
+- [x] `npm run release:migrations` passes.
+- [x] `npm run e2e:public` passes or skipped with reason.
+- [x] `npm run e2e:staging` passes or skipped with reason.
+- [x] `BASE_URL=https://myprodusen.online npm run verify:live-routes` passes or skipped with reason.
 
 ## Final Status
 

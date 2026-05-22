@@ -227,8 +227,7 @@ export default function EmployeeBeranda({ profile }: Props) {
             NIP: {nip}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <span className="api-pill bg-white/65 text-black">Role: Karyawan</span>
-            <span className="api-pill bg-white/65 text-black">API: /api/auth/profile</span>
+            {/* Removed debug role and API pills to adhere to Production UI Cleanliness rules */}
           </div>
         </div>
       </section>
@@ -238,10 +237,6 @@ export default function EmployeeBeranda({ profile }: Props) {
           {loadError}
         </div>
       )}
-
-      <section className="sync-strip" aria-label="Alur data karyawan">
-        <span>Frontend</span><ArrowRight size={14} aria-hidden="true" /><span>API</span><ArrowRight size={14} aria-hidden="true" /><span>Service</span><ArrowRight size={14} aria-hidden="true" /><span>Drizzle</span><ArrowRight size={14} aria-hidden="true" /><span>PostgreSQL</span>
-      </section>
 
       <section className="card stitch-attendance-card" aria-labelledby="employee-attendance-sync-title">
         <div className="flex items-start justify-between gap-3">
@@ -260,7 +255,6 @@ export default function EmployeeBeranda({ profile }: Props) {
         </div>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
           <Link href="/dashboard/attendance" className="btn btn-primary min-h-[44px] flex-1">Buka Absensi</Link>
-          <span className="api-pill">API: /api/attendance/today · /check-in · /check-out</span>
         </div>
       </section>
 
@@ -295,10 +289,10 @@ export default function EmployeeBeranda({ profile }: Props) {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2" aria-label="Fitur pribadi tersinkron">
-        <FeatureSyncCard icon={<Calendar size={20} />} title="Cuti, Izin, Sakit" description="Saldo, overlap, status pending/disetujui/ditolak, dan alasan penolakan diproses server-side." href="/dashboard/leave" api="/api/leave · /api/leave/balance" tone="warning" />
-        <FeatureSyncCard icon={<CheckCircle2 size={20} />} title="KPI Pribadi" description="Karyawan hanya melihat KPI sendiri. Skor read-only dan approval tidak bisa diedit sendiri." href="/dashboard/kpi" api="/api/kpi/results" tone="success" />
-        <FeatureSyncCard icon={<LockKeyhole size={20} />} title="Payroll Pribadi" description="Slip gaji privat, tanpa URL publik. Akses lewat endpoint terproteksi dan no-store." href="/dashboard/payroll/me" api="/api/payroll/me" tone="info" />
-        <FeatureSyncCard icon={<Bell size={20} />} title="Notifikasi & Sinkron" description="Notifikasi, mark-all-read, antrean offline, dan konflik tetap balik ke backend sebagai sumber kebenaran." href="/dashboard/notifications" api="/api/notifications · /api/sync/status" tone="primary" />
+        <FeatureSyncCard icon={<Calendar size={20} />} title="Cuti, Izin, Sakit" description="Saldo, overlap, status pending/disetujui/ditolak, dan alasan penolakan diproses server-side." href="/dashboard/leave" tone="warning" />
+        <FeatureSyncCard icon={<CheckCircle2 size={20} />} title="KPI Pribadi" description="Karyawan hanya melihat KPI sendiri. Skor read-only dan approval tidak bisa diedit sendiri." href="/dashboard/kpi" tone="success" />
+        <FeatureSyncCard icon={<LockKeyhole size={20} />} title="Payroll Pribadi" description="Slip gaji privat, tanpa URL publik. Akses lewat endpoint terproteksi dan no-store." href="/dashboard/payroll/me" tone="info" />
+        <FeatureSyncCard icon={<Bell size={20} />} title="Notifikasi & Sinkron" description="Notifikasi, mark-all-read, antrean offline, dan konflik tetap balik ke backend sebagai sumber kebenaran." href="/dashboard/notifications" tone="primary" />
       </section>
 
       {/* 7-day attendance bar chart */}
@@ -446,7 +440,7 @@ function SyncMini({ label, value, tone }: { label: string; value: string; tone: 
   );
 }
 
-function FeatureSyncCard({ icon, title, description, href, api, tone }: { icon: React.ReactNode; title: string; description: string; href: string; api: string; tone: "success" | "warning" | "info" | "primary" }) {
+function FeatureSyncCard({ icon, title, description, href, tone }: { icon: React.ReactNode; title: string; description: string; href: string; tone: "success" | "warning" | "info" | "primary" }) {
   const toneClass = tone === "success" ? "badge-success" : tone === "warning" ? "badge-warning" : tone === "info" ? "badge-info" : "badge-primary";
   return (
     <Link href={href} className="card group flex min-h-[156px] flex-col gap-3 p-4 transition-transform hover:-translate-y-0.5 hover:shadow-md">
@@ -458,7 +452,6 @@ function FeatureSyncCard({ icon, title, description, href, api, tone }: { icon: 
         <h3 className="text-base font-bold text-[var(--text-primary)]">{title}</h3>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">{description}</p>
       </div>
-      <span className="api-pill mt-auto w-fit">API: {api}</span>
     </Link>
   );
 }

@@ -23,6 +23,7 @@ const dashboardFiles = [
   'app/dashboard/reports/pdf/page.tsx',
   'app/dashboard/shifts/page.tsx',
   'app/dashboard/users/page.tsx',
+  'src/components/dashboard/EmployeeBeranda.tsx',
 ];
 
 const forbiddenSnippets = [
