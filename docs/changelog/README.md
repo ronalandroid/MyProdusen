@@ -245,3 +245,10 @@
 - Checked and verified that all engineering/debug chips (e.g. Frontend, API, Drizzle, etc.) are completely absent from user-facing screens.
 - Executed the full CI/CD release gate successfully (TypeScript, Drizzle migrations, reference contracts, Vitest suite with 349/349 passing, standalone production build, Playwright public and staging E2E smoke tests).
 
+
+## 2026-05-22 — Official Work Location Geofence
+
+- Added official work location upsert script for `Produsen Dimsum Medan | TBM GRUP` at `3.6009125, 98.6964954`, radius `100m`.
+- Added Cabang Google Maps links and attendance distance/radius preview.
+- Expanded attendance audit metadata for accepted and rejected GPS/selfie/geofence outcomes.
+- Added regression tests for official coordinate, outside-radius rejection, bad GPS accuracy, UI contract, and seed script safety.

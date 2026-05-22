@@ -514,3 +514,11 @@ These sections do not create frontend-only authorization. Backend APIs and servi
 - Dashboard content reserves bottom space with `calc(96px + env(safe-area-inset-bottom))` on phone so nav does not cover cards or CTAs.
 - Accessibility skip link remains visually hidden by default and appears only on keyboard focus.
 - Logout belongs on the Akun page as a real `Keluar` button with confirmation `Anda yakin ingin keluar?`.
+
+## Attendance Location UX — 2026-05-22
+
+- Cabang/Lokasi Kerja page shows name, address, latitude, longitude, radius, active status, map preview, and Google Maps link.
+- Attendance page may preview GPS accuracy, distance to assigned location, official radius, and inside/outside status.
+- Frontend preview is informational only; backend geofence validation is final.
+- If employee has no assigned location, show `Lokasi kerja belum tersedia. Hubungi Superadmin.` and disable attendance action.
+- Keep Indonesian messages for GPS not ready, weak accuracy, outside radius, inactive/missing location, camera missing, and selfie missing.

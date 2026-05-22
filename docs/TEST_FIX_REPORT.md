@@ -280,3 +280,17 @@ Final CDN code status: `READY FOR REDEPLOY`; final production validation remains
 
 Conclusion: The application is highly robust, accessible, responsive, and 10/10 compliant.
 
+
+## Official Work Location Geofence Sync — 2026-05-22
+
+### Scope
+
+- Added `npm run seed:work-location` to upsert official Google Maps location `Produsen Dimsum Medan | TBM GRUP` at `3.6009125, 98.6964954`, radius `100m`.
+- Confirmed database schema already supports work location ID, name, address, latitude, longitude, radius, active status, and timestamps.
+- Added Google Maps preview links to Cabang/Lokasi Kerja UI.
+- Added attendance GPS distance/radius/inside-outside preview while keeping backend as final validator.
+- Added attendance audit metadata for accepted/rejected geofence decisions.
+
+### Verification
+
+- `npm test -- tests/locations/official-work-location.test.ts tests/attendance/gps-validation.test.ts tests/ui/attendance-selfie.test.ts tests/api/attendance.test.ts` passed: 4 files, 34 tests.

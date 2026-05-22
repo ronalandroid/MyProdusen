@@ -111,3 +111,13 @@ Final GO/NO-GO: `READY FOR REDEPLOY` and `READY FOR STAGING UAT`; not full `READ
 - [ ] Tablet `768/834` widths use compact sidebar, not oversized bottom nav.
 - [ ] Desktop `1024/1280/1440/1920` widths use sidebar and no bottom nav.
 - [ ] Akun page shows real `Keluar` button and confirmation `Anda yakin ingin keluar?`.
+
+## Official Work Location Gate — 2026-05-22
+
+- [ ] Run `npm run seed:work-location` in production/Coolify shell after deploy.
+- [ ] Confirm `Produsen Dimsum Medan | TBM GRUP` is active with latitude `3.6009125`, longitude `98.6964954`, radius `100m`.
+- [ ] Assign every attendance employee to official work location and active shift.
+- [ ] Real-device test inside radius accepts GPS+selfie attendance.
+- [ ] Real-device or mocked outside-radius test rejects attendance.
+- [ ] Employee with no assigned location cannot check in and sees `Lokasi kerja belum tersedia. Hubungi Superadmin.`
+- [ ] Audit log records accepted and rejected attendance decisions with GPS metadata.

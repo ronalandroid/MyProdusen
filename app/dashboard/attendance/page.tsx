@@ -65,6 +65,16 @@ function formatTime(value?: string | null) {
   }).format(new Date(value));
 }
 
+function calculateDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const earthRadiusMeters = 6371e3;
+  const phi1 = (lat1 * Math.PI) / 180;
+  const phi2 = (lat2 * Math.PI) / 180;
+  const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+  const a = Math.sin(deltaPhi / 2) ** 2 + Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) ** 2;
+  return earthRadiusMeters * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
 
 function getCleanAttendanceError(error: unknown, fallback = "Terjadi kendala saat memuat data. Silakan coba lagi.") {
   const message = error instanceof Error ? error.message : String(error || "");
@@ -123,6 +133,16 @@ export default function AttendancePage() {
   const employee = profile?.employee;
   const locationName = todayAttendance?.workLocation?.name || employee?.defaultLocation?.name || "Lokasi kerja belum tersedia";
   const locationAddress = todayAttendance?.workLocation?.address || employee?.defaultLocation?.address || "Hubungi HR untuk pengaturan lokasi kerja.";
+  const assignedLocation = employee?.defaultLocation;
+  const gpsDistanceMeters = gpsPosition && assignedLocation
+    ? calculateDistanceMeters(
+        gpsPosition.coords.latitude,
+        gpsPosition.coords.longitude,
+        assignedLocation.latitude,
+        assignedLocation.longitude,
+      )
+    : null;
+  const isInsideRadius = gpsDistanceMeters !== null && assignedLocation ? gpsDistanceMeters <= assignedLocation.radius : null;
 
   const statusContent = useMemo(() => {
     if (!todayAttendance) {
@@ -213,7 +233,7 @@ export default function AttendancePage() {
 
     try {
       if (!employee?.defaultLocation?.id) {
-        throw new Error("Lokasi kerja default belum diatur oleh HR");
+        throw new Error("Lokasi kerja belum tersedia. Hubungi Superadmin.");
       }
 
       if (!selfieBlob) {
@@ -275,9 +295,10 @@ export default function AttendancePage() {
   }, []);
 
   const missingRequirements = [
-    !employee?.defaultLocation?.id ? "Lokasi kerja belum tersedia" : null,
+    !employee?.defaultLocation?.id ? "Lokasi kerja belum tersedia. Hubungi Superadmin." : null,
     !gpsPosition ? "GPS belum siap" : null,
     !selfieBlob ? "Selfie wajib diambil" : null,
+    isInsideRadius === false ? "Anda berada di luar radius lokasi kerja" : null,
   ].filter(Boolean) as string[];
   const checkInDisabled = Boolean(todayAttendance) || isSubmitting || missingRequirements.length > 0;
   const checkOutDisabled = !todayAttendance || Boolean(todayAttendance?.checkOutTime) || isSubmitting || missingRequirements.length > 0;
@@ -388,7 +409,30 @@ export default function AttendancePage() {
             <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Akurasi</span>
             <strong style={{ fontSize: "13px" }}>{gpsPosition ? `${Math.round(gpsPosition.coords.accuracy)} meter` : "-"}</strong>
           </div>
+          <div className="hris-card-highlight" style={{ border: "1px solid var(--border-color)", borderRadius: "16px", padding: "12px" }}>
+            <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Jarak ke lokasi</span>
+            <strong style={{ fontSize: "13px" }}>{gpsDistanceMeters !== null ? `${Math.round(gpsDistanceMeters)} meter` : "-"}</strong>
+          </div>
+          <div className="hris-card-highlight" style={{ border: "1px solid var(--border-color)", borderRadius: "16px", padding: "12px" }}>
+            <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Radius resmi</span>
+            <strong style={{ fontSize: "13px" }}>{assignedLocation ? `${assignedLocation.radius} meter` : "-"}</strong>
+          </div>
         </div>
+        {isInsideRadius !== null && (
+          <div
+            role="status"
+            style={{
+              color: isInsideRadius ? "var(--success)" : "var(--danger)",
+              background: isInsideRadius ? "rgba(34,197,94,0.10)" : "rgba(220,38,38,0.10)",
+              borderRadius: "14px",
+              padding: "10px 12px",
+              fontSize: "12px",
+              fontWeight: 700,
+            }}
+          >
+            {isInsideRadius ? "Anda berada di dalam radius lokasi kerja" : "Anda berada di luar radius lokasi kerja"}
+          </div>
+        )}
         {gpsError && <div role="alert" style={{ color: "var(--danger)", fontSize: "12px", fontWeight: 600 }}>{gpsError}</div>}
         <div role="status" aria-live="polite" style={{ color: missingRequirements.length ? "var(--text-secondary)" : "var(--success)", fontSize: "12px", fontWeight: 600 }}>
           {actionHint}
@@ -423,6 +467,11 @@ export default function AttendancePage() {
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>{locationName}</div>
             <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{locationAddress}</div>
+            {assignedLocation && (
+              <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "6px" }}>
+                {assignedLocation.latitude.toFixed(7)}, {assignedLocation.longitude.toFixed(7)} • Radius {assignedLocation.radius} m
+              </div>
+            )}
           </div>
           <div style={{ width: "80px", height: "80px", backgroundColor: "#EAEAEA", borderRadius: "8px", position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: "radial-gradient(#ccc 1px, transparent 1px)", backgroundSize: "10px 10px", opacity: 0.5 }}></div>

@@ -233,3 +233,13 @@ Attendance Wave 2 keeps backend authority for attendance decisions:
 - Client IP extraction prefers `CF-Connecting-IP` only when Cloudflare trace headers are present, otherwise falls back to the first `X-Forwarded-For` value and then `X-Real-IP`.
 - Rate limiting and audit logging use the shared `getClientIp()` helper, so Cloudflare proxy traffic still maps to the real client IP when Cloudflare headers are present.
 - Keep Bot Fight Mode off until login, activation, attendance selfie upload, and PDF export have been tested behind Cloudflare.
+
+## Attendance Geofence Security — 2026-05-22
+
+- Official geofence source is `WorkLocation` in PostgreSQL, not frontend state.
+- Official coordinate: `3.6009125, 98.6964954`, radius `100m`, name `Produsen Dimsum Medan | TBM GRUP`.
+- Backend loads employee assigned `defaultLocationId` and rejects spoofed `workLocationId` values.
+- Backend Haversine validation uses `GPS_MAX_ACCURACY_METERS`, `GPS_TIMESTAMP_MAX_AGE_SECONDS`, and `REJECT_OUTSIDE_GEOFENCE`.
+- Employee with no assigned location cannot check in/out and sees `Lokasi kerja belum tersedia. Hubungi Superadmin.`
+- Selfie remains required through realtime FormData and private upload storage.
+- Attendance audit metadata must include employee ID, work location ID, latitude, longitude, accuracy, distance meters, radius meters, and decision where available.

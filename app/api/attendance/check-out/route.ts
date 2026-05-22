@@ -10,6 +10,15 @@ import { logAudit } from '@/lib/audit';
 import { UploadError } from '@/lib/upload';
 import { recordGeoOutcome } from '@/lib/attendance/geo-review-flow';
 
+function getFailureAuditAction(error: unknown, type: 'CHECK_IN' | 'CHECK_OUT') {
+  const message = error instanceof Error ? error.message : String(error || '');
+  if (error instanceof UploadError || /selfie/i.test(message)) return `${type}_REJECTED_SELFIE`;
+  if (/akurasi|accuracy/i.test(message)) return `${type}_REJECTED_GPS_ACCURACY`;
+  if (/luar radius|outside radius|radius lokasi/i.test(message)) return `${type}_REJECTED_OUTSIDE_RADIUS`;
+  if (/lokasi kerja/i.test(message)) return `${type}_REJECTED_WORK_LOCATION`;
+  return `${type}_FAILED`;
+}
+
 export async function POST(request: NextRequest) {
   let user: Awaited<ReturnType<typeof requireAuth>> | null = null;
   let employee: Awaited<ReturnType<typeof employeeService.getEmployeeByUserId>> | null = null;
@@ -43,6 +52,13 @@ export async function POST(request: NextRequest) {
         status: attendance?.status,
         geoStatus: attendance?.checkOutGeoStatus,
         isPendingGeoReview: attendance?.isPendingGeoReview,
+        workLocationId: attendance?.workLocationId,
+        latitude: attendance?.checkOutLatitude,
+        longitude: attendance?.checkOutLongitude,
+        accuracy: attendance?.checkOutAccuracy,
+        distanceMeters: attendance?.checkOutDistance,
+        radiusMeters: attendance?.geoValidation?.metadata?.workLocationRadius,
+        decision: attendance?.geoValidation?.decision || 'accept',
         selfiePath: attendance?.checkOutSelfieUrl || attendance?.checkOutSelfie,
         selfieSizeBytes: attendance?.checkOutSelfieSizeBytes,
         selfieMimeType: attendance?.checkOutSelfieMimeType,
@@ -73,14 +89,18 @@ export async function POST(request: NextRequest) {
       return unauthorizedResponse();
     }
     if (user) {
-      const auditAction = error instanceof UploadError ? 'CHECK_OUT_REJECTED_SELFIE' : 'CHECK_OUT_FAILED';
+      const auditAction = getFailureAuditAction(error, 'CHECK_OUT');
       await logAudit(
         user.userId,
         auditAction,
         'Attendance',
         employee?.id,
         undefined,
-        { reason: error?.message || 'Check-out gagal' },
+        {
+          employeeId: employee?.id,
+          reason: error?.message || 'Check-out gagal',
+          decision: 'reject',
+        },
         request,
       );
     }

@@ -187,3 +187,28 @@ The migration is additive and uses `CREATE TABLE IF NOT EXISTS` plus `CREATE IND
 Exception: `0004_attendance_exceptions.sql` has one approved legacy checksum from the pre-idempotent file version (`3ead212f6c826c22df01708203b68bc0f3c9c1d55ea84125d65a6905055c15ac`). The current file only wraps the same objects with `IF NOT EXISTS` / duplicate-object guards for safe redeploy. The deployment runner allows that legacy checksum and still blocks any other checksum mismatch.
 
 Exception: `0005_leave_balance_ledger.sql` has one approved legacy checksum from the pre-idempotent file version (`9a42caa30bef8e94b9fc1a9c52892047a88daf4110972dc0048846c147d11734`). The current file only wraps the same type, table, and indexes with `IF NOT EXISTS` / duplicate-object guards for safe redeploy. The deployment runner allows that legacy checksum and still blocks any other checksum mismatch.
+
+## Official Work Location — 2026-05-22
+
+Official attendance geofence location:
+
+- Name: `Produsen Dimsum Medan | TBM GRUP`
+- Latitude: `3.6009125`
+- Longitude: `98.6964954`
+- Radius: `100` meters
+- Active: `true`
+
+Schema mapping:
+
+- Table: `WorkLocation`
+- Radius column: `radius` stores radius in meters.
+- Employee assignment: `Employee.defaultLocationId` links employee to official work location.
+- Employee shift assignment: `Employee.defaultShiftId` must exist for attendance.
+
+Operational seed/upsert:
+
+```bash
+npm run seed:work-location
+```
+
+The seed script upserts by stable ID/name, preserves existing address when present, does not delete locations, and never resets attendance or employee history.

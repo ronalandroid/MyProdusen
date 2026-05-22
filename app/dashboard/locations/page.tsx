@@ -292,7 +292,16 @@ export default function LocationsPage() {
                   <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--primary)" }}>{loc.radius} m</div>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "8px" }}>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <a
+                  className="btn btn-secondary btn-sm"
+                  style={{ flex: "1 1 140px", fontSize: "12px" }}
+                  href={`https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MapPin size={14} className="mr-1" /> Buka Maps
+                </a>
                 <button type="button" className="btn btn-secondary btn-sm" style={{ flex: 1, fontSize: "12px" }} onClick={() => openEdit(loc)}>
                   <Edit size={14} className="mr-1" /> Edit
                 </button>
@@ -386,6 +395,14 @@ export default function LocationsPage() {
                   <p className="text-xs" style={{ color: "var(--text-muted)", marginTop: "4px" }}>
                     Pratinjau menggunakan ubin OpenStreetMap. Lingkaran kuning menunjukkan radius geo-fence.
                   </p>
+                  <a
+                    className="btn btn-secondary btn-sm mt-3"
+                    href={`https://www.google.com/maps/search/?api=1&query=${Number(form.latitude)},${Number(form.longitude)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MapPin size={14} className="mr-1" /> Open in Google Maps
+                  </a>
                 </div>
               )}
               {editing && (

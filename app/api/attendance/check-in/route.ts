@@ -10,6 +10,15 @@ import { logAudit } from '@/lib/audit';
 import { UploadError } from '@/lib/upload';
 import { recordGeoOutcome } from '@/lib/attendance/geo-review-flow';
 
+function getFailureAuditAction(error: unknown, type: 'CHECK_IN' | 'CHECK_OUT') {
+  const message = error instanceof Error ? error.message : String(error || '');
+  if (error instanceof UploadError || /selfie/i.test(message)) return `${type}_REJECTED_SELFIE`;
+  if (/akurasi|accuracy/i.test(message)) return `${type}_REJECTED_GPS_ACCURACY`;
+  if (/luar radius|outside radius|radius lokasi/i.test(message)) return `${type}_REJECTED_OUTSIDE_RADIUS`;
+  if (/lokasi kerja/i.test(message)) return `${type}_REJECTED_WORK_LOCATION`;
+  return `${type}_FAILED`;
+}
+
 export async function POST(request: NextRequest) {
   let user: Awaited<ReturnType<typeof requireAuth>> | null = null;
   let employee: Awaited<ReturnType<typeof employeeService.getEmployeeByUserId>> | null = null;
@@ -46,6 +55,12 @@ export async function POST(request: NextRequest) {
         status: attendance.status,
         geoStatus: attendance.checkInGeoStatus,
         isPendingGeoReview: attendance.isPendingGeoReview,
+        latitude: attendance.checkInLatitude,
+        longitude: attendance.checkInLongitude,
+        accuracy: attendance.checkInAccuracy,
+        distanceMeters: attendance.checkInDistance,
+        radiusMeters: attendance.geoValidation?.metadata?.workLocationRadius,
+        decision: attendance.geoValidation?.decision || 'accept',
         selfiePath: attendance.checkInSelfieUrl || attendance.checkInSelfie,
         selfieSizeBytes: attendance.checkInSelfieSizeBytes,
         selfieMimeType: attendance.checkInSelfieMimeType,
@@ -75,14 +90,18 @@ export async function POST(request: NextRequest) {
       return unauthorizedResponse();
     }
     if (user) {
-      const auditAction = error instanceof UploadError ? 'CHECK_IN_REJECTED_SELFIE' : 'CHECK_IN_FAILED';
+      const auditAction = getFailureAuditAction(error, 'CHECK_IN');
       await logAudit(
         user.userId,
         auditAction,
         'Attendance',
         employee?.id,
         undefined,
-        { reason: error?.message || 'Check-in gagal' },
+        {
+          employeeId: employee?.id,
+          reason: error?.message || 'Check-in gagal',
+          decision: 'reject',
+        },
         request,
       );
     }

@@ -13,7 +13,7 @@ const updateLocationSchema = z.object({
   address: z.string().min(5, 'Alamat minimal 5 karakter').optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
-  radius: z.number().positive().optional(),
+  radius: z.number().min(10, 'Radius harus antara 10-1000 meter').max(1000, 'Radius harus antara 10-1000 meter').optional(),
   isActive: z.boolean().optional(),
 });
 
