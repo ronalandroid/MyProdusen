@@ -100,11 +100,6 @@ export default function Sidebar({ role }: SidebarProps) {
         })}
       </nav>
 
-      <div className="hidden lg:block mx-4 mb-4 mt-auto rounded-2xl border border-[var(--border-color)] bg-[var(--primary-soft)] p-4 text-xs text-[var(--text-secondary)]">
-        <img src="/logo.png" alt="" className="mb-3 h-12 w-12 object-contain" aria-hidden="true" />
-        <p className="font-bold text-[var(--text-primary)]">Kontrol penuh, operasional tertata.</p>
-        <p className="mt-1">Logout tersedia di menu Akun.</p>
-      </div>
     </>
   );
 }

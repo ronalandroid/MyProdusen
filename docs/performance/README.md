@@ -37,3 +37,10 @@ Pass criteria:
 - `/uploads/*` is explicitly `no-store, private` to prevent legacy public upload objects from being cached by browsers or Cloudflare.
 - `public/sw.js` stays install/activate-only and does not intercept fetches, preventing stale dashboard, payroll, selfie, PDF, and API responses.
 - Validate CDN behavior after redeploy with `BASE_URL=https://myprodusen.online npm run verify:cdn`.
+
+## Mobile Navigation Performance — 2026-05-22
+
+- Phone bottom nav is capped to one row and five items to prevent wrapping, reflow, and content overlap.
+- Tablet and desktop switch to sticky sidebar navigation, reducing fixed bottom overlay work on larger screens.
+- Mobile content uses `min-height: 100dvh` and safe-area padding so browser address bars and PWA gesture bars do not hide page content.
+- Skip link is visually hidden until focus, preventing accidental visible overlay on touch render.

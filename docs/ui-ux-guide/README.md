@@ -501,3 +501,16 @@ Core HR pages now follow the same Stitch-aligned sync pattern:
 - `/dashboard/shifts` shows active shift ownership and attendance dependency.
 
 These sections do not create frontend-only authorization. Backend APIs and services remain the source of truth.
+
+## Mobile Navigation Hardening — 2026-05-22
+
+- Phone widths below `768px` use fixed bottom navigation only.
+- Mobile bottom navigation is one row, max five primary items, `72px–84px` high plus safe-area inset.
+- Mobile nav must never contain mascot/chicken artwork, marketing copy, endpoint/debug text, or logout helper text.
+- Superadmin mobile tabs: `Beranda`, `Cabang`, `Approval`, `Pengguna`, `Akun`.
+- Employee mobile tabs: `Beranda`, `Absensi`, `Cuti`, `KPI`, `Akun`.
+- Tablet widths from `768px` use compact sidebar behavior, not bottom nav.
+- Desktop widths from `1024px` use wider sidebar behavior.
+- Dashboard content reserves bottom space with `calc(96px + env(safe-area-inset-bottom))` on phone so nav does not cover cards or CTAs.
+- Accessibility skip link remains visually hidden by default and appears only on keyboard focus.
+- Logout belongs on the Akun page as a real `Keluar` button with confirmation `Anda yakin ingin keluar?`.

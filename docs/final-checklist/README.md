@@ -101,3 +101,13 @@ Final GO/NO-GO: `READY FOR REDEPLOY` and `READY FOR STAGING UAT`; not full `READ
 - [ ] Android/iPhone attendance GPS+selfie tested behind Cloudflare.
 - [ ] Protected selfie, document, payroll, and PDF routes require auth/RBAC behind Cloudflare.
 - [ ] Cloudflare cache purged after redeploy when static assets change.
+
+## Mobile Navigation Gate — 2026-05-22
+
+- [ ] Phone bottom nav has max five items and one row at 320/360/390/393/430/480 widths.
+- [ ] Phone bottom nav has no mascot/chicken, no marketing copy, and no logout helper text.
+- [ ] Content is not covered by bottom nav; bottom padding includes safe-area inset.
+- [ ] `Lewati navigasi` is hidden on touch render and appears only on keyboard focus.
+- [ ] Tablet `768/834` widths use compact sidebar, not oversized bottom nav.
+- [ ] Desktop `1024/1280/1440/1920` widths use sidebar and no bottom nav.
+- [ ] Akun page shows real `Keluar` button and confirmation `Anda yakin ingin keluar?`.

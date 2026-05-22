@@ -228,3 +228,10 @@
 
 - Added exact `/dashboard` no-store header rule because live Cloudflare audit found the unauthenticated redirect was dynamic but missing `Cache-Control`.
 - Kept nested `/dashboard/:path*`, `/api/:path*`, `/uploads`, and `/uploads/:path*` protected with `no-store, private`.
+
+## 2026-05-22 — Real Device Mobile Nav Fix
+
+- Hardened phone bottom navigation to one row, five items, safe-area padding, and `76px` base height.
+- Moved tablet navigation to compact sticky sidebar from `768px` upward.
+- Removed legacy nav marketing/logout helper card and added source regression tests for nav cleanliness.
+- Made the dashboard skip link hidden until keyboard focus.

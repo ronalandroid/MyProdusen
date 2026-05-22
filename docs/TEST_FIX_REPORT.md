@@ -241,3 +241,19 @@ Final CDN code status: `READY FOR REDEPLOY`; final production validation remains
 - `E2E_BASE_URL=https://myprodusen.online npm run e2e:public` passed: 20/20.
 - `E2E_BASE_URL=https://myprodusen.online npm run e2e:staging` passed public/security checks: 12 passed, 4 skipped because Superadmin E2E credentials were not configured in shell env.
 - TTFB sample after Cloudflare: first run `0.535769s`; warm runs mostly around `0.09s–0.14s`.
+
+## Mobile Navigation Real Device Fix — 2026-05-22
+
+### Scope
+
+- Hardened phone bottom nav to one row, five columns, `76px` base height, safe-area padding, and `44px` minimum tap targets.
+- Removed legacy sidebar helper card containing marketing/logout copy from duplicate `src/components/layout/Sidebar.tsx`.
+- Changed tablet behavior to compact sticky sidebar from `768px` upward so iPad/tablet layouts do not use oversized bottom nav.
+- Made `Lewati navigasi` skip link visually hidden by default and visible only on keyboard focus.
+- Kept Akun logout as real `Keluar` action with confirmation and existing logout API call.
+
+### Verification
+
+- `npm test -- tests/ui/mobile-navigation-layout.test.ts tests/ui/navigation-policy.test.ts tests/ui/account-logout-placement.test.ts tests/ui/no-production-debug-ui.test.ts tests/rbac/role-navigation.test.ts` passed: 5 files, 17 tests.
+- New guard `tests/ui/mobile-navigation-layout.test.ts` checks one-row safe-area nav, no mascot/copy in nav source, hidden skip link, tablet sidebar breakpoint, and Akun logout.
+- `E2E_BASE_URL=https://myprodusen.online npx playwright test tests/e2e/mobile-nav-policy.spec.ts` passed: 16 Playwright source-guard checks across configured responsive projects.
