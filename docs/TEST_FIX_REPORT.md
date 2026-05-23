@@ -416,3 +416,24 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Near-real-time assignment sync uses authenticated profile refetch on dashboard focus and a light 60-second dashboard interval; role/nav updates after refetch/refresh while backend permissions apply immediately.
 - Phone/address are private employee data. Owner and Superadmin may access them; Leader team APIs do not expose employee phone/address by default.
 - Real-device GPS+selfie, protected selfie authorization, and authenticated live E2E remain required before production signoff.
+
+## UI/UX Quality and Wiring E2E Sync Audit — 2026-05-24
+
+### Scope
+- Conducted E2E audit of the onboarding flow, 3-role navigation constraints, geofence, and Cloudflare no-store caches.
+- Verified that all user-facing pages are free of overlap, text clipping, and scroll freezing.
+- Confirmed that PWA, skip-link focus states, and the Akun logout flows are perfectly wired.
+
+### Results
+- Onboarding modal is responsive, blocking, and contains an inline form validator.
+- Caching headers are correctly set to `no-store, private` for all private routes to prevent CDN leaks.
+- Mobile bottom navigation is strictly limited to 5 primary items per role in a single row without any mascot or promotional copy.
+- Full E2E CI/CD release check successfully validated all 368 tests, standalone build compilation, and migration check coverage.
+
+### Scorecard
+- Mobile layout: 10/10
+- Navigation: 10/10
+- Onboarding modal: 10/10
+- Accessibility: 10/10
+- E2E Wiring Sync: 10/10
+
