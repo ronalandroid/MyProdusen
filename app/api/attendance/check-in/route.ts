@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { attendanceService } from '@/services/attendance/attendance.service';
-import { successResponse, errorResponse, unauthorizedResponse } from '@/utils/response';
+import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
 import { requireAuth, getClientIp, getUserAgent } from '@/lib/middleware';
 import { employeeService } from '@/services/employees/employee.service';
 import { attendanceExceptionService } from '@/features/attendance/attendance-exception.service';
@@ -24,6 +24,9 @@ export async function POST(request: NextRequest) {
   let employee: Awaited<ReturnType<typeof employeeService.getEmployeeByUserId>> | null = null;
   try {
     user = await requireAuth(request);
+    if (user.role !== 'EMPLOYEE' && user.role !== 'LEADER') {
+      return forbiddenResponse('Absensi mandiri hanya untuk Karyawan dan Leader');
+    }
     employee = await employeeService.getEmployeeByUserId(user.userId);
     const { data, selfie } = await parseCheckInRealtimeForm(request);
     const ipAddress = getClientIp(request);

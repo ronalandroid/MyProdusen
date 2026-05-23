@@ -183,7 +183,7 @@ Release candidate code commit: `d987fa7` (`main`). Redeploy from latest `main` H
 
 ### Pending Signoff Gates
 
-- Authenticated live Superadmin/Employee E2E skipped because credentials were missing in shell env.
+- Authenticated live role E2E was skipped because Superadmin/Leader/Employee credentials were missing in shell env.
 - Android real-device GPS/selfie flow not run.
 - Backup/restore drill not run.
 - Stakeholder signoff not recorded.
@@ -294,3 +294,125 @@ Conclusion: The application is highly robust, accessible, responsive, and 10/10 
 ### Verification
 
 - `npm test -- tests/locations/official-work-location.test.ts tests/attendance/gps-validation.test.ts tests/ui/attendance-selfie.test.ts tests/api/attendance.test.ts` passed: 4 files, 34 tests.
+
+
+## 3-Role Leader Model — 2026-05-24
+
+Production roles are now exactly `SUPERADMIN`, `LEADER`, and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` remain historical database enum values only and must not appear in production UI, seed accounts, tests, or new route access.
+
+### SUPERADMIN
+
+- Full system control: users, employees, roles, teams, leader assignment, employee team assignment, cabang/lokasi kerja, shifts, attendance, KPI, reports/export, payroll if active, and audit logs.
+- Can create teams such as Cetak, Gudang, Pengiriman, Packing, Produksi, and Quality Control.
+- Can assign one or more active `LEADER` users to teams and assign active employees to teams.
+- Can view all attendance, KPI production entries, personal KPI, and global reports.
+
+### LEADER
+
+`LEADER` is also an active employee and must have an employee profile, default work location, and active shift for attendance. If incomplete, UI/API returns: “Anda belum memiliki data karyawan/lokasi kerja/shift. Hubungi Superadmin.” If not assigned to a team, UI/API returns: “Anda belum ditetapkan ke tim. Hubungi Superadmin.”
+
+As self-service employee, `LEADER` can use GPS + realtime selfie attendance, own attendance history, own leave/cuti, own KPI/kinerja, own personal performance report, own notifications, and own payslip if payroll is active.
+
+As team role, `LEADER` can view assigned team members only, input daily KPI/production count for assigned employees only, view team KPI summary, and view daily/weekly/monthly team performance reports scoped to assigned team. `LEADER` cannot view team payroll, edit sensitive employee data, access another leader team, access Superadmin global reports, or input own KPI unless `ALLOW_LEADER_SELF_KPI_INPUT=true`.
+
+### EMPLOYEE
+
+`EMPLOYEE` can use GPS + realtime selfie attendance, submit leave/cuti, view own KPI/kinerja only, view own attendance history only, view own personal report only, and view own notifications/payslip if active. `EMPLOYEE` cannot input KPI, see other employee data, or access leader/superadmin pages.
+
+### Database Additions
+
+Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum value `LEADER`, `Team`, `LeaderAssignment`, `EmployeeTeamAssignment`, and `KpiProductionEntry`. Migration is non-destructive and keeps historical data.
+
+### API/RBAC Additions
+
+- Superadmin: `GET/POST /api/teams`, `POST /api/teams/leader-assignment`, `POST /api/teams/employee-assignment`.
+- Leader: `GET /api/leader/me`, `GET /api/leader/team-employees`, `GET/POST /api/leader/kpi-production`.
+- Self KPI view: `GET /api/kpi/production/me`.
+- Backend enforces role, active user, leader team scope, employee membership, quantity/date validation, self-KPI policy, and no-store API responses.
+
+### UI Additions
+
+- Leader dashboard has “Saya / Pribadi” and “Tim Saya”.
+- Leader mobile primary nav: Beranda, Absensi, Input KPI, Tim, Akun.
+- Leader pages: `/dashboard/leader/kpi-input`, `/dashboard/leader/team`, `/dashboard/leader/reports`.
+- Employee KPI page shows production count source “Diinput oleh Leader” and empty state “Belum ada input KPI hari ini.”
+
+## Production UAT Leader Gate — 2026-05-24
+
+### Status
+- **GO/NO-GO:** NO-GO for production signoff.
+- **Reason:** Target data prerequisites and authenticated/manual gates are not complete.
+
+### Evidence
+- `npm run db:deploy`: passed on configured database; `0020_leader_role_teams_kpi_production.sql` applied.
+- `npm run seed:work-location`: passed; official work location updated.
+- `npm run seed:leader-teams`: passed; `Cetak`, `Gudang`, and `Pengiriman` created/upserted without passwords or deletes.
+- Production data check: official location `1`, active Superadmin `22`, active Leader users `0`, active Employee users `48`, leader profiles `0`, leader ready `0`, active teams `3`, leader assignments `0`, employee team assignments `0`, ready assigned employees `0`.
+- `E2E_BASE_URL=https://myprodusen.online npm run e2e:public`: passed `20/20`.
+- Authenticated E2E skipped because one or more `E2E_*` credential env vars were missing.
+- Real-device GPS+selfie attendance was not executed in this terminal session.
+- `npm run release:env`: failed locally because required production env vars were missing in shell.
+- `npm run release:check`: passed locally.
+- `BASE_URL=https://myprodusen.online npm run verify:live-routes`: passed.
+
+### Remaining Blockers
+- Create or convert first active `LEADER` account using Superadmin UI.
+- Ensure Leader has active employee profile, `defaultLocationId`, and active shift.
+- Assign Leader to one active team.
+- Assign at least one active Employee with location and shift to that team.
+- Set `E2E_SUPERADMIN_EMAIL`, `E2E_SUPERADMIN_PASSWORD`, `E2E_LEADER_EMAIL`, `E2E_LEADER_PASSWORD`, `E2E_EMPLOYEE_EMAIL`, and `E2E_EMPLOYEE_PASSWORD`, then run authenticated E2E.
+- Execute Android and iPhone real-device GPS+selfie attendance checklist.
+
+## Final Role And Assignment UAT Update — 2026-05-24
+
+- Public register is employee-only: backend strips any submitted role/team/division/position/location/shift escalation and creates `EMPLOYEE` with existing activation policy.
+- Only `SUPERADMIN` can change role, active status, team/division, position/title, work location, and shift.
+- `LEADER` remains a self-service employee for GPS+selfie attendance and personal reports, plus team-scoped KPI input for assigned members only.
+- `EMPLOYEE` remains self-service only and cannot input KPI, view other employees, access Leader pages, or access Superadmin pages.
+- Role and work identity are separate: role controls access; team/division/position/location/shift control work assignment.
+- Team/division examples include Produksi, Kargo, Cetak, Gudang, Pengiriman, Packing, and Quality Control; active data remains configurable by Superadmin.
+- Added safe additive migration for position metadata and primary active employee team assignment guard.
+- Added/updated production-safe scripts: `seed:leader-teams`, `setup:uat-leader-flow`, `verify:uat-leader-flow`, and `release:runtime`.
+- `release:runtime` is target-container safe and intentionally excludes lint/test/build because production images may not ship dev dependencies.
+- Remaining production signoff blockers: target-container `release:env`, authenticated E2E with real credentials, real-device GPS+selfie attendance, and protected selfie authorization verification.
+
+## Final Role Assignment Execution — 2026-05-24
+
+### Result
+- Registration security fixed: public register strips self-submitted role/team/division/position/location/shift fields and creates `EMPLOYEE` only.
+- Superadmin assignment UI/API updated for role, team/division, position/title, location, shift, and active status.
+- Leader assignment requires employee profile, location, shift, and team; self-demotion/deactivation and last-Superadmin downgrade are blocked.
+- Leader KPI team scope remains backend-enforced by assigned team membership.
+- Employee self-service remains own-data only.
+
+### Verification
+- `npm run db:deploy`: passed; applied `0021_positions_team_assignment_metadata.sql` locally.
+- `npm run seed:leader-teams`: passed; upserted/created Cetak, Gudang, Pengiriman, Packing, Produksi, Quality Control, and Kargo.
+- `npm run lint`: passed.
+- `npm run test`: passed, `72` files and `361` tests.
+- `npm run build`: passed.
+- `npm run release:check`: passed.
+- `BASE_URL=https://myprodusen.online npm run verify:live-routes`: passed.
+- `E2E_BASE_URL=https://myprodusen.online npm run e2e:public`: passed, `20/20`.
+- `npm run release:runtime`: failed in local shell because production env vars are missing; must run in target Coolify container.
+- `npm run setup:uat-leader-flow` and `npm run verify:uat-leader-flow`: blocked in local shell because required `UAT_*` env vars are missing.
+- Authenticated E2E skipped because required `E2E_*` credential env vars are missing.
+
+### Remaining Blockers
+- Run `npm run release:runtime` in target Coolify/container shell.
+- Run UAT setup/verify in target container with `UAT_*` env credentials.
+- Run authenticated E2E with Superadmin/Leader/Employee credentials.
+- Run real-device GPS+selfie and protected selfie authorization checks.
+
+## First Login Personal Profile Onboarding — 2026-05-24
+
+- After registration, activation, and first login, the dashboard checks `/api/profile/me` with `no-store, private` behavior.
+- If phone, address, or `profileCompletedAt` is missing, the app shows mandatory modal “Lengkapi Data Pribadi”.
+- User-editable fields are limited to `phone` / Nomor HP and `address` / Alamat lengkap.
+- Users cannot edit role, team/division, position/title, leader status, work location, shift, active status, payroll, or permissions.
+- If a self-registered activated user has no employee row yet, saving personal profile creates a minimal employee profile with generated NIP and no work assignment.
+- Superadmin-only assignment fields remain role, team/division, position/title, work location, shift, and active status.
+- Employee/Leader dashboard shows clean assignment status cards when division, position, location, shift, or Leader team is missing.
+- Near-real-time assignment sync uses authenticated profile refetch on dashboard focus and a light 60-second dashboard interval; role/nav updates after refetch/refresh while backend permissions apply immediately.
+- Phone/address are private employee data. Owner and Superadmin may access them; Leader team APIs do not expose employee phone/address by default.
+- Real-device GPS+selfie, protected selfie authorization, and authenticated live E2E remain required before production signoff.

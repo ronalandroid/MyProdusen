@@ -18,7 +18,7 @@ export const registerSchema = z.object({
   email: z.string().email('Email tidak valid'),
   username: z.string().min(3, 'Username minimal 3 karakter'),
   password: strongPasswordSchema,
-  role: z.enum(['SUPERADMIN', 'EMPLOYEE']),
+  role: z.enum(['SUPERADMIN', 'LEADER', 'EMPLOYEE']),
 });
 
 export const changePasswordSchema = z.object({

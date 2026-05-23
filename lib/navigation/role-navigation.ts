@@ -11,6 +11,9 @@ export type NavigationItemKey =
   | 'shifts'
   | 'leave'
   | 'kpi'
+  | 'leader-team'
+  | 'leader-kpi-input'
+  | 'leader-report'
   | 'reports'
   | 'reports-pdf'
   | 'payroll'
@@ -33,23 +36,26 @@ export interface NavigationItem extends Omit<NavigationPolicyItem, 'primaryFor'>
 }
 
 export const navigationPolicy: readonly NavigationPolicyItem[] = [
-  { key: 'dashboard', name: 'Beranda', path: '/dashboard', primaryFor: ['SUPERADMIN', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'EMPLOYEE'] },
-  { key: 'self-service', name: 'ESS', path: '/dashboard/self-service', primaryFor: [], allowedRoles: ['EMPLOYEE'] },
-  { key: 'attendance', name: 'Absensi', path: '/dashboard/attendance', primaryFor: ['EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'EMPLOYEE'] },
+  { key: 'dashboard', name: 'Beranda', path: '/dashboard', primaryFor: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'self-service', name: 'ESS', path: '/dashboard/self-service', primaryFor: [], allowedRoles: ['LEADER', 'EMPLOYEE'] },
+  { key: 'attendance', name: 'Absensi', path: '/dashboard/attendance', primaryFor: ['LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
   { key: 'locations', name: 'Cabang', path: '/dashboard/locations', primaryFor: ['SUPERADMIN'], allowedRoles: ['SUPERADMIN'] },
   { key: 'attendance-exceptions', name: 'Approval', path: '/dashboard/attendance/exceptions', primaryFor: ['SUPERADMIN'], allowedRoles: ['SUPERADMIN'] },
   { key: 'users', name: 'Pengguna', path: '/dashboard/users', primaryFor: ['SUPERADMIN'], allowedRoles: ['SUPERADMIN'] },
   { key: 'employees', name: 'Karyawan', path: '/dashboard/employees', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'shifts', name: 'Shift', path: '/dashboard/shifts', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'leave', name: 'Cuti', path: '/dashboard/leave', primaryFor: ['EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'EMPLOYEE'] },
-  { key: 'kpi', name: 'KPI', path: '/dashboard/kpi', primaryFor: ['EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'EMPLOYEE'] },
+  { key: 'kpi', name: 'KPI', path: '/dashboard/kpi', primaryFor: ['EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'leader-kpi-input', name: 'Input KPI', path: '/dashboard/leader/kpi-input', primaryFor: ['LEADER'], allowedRoles: ['LEADER'] },
+  { key: 'leader-team', name: 'Tim', path: '/dashboard/leader/team', primaryFor: ['LEADER'], allowedRoles: ['LEADER'] },
+  { key: 'leader-report', name: 'Laporan Tim', path: '/dashboard/leader/reports', primaryFor: [], allowedRoles: ['LEADER'] },
   { key: 'reports', name: 'Laporan', path: '/dashboard/reports', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'payroll', name: 'Gaji', path: '/dashboard/payroll', primaryFor: [], allowedRoles: ['SUPERADMIN', 'EMPLOYEE'] },
-  { key: 'overtime', name: 'Lembur', path: '/dashboard/overtime', primaryFor: [], allowedRoles: ['SUPERADMIN', 'EMPLOYEE'] },
-  { key: 'documents', name: 'Dokumen', path: '/dashboard/documents', primaryFor: [], allowedRoles: ['SUPERADMIN', 'EMPLOYEE'] },
-  { key: 'notifications', name: 'Notifikasi', path: '/dashboard/notifications', primaryFor: [], allowedRoles: ['SUPERADMIN', 'EMPLOYEE'] },
+  { key: 'payroll', name: 'Gaji', path: '/dashboard/payroll', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'overtime', name: 'Lembur', path: '/dashboard/overtime', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'documents', name: 'Dokumen', path: '/dashboard/documents', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'notifications', name: 'Notifikasi', path: '/dashboard/notifications', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
   { key: 'audit', name: 'Audit', path: '/dashboard/audit', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'profile', name: 'Akun', path: '/dashboard/profile', primaryFor: ['SUPERADMIN', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'EMPLOYEE'] },
+  { key: 'profile', name: 'Akun', path: '/dashboard/profile', primaryFor: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
 ];
 
 const sensitiveRoutePolicy: readonly NavigationPolicyItem[] = [

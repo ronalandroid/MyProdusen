@@ -20,6 +20,7 @@ type KpiResultRow = {
 };
 
 type EmployeeRow = { id: string; name: string; nip?: string | null };
+type ProductionEntry = { id: string; date: string; quantity: string; unit: string; source: string; teamName: string };
 
 type EmployeeSummary = {
   employeeId: string;
@@ -50,6 +51,7 @@ export default function KPIPage() {
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const [employeeSummary, setEmployeeSummary] = useState<EmployeeSummary | null>(null);
+  const [productionEntries, setProductionEntries] = useState<ProductionEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [error, setError] = useState("");
@@ -60,13 +62,15 @@ export default function KPIPage() {
     setLoading(true);
     setError("");
     try {
-      const [statsResponse, resultsResponse] = await Promise.all([
+      const [statsResponse, resultsResponse, productionResponse] = await Promise.all([
         fetch("/api/dashboard/stats", { headers: getAuthHeaders(), credentials: "include" }),
         fetch(`/api/kpi/results?period=${currentPeriod}`, { headers: getAuthHeaders(), credentials: "include" }),
+        fetch("/api/kpi/production/me", { headers: getAuthHeaders(), credentials: "include", cache: "no-store" }),
       ]);
 
       const statsPayload = await statsResponse.json().catch(() => null);
       const resultsPayload = await resultsResponse.json().catch(() => null);
+      const productionPayload = await productionResponse.json().catch(() => null);
 
       if (!statsResponse.ok || !statsPayload?.success) throw new Error(statsPayload?.error || "Gagal mengambil role pengguna");
       if (!resultsResponse.ok || !resultsPayload?.success) throw new Error(resultsPayload?.error || "Gagal mengambil KPI");
@@ -74,6 +78,7 @@ export default function KPIPage() {
       const nextRole = statsPayload.data?.role || "EMPLOYEE";
       setRole(nextRole);
       setResults(Array.isArray(resultsPayload.data) ? resultsPayload.data : []);
+      if (productionResponse.ok && productionPayload?.success) setProductionEntries(Array.isArray(productionPayload.data) ? productionPayload.data : []);
 
       if (nextRole === "SUPERADMIN") {
         const employeeResponse = await fetch("/api/employees?limit=100", { headers: getAuthHeaders(), credentials: "include" });
@@ -170,6 +175,25 @@ export default function KPIPage() {
           <div className="text-lg font-extrabold">{role}</div>
         </div>
       </section>
+
+      {!canViewTeam && (
+        <section className="card p-4 sm:p-5">
+          <h2 className="text-base font-bold">KPI Produksi Harian</h2>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">Sumber: Diinput oleh Leader</p>
+          {productionEntries.length === 0 ? (
+            <div className="mt-4 rounded-2xl bg-[var(--bg-input)] p-4 text-sm font-semibold text-[var(--text-secondary)]">Belum ada input KPI hari ini.</div>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {productionEntries.slice(0, 7).map((entry) => (
+                <div key={entry.id} className="flex min-h-[44px] items-center justify-between gap-3 rounded-2xl border border-[var(--border)] p-3">
+                  <div><p className="font-bold">{entry.date}</p><p className="text-xs text-[var(--text-secondary)]">{entry.teamName} • {entry.source}</p></div>
+                  <div className="text-right font-extrabold">{Number(entry.quantity).toLocaleString("id-ID")} {entry.unit}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {canViewTeam && (
         <section className="card p-4 sm:p-5">

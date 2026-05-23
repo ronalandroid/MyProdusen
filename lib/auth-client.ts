@@ -16,6 +16,7 @@ export interface ClientUserProfile {
     email: string;
     phone?: string | null;
     address?: string | null;
+    profileCompletedAt?: string | null;
     division?: string | null;
     position?: string | null;
     profilePhoto?: string | null;

@@ -26,7 +26,7 @@ async function upsertUser(input: {
   email: string;
   username: string;
   password: string;
-  role: 'SUPERADMIN' | 'EMPLOYEE';
+  role: 'SUPERADMIN' | 'LEADER' | 'EMPLOYEE';
 }) {
   const [user] = await db
     .insert(users)

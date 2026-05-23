@@ -2,7 +2,8 @@ import { pgTable, text, timestamp, boolean, integer, real, pgEnum, uniqueIndex, 
 import { relations, sql } from 'drizzle-orm';
 
 // Enums
-export const userRoleEnum = pgEnum('UserRole', ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'EMPLOYEE']);
+export const userRoleEnum = pgEnum('UserRole', ['SUPERADMIN', 'ADMIN_HR', 'SUPERVISOR', 'LEADER', 'EMPLOYEE']);
+export const kpiProductionEntryStatusEnum = pgEnum('KpiProductionEntryStatus', ['DRAFT', 'SUBMITTED']);
 export const employeeStatusEnum = pgEnum('EmployeeStatus', ['ACTIVE', 'INACTIVE', 'SUSPENDED']);
 export const attendanceStatusEnum = pgEnum('AttendanceStatus', ['PRESENT', 'LATE', 'ABSENT', 'LEAVE', 'SICK', 'PERMISSION']);
 export const leaveStatusEnum = pgEnum('LeaveStatus', ['PENDING', 'APPROVED', 'REJECTED']);
@@ -43,6 +44,7 @@ export const employees = pgTable('Employee', {
   status: employeeStatusEnum('status').default('ACTIVE').notNull(),
   profilePhoto: text('profilePhoto'),
   emergencyContact: text('emergencyContact'),
+  profileCompletedAt: timestamp('profileCompletedAt', { mode: 'date' }),
   defaultShiftId: text('defaultShiftId'),
   defaultLocationId: text('defaultLocationId'),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
@@ -644,6 +646,89 @@ export const overtimeRates = pgTable('OvertimeRate', {
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
 });
+
+export const teams = pgTable('Team', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug'),
+  type: text('type'),
+  description: text('description'),
+  active: boolean('active').default(true).notNull(),
+  createdBy: text('createdBy'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  nameIdx: index('Team_name_idx').on(table.name),
+  activeIdx: index('Team_active_idx').on(table.active),
+}));
+
+export const leaderAssignments = pgTable('LeaderAssignment', {
+  id: text('id').primaryKey(),
+  leaderUserId: text('leaderUserId').notNull(),
+  teamId: text('teamId').notNull(),
+  active: boolean('active').default(true).notNull(),
+  createdBy: text('createdBy'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  leaderIdx: index('LeaderAssignment_leaderUserId_idx').on(table.leaderUserId),
+  teamIdx: index('LeaderAssignment_teamId_idx').on(table.teamId),
+  activeIdx: index('LeaderAssignment_active_idx').on(table.active),
+}));
+
+export const employeeTeamAssignments = pgTable('EmployeeTeamAssignment', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId').notNull(),
+  teamId: text('teamId').notNull(),
+  positionId: text('positionId'),
+  assignedBy: text('assignedBy'),
+  active: boolean('active').default(true).notNull(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  employeeIdx: index('EmployeeTeamAssignment_employeeId_idx').on(table.employeeId),
+  teamIdx: index('EmployeeTeamAssignment_teamId_idx').on(table.teamId),
+  activeIdx: index('EmployeeTeamAssignment_active_idx').on(table.active),
+}));
+
+export const positions = pgTable('Position', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  teamId: text('teamId'),
+  roleType: text('roleType'),
+  active: boolean('active').default(true).notNull(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  nameIdx: index('Position_name_idx').on(table.name),
+  teamIdx: index('Position_teamId_idx').on(table.teamId),
+  activeIdx: index('Position_active_idx').on(table.active),
+}));
+
+export const kpiProductionEntries = pgTable('KpiProductionEntry', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId').notNull(),
+  teamId: text('teamId').notNull(),
+  leaderUserId: text('leaderUserId').notNull(),
+  date: date('date', { mode: 'string' }).notNull(),
+  metricType: text('metricType').notNull(),
+  quantity: decimal('quantity', { precision: 12, scale: 2 }).notNull(),
+  unit: text('unit').default('pcs').notNull(),
+  note: text('note'),
+  status: kpiProductionEntryStatusEnum('status').default('SUBMITTED').notNull(),
+  createdBy: text('createdBy').notNull(),
+  updatedBy: text('updatedBy'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  dateIdx: index('KpiProductionEntry_date_idx').on(table.date),
+  employeeIdx: index('KpiProductionEntry_employeeId_idx').on(table.employeeId),
+  teamIdx: index('KpiProductionEntry_teamId_idx').on(table.teamId),
+  leaderIdx: index('KpiProductionEntry_leaderUserId_idx').on(table.leaderUserId),
+  metricTypeIdx: index('KpiProductionEntry_metricType_idx').on(table.metricType),
+  createdAtIdx: index('KpiProductionEntry_createdAt_idx').on(table.createdAt),
+  uniqueDailyMetric: uniqueIndex('KpiProductionEntry_employee_team_date_metric_unique').on(table.employeeId, table.teamId, table.date, table.metricType),
+}));
 
 // Overtime Request
 export const overtimeRequests = pgTable('OvertimeRequest', {

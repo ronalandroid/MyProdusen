@@ -18,8 +18,10 @@ export const registerSchema = z.object({
   email: z.string().email('Email tidak valid'),
   username: z.string().min(3, 'Username minimal 3 karakter'),
   password: strongPasswordSchema,
-  role: z.enum(['SUPERADMIN', 'EMPLOYEE']),
+  role: z.enum(['SUPERADMIN', 'LEADER', 'EMPLOYEE']),
 });
+
+export const publicRegisterSchema = registerSchema.omit({ role: true });
 
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Password lama wajib diisi'),
@@ -49,6 +51,7 @@ export const resetPasswordSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type PublicRegisterInput = z.infer<typeof publicRegisterSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResendActivationInput = z.infer<typeof resendActivationSchema>;

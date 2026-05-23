@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { POST as loginPOST } from '@/app/api/auth/login/route';
 import { POST as registerPOST } from '@/app/api/auth/register/route';
+import { POST as publicRegisterPOST } from '@/app/api/auth/public-register/route';
 import { GET as profileGET } from '@/app/api/auth/profile/route';
 import { POST as changePasswordPOST } from '@/app/api/auth/change-password/route';
 import { GET as publicRegisterTokenGET } from '@/app/api/auth/public-register-token/route';
@@ -270,6 +271,40 @@ describe('Auth API', () => {
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
       expect(data.message).toContain('Email sudah terdaftar');
+    });
+  });
+
+  describe('POST /api/auth/public-register', () => {
+    it('always creates EMPLOYEE when payload attempts LEADER escalation', async () => {
+      const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const email = `public_leader_${uniqueSuffix}@test.com`;
+      const request = createMockRequest('POST', 'http://localhost:3000/api/auth/public-register', {
+        body: { email, username: `publicleader_${uniqueSuffix}`, password: 'Password123!', role: 'LEADER', division: 'Cetak', position: 'Leader Cetak', teamId: 'team_cetak' },
+      });
+
+      const response = await publicRegisterPOST(request as any);
+      const data = await response.json();
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.data.role).toBe('EMPLOYEE');
+      expect(data.data.isActive).toBe(false);
+      testUserIds.push(data.data.id);
+    });
+
+    it('creates EMPLOYEE only when public registration payload is valid', async () => {
+      const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const email = `public_employee_${uniqueSuffix}@test.com`;
+      const request = createMockRequest('POST', 'http://localhost:3000/api/auth/public-register', {
+        body: { email, username: `publicemployee_${uniqueSuffix}`, password: 'Password123!' },
+      });
+
+      const response = await publicRegisterPOST(request as any);
+      const data = await response.json();
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.data.role).toBe('EMPLOYEE');
+      expect(data.data.isActive).toBe(false);
+      testUserIds.push(data.data.id);
     });
   });
 

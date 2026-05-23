@@ -6,6 +6,7 @@ import { Bell, CheckCircle, Clock, Users, AlertTriangle, RefreshCcw, ShieldCheck
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders, fetchProfile, type ClientUserProfile } from "@/lib/auth-client";
 import EmployeeBeranda from "@/components/dashboard/EmployeeBeranda";
+import LeaderBeranda from "@/components/dashboard/LeaderBeranda";
 import { type DashboardActionTone } from "@/lib/dashboard/action-cards";
 import type { UserRole } from "@/lib/permissions";
 
@@ -77,7 +78,7 @@ export default function DashboardPage() {
       const userProfile = await fetchProfile();
       setProfile(userProfile);
 
-      const statsRes = await fetch("/api/dashboard/stats", { headers: getAuthHeaders() });
+      const statsRes = await fetch("/api/dashboard/stats", { headers: getAuthHeaders(), cache: "no-store" });
       const statsData = await statsRes.json();
 
       if (!statsRes.ok || !statsData.success) {
@@ -104,6 +105,27 @@ export default function DashboardPage() {
 
   const displayName = profile?.employee?.fullName || profile?.username || "User";
   const initials = displayName.substring(0, 2).toUpperCase();
+
+  if (stats.role === "LEADER") {
+    return (
+      <div className="dashboard-page animate-fade-in">
+        <header className="dashboard-header animate-slide-up">
+          <div className="dashboard-greeting">
+            <p className="dashboard-date">{new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
+            <h1>Beranda Leader</h1>
+            <p>Absensi pribadi dan KPI tim dalam satu tempat.</p>
+          </div>
+          <div className="dashboard-header-actions">
+            <button type="button" className="btn btn-secondary btn-sm" onClick={loadDashboardData}>
+              <RefreshCcw size={14} aria-hidden="true" />
+              Muat ulang
+            </button>
+          </div>
+        </header>
+        <LeaderBeranda profile={profile} />
+      </div>
+    );
+  }
 
   if (stats.role !== "SUPERADMIN") {
     return (

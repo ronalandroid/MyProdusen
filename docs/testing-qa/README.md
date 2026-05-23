@@ -2,7 +2,7 @@
 
 > Canonical testing, QA, live smoke, Android real-device, and TestSprite safe-smoke guide.
 
-> Role lock: production UI/login/access uses only `SUPERADMIN` and `EMPLOYEE`; `ADMIN_HR` and `SUPERVISOR` are historical database enum values only and must be denied in production access.
+> Role lock: production UI/login/access uses only `SUPERADMIN`, `LEADER`, and `EMPLOYEE`; `ADMIN_HR` and `SUPERVISOR` are historical database enum values only and must be denied in production access.
 
 ## Local Test Commands
 
@@ -33,7 +33,7 @@ BASE_URL=https://myprodusen.online npm run verify:live-routes
 
 ## Required Credential Env
 
-Only two production test roles are allowed:
+Only three production test roles are allowed:
 
 ```env
 E2E_SUPERADMIN_EMAIL=
@@ -324,7 +324,7 @@ Release candidate code commit: `d987fa7` (`main`). Redeploy from latest `main` H
 
 ### Skipped Or Pending
 
-- Authenticated live Superadmin/Employee E2E skipped because `E2E_SUPERADMIN_EMAIL`, `E2E_SUPERADMIN_PASSWORD`, `E2E_EMPLOYEE_EMAIL`, and `E2E_EMPLOYEE_PASSWORD` were not present in shell env.
+- Authenticated live Superadmin/Leader/Employee E2E skipped because `E2E_SUPERADMIN_EMAIL`, `E2E_SUPERADMIN_PASSWORD`, `E2E_LEADER_EMAIL`, `E2E_LEADER_PASSWORD`, `E2E_EMPLOYEE_EMAIL`, and `E2E_EMPLOYEE_PASSWORD` were not present in shell env.
 - TestSprite account/tool is available, but safe production mutation was not approved; safe smoke only remains optional for owner QA signoff.
 - Android real-device GPS/selfie test not run; see `docs/ANDROID_REAL_DEVICE_TEST.md`.
 - Backup/restore drill not run; see `docs/operations/README.md`.
@@ -361,3 +361,45 @@ Manual browser checks:
 - Protected selfie/document preview must require auth and ownership/RBAC.
 - Payroll, PDF report export, KPI, leave, audit, and notifications must load fresh data from API.
 - Cloudflare `cf-cache-status` must not be `HIT` for private paths.
+
+
+## 3-Role Leader Model — 2026-05-24
+
+Production roles are now exactly `SUPERADMIN`, `LEADER`, and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` remain historical database enum values only and must not appear in production UI, seed accounts, tests, or new route access.
+
+### SUPERADMIN
+
+- Full system control: users, employees, roles, teams, leader assignment, employee team assignment, cabang/lokasi kerja, shifts, attendance, KPI, reports/export, payroll if active, and audit logs.
+- Can create teams such as Cetak, Gudang, Pengiriman, Packing, Produksi, and Quality Control.
+- Can assign one or more active `LEADER` users to teams and assign active employees to teams.
+- Can view all attendance, KPI production entries, personal KPI, and global reports.
+
+### LEADER
+
+`LEADER` is also an active employee and must have an employee profile, default work location, and active shift for attendance. If incomplete, UI/API returns: “Anda belum memiliki data karyawan/lokasi kerja/shift. Hubungi Superadmin.” If not assigned to a team, UI/API returns: “Anda belum ditetapkan ke tim. Hubungi Superadmin.”
+
+As self-service employee, `LEADER` can use GPS + realtime selfie attendance, own attendance history, own leave/cuti, own KPI/kinerja, own personal performance report, own notifications, and own payslip if payroll is active.
+
+As team role, `LEADER` can view assigned team members only, input daily KPI/production count for assigned employees only, view team KPI summary, and view daily/weekly/monthly team performance reports scoped to assigned team. `LEADER` cannot view team payroll, edit sensitive employee data, access another leader team, access Superadmin global reports, or input own KPI unless `ALLOW_LEADER_SELF_KPI_INPUT=true`.
+
+### EMPLOYEE
+
+`EMPLOYEE` can use GPS + realtime selfie attendance, submit leave/cuti, view own KPI/kinerja only, view own attendance history only, view own personal report only, and view own notifications/payslip if active. `EMPLOYEE` cannot input KPI, see other employee data, or access leader/superadmin pages.
+
+### Database Additions
+
+Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum value `LEADER`, `Team`, `LeaderAssignment`, `EmployeeTeamAssignment`, and `KpiProductionEntry`. Migration is non-destructive and keeps historical data.
+
+### API/RBAC Additions
+
+- Superadmin: `GET/POST /api/teams`, `POST /api/teams/leader-assignment`, `POST /api/teams/employee-assignment`.
+- Leader: `GET /api/leader/me`, `GET /api/leader/team-employees`, `GET/POST /api/leader/kpi-production`.
+- Self KPI view: `GET /api/kpi/production/me`.
+- Backend enforces role, active user, leader team scope, employee membership, quantity/date validation, self-KPI policy, and no-store API responses.
+
+### UI Additions
+
+- Leader dashboard has “Saya / Pribadi” and “Tim Saya”.
+- Leader mobile primary nav: Beranda, Absensi, Input KPI, Tim, Akun.
+- Leader pages: `/dashboard/leader/kpi-input`, `/dashboard/leader/team`, `/dashboard/leader/reports`.
+- Employee KPI page shows production count source “Diinput oleh Leader” and empty state “Belum ada input KPI hari ini.”

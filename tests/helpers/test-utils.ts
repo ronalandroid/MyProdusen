@@ -6,13 +6,13 @@ export interface TestUser {
   id: string;
   email: string;
   username: string;
-  role: 'SUPERADMIN' | 'ADMIN_HR' | 'SUPERVISOR' | 'EMPLOYEE';
+  role: 'SUPERADMIN' | 'ADMIN_HR' | 'SUPERVISOR' | 'LEADER' | 'EMPLOYEE';
   token: string;
   employeeId?: string;
 }
 
 export async function createTestUser(
-  role: 'SUPERADMIN' | 'ADMIN_HR' | 'SUPERVISOR' | 'EMPLOYEE' = 'EMPLOYEE',
+  role: 'SUPERADMIN' | 'ADMIN_HR' | 'SUPERVISOR' | 'LEADER' | 'EMPLOYEE' = 'EMPLOYEE',
   overrides?: Partial<TestUser>
 ): Promise<TestUser> {
   const timestamp = Date.now();

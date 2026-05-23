@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
-export type UserRole = 'SUPERADMIN' | 'EMPLOYEE';
+export type UserRole = 'SUPERADMIN' | 'LEADER' | 'EMPLOYEE';
 
 const TOKEN_COOKIE_NAME = 'myprodusen_token';
 const COOKIE_MAX_AGE = 8 * 60 * 60; // 8 hours in seconds

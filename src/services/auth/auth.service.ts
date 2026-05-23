@@ -1,15 +1,16 @@
 import { db, users, employees } from '@/lib/db';
 import { hashPassword, verifyPassword, generateToken, getProductionJwtSecret } from '@/lib/auth';
 import { validatePassword } from '@/lib/password-policy';
-import { eq, or, asc } from 'drizzle-orm';
+import { eq, or, asc, and, sql } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { BaseService } from '@/lib/core/base-service';
 import { AppError } from '@/lib/core/app-error';
 
-export type UserRole = 'SUPERADMIN' | 'EMPLOYEE';
+export type UserRole = 'SUPERADMIN' | 'LEADER' | 'EMPLOYEE';
 
 export function toProductionUserRole(role: string): UserRole {
-  return role === 'SUPERADMIN' ? 'SUPERADMIN' : 'EMPLOYEE';
+  if (role === 'SUPERADMIN' || role === 'LEADER' || role === 'EMPLOYEE') return role;
+  return 'EMPLOYEE';
 }
 
 export class AuthService extends BaseService {
@@ -131,6 +132,21 @@ export class AuthService extends BaseService {
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
         employeeId: employees.id,
+        fullName: employees.fullName,
+        phone: employees.phone,
+        address: employees.address,
+        division: employees.division,
+        position: employees.position,
+        profileCompletedAt: employees.profileCompletedAt,
+        defaultLocationId: employees.defaultLocationId,
+        defaultShiftId: employees.defaultShiftId,
+        teamId: sql<string | null>`(
+          select eta."teamId"
+          from "EmployeeTeamAssignment" eta
+          where eta."employeeId" = "Employee"."id" and eta.active = true
+          order by eta."updatedAt" desc
+          limit 1
+        )`,
       })
       .from(users)
       .leftJoin(employees, eq(employees.userId, users.id))
@@ -145,7 +161,25 @@ export class AuthService extends BaseService {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       hasEmployeeProfile: !!row.employeeId,
+      employeeId: row.employeeId,
+      fullName: row.fullName,
+      phone: row.phone,
+      address: row.address,
+      division: row.division,
+      position: row.position,
+      profileCompletedAt: row.profileCompletedAt,
+      defaultLocationId: row.defaultLocationId,
+      defaultShiftId: row.defaultShiftId,
+      teamId: row.teamId,
     }));
+  }
+
+  async countActiveSuperadmins(excludeUserId?: string) {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(users)
+      .where(excludeUserId ? and(eq(users.role, 'SUPERADMIN'), eq(users.isActive, true), sql`${users.id} <> ${excludeUserId}`) : and(eq(users.role, 'SUPERADMIN'), eq(users.isActive, true)));
+    return Number(row?.count || 0);
   }
 
   async getUserSummary(userId: string) {

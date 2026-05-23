@@ -40,6 +40,18 @@ describe('Role Navigation Policy', () => {
     expect(nav.map((item) => item.key)).not.toContain('audit');
   });
 
+  it('LEADER sees self-service and leader scoped navigation', () => {
+    const nav = getNavigationForRole('LEADER');
+    expect(nav.map((item) => item.key)).toContain('dashboard');
+    expect(nav.map((item) => item.key)).toContain('attendance');
+    expect(nav.map((item) => item.key)).toContain('leader-kpi-input');
+    expect(nav.map((item) => item.key)).toContain('leader-team');
+    expect(nav.map((item) => item.key)).toContain('leader-report');
+    expect(nav.map((item) => item.key)).not.toContain('users');
+    expect(nav.map((item) => item.key)).not.toContain('audit');
+    expect(nav.map((item) => item.key)).not.toContain('reports');
+  });
+
   it('canAccessNavigationPath enforces role restrictions', () => {
     expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/audit')).toBe(false);
     expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/employees')).toBe(false);
@@ -47,6 +59,9 @@ describe('Role Navigation Policy', () => {
     expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/payroll')).toBe(true);
     expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/overtime')).toBe(true);
     expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/kpi/template')).toBe(false);
+    expect(canAccessNavigationPath('LEADER', '/dashboard/leader/kpi-input')).toBe(true);
+    expect(canAccessNavigationPath('LEADER', '/dashboard/users')).toBe(false);
+    expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/leader/kpi-input')).toBe(false);
     expect(canAccessNavigationPath('SUPERADMIN', '/dashboard/kpi/templates')).toBe(true);
     expect(canAccessNavigationPath('ADMIN_HR', '/dashboard/payroll')).toBe(false);
     expect(canAccessNavigationPath('SUPERVISOR', '/dashboard/employees')).toBe(false);
@@ -54,7 +69,7 @@ describe('Role Navigation Policy', () => {
   });
 
   it('Each production role exposes bounded primary tabs', () => {
-    for (const role of ['SUPERADMIN', 'EMPLOYEE'] as const) {
+    for (const role of ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] as const) {
       const primary = getPrimaryNavigationForRole(role);
       expect(primary.length).toBeGreaterThan(0);
       expect(primary.length).toBeLessThanOrEqual(5);
@@ -69,5 +84,10 @@ describe('Role Navigation Policy', () => {
   it('SUPERADMIN primary tabs match the design', () => {
     const keys = getPrimaryNavigationForRole('SUPERADMIN').map((item) => item.key);
     expect(keys).toEqual(['dashboard', 'locations', 'attendance-exceptions', 'users', 'profile']);
+  });
+
+  it('LEADER primary tabs match the design', () => {
+    const keys = getPrimaryNavigationForRole('LEADER').map((item) => item.key);
+    expect(keys).toEqual(['dashboard', 'attendance', 'leader-kpi-input', 'leader-team', 'profile']);
   });
 });

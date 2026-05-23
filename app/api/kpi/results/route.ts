@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
 
     const filters: any = {};
     
-    // EMPLOYEE can only see their own results
-    if (user.role === 'EMPLOYEE') {
+    // Self-service roles can only see their own classic KPI results here.
+    if (user.role === 'EMPLOYEE' || user.role === 'LEADER') {
       const { db, employees } = await import('@/lib/db');
       const { eq } = await import('drizzle-orm');
       const [employee] = await db

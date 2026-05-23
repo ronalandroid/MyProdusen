@@ -37,7 +37,7 @@ export default function RegisterPage() {
       }
 
       formElement.reset();
-      setSuccess("Registrasi berhasil. Tunggu aktivasi dari Superadmin atau HRD sebelum login.");
+      setSuccess("Akun berhasil dibuat sebagai Karyawan. Superadmin akan menetapkan divisi, posisi, lokasi kerja, dan shift.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registrasi gagal");
     } finally {

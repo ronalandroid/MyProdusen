@@ -1,11 +1,12 @@
 import { NextRequest } from 'next/server';
 import { authService } from '@/services/auth/auth.service';
-import { registerSchema } from '@/utils/validation/auth';
+import { publicRegisterSchema } from '@/utils/validation/auth';
 import { errorResponse, successResponse, validationErrorResponse } from '@/utils/response';
 import { getRequestBody } from '@/lib/middleware';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { sendAuthEmail } from '@/lib/email';
 import { getCanonicalAppUrl } from '@/lib/app-url';
+import { logAudit } from '@/lib/audit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,10 +32,15 @@ export async function POST(request: NextRequest) {
         email: typeof body.email === 'string' ? body.email.replace('@', `${compatibleSuffix}@`) : body.email,
       }
       : body;
-    let validation = registerSchema.safeParse({ ...registrationBody, role: 'EMPLOYEE' });
+    const allowedRegistrationBody = {
+      username: registrationBody.username,
+      email: registrationBody.email,
+      password: registrationBody.password,
+    };
+    let validation = publicRegisterSchema.safeParse(allowedRegistrationBody);
 
     if (!validation.success && process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
-      validation = registerSchema.safeParse({ ...registrationBody, password: 'Password123!', role: 'EMPLOYEE' });
+      validation = publicRegisterSchema.safeParse({ ...allowedRegistrationBody, password: 'Password123!' });
     }
 
     if (!validation.success) {
@@ -42,10 +48,11 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await authService.register({ ...validation.data, role: 'EMPLOYEE', isActive: false });
+    await logAudit(result.id, 'PUBLIC_REGISTER', 'User', result.id, undefined, { email: result.email, role: 'EMPLOYEE', ignoredSelfAssignment: true }, request);
     const activation = await authService.createAccountActivationToken(result.email);
-    const appUrl = getCanonicalAppUrl(request.nextUrl.origin);
+    const appUrl = getCanonicalAppUrl(request.nextUrl?.origin || new URL(request.url).origin);
     const activationUrl = activation ? `${appUrl}/activate-account?token=${encodeURIComponent(activation.token)}` : undefined;
-    await sendAuthEmail('register', result.email, { name: result.username, ...(activationUrl ? { activationUrl } : {}) });
+    await sendAuthEmail('register', result.email, { name: result.username, ...(activationUrl ? { activationUrl } : {}) }).catch(() => undefined);
 
     if (process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
       return Response.json({
@@ -57,7 +64,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return successResponse(result, 'Registrasi berhasil. Cek inbox email untuk aktivasi akun.');
+    return successResponse(result, 'Akun berhasil dibuat sebagai Karyawan. Superadmin akan menetapkan divisi, posisi, lokasi kerja, dan shift.');
   } catch (error: any) {
     return errorResponse(error.message || 'Gagal registrasi');
   }

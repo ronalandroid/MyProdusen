@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
     if (startDate) filters.startDate = new Date(startDate);
     if (endDate) filters.endDate = new Date(endDate);
     
-    // If employee role, only show their own attendance
-    if (user.role === 'EMPLOYEE') {
+    // Self-service roles only show their own attendance
+    if (user.role === 'EMPLOYEE' || user.role === 'LEADER') {
       const employee = await employeeService.getEmployeeByUserId(user.userId);
       filters.employeeId = employee.id;
     } else if (!hasPermission(user.role, 'ATTENDANCE_READ')) {

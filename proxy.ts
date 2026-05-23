@@ -65,6 +65,14 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
+  if (isProtectedRoute) {
+    const response = NextResponse.next();
+    response.headers.set('Cache-Control', 'no-store, private');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
+  }
+
   return NextResponse.next();
 }
 

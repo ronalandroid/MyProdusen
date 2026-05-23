@@ -1,8 +1,10 @@
-export type UserRole = 'SUPERADMIN' | 'EMPLOYEE';
+export type UserRole = 'SUPERADMIN' | 'LEADER' | 'EMPLOYEE';
 
 const SUPERADMIN_ROLES: readonly UserRole[] = ['SUPERADMIN'];
+const LEADER_ROLES: readonly UserRole[] = ['LEADER'];
 const EMPLOYEE_ROLES: readonly UserRole[] = ['EMPLOYEE'];
-const ALL_ROLES: readonly UserRole[] = ['SUPERADMIN', 'EMPLOYEE'];
+const SELF_SERVICE_ROLES: readonly UserRole[] = ['LEADER', 'EMPLOYEE'];
+const ALL_ROLES: readonly UserRole[] = ['SUPERADMIN', 'LEADER', 'EMPLOYEE'];
 
 export const PERMISSIONS: Record<string, readonly UserRole[]> = {
   USER_CREATE: SUPERADMIN_ROLES,
@@ -14,7 +16,7 @@ export const PERMISSIONS: Record<string, readonly UserRole[]> = {
   EMPLOYEE_READ: SUPERADMIN_ROLES,
   EMPLOYEE_UPDATE: SUPERADMIN_ROLES,
   EMPLOYEE_DELETE: SUPERADMIN_ROLES,
-  EMPLOYEE_READ_OWN: EMPLOYEE_ROLES,
+  EMPLOYEE_READ_OWN: SELF_SERVICE_ROLES,
 
   LOCATION_CREATE: SUPERADMIN_ROLES,
   LOCATION_READ: SUPERADMIN_ROLES,
@@ -26,16 +28,16 @@ export const PERMISSIONS: Record<string, readonly UserRole[]> = {
   SHIFT_UPDATE: SUPERADMIN_ROLES,
   SHIFT_DELETE: SUPERADMIN_ROLES,
 
-  ATTENDANCE_CREATE: ALL_ROLES,
+  ATTENDANCE_CREATE: SELF_SERVICE_ROLES,
   ATTENDANCE_READ: SUPERADMIN_ROLES,
-  ATTENDANCE_READ_OWN: EMPLOYEE_ROLES,
+  ATTENDANCE_READ_OWN: SELF_SERVICE_ROLES,
   ATTENDANCE_UPDATE: SUPERADMIN_ROLES,
   ATTENDANCE_DELETE: SUPERADMIN_ROLES,
   ATTENDANCE_MANUAL_ADJUST: SUPERADMIN_ROLES,
 
-  LEAVE_CREATE: EMPLOYEE_ROLES,
+  LEAVE_CREATE: SELF_SERVICE_ROLES,
   LEAVE_READ: SUPERADMIN_ROLES,
-  LEAVE_READ_OWN: EMPLOYEE_ROLES,
+  LEAVE_READ_OWN: SELF_SERVICE_ROLES,
   LEAVE_APPROVE: SUPERADMIN_ROLES,
   LEAVE_REJECT: SUPERADMIN_ROLES,
 
@@ -45,21 +47,26 @@ export const PERMISSIONS: Record<string, readonly UserRole[]> = {
   KPI_TEMPLATE_DELETE: SUPERADMIN_ROLES,
   KPI_ASSIGN: SUPERADMIN_ROLES,
   KPI_INPUT: SUPERADMIN_ROLES,
+  KPI_TEAM_INPUT: LEADER_ROLES,
   KPI_READ: SUPERADMIN_ROLES,
-  KPI_READ_OWN: EMPLOYEE_ROLES,
+  KPI_READ_OWN: SELF_SERVICE_ROLES,
+  KPI_READ_TEAM: LEADER_ROLES,
   KPI_APPROVE: SUPERADMIN_ROLES,
 
   REPORT_VIEW: SUPERADMIN_ROLES,
+  REPORT_VIEW_OWN: SELF_SERVICE_ROLES,
+  REPORT_VIEW_TEAM: LEADER_ROLES,
   REPORT_EXPORT: SUPERADMIN_ROLES,
 
   PAYROLL_READ: SUPERADMIN_ROLES,
-  PAYROLL_READ_OWN: EMPLOYEE_ROLES,
+  PAYROLL_READ_OWN: SELF_SERVICE_ROLES,
   PAYROLL_MUTATE: SUPERADMIN_ROLES,
   PAYROLL_APPROVE: SUPERADMIN_ROLES,
   PAYROLL_PAY: SUPERADMIN_ROLES,
   PAYROLL_EXPORT: SUPERADMIN_ROLES,
 
   DASHBOARD_SUPERADMIN: SUPERADMIN_ROLES,
+  DASHBOARD_LEADER: LEADER_ROLES,
   DASHBOARD_EMPLOYEE: EMPLOYEE_ROLES,
 
   AUDIT_READ: SUPERADMIN_ROLES,
@@ -69,7 +76,7 @@ export const PERMISSIONS: Record<string, readonly UserRole[]> = {
 export type Permission = keyof typeof PERMISSIONS;
 
 export function canManageRole(actorRole: UserRole, targetRole: UserRole): boolean {
-  return actorRole === 'SUPERADMIN' && (targetRole === 'SUPERADMIN' || targetRole === 'EMPLOYEE');
+  return actorRole === 'SUPERADMIN' && (targetRole === 'SUPERADMIN' || targetRole === 'LEADER' || targetRole === 'EMPLOYEE');
 }
 
 export function hasPermission(userRole: UserRole | string, permission: Permission): boolean {
@@ -85,7 +92,7 @@ export function requirePermission(userRole: UserRole | string, permission: Permi
 
 export function canAccessOwnData(userRole: UserRole | string, userId: string, targetUserId: string): boolean {
   if (userRole === 'SUPERADMIN') return true;
-  return userRole === 'EMPLOYEE' && userId === targetUserId;
+  return (userRole === 'EMPLOYEE' || userRole === 'LEADER') && userId === targetUserId;
 }
 
 export function canAccessTeamData(
@@ -95,5 +102,5 @@ export function canAccessTeamData(
   _supervisorId?: string,
 ): boolean {
   if (userRole === 'SUPERADMIN') return true;
-  return userRole === 'EMPLOYEE' && userId === targetUserId;
+  return (userRole === 'EMPLOYEE' || userRole === 'LEADER') && userId === targetUserId;
 }

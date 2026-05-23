@@ -1,6 +1,6 @@
 # Security
 
-> **AI agent role source of truth:** MyProdusen production uses exactly two roles: `SUPERADMIN` and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` are historical database values only and must not be exposed in production UI or route access.
+> **AI agent role source of truth:** MyProdusen production uses exactly three roles: `SUPERADMIN`, `LEADER`, and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` are historical database values only and must not be exposed in production UI or route access.
 
 
 > Highest priority: protect employee data. RBAC is enforced server-side.
@@ -72,7 +72,7 @@ Authentication email uses Resend through `lib/email.ts`.
   - `GET /api/attendances/:id/selfie/check-in`
   - `GET /api/attendances/:id/selfie/check-out`
   - Legacy: `GET /api/attendance/selfie/[...path]` (still backward-compatible).
-- RBAC: Employee → own only; Superadmin → all. `ADMIN_HR` and `SUPERVISOR` historical values receive no production access.
+- RBAC: Employee → own only; Leader → own plus assigned team KPI scope; Superadmin → all. `ADMIN_HR` and `SUPERVISOR` historical values receive no production access.
 - Path traversal blocked: attendance ID validated by `^[A-Za-z0-9_-]+$`,
   storage path resolver re-checks containment under `UPLOAD_DIR`.
 - Stored selfie path strings are sanitised; backslashes, leading slashes,
@@ -126,7 +126,7 @@ Triggered by:
 
 - Upload volume `/app/uploads` must remain private and must not be mapped as public static storage.
 - Attendance selfies are served only through protected API endpoints with ownership/RBAC checks.
-- Payroll endpoints must enforce employee-own access and Superadmin full access server-side. `ADMIN_HR` and `SUPERVISOR` must be denied.
+- Payroll endpoints must enforce employee/leader-own access and Superadmin full access server-side. `ADMIN_HR` and `SUPERVISOR` must be denied.
 - PDF report page and API remain Superadmin-only; non-Superadmin access must be tested after deploy.
 - Secrets live only in Coolify/password manager: never commit `.env`, database dumps, upload archives, Resend keys, JWT secrets, or payroll exports.
 - Protected API responses for selfies, PDF reports, payroll exports, and health checks must use private/no-store cache where sensitive.
@@ -243,3 +243,45 @@ Attendance Wave 2 keeps backend authority for attendance decisions:
 - Employee with no assigned location cannot check in/out and sees `Lokasi kerja belum tersedia. Hubungi Superadmin.`
 - Selfie remains required through realtime FormData and private upload storage.
 - Attendance audit metadata must include employee ID, work location ID, latitude, longitude, accuracy, distance meters, radius meters, and decision where available.
+
+
+## 3-Role Leader Model — 2026-05-24
+
+Production roles are now exactly `SUPERADMIN`, `LEADER`, and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` remain historical database enum values only and must not appear in production UI, seed accounts, tests, or new route access.
+
+### SUPERADMIN
+
+- Full system control: users, employees, roles, teams, leader assignment, employee team assignment, cabang/lokasi kerja, shifts, attendance, KPI, reports/export, payroll if active, and audit logs.
+- Can create teams such as Cetak, Gudang, Pengiriman, Packing, Produksi, and Quality Control.
+- Can assign one or more active `LEADER` users to teams and assign active employees to teams.
+- Can view all attendance, KPI production entries, personal KPI, and global reports.
+
+### LEADER
+
+`LEADER` is also an active employee and must have an employee profile, default work location, and active shift for attendance. If incomplete, UI/API returns: “Anda belum memiliki data karyawan/lokasi kerja/shift. Hubungi Superadmin.” If not assigned to a team, UI/API returns: “Anda belum ditetapkan ke tim. Hubungi Superadmin.”
+
+As self-service employee, `LEADER` can use GPS + realtime selfie attendance, own attendance history, own leave/cuti, own KPI/kinerja, own personal performance report, own notifications, and own payslip if payroll is active.
+
+As team role, `LEADER` can view assigned team members only, input daily KPI/production count for assigned employees only, view team KPI summary, and view daily/weekly/monthly team performance reports scoped to assigned team. `LEADER` cannot view team payroll, edit sensitive employee data, access another leader team, access Superadmin global reports, or input own KPI unless `ALLOW_LEADER_SELF_KPI_INPUT=true`.
+
+### EMPLOYEE
+
+`EMPLOYEE` can use GPS + realtime selfie attendance, submit leave/cuti, view own KPI/kinerja only, view own attendance history only, view own personal report only, and view own notifications/payslip if active. `EMPLOYEE` cannot input KPI, see other employee data, or access leader/superadmin pages.
+
+### Database Additions
+
+Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum value `LEADER`, `Team`, `LeaderAssignment`, `EmployeeTeamAssignment`, and `KpiProductionEntry`. Migration is non-destructive and keeps historical data.
+
+### API/RBAC Additions
+
+- Superadmin: `GET/POST /api/teams`, `POST /api/teams/leader-assignment`, `POST /api/teams/employee-assignment`.
+- Leader: `GET /api/leader/me`, `GET /api/leader/team-employees`, `GET/POST /api/leader/kpi-production`.
+- Self KPI view: `GET /api/kpi/production/me`.
+- Backend enforces role, active user, leader team scope, employee membership, quantity/date validation, self-KPI policy, and no-store API responses.
+
+### UI Additions
+
+- Leader dashboard has “Saya / Pribadi” and “Tim Saya”.
+- Leader mobile primary nav: Beranda, Absensi, Input KPI, Tim, Akun.
+- Leader pages: `/dashboard/leader/kpi-input`, `/dashboard/leader/team`, `/dashboard/leader/reports`.
+- Employee KPI page shows production count source “Diinput oleh Leader” and empty state “Belum ada input KPI hari ini.”

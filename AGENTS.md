@@ -1,6 +1,6 @@
 # AGENTS.md — MyProdusen AI Agent Operating Manual
 
-> Source of truth: `/docs/prd/README.md` defines product scope and final decisions. Current production roles are exactly `SUPERADMIN` and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` may exist only as historical database values and must not be exposed in production UI, seed accounts, tests, or new route access.
+> Source of truth: `/docs/prd/README.md` defines product scope and final decisions. Current production roles are exactly `SUPERADMIN`, `LEADER`, and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` may exist only as historical database values and must not be exposed in production UI, seed accounts, tests, or new route access.
 
 ## 0. Mission
 
@@ -62,10 +62,11 @@ Do not create random planning, status, audit, or report markdown outside `/docs`
 
 ### Roles
 
-Production user-facing roles are locked to the two-role model:
+Production user-facing roles are locked to the three-role model:
 
 ```txt
 SUPERADMIN
+LEADER
 EMPLOYEE
 ```
 
@@ -369,3 +370,62 @@ Remaining decisions needed
 ```
 
 For this repository, correctness, security, data integrity, documentation alignment, UI consistency, maintainability, scalability, and production readiness win in that order.
+
+
+## 3-Role Leader Model — 2026-05-24
+
+Production roles are now exactly `SUPERADMIN`, `LEADER`, and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` remain historical database enum values only and must not appear in production UI, seed accounts, tests, or new route access.
+
+### SUPERADMIN
+
+- Full system control: users, employees, roles, teams, leader assignment, employee team assignment, cabang/lokasi kerja, shifts, attendance, KPI, reports/export, payroll if active, and audit logs.
+- Can create teams such as Cetak, Gudang, Pengiriman, Packing, Produksi, and Quality Control.
+- Can assign one or more active `LEADER` users to teams and assign active employees to teams.
+- Can view all attendance, KPI production entries, personal KPI, and global reports.
+
+### LEADER
+
+`LEADER` is also an active employee and must have an employee profile, default work location, and active shift for attendance. If incomplete, UI/API returns: “Anda belum memiliki data karyawan/lokasi kerja/shift. Hubungi Superadmin.” If not assigned to a team, UI/API returns: “Anda belum ditetapkan ke tim. Hubungi Superadmin.”
+
+As self-service employee, `LEADER` can use GPS + realtime selfie attendance, own attendance history, own leave/cuti, own KPI/kinerja, own personal performance report, own notifications, and own payslip if payroll is active.
+
+As team role, `LEADER` can view assigned team members only, input daily KPI/production count for assigned employees only, view team KPI summary, and view daily/weekly/monthly team performance reports scoped to assigned team. `LEADER` cannot view team payroll, edit sensitive employee data, access another leader team, access Superadmin global reports, or input own KPI unless `ALLOW_LEADER_SELF_KPI_INPUT=true`.
+
+### EMPLOYEE
+
+`EMPLOYEE` can use GPS + realtime selfie attendance, submit leave/cuti, view own KPI/kinerja only, view own attendance history only, view own personal report only, and view own notifications/payslip if active. `EMPLOYEE` cannot input KPI, see other employee data, or access leader/superadmin pages.
+
+### Database Additions
+
+Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum value `LEADER`, `Team`, `LeaderAssignment`, `EmployeeTeamAssignment`, and `KpiProductionEntry`. Migration is non-destructive and keeps historical data.
+
+### API/RBAC Additions
+
+- Superadmin: `GET/POST /api/teams`, `POST /api/teams/leader-assignment`, `POST /api/teams/employee-assignment`.
+- Leader: `GET /api/leader/me`, `GET /api/leader/team-employees`, `GET/POST /api/leader/kpi-production`.
+- Self KPI view: `GET /api/kpi/production/me`.
+- Backend enforces role, active user, leader team scope, employee membership, quantity/date validation, self-KPI policy, and no-store API responses.
+
+### UI Additions
+
+- Leader dashboard has “Saya / Pribadi” and “Tim Saya”.
+- Leader mobile primary nav: Beranda, Absensi, Input KPI, Tim, Akun.
+- Leader pages: `/dashboard/leader/kpi-input`, `/dashboard/leader/team`, `/dashboard/leader/reports`.
+- Employee KPI page shows production count source “Diinput oleh Leader” and empty state “Belum ada input KPI hari ini.”
+
+## Final Role And Assignment Model — 2026-05-24
+
+Public registration must create `EMPLOYEE` only. Users must never self-select `LEADER`, `SUPERADMIN`, team/division, position/title, work location, or shift. Superadmin owns all promotion and work-identity assignment. Role (`SUPERADMIN`, `LEADER`, `EMPLOYEE`) is separate from team/division and position/title. Team/division values are configurable operational data; do not hardcode access logic to only Produksi/Kargo/Cetak. Preserve history and use safe additive migrations/upserts only.
+
+## First Login Personal Profile Onboarding — 2026-05-24
+
+- After registration, activation, and first login, the dashboard checks `/api/profile/me` with `no-store, private` behavior.
+- If phone, address, or `profileCompletedAt` is missing, the app shows mandatory modal “Lengkapi Data Pribadi”.
+- User-editable fields are limited to `phone` / Nomor HP and `address` / Alamat lengkap.
+- Users cannot edit role, team/division, position/title, leader status, work location, shift, active status, payroll, or permissions.
+- If a self-registered activated user has no employee row yet, saving personal profile creates a minimal employee profile with generated NIP and no work assignment.
+- Superadmin-only assignment fields remain role, team/division, position/title, work location, shift, and active status.
+- Employee/Leader dashboard shows clean assignment status cards when division, position, location, shift, or Leader team is missing.
+- Near-real-time assignment sync uses authenticated profile refetch on dashboard focus and a light 60-second dashboard interval; role/nav updates after refetch/refresh while backend permissions apply immediately.
+- Phone/address are private employee data. Owner and Superadmin may access them; Leader team APIs do not expose employee phone/address by default.
+- Real-device GPS+selfie, protected selfie authorization, and authenticated live E2E remain required before production signoff.
