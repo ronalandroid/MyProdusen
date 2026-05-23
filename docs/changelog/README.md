@@ -294,3 +294,10 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Leader mobile primary nav: Beranda, Absensi, Input KPI, Tim, Akun.
 - Leader pages: `/dashboard/leader/kpi-input`, `/dashboard/leader/team`, `/dashboard/leader/reports`.
 - Employee KPI page shows production count source “Diinput oleh Leader” and empty state “Belum ada input KPI hari ini.”
+
+## React Doctor Critical Findings Fix — 2026-05-24
+
+- Fixed `rules-of-hooks` critical error in dashboard pending approvals panel by keeping hook order stable before conditional rendering.
+- Removed GET-handler cache write from `/api/dashboard/stats` to satisfy Next.js side-effect safety rule.
+- Verified React Doctor full offline scan has `0` error diagnostics after fix.
+- No production data, auth, RBAC, migration, or UI style changes.

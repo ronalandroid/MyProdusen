@@ -532,14 +532,15 @@ function RecentActivityPanel({ activities }: { activities: SuperadminInsights['r
 }
 
 function PendingApprovalsPanel({ approvals }: { approvals: SuperadminInsights['pendingApprovalsList'] }) {
-  if (!approvals) return null;
   const [pendingId, setPendingId] = useState<string>("");
   const [feedback, setFeedback] = useState<{ id: string; tone: "success" | "danger"; message: string } | null>(null);
-  const [items, setItems] = useState(approvals);
+  const [items, setItems] = useState(approvals || []);
 
   useEffect(() => {
-    setItems(approvals);
+    setItems(approvals || []);
   }, [approvals]);
+
+  if (!approvals) return null;
 
   async function decide(approval: NonNullable<SuperadminInsights['pendingApprovalsList']>[number], status: 'APPROVED' | 'REJECTED') {
     if (pendingId) return;
@@ -561,7 +562,7 @@ function PendingApprovalsPanel({ approvals }: { approvals: SuperadminInsights['p
       if (!response.ok || !payload?.success) {
         throw new Error(payload?.error || 'Gagal memproses approval.');
       }
-      setItems((current) => current?.filter((row) => row.id !== approval.id) || []);
+      setItems((current) => current.filter((row) => row.id !== approval.id));
       setFeedback({ id: approval.id, tone: 'success', message: status === 'APPROVED' ? 'Disetujui.' : 'Ditolak.' });
     } catch (error) {
       setFeedback({ id: approval.id, tone: 'danger', message: error instanceof Error ? error.message : 'Gagal memproses approval.' });

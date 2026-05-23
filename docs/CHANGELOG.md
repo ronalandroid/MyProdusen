@@ -345,3 +345,10 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Added Alpine `libc6-compat` in Docker dependency and builder stages to keep Next.js native build tooling on the faster compatible path during Coolify image builds.
 - Local lint, test, Next build, and release check passed after the Dockerfile change.
 - Docker build must be re-run in Coolify because Docker is not available in the local agent environment.
+
+## React Doctor Critical Findings Fix — 2026-05-24
+
+- Fixed `rules-of-hooks` critical error in dashboard pending approvals panel by keeping hook order stable before conditional rendering.
+- Removed GET-handler cache write from `/api/dashboard/stats` to satisfy Next.js side-effect safety rule.
+- Verified React Doctor full offline scan has `0` error diagnostics after fix.
+- No production data, auth, RBAC, migration, or UI style changes.
