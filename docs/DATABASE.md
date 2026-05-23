@@ -322,3 +322,12 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Existing `Employee.profilePhoto` now participates in profile completion with `phone`, `address`, and `profileCompletedAt`.
 - Existing `Employee.defaultLocationId` and `Employee.defaultShiftId` remain source of truth for attendance validation.
 - Avatar files are stored in persistent upload storage under `profile-avatars/YYYY/MM/{employeeId}/...`; database stores the protected `/api/profile/avatar/...` path only.
+
+## Migration 0023 And Leave Ledger Release Audit — 2026-05-24
+
+- `0023_kpi_targets_payroll_rules.sql` is additive and production-safe: `CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, and `CREATE INDEX IF NOT EXISTS` only.
+- Tables added/preserved: `KpiMetric`, `KpiTarget`, `PayrollRule`.
+- Column added/preserved: `PayrollItem.bonusPay` with default `0`.
+- No destructive SQL detected: no `DROP`, `DELETE`, `TRUNCATE`, or destructive `ALTER`.
+- Leave balance quota changes must be append-only via `MANUAL_ADJUSTMENT` ledger rows.
+- `npm run sync:leave-balance-period` supports `DRY_RUN=true`, `LEAVE_BALANCE_YEAR`, `LEAVE_BALANCE_QUOTA`, and `LEAVE_BALANCE_ACTOR_USER_ID`.

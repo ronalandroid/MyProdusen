@@ -368,3 +368,17 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Added protected profile avatar serving route with owner-or-Superadmin RBAC and private no-store headers.
 - Updated profile completion logic to require avatar, phone, and address.
 - Changed Pengguna navigation icon to `UserCog` so it is visually distinct from Beranda and Karyawan.
+
+## Production Sync Release Gate — 2026-05-24
+
+- Audited migration `0023_kpi_targets_payroll_rules.sql`; additive only with KPI metric/target, payroll rule, bonus pay column, and indexes.
+- Added `sync:leave-balance-period` production-safe dry-run capable script for append-only leave quota sync.
+- Hardened leave balance service so global/individual quota changes append `MANUAL_ADJUSTMENT` deltas instead of editing existing ledger rows.
+- Hardened leave approval ledger behavior to append release + approved rows rather than mutating pending hold rows.
+- Local gate, public E2E, live route check, and CDN cache verification passed before final release decision.
+
+## Final Production Sync Rerun — 2026-05-24
+
+- Reran full local and public live gates after append-only leave ledger and sync script changes.
+- Test count is now 76 files / 385 tests.
+- React Doctor baseline updated for current advisory findings; full offline scan returns 0 diagnostics.

@@ -245,3 +245,26 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - [ ] Combined professional PDF report UAT verified.
 - [ ] Authenticated staging E2E passed with real credentials.
 - [ ] Real-device GPS+selfie attendance passed on Android/iPhone.
+
+## Production Sync GO/NO-GO — 2026-05-24
+
+- [x] Local code gate passed before final release-doc update.
+- [x] Migration `0023_kpi_targets_payroll_rules.sql` audited additive and non-destructive.
+- [x] Production-safe runtime scripts present: `release:runtime`, `seed:work-location`, `seed:leader-teams`, `setup:uat-leader-flow`, `verify:uat-leader-flow`, `verify:live-routes`, `verify:cdn`.
+- [x] Leave balance period sync script added with dry-run mode.
+- [x] Public E2E and live route checks passed.
+- [x] CDN no-store/private check passed.
+- [ ] Coolify latest image redeployed.
+- [ ] Target production `npm run db:deploy` confirmed after redeploy.
+- [ ] Authenticated E2E passed with real credentials.
+- [ ] Android/iPhone real-device GPS+selfie passed.
+- [ ] Protected avatar/selfie live authorization verified with real users.
+- [ ] Backup/restore drill passed.
+
+### Final Local Gate Rerun — 2026-05-24
+
+- [x] `npm run test` passed after append-only leave ledger patch, 76 files / 385 tests.
+- [x] `npm run release:check` passed after all changes.
+- [x] React Doctor full offline scan returned 0 diagnostics.
+- [x] `DRY_RUN=true npm run sync:leave-balance-period` passed with no writes.
+- [x] Public live route, public E2E, CDN, and production npm audit checks passed.

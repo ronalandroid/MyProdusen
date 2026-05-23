@@ -1989,3 +1989,11 @@ Role dan identitas kerja dipisahkan. Role produksi final hanya `SUPERADMIN`, `LE
 - Attendance UI must show assigned location sync, current distance, official radius, GPS accuracy, and inside/outside radius status.
 - Pengguna navigation must be visually distinct from Beranda.
 - This batch also confirms requested future UAT scope: configurable KPI targets, leave balance settings, payroll target/bonus rules, paid/unpaid notifications, and combined professional PDF reports.
+
+## Production Sync Release Decision — 2026-05-24
+
+Migration `0023_kpi_targets_payroll_rules.sql` supports backend-driven KPI metric/target configuration and payroll bonus rules. Payroll bonus formula remains configurable: if KPI quantity is above target, bonus is calculated from the configured rule type (`PER_EXTRA_UNIT`, `FIXED`, or `PERCENTAGE`) and added to base pay through payroll calculation.
+
+Leave balance changes must be ledger-safe and append-only. Global or individual quota sync uses `MANUAL_ADJUSTMENT` deltas instead of overwriting prior ledger rows. Approval records release pending hold and approved usage as new ledger rows.
+
+Current status is GO for Coolify redeploy/staging UAT, not production signoff. Production signoff requires target DB migration, authenticated E2E, real-device GPS+selfie validation, protected avatar/selfie live authorization checks, and backup/restore drill.

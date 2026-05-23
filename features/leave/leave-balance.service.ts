@@ -53,16 +53,51 @@ export class LeaveBalanceService {
   }
 
   async approveRequest(leaveRequestId: string, createdBy?: string) {
-    const [updated] = await db
-      .update(leaveBalanceLedger)
-      .set({ transactionType: 'REQUEST_APPROVED' })
+    const [hold] = await db
+      .select()
+      .from(leaveBalanceLedger)
       .where(and(
         eq(leaveBalanceLedger.leaveRequestId, leaveRequestId),
         eq(leaveBalanceLedger.transactionType, 'REQUEST_HOLD')
       ))
-      .returning();
+      .limit(1);
 
-    return updated;
+    if (!hold) return null;
+
+    const [existingApproval] = await db
+      .select()
+      .from(leaveBalanceLedger)
+      .where(and(
+        eq(leaveBalanceLedger.leaveRequestId, leaveRequestId),
+        eq(leaveBalanceLedger.transactionType, 'REQUEST_APPROVED')
+      ))
+      .limit(1);
+
+    if (existingApproval) return existingApproval;
+
+    await db.insert(leaveBalanceLedger).values({
+      id: uuidv4(),
+      employeeId: hold.employeeId,
+      leaveRequestId,
+      transactionType: 'REQUEST_REJECTED_RELEASE',
+      amount: Math.abs(hold.amount),
+      balanceYear: hold.balanceYear,
+      reason: `Release hold approval ${leaveRequestId}`,
+      createdBy,
+    });
+
+    const [approved] = await db.insert(leaveBalanceLedger).values({
+      id: uuidv4(),
+      employeeId: hold.employeeId,
+      leaveRequestId,
+      transactionType: 'REQUEST_APPROVED',
+      amount: -Math.abs(hold.amount),
+      balanceYear: hold.balanceYear,
+      reason: `Cuti disetujui ${leaveRequestId}`,
+      createdBy,
+    }).returning();
+
+    return approved;
   }
 
   async releaseRejectedRequest(leaveRequestId: string, createdBy?: string) {
@@ -174,27 +209,17 @@ export class LeaveBalanceService {
       .where(eq(employees.status, 'ACTIVE'));
 
     for (const emp of activeEmployees) {
-      const [existing] = await db
-        .select()
+      const entries = await db
+        .select({ transactionType: leaveBalanceLedger.transactionType, amount: leaveBalanceLedger.amount })
         .from(leaveBalanceLedger)
         .where(and(
           eq(leaveBalanceLedger.employeeId, emp.id),
-          eq(leaveBalanceLedger.balanceYear, year),
-          eq(leaveBalanceLedger.transactionType, 'ENTITLEMENT')
-        ))
-        .limit(1);
+          eq(leaveBalanceLedger.balanceYear, year)
+        ));
 
-      if (existing) {
-        if (existing.reason && existing.reason.includes('Jatah cuti tahunan')) {
-          await db
-            .update(leaveBalanceLedger)
-            .set({
-              amount: quota,
-              createdBy: actorUserId,
-            })
-            .where(eq(leaveBalanceLedger.id, existing.id));
-        }
-      } else {
+      const summary = summarizeLeaveLedger(entries as Array<{ transactionType: LeaveBalanceTransactionType; amount: number }>);
+
+      if (entries.length === 0) {
         await db.insert(leaveBalanceLedger).values({
           id: uuidv4(),
           employeeId: emp.id,
@@ -204,33 +229,34 @@ export class LeaveBalanceService {
           reason: `Jatah cuti tahunan ${year}`,
           createdBy: actorUserId,
         });
+        continue;
+      }
+
+      const delta = quota - summary.entitlement;
+      if (delta !== 0) {
+        await db.insert(leaveBalanceLedger).values({
+          id: uuidv4(),
+          employeeId: emp.id,
+          transactionType: 'MANUAL_ADJUSTMENT',
+          amount: delta,
+          balanceYear: year,
+          reason: `Sinkron jatah cuti global ${year} ke ${quota}`,
+          createdBy: actorUserId,
+        });
       }
     }
   }
 
   async adjustIndividualQuota(actorUserId: string, employeeId: string, quota: number, year = new Date().getFullYear(), reason = 'Koreksi jatah cuti individu') {
-    const [existing] = await db
-      .select()
+    const entries = await db
+      .select({ transactionType: leaveBalanceLedger.transactionType, amount: leaveBalanceLedger.amount })
       .from(leaveBalanceLedger)
       .where(and(
         eq(leaveBalanceLedger.employeeId, employeeId),
-        eq(leaveBalanceLedger.balanceYear, year),
-        eq(leaveBalanceLedger.transactionType, 'ENTITLEMENT')
-      ))
-      .limit(1);
+        eq(leaveBalanceLedger.balanceYear, year)
+      ));
 
-    if (existing) {
-      const [updated] = await db
-        .update(leaveBalanceLedger)
-        .set({
-          amount: quota,
-          reason,
-          createdBy: actorUserId,
-        })
-        .where(eq(leaveBalanceLedger.id, existing.id))
-        .returning();
-      return updated;
-    } else {
+    if (entries.length === 0) {
       const [created] = await db
         .insert(leaveBalanceLedger)
         .values({
@@ -245,6 +271,22 @@ export class LeaveBalanceService {
         .returning();
       return created;
     }
+
+    const summary = summarizeLeaveLedger(entries as Array<{ transactionType: LeaveBalanceTransactionType; amount: number }>);
+    const delta = quota - summary.entitlement;
+    const [created] = await db
+      .insert(leaveBalanceLedger)
+      .values({
+        id: uuidv4(),
+        employeeId,
+        transactionType: 'MANUAL_ADJUSTMENT',
+        amount: delta,
+        balanceYear: year,
+        reason,
+        createdBy: actorUserId,
+      })
+      .returning();
+    return created;
   }
 }
 

@@ -338,3 +338,11 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Profile avatar responses use `Cache-Control: no-store, private` and `X-Content-Type-Options: nosniff`.
 - Profile completion API still rejects self-assignment of role/team/division/position/location/shift/payroll/permissions.
 - Avatar upload validates image MIME/signature and stores only the protected route path in employee profile data.
+
+## Production Sync Security Gate — 2026-05-24
+
+- Public PDF endpoint check: unauthenticated `POST /api/reports/pdf` returns protected response (`401`), not public `200`.
+- CDN verification confirms private dashboard/API/PDF/payroll/attendance routes are not publicly cached.
+- Role model remains `SUPERADMIN`, `LEADER`, `EMPLOYEE` only for production UI/access.
+- Superadmin normal selfie attendance remains blocked; Leader/Employee attendance remains self-service only.
+- Protected avatar/selfie routes remain no-store/private and require ownership or Superadmin authorization.

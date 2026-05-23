@@ -27,14 +27,18 @@ export function calculateLeaveDays(startDate: Date, endDate: Date): number {
 
 export function summarizeLeaveLedger(entries: LeaveLedgerEntry[]): LeaveBalanceSummary {
   const entitlement = entries
-    .filter((entry) => entry.transactionType === 'ENTITLEMENT' || entry.transactionType === 'CARRY_FORWARD')
+    .filter((entry) => ['ENTITLEMENT', 'CARRY_FORWARD', 'MANUAL_ADJUSTMENT', 'EXPIRY'].includes(entry.transactionType))
     .reduce((total, entry) => total + entry.amount, 0);
-  const pending = Math.abs(entries
-    .filter((entry) => entry.transactionType === 'REQUEST_HOLD')
-    .reduce((total, entry) => total + entry.amount, 0));
   const used = Math.abs(entries
     .filter((entry) => entry.transactionType === 'REQUEST_APPROVED')
     .reduce((total, entry) => total + entry.amount, 0));
+  const pendingBalance = entries
+    .filter((entry) => ['REQUEST_HOLD', 'REQUEST_REJECTED_RELEASE', 'REQUEST_APPROVED'].includes(entry.transactionType))
+    .reduce((total, entry) => {
+      if (entry.transactionType === 'REQUEST_APPROVED') return total + Math.abs(entry.amount);
+      return total + entry.amount;
+    }, 0);
+  const pending = Math.abs(Math.min(0, pendingBalance));
   const available = entries.reduce((total, entry) => total + entry.amount, 0);
 
   return { entitlement, used, pending, available };

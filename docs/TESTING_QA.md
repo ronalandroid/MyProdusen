@@ -476,3 +476,21 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Added API test for avatar + phone + address profile completion and required-avatar rejection.
 - Added navigation test for distinct Pengguna `UserCog` icon.
 - Remaining before production signoff: authenticated E2E credentials, real-device GPS+selfie tests, payroll/leave/KPI configuration flows, and full UAT data verification.
+
+## Production Sync Gate Evidence — 2026-05-24
+
+- Payroll bonus focused test: `npx vitest run tests/payroll/payroll-bonus.test.ts` passed.
+- Full unit/integration suite: `npm run test` passed before final leave-ledger patch; rerun after patch is required for final handoff evidence.
+- Release check: `npm run release:check` passed before final leave-ledger patch; rerun after patch is required for final handoff evidence.
+- Public E2E: `E2E_BASE_URL=https://myprodusen.online npm run e2e:public` passed.
+- Live routes: `BASE_URL=https://myprodusen.online npm run verify:live-routes` passed.
+- CDN: `npm run verify:cdn` passed.
+- Leave sync dry-run: `DRY_RUN=true npm run sync:leave-balance-period` passed with no writes.
+- Authenticated E2E remains blocked until `E2E_SUPERADMIN_*`, `E2E_LEADER_*`, and `E2E_EMPLOYEE_*` are provided.
+
+### Final Production Sync Rerun — 2026-05-24
+
+- Full suite after leave-ledger append-only patch: `npm run test` passed, 76 files / 385 tests.
+- `npm run release:check` passed after all changes.
+- React Doctor full offline scan returned `0` diagnostics.
+- Public/live/CDN gates passed.

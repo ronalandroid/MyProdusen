@@ -437,3 +437,10 @@ Public registration must create `EMPLOYEE` only. Users must never self-select `L
 - Profile completion now requires protected avatar/photo, phone, and address; role/team/position/location/shift/payroll remain Superadmin-only.
 - Avatar and attendance selfie files must not be served from public upload paths and must use protected no-store API routes.
 - UAT polish must preserve brand color, logo, tone, mobile-first layout, and backend-first RBAC.
+
+## Production Sync Release Rules — 2026-05-24
+
+- `release:check` is local/CI only; do not require it inside production runtime images.
+- `release:runtime` is the production-container command and must remain free of lint/test/build steps.
+- Leave balance quota sync must be append-only through `LeaveBalanceLedger`; do not mutate existing ledger rows for quota corrections.
+- `sync:leave-balance-period` must support dry-run and must not delete, truncate, reset, or overwrite historical leave records.

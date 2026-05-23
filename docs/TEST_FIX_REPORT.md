@@ -520,3 +520,42 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Combined executive PDF enhancements beyond existing Superadmin-only PDF module.
 - Real-device Android/iPhone attendance verification.
 - Authenticated staging E2E with real credentials.
+
+## Production Sync Release Gate — 2026-05-24
+
+### Local Gate
+- `npx vitest run tests/payroll/payroll-bonus.test.ts`: passed, 4 tests.
+- `npm run lint`: passed.
+- `npm run test`: passed, 76 files / 383 tests before append-only leave patch; full gate rerun required after docs/script patch.
+- `npm run build`: passed.
+- `npm run release:check`: passed.
+- `BASE_URL=https://myprodusen.online npm run verify:live-routes`: passed; `/api/reports/pdf` unauthenticated returns 401.
+- `E2E_BASE_URL=https://myprodusen.online npm run e2e:public`: passed, 20 tests.
+- `npm run verify:cdn`: passed; private dashboard/API/PDF/payroll/attendance routes are no-store/private or dynamic.
+
+### Migration 0023 Safety
+- `0023_kpi_targets_payroll_rules.sql` is additive: creates `KpiMetric`, `KpiTarget`, `PayrollRule`, adds `PayrollItem.bonusPay`, and creates indexes.
+- No `DROP`, `DELETE`, `TRUNCATE`, or destructive alter found.
+- `scripts/run-migrations.mjs` uses advisory lock, checksum tracking, transaction per migration, and redacted errors.
+
+### Leave Balance Append-Only Fix
+- Leave balance summary now treats `MANUAL_ADJUSTMENT` and `EXPIRY` as entitlement changes.
+- Approval flow now appends release + approved ledger rows instead of mutating the hold row.
+- Global/individual quota sync now appends `MANUAL_ADJUSTMENT` deltas instead of editing existing entitlement rows.
+- Added `scripts/sync-leave-balance-period.mjs` and `npm run sync:leave-balance-period`; dry-run passed locally without writes.
+
+### Production Signoff
+- GO for Coolify redeploy/staging UAT only.
+- NO-GO for production signoff until target DB deploy, authenticated E2E, real-device GPS+selfie, protected avatar/selfie live checks, and backup/restore drill pass.
+
+### Final Rerun Evidence After Leave Ledger Patch
+- `npx vitest run tests/payroll/payroll-bonus.test.ts`: passed, 4 tests.
+- `npm run test`: passed, 76 files / 385 tests.
+- `npm run build`: passed.
+- `npm run release:check`: passed, including migration/reference checks.
+- React Doctor full offline scan: `0` diagnostics, `0` errors, `0` warnings.
+- `DRY_RUN=true npm run sync:leave-balance-period`: passed and reported no writes.
+- `BASE_URL=https://myprodusen.online npm run verify:live-routes`: passed.
+- `E2E_BASE_URL=https://myprodusen.online npm run e2e:public`: passed, 20 tests.
+- `npm run verify:cdn`: passed.
+- `npm audit --omit=dev --audit-level=high`: passed, 0 vulnerabilities.
