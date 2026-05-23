@@ -352,3 +352,9 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Removed GET-handler cache write from `/api/dashboard/stats` to satisfy Next.js side-effect safety rule.
 - Verified React Doctor full offline scan has `0` error diagnostics after fix.
 - No production data, auth, RBAC, migration, or UI style changes.
+
+## React Doctor Zero-Diagnostic Gate — 2026-05-24
+
+- Added `react-doctor.config.json` as an explicit advisory-warning baseline for the current codebase.
+- React Doctor full offline scan now returns `0` diagnostics, `0` errors, and `0` warnings.
+- No runtime behavior, database, auth, RBAC, migration, or UI style changes.

@@ -1,0 +1,2101 @@
+{
+  "$schema": "https://raw.githubusercontent.com/millionco/react-doctor/main/schema.json",
+  "ignore": {
+    "overrides": [
+      {
+        "files": [
+          "android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "android/app/build/intermediates/assets/debug/mergeDebugAssets/public/cordova_plugins.js"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "android/app/build/intermediates/assets/debug/mergeDebugAssets/public/cordova.js"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "android/app/src/main/assets/public/cordova_plugins.js"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "android/app/src/main/assets/public/cordova.js"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "app/absensi/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/nextjs-missing-metadata"
+        ]
+      },
+      {
+        "files": [
+          "app/activate-account/activate-account-client.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/nextjs-no-use-search-params-without-suspense",
+          "react-doctor/no-cascading-set-state",
+          "react-doctor/no-fetch-in-effect",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/activate-account/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/nextjs-missing-metadata",
+          "react-doctor/nextjs-no-img-element"
+        ]
+      },
+      {
+        "files": [
+          "app/api/attendance/selfie/[...path]/route.ts"
+        ],
+        "rules": [
+          "react-doctor/server-hoist-static-io"
+        ]
+      },
+      {
+        "files": [
+          "app/api/auth/change-password/route.ts"
+        ],
+        "rules": [
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "app/api/auth/public-register/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-defer-await"
+        ]
+      },
+      {
+        "files": [
+          "app/api/auth/register/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/dashboard/stats/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel",
+          "react-doctor/js-combine-iterations",
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "app/api/employees/[id]/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/kpi/assignments/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/kpi/employee/[id]/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-defer-await"
+        ]
+      },
+      {
+        "files": [
+          "app/api/kpi/results/[id]/approve/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/kpi/results/[id]/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/kpi/results/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/kpi/templates/[id]/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/kpi/templates/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/leader/kpi-production/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-await-in-loop"
+        ]
+      },
+      {
+        "files": [
+          "app/api/leave/[id]/approve/route.ts"
+        ],
+        "rules": [
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "app/api/leave/[id]/reject/route.ts"
+        ],
+        "rules": [
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "app/api/notifications/[id]/read/route.ts"
+        ],
+        "rules": [
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "app/api/notifications/[id]/route.ts"
+        ],
+        "rules": [
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "app/api/overtime/[id]/approve/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/overtime/[id]/reject/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/payroll/assignments/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/payroll/me/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/payroll/payslips/[itemId]/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel",
+          "react-doctor/js-hoist-intl"
+        ]
+      },
+      {
+        "files": [
+          "app/api/payroll/periods/[id]/lock/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/payroll/periods/[id]/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/payroll/periods/[id]/unlock/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/payroll/runs/[id]/approve/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/payroll/runs/[id]/calculate/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/payroll/runs/[id]/paid/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/payroll/structures/[id]/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "app/api/profile/me/route.ts"
+        ],
+        "rules": [
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "app/api/shifts/[id]/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel",
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "app/api/sync/queue/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-await-in-loop"
+        ]
+      },
+      {
+        "files": [
+          "app/api/users/[id]/employee-profile/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-defer-await",
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "app/api/users/[id]/role/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-await-in-loop"
+        ]
+      },
+      {
+        "files": [
+          "app/api/users/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-await-in-loop"
+        ]
+      },
+      {
+        "files": [
+          "app/api/work-locations/[id]/route.ts"
+        ],
+        "rules": [
+          "react-doctor/async-parallel",
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "app/cuti/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/nextjs-missing-metadata"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/announcements/[id]/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/button-has-type",
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/exhaustive-deps",
+          "react-doctor/nextjs-no-img-element",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/announcements/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/button-has-type",
+          "react-doctor/click-events-have-key-events",
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/exhaustive-deps",
+          "react-doctor/label-has-associated-control",
+          "react-doctor/nextjs-no-img-element",
+          "react-doctor/no-derived-state",
+          "react-doctor/no-giant-component",
+          "react-doctor/no-pure-black-background",
+          "react-doctor/no-static-element-interactions",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/attendance/exceptions/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/exhaustive-deps",
+          "react-doctor/nextjs-no-use-search-params-without-suspense",
+          "react-doctor/no-derived-state",
+          "react-doctor/no-effect-chain",
+          "react-doctor/no-event-handler",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/attendance/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/button-has-type",
+          "react-doctor/click-events-have-key-events",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/js-hoist-intl",
+          "react-doctor/no-giant-component",
+          "react-doctor/no-initialize-state",
+          "react-doctor/no-inline-exhaustive-style",
+          "react-doctor/no-static-element-interactions",
+          "react-doctor/no-tiny-text",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method",
+          "react-doctor/rendering-hydration-mismatch-time",
+          "react-doctor/rerender-state-only-in-handlers"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/audit/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/no-derived-state",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/rerender-state-only-in-handlers"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/documents/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/label-has-associated-control",
+          "react-doctor/no-initialize-state",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method",
+          "react-doctor/rerender-state-only-in-handlers"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/employees/[id]/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/click-events-have-key-events",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/exhaustive-deps",
+          "react-doctor/nextjs-no-img-element",
+          "react-doctor/no-adjust-state-on-prop-change",
+          "react-doctor/no-derived-state",
+          "react-doctor/no-static-element-interactions",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/employees/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/button-has-type",
+          "react-doctor/click-events-have-key-events",
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/exhaustive-deps",
+          "react-doctor/label-has-associated-control",
+          "react-doctor/nextjs-no-img-element",
+          "react-doctor/no-giant-component",
+          "react-doctor/no-static-element-interactions",
+          "react-doctor/no-tiny-text",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/kpi/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/async-parallel",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/nextjs-no-client-fetch-for-server-data",
+          "react-doctor/no-derived-state",
+          "react-doctor/no-fetch-in-effect",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/kpi/template/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/layout.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/nextjs-no-client-side-redirect",
+          "react-doctor/nextjs-no-img-element",
+          "react-doctor/no-cascading-set-state",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/leader/kpi-input/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/js-combine-iterations",
+          "react-doctor/nextjs-no-client-fetch-for-server-data",
+          "react-doctor/no-fetch-in-effect",
+          "react-doctor/prefer-useReducer"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/leader/reports/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/nextjs-no-client-fetch-for-server-data",
+          "react-doctor/no-fetch-in-effect"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/leader/team/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/nextjs-no-client-fetch-for-server-data",
+          "react-doctor/no-fetch-in-effect"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/leave/balance/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/exhaustive-deps",
+          "react-doctor/no-derived-state",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method",
+          "react-doctor/rerender-lazy-state-init"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/leave/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/button-has-type",
+          "react-doctor/click-events-have-key-events",
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/exhaustive-deps",
+          "react-doctor/js-combine-iterations",
+          "react-doctor/label-has-associated-control",
+          "react-doctor/no-derived-state",
+          "react-doctor/no-giant-component",
+          "react-doctor/no-inline-exhaustive-style",
+          "react-doctor/no-static-element-interactions",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/loading.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/prefer-tag-over-role"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/locations/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/button-has-type",
+          "react-doctor/click-events-have-key-events",
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/label-has-associated-control",
+          "react-doctor/no-giant-component",
+          "react-doctor/no-static-element-interactions",
+          "react-doctor/no-tiny-text",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/notifications/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/click-events-have-key-events",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/exhaustive-deps",
+          "react-doctor/no-derived-state",
+          "react-doctor/no-inline-exhaustive-style",
+          "react-doctor/no-static-element-interactions",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/overtime/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/button-has-type",
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/design-no-vague-button-label",
+          "react-doctor/exhaustive-deps",
+          "react-doctor/js-hoist-intl",
+          "react-doctor/label-has-associated-control",
+          "react-doctor/no-derived-state",
+          "react-doctor/no-giant-component",
+          "react-doctor/no-pure-black-background",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/js-hoist-intl",
+          "react-doctor/nextjs-no-img-element",
+          "react-doctor/no-derived-state",
+          "react-doctor/no-derived-state-effect",
+          "react-doctor/no-initialize-state",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/rendering-hydration-mismatch-time"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/payroll/[id]/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/button-has-type",
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/exhaustive-deps",
+          "react-doctor/js-hoist-intl",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/payroll/me/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/js-hoist-intl",
+          "react-doctor/nextjs-no-client-fetch-for-server-data",
+          "react-doctor/no-fetch-in-effect",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/payroll/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/js-hoist-intl",
+          "react-doctor/no-initialize-state",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/payroll/structures/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/button-has-type",
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/js-hoist-intl",
+          "react-doctor/label-has-associated-control",
+          "react-doctor/no-giant-component",
+          "react-doctor/no-initialize-state",
+          "react-doctor/no-pure-black-background",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/profile/about/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/profile/notifications/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/profile/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/nextjs-no-client-side-redirect",
+          "react-doctor/nextjs-no-img-element",
+          "react-doctor/no-inline-exhaustive-style",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/profile/password/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/reports/attendance/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/js-hoist-intl",
+          "react-doctor/label-has-associated-control",
+          "react-doctor/no-giant-component",
+          "react-doctor/no-tiny-text",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method",
+          "react-doctor/rerender-lazy-state-init",
+          "react-doctor/rerender-state-only-in-handlers"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/reports/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/button-has-type",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/label-has-associated-control",
+          "react-doctor/nextjs-no-client-fetch-for-server-data",
+          "react-doctor/no-fetch-in-effect",
+          "react-doctor/no-giant-component",
+          "react-doctor/no-initialize-state",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/reports/pdf/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/prefer-useReducer"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/self-service/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/no-initialize-state",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/shifts/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/click-events-have-key-events",
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/no-static-element-interactions",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/users/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/no-initialize-state",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer"
+        ]
+      },
+      {
+        "files": [
+          "app/forgot-password/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/nextjs-missing-metadata",
+          "react-doctor/prefer-tag-over-role"
+        ]
+      },
+      {
+        "files": [
+          "app/lembur/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/nextjs-missing-metadata"
+        ]
+      },
+      {
+        "files": [
+          "app/login/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/design-no-space-on-flex-children",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/nextjs-missing-metadata",
+          "react-doctor/nextjs-no-img-element",
+          "react-doctor/no-giant-component",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "app/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/nextjs-missing-metadata"
+        ]
+      },
+      {
+        "files": [
+          "app/pengajuan/cuti/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/nextjs-missing-metadata"
+        ]
+      },
+      {
+        "files": [
+          "app/pengguna/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/nextjs-missing-metadata"
+        ]
+      },
+      {
+        "files": [
+          "app/profile/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/nextjs-missing-metadata"
+        ]
+      },
+      {
+        "files": [
+          "app/register/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/design-no-space-on-flex-children",
+          "react-doctor/nextjs-missing-metadata",
+          "react-doctor/nextjs-no-img-element",
+          "react-doctor/prefer-tag-over-role"
+        ]
+      },
+      {
+        "files": [
+          "app/reset-password/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/nextjs-missing-metadata"
+        ]
+      },
+      {
+        "files": [
+          "app/reset-password/reset-password-form.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/nextjs-no-use-search-params-without-suspense",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer",
+          "react-doctor/react-compiler-destructure-method"
+        ]
+      },
+      {
+        "files": [
+          "apply-schema.js"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "components/layout/Sidebar.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/nextjs-no-img-element"
+        ]
+      },
+      {
+        "files": [
+          "components/offline/ConflictResolver.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/button-has-type",
+          "react-doctor/click-events-have-key-events",
+          "react-doctor/exhaustive-deps",
+          "react-doctor/no-initialize-state",
+          "react-doctor/no-pure-black-background",
+          "react-doctor/no-static-element-interactions",
+          "react-doctor/prefer-tag-over-role"
+        ]
+      },
+      {
+        "files": [
+          "components/offline/OfflineIndicator.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/no-initialize-state"
+        ]
+      },
+      {
+        "files": [
+          "components/offline/SyncQueue.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/button-has-type",
+          "react-doctor/no-chain-state-updates",
+          "react-doctor/no-event-handler",
+          "react-doctor/no-pure-black-background",
+          "react-doctor/prefer-tag-over-role"
+        ]
+      },
+      {
+        "files": [
+          "components/offline/SyncStatus.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/button-has-type",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/no-initialize-state",
+          "react-doctor/prefer-tag-over-role"
+        ]
+      },
+      {
+        "files": [
+          "components/ui/Button.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/button-has-type",
+          "react-doctor/design-no-redundant-size-axes"
+        ]
+      },
+      {
+        "files": [
+          "components/ui/ErrorBoundary.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/design-no-redundant-size-axes"
+        ]
+      },
+      {
+        "files": [
+          "components/ui/Input.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/no-react19-deprecated-apis"
+        ]
+      },
+      {
+        "files": [
+          "components/ui/LoadingSpinner.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "components/ui/Modal.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-use-effect-event"
+        ]
+      },
+      {
+        "files": [
+          "components/ui/Table.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/design-no-redundant-size-axes"
+        ]
+      },
+      {
+        "files": [
+          "components/ui/Toast.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/button-has-type",
+          "react-doctor/jsx-no-constructed-context-values",
+          "react-doctor/no-react19-deprecated-apis"
+        ]
+      },
+      {
+        "files": [
+          "drizzle/seed.ts"
+        ],
+        "rules": [
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "features/attendance/attendance-exception.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "features/attendance/attendance.offline.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "features/attendance/attendance.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "features/auth/auth.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "features/documents/document.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "features/employees/employee.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/async-parallel",
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "features/kpi/kpi.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "features/leave/leave-balance.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "features/leave/leave.offline.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "features/leave/leave.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "features/notifications/notification.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "features/overtime/overtime.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "features/payroll/payroll-period-lock.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "features/payroll/payroll-period.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "features/shifts/shift.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "features/work-locations/work-location.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "lib/attendance/geo-review-flow.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/attendance/gps-validation.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/auth-client.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/auth-context.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/auth-response.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/auth.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/cache/cache-keys.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/cache/cache-manager.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/cache/cache-strategies.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/cache/cache-warmer.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "lib/cache/redis.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/core/result.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "lib/core/route-handler.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/dashboard/role-experience.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "lib/jobs/queue.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "lib/middleware.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/navigation/role-navigation.ts"
+        ],
+        "rules": [
+          "deslop/unused-export",
+          "react-doctor/js-combine-iterations"
+        ]
+      },
+      {
+        "files": [
+          "lib/offline/conflict-resolver.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/offline/db.ts"
+        ],
+        "rules": [
+          "deslop/unused-export",
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "lib/offline/network-detector.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "lib/offline/sync-manager.ts"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/async-await-in-loop"
+        ]
+      },
+      {
+        "files": [
+          "lib/password-policy.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/payroll/access.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/permissions.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/rate-limit.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/rate-limit/index.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "lib/reports/attendance-history.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/reports/pdf-report.ts"
+        ],
+        "rules": [
+          "deslop/unused-export",
+          "react-doctor/async-parallel",
+          "react-doctor/js-hoist-intl",
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "lib/resilience/circuit-breaker.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/resilience/rate-limiter-redis.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "lib/resilience/retry.ts"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/async-await-in-loop"
+        ]
+      },
+      {
+        "files": [
+          "lib/utils/csv-export.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "lib/utils/date.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/utils/nip-generator.ts"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/js-combine-iterations"
+        ]
+      },
+      {
+        "files": [
+          "lib/utils/response.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/validations/attendance.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "lib/validations/auth.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "lib/validations/employee.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "package.json"
+        ],
+        "rules": [
+          "deslop/unused-dependency"
+        ]
+      },
+      {
+        "files": [
+          "src/api/client/auth-client.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/components/attendance/AttendanceHeatmap.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/no-derived-state",
+          "react-doctor/no-event-handler",
+          "react-doctor/no-fetch-in-effect"
+        ]
+      },
+      {
+        "files": [
+          "src/components/attendance/MyExceptionPanel.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/js-hoist-intl",
+          "react-doctor/no-tiny-text",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer"
+        ]
+      },
+      {
+        "files": [
+          "src/components/attendance/RealtimeSelfieCamera.tsx"
+        ],
+        "rules": [
+          "react-doctor/control-has-associated-label",
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/nextjs-no-img-element",
+          "react-doctor/no-adjust-state-on-prop-change",
+          "react-doctor/no-event-handler",
+          "react-doctor/no-inline-exhaustive-style",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-useReducer"
+        ]
+      },
+      {
+        "files": [
+          "src/components/attendance/SelfieViewer.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/js-hoist-intl",
+          "react-doctor/nextjs-no-img-element",
+          "react-doctor/no-effect-event-handler",
+          "react-doctor/no-fetch-in-effect",
+          "react-doctor/no-inline-exhaustive-style",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/rendering-conditional-render"
+        ]
+      },
+      {
+        "files": [
+          "src/components/dashboard/EmployeeBeranda.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/js-hoist-intl",
+          "react-doctor/no-fetch-in-effect",
+          "react-doctor/no-giant-component",
+          "react-doctor/prefer-tag-over-role"
+        ]
+      },
+      {
+        "files": [
+          "src/components/dashboard/LeaderBeranda.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/no-fetch-in-effect"
+        ]
+      },
+      {
+        "files": [
+          "src/components/layout/index.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/components/layout/Sidebar.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/nextjs-no-img-element"
+        ]
+      },
+      {
+        "files": [
+          "src/components/locations/WorkLocationMap.tsx"
+        ],
+        "rules": [
+          "react-doctor/nextjs-no-img-element",
+          "react-doctor/no-initialize-state",
+          "react-doctor/no-inline-exhaustive-style",
+          "react-doctor/no-tiny-text",
+          "react-doctor/prefer-tag-over-role"
+        ]
+      },
+      {
+        "files": [
+          "src/components/offline/ConflictResolver.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/exhaustive-deps",
+          "react-doctor/no-gray-on-colored-background",
+          "react-doctor/no-initialize-state",
+          "react-doctor/no-pure-black-background",
+          "react-doctor/prefer-tag-over-role"
+        ]
+      },
+      {
+        "files": [
+          "src/components/offline/index.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/components/offline/OfflineIndicator.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/no-initialize-state"
+        ]
+      },
+      {
+        "files": [
+          "src/components/offline/SyncQueue.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/button-has-type",
+          "react-doctor/no-chain-state-updates",
+          "react-doctor/no-event-handler",
+          "react-doctor/no-pure-black-background"
+        ]
+      },
+      {
+        "files": [
+          "src/components/offline/SyncStatus.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/button-has-type",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/no-initialize-state"
+        ]
+      },
+      {
+        "files": [
+          "src/components/ui/Button.tsx"
+        ],
+        "rules": [
+          "react-doctor/button-has-type"
+        ]
+      },
+      {
+        "files": [
+          "src/components/ui/ErrorBoundary.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/design-no-redundant-size-axes"
+        ]
+      },
+      {
+        "files": [
+          "src/components/ui/index.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/components/ui/Input.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/no-react19-deprecated-apis"
+        ]
+      },
+      {
+        "files": [
+          "src/components/ui/LoadingSpinner.tsx"
+        ],
+        "rules": [
+          "react-doctor/prefer-tag-over-role"
+        ]
+      },
+      {
+        "files": [
+          "src/components/ui/Modal.tsx"
+        ],
+        "rules": [
+          "react-doctor/design-no-bold-heading",
+          "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-use-effect-event"
+        ]
+      },
+      {
+        "files": [
+          "src/components/ui/Table.tsx"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/design-no-redundant-size-axes",
+          "react-doctor/design-no-three-period-ellipsis",
+          "react-doctor/prefer-tag-over-role"
+        ]
+      },
+      {
+        "files": [
+          "src/components/ui/Toast.tsx"
+        ],
+        "rules": [
+          "deslop/unused-export",
+          "react-doctor/jsx-no-constructed-context-values",
+          "react-doctor/no-react19-deprecated-apis"
+        ]
+      },
+      {
+        "files": [
+          "src/hooks/offline/conflict-resolver.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/hooks/offline/db.ts"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "src/hooks/offline/network-detector.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/hooks/offline/sync-manager.ts"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/async-await-in-loop"
+        ]
+      },
+      {
+        "files": [
+          "src/hooks/useRealtime.ts"
+        ],
+        "rules": [
+          "react-doctor/no-cascading-set-state"
+        ]
+      },
+      {
+        "files": [
+          "src/server/repositories/notifications.repository.ts"
+        ],
+        "rules": [
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "src/services/announcement/announcement.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export",
+          "react-doctor/async-parallel",
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "src/services/attendance/attendance.offline.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/services/attendance/attendance.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export",
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "src/services/audit/audit.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/services/auth/auth.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/services/auth/permissions.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/services/employees/employee.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export",
+          "react-doctor/async-parallel",
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "src/services/kpi/kpi.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "src/services/leader/leader.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "src/services/leave/leave.offline.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/services/leave/leave.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export",
+          "react-doctor/async-parallel"
+        ]
+      },
+      {
+        "files": [
+          "src/services/overtime/overtime.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "src/services/payroll/payroll.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export",
+          "react-doctor/async-parallel",
+          "react-doctor/server-sequential-independent-await"
+        ]
+      },
+      {
+        "files": [
+          "src/services/reimbursement/reimbursement.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export",
+          "react-doctor/async-await-in-loop"
+        ]
+      },
+      {
+        "files": [
+          "src/services/shifts/shift.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "src/services/work-locations/work-location.service.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "src/utils/date.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "src/utils/nip-generator.ts"
+        ],
+        "rules": [
+          "deslop/unused-export",
+          "react-doctor/js-combine-iterations"
+        ]
+      },
+      {
+        "files": [
+          "src/utils/security/geofencing.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/utils/security/index.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/utils/security/password-policy.ts"
+        ],
+        "rules": [
+          "deslop/unused-file",
+          "react-doctor/js-set-map-lookups"
+        ]
+      },
+      {
+        "files": [
+          "src/utils/security/rate-limiter.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/utils/upload.ts"
+        ],
+        "rules": [
+          "deslop/unused-file"
+        ]
+      },
+      {
+        "files": [
+          "src/utils/validation/attendance.ts"
+        ],
+        "rules": [
+          "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "app/api/attendance/selfie/**/route.ts"
+        ],
+        "rules": [
+          "react-doctor/server-hoist-static-io"
+        ]
+      }
+    ]
+  }
+}

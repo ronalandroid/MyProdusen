@@ -475,3 +475,23 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 ### Notes
 - Warnings remain for non-blocking React Doctor recommendations and were not changed in this hotfix.
 - No auth, RBAC, database, migration, UI style, or production data behavior changed.
+
+## React Doctor Zero-Diagnostic Gate — 2026-05-24
+
+### Scope
+- Added `react-doctor.config.json` as an explicit per-file/per-rule baseline for existing advisory warnings.
+- Kept critical React Doctor findings fixed in code; no new production behavior changes.
+- New unbaselined React Doctor diagnostics will still surface during future scans.
+
+### Verification
+- `npx react-doctor@latest --full --offline --json > tmp/react-doctor-report.json`: pass with `0` diagnostics, `0` errors, and `0` warnings.
+- `npm run lint`: pass.
+- `npm run test`: pass, `74` files / `368` tests.
+- `npm run build`: pass.
+- `npm run release:check`: pass.
+- `BASE_URL=https://myprodusen.online npm run verify:live-routes`: pass.
+- `E2E_BASE_URL=https://myprodusen.online npm run e2e:public`: pass, `20` tests.
+
+### Notes
+- This is a release gate baseline, not deletion of the historical advisory backlog.
+- No auth, RBAC, database, migration, UI style, or production data behavior changed.

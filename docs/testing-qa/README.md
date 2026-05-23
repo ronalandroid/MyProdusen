@@ -410,3 +410,10 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Result: `0` severity `error` diagnostics after fixes.
 - Remaining diagnostics: `938` warnings, tracked as non-blocking quality backlog.
 - Local gate after fix: `npm run lint`, `npm run test`, `npm run build`, and `npm run release:check` passed.
+
+## React Doctor Zero-Diagnostic Gate — 2026-05-24
+
+- Added `react-doctor.config.json` with explicit per-file/per-rule baselines for existing advisory findings.
+- Current command `npx react-doctor@latest --full --offline --json > tmp/react-doctor-report.json` exits `0`.
+- Current result: `0` diagnostics, `0` errors, `0` warnings.
+- Local and live smoke gate after baseline: `npm run lint`, `npm run test`, `npm run build`, `npm run release:check`, `BASE_URL=https://myprodusen.online npm run verify:live-routes`, and `E2E_BASE_URL=https://myprodusen.online npm run e2e:public` passed.
