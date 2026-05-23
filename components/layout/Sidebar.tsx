@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Clock, Users, Calendar, User, MapPin, Clock3, BarChart3, FileText, Shield, Bell, BriefcaseBusiness, CheckCircle } from "lucide-react";
+import { Home, Clock, Users, Calendar, User, UserCog, MapPin, Clock3, BarChart3, FileText, Shield, Bell, BriefcaseBusiness, CheckCircle } from "lucide-react";
 import { getNavigationForRole } from "@/lib/navigation/role-navigation";
 import type { UserRole } from "@/lib/permissions";
 
@@ -19,7 +19,7 @@ export default function Sidebar({ role }: SidebarProps) {
     '/dashboard/self-service': BriefcaseBusiness,
     '/dashboard/attendance': Clock,
     '/dashboard/attendance/exceptions': CheckCircle,
-    '/dashboard/users': Users,
+    '/dashboard/users': UserCog,
     '/dashboard/employees': Users,
     '/dashboard/locations': MapPin,
     '/dashboard/shifts': Clock3,

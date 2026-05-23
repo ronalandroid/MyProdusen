@@ -9,9 +9,15 @@ import {
   employees,
   attendances,
   overtimeRequests,
+  payrollRules,
+  kpiMetrics,
+  kpiProductionEntries,
+  employeeTeamAssignments,
+  teams,
 } from '@/drizzle/schema';
-import { eq, and, gte, lte, isNull, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, isNull, sql, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { logAudit } from '@/lib/audit';
 
 export class PayrollService {
   // ============================================
@@ -389,7 +395,8 @@ export class PayrollService {
         .where(eq(payrollComponents.structureId, structure.id));
 
       // Calculate salary components
-      const baseSalary = payroll.baseSalary;
+      const activeRule = await this.resolveActivePayrollRule(employee.id, run.periodEnd);
+      const baseSalary = activeRule ? activeRule.baseSalary : payroll.baseSalary;
       let totalAllowances = 0;
       let totalDeductionsEmp = 0;
 
@@ -414,15 +421,71 @@ export class PayrollService {
       // Calculate overtime pay
       const overtimePay = overtimeData.totalPay;
 
+      // Calculate bonus pay from payroll rule KPI targets
+      let bonusPay = 0;
+      if (
+        activeRule &&
+        activeRule.targetMetricId &&
+        activeRule.targetQuantity !== null &&
+        activeRule.bonusAmountPerUnit !== null
+      ) {
+        const [metric] = await db
+          .select()
+          .from(kpiMetrics)
+          .where(eq(kpiMetrics.id, activeRule.targetMetricId))
+          .limit(1);
+
+        if (metric) {
+          const entries = await db
+            .select()
+            .from(kpiProductionEntries)
+            .where(
+              and(
+                eq(kpiProductionEntries.employeeId, employee.id),
+                eq(kpiProductionEntries.metricType, metric.name),
+                eq(kpiProductionEntries.status, 'SUBMITTED')
+              )
+            );
+
+          const periodStartStr = run.periodStart.toISOString().split('T')[0];
+          const periodEndStr = run.periodEnd.toISOString().split('T')[0];
+
+          const filteredEntries = entries.filter(
+            (e) => e.date >= periodStartStr && e.date <= periodEndStr
+          );
+          const totalQty = filteredEntries.reduce(
+            (sum, e) => sum + Number(e.quantity),
+            0
+          );
+
+          const targetQty = activeRule.targetQuantity;
+          const amountPerUnit = activeRule.bonusAmountPerUnit;
+
+          if (activeRule.bonusType === 'PER_EXTRA_UNIT') {
+            if (totalQty > targetQty) {
+              bonusPay = (totalQty - targetQty) * amountPerUnit;
+            }
+          } else if (activeRule.bonusType === 'FIXED') {
+            if (totalQty >= targetQty) {
+              bonusPay = amountPerUnit;
+            }
+          } else if (activeRule.bonusType === 'PERCENTAGE') {
+            if (totalQty >= targetQty) {
+              bonusPay = (amountPerUnit * baseSalary) / 100;
+            }
+          }
+        }
+      }
+
       // Calculate BPJS
       const bpjsKesehatan = this.calculateBPJSKesehatan(baseSalary);
       const bpjsKetenagakerjaan = this.calculateBPJSKetenagakerjaan(baseSalary);
 
       // Calculate tax (PPh 21) - simplified
-      const grossIncome = baseSalary + totalAllowances + overtimePay;
+      const grossIncome = baseSalary + totalAllowances + overtimePay + bonusPay;
       const taxAmount = this.calculateTax(grossIncome);
 
-      const grossPay = baseSalary + totalAllowances + overtimePay;
+      const grossPay = baseSalary + totalAllowances + overtimePay + bonusPay;
       const totalDeductionsItem =
         totalDeductionsEmp +
         attendanceDeduction +
@@ -448,6 +511,7 @@ export class PayrollService {
         bpjsKetenagakerjaanCompany: bpjsKetenagakerjaan.company,
         grossPay,
         netPay,
+        bonusPay,
         workDays: attendanceData.workDays,
         absentDays: attendanceData.absentDays,
         lateDays: attendanceData.lateDays,
@@ -642,6 +706,30 @@ export class PayrollService {
     return updated;
   }
 
+  async markPayrollRunUnpaid(runId: string) {
+    const [run] = await db
+      .select()
+      .from(payrollRuns)
+      .where(eq(payrollRuns.id, runId))
+      .limit(1);
+
+    if (!run) {
+      throw new Error('Payroll run tidak ditemukan');
+    }
+
+    if (run.status !== 'PAID') {
+      throw new Error('Hanya payroll paid yang dapat ditandai unpaid');
+    }
+
+    const [updated] = await db
+      .update(payrollRuns)
+      .set({ status: 'APPROVED', paidAt: null, updatedAt: new Date() })
+      .where(eq(payrollRuns.id, runId))
+      .returning();
+
+    return updated;
+  }
+
   async getPayrollRuns() {
     return await db
       .select()
@@ -765,6 +853,137 @@ export class PayrollService {
     if (finalized) {
       throw new Error('Payroll karyawan yang sudah approved/paid tidak dapat diedit langsung');
     }
+  }
+
+  // ============================================
+  // PAYROLL TARGET / BONUS RULE ENGINE
+  // ============================================
+
+  async createPayrollRule(actorUserId: string, data: {
+    employeeId?: string | null;
+    teamId?: string | null;
+    periodType: 'WEEKLY' | 'MONTHLY';
+    baseSalary: number;
+    targetMetricId?: string | null;
+    targetQuantity?: number | null;
+    bonusType?: 'PER_EXTRA_UNIT' | 'FIXED' | 'PERCENTAGE';
+    bonusAmountPerUnit?: number | null;
+    effectiveFrom?: Date | null;
+    effectiveTo?: Date | null;
+  }) {
+    const id = nanoid();
+    const [rule] = await db
+      .insert(payrollRules)
+      .values({
+        id,
+        employeeId: data.employeeId || null,
+        teamId: data.teamId || null,
+        periodType: data.periodType,
+        baseSalary: data.baseSalary,
+        targetMetricId: data.targetMetricId || null,
+        targetQuantity: data.targetQuantity || null,
+        bonusType: data.bonusType || 'PER_EXTRA_UNIT',
+        bonusAmountPerUnit: data.bonusAmountPerUnit || null,
+        effectiveFrom: data.effectiveFrom || null,
+        effectiveTo: data.effectiveTo || null,
+        active: true,
+        createdBy: actorUserId,
+      })
+      .returning();
+
+    await logAudit(actorUserId, 'PAYROLL_RULE_CREATE', 'PayrollRule', id, undefined, rule);
+    return rule;
+  }
+
+  async getPayrollRules(filters?: { active?: boolean; employeeId?: string; teamId?: string }) {
+    let query = db.select().from(payrollRules);
+    const conditions = [];
+    if (filters?.active !== undefined) {
+      conditions.push(eq(payrollRules.active, filters.active));
+    }
+    if (filters?.employeeId) {
+      conditions.push(eq(payrollRules.employeeId, filters.employeeId));
+    }
+    if (filters?.teamId) {
+      conditions.push(eq(payrollRules.teamId, filters.teamId));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    return query.orderBy(desc(payrollRules.createdAt));
+  }
+
+  async getPayrollRuleById(id: string) {
+    const [rule] = await db.select().from(payrollRules).where(eq(payrollRules.id, id)).limit(1);
+    if (!rule) throw new Error('Aturan payroll tidak ditemukan');
+    return rule;
+  }
+
+  async updatePayrollRule(actorUserId: string, id: string, data: Partial<{
+    baseSalary: number;
+    targetMetricId: string | null;
+    targetQuantity: number | null;
+    bonusType: 'PER_EXTRA_UNIT' | 'FIXED' | 'PERCENTAGE';
+    bonusAmountPerUnit: number | null;
+    active: boolean;
+    effectiveFrom: Date | null;
+    effectiveTo: Date | null;
+  }>) {
+    const [existing] = await db.select().from(payrollRules).where(eq(payrollRules.id, id)).limit(1);
+    if (!existing) throw new Error('Aturan payroll tidak ditemukan');
+
+    const [updated] = await db
+      .update(payrollRules)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(payrollRules.id, id))
+      .returning();
+
+    await logAudit(actorUserId, 'PAYROLL_RULE_UPDATE', 'PayrollRule', id, JSON.stringify(existing), JSON.stringify(updated));
+    return updated;
+  }
+
+  async deletePayrollRule(actorUserId: string, id: string) {
+    return this.updatePayrollRule(actorUserId, id, { active: false });
+  }
+
+  async resolveActivePayrollRule(employeeId: string, targetDate = new Date()) {
+    const [emp] = await db.select().from(employees).where(eq(employees.id, employeeId)).limit(1);
+    if (!emp) return null;
+
+    const [teamAssignment] = await db
+      .select()
+      .from(employeeTeamAssignments)
+      .where(and(eq(employeeTeamAssignments.employeeId, employeeId), eq(employeeTeamAssignments.active, true)))
+      .limit(1);
+
+    const allRules = await db
+      .select()
+      .from(payrollRules)
+      .where(eq(payrollRules.active, true));
+
+    const activeRules = allRules.filter((r) => {
+      if (r.effectiveFrom && r.effectiveFrom > targetDate) return false;
+      if (r.effectiveTo && r.effectiveTo < targetDate) return false;
+      return true;
+    });
+
+    // Match hierarchy:
+    // H1: EMPLOYEE
+    const empRule = activeRules.find((r) => r.employeeId === employeeId);
+    if (empRule) return empRule;
+
+    // H2: TEAM
+    if (teamAssignment?.teamId) {
+      const teamRule = activeRules.find((r) => r.teamId === teamAssignment.teamId);
+      if (teamRule) return teamRule;
+    }
+
+    // fallback: null
+    return null;
   }
 }
 

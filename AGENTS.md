@@ -429,3 +429,11 @@ Public registration must create `EMPLOYEE` only. Users must never self-select `L
 - Near-real-time assignment sync uses authenticated profile refetch on dashboard focus and a light 60-second dashboard interval; role/nav updates after refetch/refresh while backend permissions apply immediately.
 - Phone/address are private employee data. Owner and Superadmin may access them; Leader team APIs do not expose employee phone/address by default.
 - Real-device GPS+selfie, protected selfie authorization, and authenticated live E2E remain required before production signoff.
+
+## UAT Production Polish Rules — 2026-05-24
+
+- `SUPERADMIN` must not see or use normal employee selfie check-in/check-out UI. Admin attendance access is monitoring, approval, correction if explicitly built, evidence viewing, and reporting.
+- `EMPLOYEE` and `LEADER` remain the only roles for normal GPS+selfie attendance.
+- Profile completion now requires protected avatar/photo, phone, and address; role/team/position/location/shift/payroll remain Superadmin-only.
+- Avatar and attendance selfie files must not be served from public upload paths and must use protected no-store API routes.
+- UAT polish must preserve brand color, logo, tone, mobile-first layout, and backend-first RBAC.

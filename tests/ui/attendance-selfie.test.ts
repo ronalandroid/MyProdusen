@@ -40,6 +40,22 @@ it('keeps attendance submit gated by realtime selfie and GPS', () => {
   expect(attendancePageSource).toContain('isSubmitting');
 });
 
+it('hides employee-style selfie attendance actions from Superadmin users', () => {
+  expect(attendancePageSource).toContain('isSuperadminAttendanceViewer');
+  expect(attendancePageSource).toContain('Laporan Kehadiran');
+  expect(attendancePageSource).toContain('Approval Absensi');
+  expect(attendancePageSource).not.toMatch(/profile\?\.role === "SUPERADMIN"[\s\S]{0,900}<RealtimeSelfieCamera/);
+});
+
+it('shows realtime distance and official radius in human-friendly meters or kilometers', () => {
+  expect(attendancePageSource).toContain('formatDistanceMeters');
+  expect(attendancePageSource).toContain('Jarak Anda:');
+  expect(attendancePageSource).toContain('Radius diizinkan:');
+  expect(attendancePageSource).toContain('Status:');
+  expect(attendancePageSource).toContain('Di luar radius');
+  expect(attendancePageSource).toContain('.toFixed(1)');
+});
+
 it('stops camera tracks and clears video source during cleanup', () => {
   expect(realtimeCameraSource).toContain('track.stop()');
   expect(realtimeCameraSource).toContain('videoRef.current.pause()');

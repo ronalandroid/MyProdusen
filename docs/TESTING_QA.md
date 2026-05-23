@@ -466,3 +466,13 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Near-real-time assignment sync uses authenticated profile refetch on dashboard focus and a light 60-second dashboard interval; role/nav updates after refetch/refresh while backend permissions apply immediately.
 - Phone/address are private employee data. Owner and Superadmin may access them; Leader team APIs do not expose employee phone/address by default.
 - Real-device GPS+selfie, protected selfie authorization, and authenticated live E2E remain required before production signoff.
+
+## UAT Production Polish Test Notes — 2026-05-24
+
+- Added tests for Superadmin no-selfie attendance UI source policy.
+- Added API regression for Superadmin normal check-in rejection with `403`.
+- Added tests for realtime distance/radius wording and meter/kilometer formatting source policy.
+- Added profile onboarding tests for required avatar, WebP compression source policy, phone, and address.
+- Added API test for avatar + phone + address profile completion and required-avatar rejection.
+- Added navigation test for distinct Pengguna `UserCog` icon.
+- Remaining before production signoff: authenticated E2E credentials, real-device GPS+selfie tests, payroll/leave/KPI configuration flows, and full UAT data verification.

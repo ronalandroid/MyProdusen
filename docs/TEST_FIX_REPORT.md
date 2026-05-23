@@ -495,3 +495,28 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 ### Notes
 - This is a release gate baseline, not deletion of the historical advisory backlog.
 - No auth, RBAC, database, migration, UI style, or production data behavior changed.
+
+## UAT Production Polish Batch — 2026-05-24
+
+### Implemented Fixes
+- Superadmin attendance UX now shows monitoring/report actions only; no realtime selfie camera, no Check-In, and no Check-Out buttons.
+- Normal attendance check-in/check-out remains backend-restricted to `EMPLOYEE` and `LEADER`; Superadmin direct check-in returns `403`.
+- Attendance GPS card now formats distance as meters or kilometers and shows “Jarak Anda”, official radius, and inside/outside radius status.
+- First-login onboarding now requires profile avatar plus phone and address.
+- Avatar upload is client-compressed to WebP at 512px/0.8 quality when browser support exists, then saved through protected profile API.
+- Profile completion now requires `phone`, `address`, `profilePhoto`, and `profileCompletedAt`.
+- Profile avatar files are served through protected `/api/profile/avatar/...` with owner-or-Superadmin RBAC and `no-store, private` headers.
+- Pengguna navigation icon changed to `UserCog`, distinct from Beranda and Karyawan.
+
+### Verification
+- Focused TDD regression: `npm run test -- tests/ui/attendance-selfie.test.ts tests/api/attendance.test.ts tests/ui/profile-onboarding-source.test.ts tests/api/profile-me.test.ts tests/ui/navigation-policy.test.ts` passed, `33` tests.
+- `npm run lint` passed after code changes.
+
+### Remaining UAT Items Not Completed In This Patch
+- Full backend-driven KPI target configuration per Leader/Employee/team.
+- Global and individual leave balance settings UI/flow.
+- Payroll custom weekly/monthly target + bonus rule migration/UI/calculation.
+- Paid/unpaid payroll notification realtime flow.
+- Combined executive PDF enhancements beyond existing Superadmin-only PDF module.
+- Real-device Android/iPhone attendance verification.
+- Authenticated staging E2E with real credentials.

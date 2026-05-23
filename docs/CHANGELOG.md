@@ -358,3 +358,13 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Added `react-doctor.config.json` as an explicit advisory-warning baseline for the current codebase.
 - React Doctor full offline scan now returns `0` diagnostics, `0` errors, and `0` warnings.
 - No runtime behavior, database, auth, RBAC, migration, or UI style changes.
+
+## UAT Production Polish Batch — 2026-05-24
+
+- Hid employee-style selfie attendance flow from Superadmin and kept admin attendance monitoring/report links.
+- Added regression coverage for Superadmin direct check-in returning `403`.
+- Improved attendance GPS display with human-friendly meters/kilometers, official radius, and inside/outside status copy.
+- Required first-login profile avatar in onboarding and added client-side WebP avatar compression.
+- Added protected profile avatar serving route with owner-or-Superadmin RBAC and private no-store headers.
+- Updated profile completion logic to require avatar, phone, and address.
+- Changed Pengguna navigation icon to `UserCog` so it is visually distinct from Beranda and Karyawan.

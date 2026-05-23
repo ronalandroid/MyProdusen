@@ -13,6 +13,8 @@ const frontendUsedJsonRoutes = [
   'app/api/payroll/runs/[id]/route.ts',
   'app/api/payroll/runs/[id]/calculate/route.ts',
   'app/api/payroll/runs/[id]/approve/route.ts',
+  'app/api/payroll/runs/[id]/paid/route.ts',
+  'app/api/payroll/runs/[id]/unpaid/route.ts',
   'app/api/payroll/structures/route.ts',
   'app/api/payroll/structures/[id]/route.ts',
 ];

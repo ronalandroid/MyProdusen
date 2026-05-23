@@ -42,6 +42,30 @@ describe('Attendance API', () => {
   });
 
   describe('POST /api/attendance/check-in', () => {
+    it('rejects Superadmin normal self check-in with 403', async () => {
+      const user = await createTestUser('SUPERADMIN');
+      testUserIds.push(user.id);
+
+      const request = createMockRequest('POST', 'http://localhost:3000/api/attendance/check-in', {
+        token: user.token,
+        body: {
+          workLocationId: 'loc_test_forbidden',
+          latitude: 3.5952,
+          longitude: 98.6722,
+          accuracy: 10,
+          selfie: VALID_SELFIE_DATA_URL,
+          deviceInfo: 'Test Device',
+        },
+      });
+
+      const response = await checkInPOST(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(403);
+      expect(data.success).toBe(false);
+      expect(data.message).toContain('Absensi mandiri hanya untuk Karyawan dan Leader');
+    });
+
     it('should check in successfully within geofence', async () => {
       const user = await createTestUser('EMPLOYEE');
       testUserIds.push(user.id);

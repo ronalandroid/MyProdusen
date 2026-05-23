@@ -320,10 +320,10 @@ export async function buildPdfReportData(request: PdfReportRequest, generatedBy:
     kpi_performance: kpi.summary,
     payroll_summary: payroll.summary,
     executive_hr: [
-      { label: 'Employees in Attendance', value: String(new Set(attendance.rows.map((row) => row.nip)).size) },
-      { label: 'Attendance Rows', value: String(attendance.rows.length) },
-      { label: 'Avg KPI', value: kpi.summary[1].value },
-      { label: 'Payroll Net', value: payroll.summary[3].value },
+      { label: 'Karyawan Hadir', value: String(new Set(attendance.rows.map((row) => row.nip)).size) },
+      { label: 'Baris Absensi', value: String(attendance.rows.length) },
+      { label: 'Rata-rata KPI', value: kpi.summary[1].value },
+      { label: 'Net Payroll', value: payroll.summary[3].value },
     ],
   };
 
@@ -332,7 +332,7 @@ export async function buildPdfReportData(request: PdfReportRequest, generatedBy:
     value: scores.length ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0,
   }));
 
-  const charts: PdfChart[] = [
+  const allCharts: PdfChart[] = [
     { title: 'attendance status chart', labels: Object.keys(attendance.byStatus), values: Object.values(attendance.byStatus) },
     { title: 'attendance trend chart', labels: Object.keys(attendance.trend).slice(-8), values: Object.values(attendance.trend).slice(-8) },
     { title: 'KPI by division chart', labels: kpiDivisionEntries.map((entry) => entry.label), values: kpiDivisionEntries.map((entry) => Number(entry.value.toFixed(1))) },
@@ -344,23 +344,40 @@ export async function buildPdfReportData(request: PdfReportRequest, generatedBy:
     ] },
   ];
 
-  const tables: PdfTable[] = [
+  const allTables: PdfTable[] = [
     {
-      title: 'Attendance Summary',
-      columns: ['Date', 'NIP', 'Name', 'Division', 'Status', 'Late'],
-      rows: attendance.rows.map((row) => [formatDate(row.date), row.nip, row.employeeName, row.division || '', row.status, String(row.lateMinutes)]),
+      title: 'Ringkasan Kehadiran',
+      columns: ['Tanggal', 'NIP', 'Nama', 'Divisi', 'Status', 'Terlambat'],
+      rows: attendance.rows.slice(0, 10).map((row) => [formatDate(row.date), row.nip, row.employeeName, row.division || '', row.status, String(row.lateMinutes)]),
     },
     {
-      title: 'KPI Performance',
-      columns: ['Period', 'NIP', 'Name', 'Division', 'Score', 'Approved'],
-      rows: kpi.rows.map((row) => [row.period, row.nip, row.employeeName, row.division || '', row.score.toFixed(1), row.approved ? 'YES' : 'NO']),
+      title: 'Kinerja KPI',
+      columns: ['Periode', 'NIP', 'Nama', 'Divisi', 'Skor', 'Disetujui'],
+      rows: kpi.rows.slice(0, 10).map((row) => [row.period, row.nip, row.employeeName, row.division || '', row.score.toFixed(1), row.approved ? 'YA' : 'TIDAK']),
     },
     {
-      title: 'Payroll Summary',
-      columns: ['Period', 'Status', 'Employees', 'Gross', 'Deduct', 'Net'],
-      rows: payroll.runs.map((run) => [run.period, run.status, String(run.totalEmployees), money(run.totalGrossPay), money(run.totalDeductions), money(run.totalNetPay)]),
+      title: 'Ringkasan Payroll',
+      columns: ['Periode', 'Status', 'Karyawan', 'Gross', 'Potongan', 'Net'],
+      rows: payroll.runs.slice(0, 10).map((run) => [run.period, run.status, String(run.totalEmployees), money(run.totalGrossPay), money(run.totalDeductions), money(run.totalNetPay)]),
     },
   ];
+
+  let selectedCharts: PdfChart[] = [];
+  let selectedTables: PdfTable[] = [];
+
+  if (request.reportType === 'attendance_summary') {
+    selectedCharts = [allCharts[0], allCharts[1]];
+    selectedTables = [allTables[0]];
+  } else if (request.reportType === 'kpi_performance') {
+    selectedCharts = [allCharts[2]];
+    selectedTables = [allTables[1]];
+  } else if (request.reportType === 'payroll_summary') {
+    selectedCharts = [allCharts[3], allCharts[4]];
+    selectedTables = [allTables[2]];
+  } else if (request.reportType === 'executive_hr') {
+    selectedCharts = [allCharts[0], allCharts[2], allCharts[4]];
+    selectedTables = [allTables[0], allTables[1], allTables[2]];
+  }
 
   return removeSelfieFields({
     title: REPORT_TITLES[request.reportType],
@@ -370,7 +387,7 @@ export async function buildPdfReportData(request: PdfReportRequest, generatedBy:
     periodLabel,
     filters,
     summaryCards: summaryByType[request.reportType],
-    charts,
-    tables,
+    charts: selectedCharts,
+    tables: selectedTables,
   });
 }

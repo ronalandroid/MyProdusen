@@ -4,6 +4,7 @@ import { db, employees, employeeTeamAssignments, users } from '@/lib/db';
 import { requireAuth } from '@/lib/middleware';
 import { logAudit } from '@/lib/audit';
 import { getNextNIP } from '@/utils/nip-generator';
+import { saveProfileAvatar, UploadError } from '@/lib/upload';
 
 const PRIVATE_HEADERS = { 'Cache-Control': 'no-store, private', Pragma: 'no-cache', Expires: '0' };
 const FORBIDDEN_FIELDS = new Set(['role', 'teamId', 'division', 'position', 'defaultLocationId', 'defaultShiftId', 'locationId', 'shiftId', 'isActive', 'employeeId', 'payroll', 'permission', 'permissions']);
@@ -48,7 +49,8 @@ async function buildProfile(userId: string) {
     employeeId: employee?.id || null,
     phone: employee?.phone || '',
     address: employee?.address || '',
-    profileCompleted: Boolean(employee?.phone && employee?.address && employee?.profileCompletedAt),
+    profilePhoto: employee?.profilePhoto || '',
+    profileCompleted: Boolean(employee?.phone && employee?.address && employee?.profilePhoto && employee?.profileCompletedAt),
     profileCompletedAt: employee?.profileCompletedAt || null,
     assignmentStatus: {
       hasDivision: Boolean(employee?.division),
@@ -80,6 +82,18 @@ async function createEmployeeProfileForUser(user: { userId: string; email: strin
   return employee;
 }
 
+async function readProfilePatchBody(request: NextRequest) {
+  const contentType = request.headers.get('content-type') || '';
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await request.formData();
+    return {
+      body: Object.fromEntries(formData.entries()),
+      avatar: formData.get('avatar') instanceof File ? formData.get('avatar') as File : null,
+    };
+  }
+  return { body: await request.json().catch(() => ({})), avatar: null };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
@@ -95,21 +109,32 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const user = await requireAuth(request);
-    const body = await request.json().catch(() => ({}));
+    const { body, avatar } = await readProfilePatchBody(request);
     const validated = validateProfileInput(body);
     if ('error' in validated) {
       await logAudit(user.userId, 'PROFILE_UPDATE_FORBIDDEN_ATTEMPT', 'Employee', undefined, undefined, { attemptedFields: Object.keys(body).filter((key) => FORBIDDEN_FIELDS.has(key)) }, request);
       return validated.error;
     }
     const [employee] = await db.select().from(employees).where(eq(employees.userId, user.userId)).limit(1);
+    if (!employee?.profilePhoto && !avatar) {
+      return fail('PROFILE_AVATAR_REQUIRED', 'Foto profil wajib diunggah', 422);
+    }
     const before = employee ? { phone: employee.phone, address: employee.address, profileCompletedAt: employee.profileCompletedAt } : undefined;
     const saved = employee
       ? (await db.update(employees).set({ phone: validated.phone, address: validated.address, profileCompletedAt: employee.profileCompletedAt || new Date(), updatedAt: new Date() }).where(eq(employees.id, employee.id)).returning())[0]
       : await createEmployeeProfileForUser(user, validated.phone, validated.address);
-    await logAudit(user.userId, before?.profileCompletedAt ? 'PROFILE_UPDATED' : 'PROFILE_COMPLETED', 'Employee', saved.id, before, { phone: saved.phone, address: saved.address, profileCompletedAt: saved.profileCompletedAt }, request);
+    let avatarResult: Awaited<ReturnType<typeof saveProfileAvatar>> | null = null;
+    if (avatar) {
+      avatarResult = await saveProfileAvatar({ file: avatar, employeeId: saved.id });
+    }
+    const finalSaved = avatarResult
+      ? (await db.update(employees).set({ profilePhoto: avatarResult.path, profileCompletedAt: saved.profileCompletedAt || new Date(), updatedAt: new Date() }).where(eq(employees.id, saved.id)).returning())[0]
+      : saved;
+    await logAudit(user.userId, before?.profileCompletedAt ? 'PROFILE_UPDATED' : 'PROFILE_COMPLETED', 'Employee', finalSaved.id, before, { phone: finalSaved.phone, address: finalSaved.address, profilePhoto: finalSaved.profilePhoto, profileCompletedAt: finalSaved.profileCompletedAt }, request);
     return ok(await buildProfile(user.userId), 'Data pribadi berhasil disimpan.');
   } catch (error: any) {
     if (error?.message === 'Unauthorized') return fail('ACCESS_DENIED', 'Anda harus login', 401);
+    if (error instanceof UploadError) return fail('PROFILE_AVATAR_INVALID', error.message, 422);
     return fail('ACCESS_DENIED', 'Gagal menyimpan data pribadi', 400);
   }
 }

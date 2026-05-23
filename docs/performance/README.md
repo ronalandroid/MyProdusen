@@ -44,3 +44,9 @@ Pass criteria:
 - Tablet and desktop switch to sticky sidebar navigation, reducing fixed bottom overlay work on larger screens.
 - Mobile content uses `min-height: 100dvh` and safe-area padding so browser address bars and PWA gesture bars do not hide page content.
 - Skip link is visually hidden until focus, preventing accidental visible overlay on touch render.
+
+## Avatar And Selfie Optimization — 2026-05-24
+
+- Attendance selfies continue to use client-side canvas compression with WebP preference, JPEG fallback, 720px target, and small upload target.
+- Profile avatar onboarding now uses client-side canvas compression with WebP output, 512px max dimension, and 0.8 quality before upload where browser support exists.
+- Protected avatar and selfie routes use `no-store, private` headers to avoid CDN/private data caching.

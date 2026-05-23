@@ -330,3 +330,11 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Near-real-time assignment sync uses authenticated profile refetch on dashboard focus and a light 60-second dashboard interval; role/nav updates after refetch/refresh while backend permissions apply immediately.
 - Phone/address are private employee data. Owner and Superadmin may access them; Leader team APIs do not expose employee phone/address by default.
 - Real-device GPS+selfie, protected selfie authorization, and authenticated live E2E remain required before production signoff.
+
+## UAT Security Updates — 2026-05-24
+
+- Normal attendance check-in/check-out is restricted to `EMPLOYEE` and `LEADER`; `SUPERADMIN` receives `403` outside explicit admin correction/report flows.
+- Profile avatar access uses `/api/profile/avatar/...` and is limited to owner user or `SUPERADMIN`.
+- Profile avatar responses use `Cache-Control: no-store, private` and `X-Content-Type-Options: nosniff`.
+- Profile completion API still rejects self-assignment of role/team/division/position/location/shift/payroll/permissions.
+- Avatar upload validates image MIME/signature and stores only the protected route path in employee profile data.

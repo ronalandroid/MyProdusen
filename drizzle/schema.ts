@@ -598,6 +598,7 @@ export const payrollItems = pgTable('PayrollItem', {
   bpjsKetenagakerjaanCompany: real('bpjsKetenagakerjaanCompany').default(0).notNull(),
   grossPay: real('grossPay').notNull(),
   netPay: real('netPay').notNull(),
+  bonusPay: real('bonusPay').default(0).notNull(),
   workDays: integer('workDays').default(0).notNull(),
   absentDays: integer('absentDays').default(0).notNull(),
   lateDays: integer('lateDays').default(0).notNull(),
@@ -1201,5 +1202,85 @@ export const employeeDocumentsRelations = relations(employeeDocuments, ({ one })
     references: [users.id],
   }),
 }));
+
+// KPI and Payroll target rules
+export const kpiMetrics = pgTable('KpiMetric', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  unit: text('unit').default('pcs').notNull(),
+  active: boolean('active').default(true).notNull(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  activeIdx: index('KpiMetric_active_idx').on(table.active),
+}));
+
+export const kpiTargets = pgTable('KpiTarget', {
+  id: text('id').primaryKey(),
+  metricId: text('metricId').notNull(),
+  scopeType: text('scopeType').notNull(), // COMPANY / TEAM / POSITION / EMPLOYEE
+  scopeId: text('scopeId'),
+  periodType: text('periodType').notNull(), // DAILY / WEEKLY / MONTHLY
+  targetQuantity: real('targetQuantity').notNull(),
+  active: boolean('active').default(true).notNull(),
+  effectiveFrom: timestamp('effectiveFrom', { mode: 'date' }),
+  effectiveTo: timestamp('effectiveTo', { mode: 'date' }),
+  createdBy: text('createdBy'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  activeIdx: index('KpiTarget_active_idx').on(table.active),
+  metricIdIdx: index('KpiTarget_metricId_idx').on(table.metricId),
+}));
+
+export const payrollRules = pgTable('PayrollRule', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId'),
+  teamId: text('teamId'),
+  periodType: text('periodType').notNull(), // WEEKLY / MONTHLY
+  baseSalary: real('baseSalary').notNull(),
+  targetMetricId: text('targetMetricId'),
+  targetQuantity: real('targetQuantity'),
+  bonusType: text('bonusType').default('PER_EXTRA_UNIT').notNull(), // PER_EXTRA_UNIT / FIXED / PERCENTAGE
+  bonusAmountPerUnit: real('bonusAmountPerUnit'),
+  active: boolean('active').default(true).notNull(),
+  effectiveFrom: timestamp('effectiveFrom', { mode: 'date' }),
+  effectiveTo: timestamp('effectiveTo', { mode: 'date' }),
+  createdBy: text('createdBy'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  activeIdx: index('PayrollRule_active_idx').on(table.active),
+  employeeIdIdx: index('PayrollRule_employeeId_idx').on(table.employeeId),
+  teamIdIdx: index('PayrollRule_teamId_idx').on(table.teamId),
+}));
+
+// Relations
+export const kpiMetricsRelations = relations(kpiMetrics, ({ many }) => ({
+  targets: many(kpiTargets),
+}));
+
+export const kpiTargetsRelations = relations(kpiTargets, ({ one }) => ({
+  metric: one(kpiMetrics, {
+    fields: [kpiTargets.metricId],
+    references: [kpiMetrics.id],
+  }),
+}));
+
+export const payrollRulesRelations = relations(payrollRules, ({ one }) => ({
+  targetMetric: one(kpiMetrics, {
+    fields: [payrollRules.targetMetricId],
+    references: [kpiMetrics.id],
+  }),
+  employee: one(employees, {
+    fields: [payrollRules.employeeId],
+    references: [employees.id],
+  }),
+  team: one(teams, {
+    fields: [payrollRules.teamId],
+    references: [teams.id],
+  }),
+}));
+
 
 // Phase 2: Payroll Period

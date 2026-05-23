@@ -18,8 +18,10 @@ import path from 'path';
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads');
 const ATTENDANCE_SELFIE_DIR = process.env.ATTENDANCE_SELFIE_DIR || 'attendance-selfies';
+const PROFILE_AVATAR_DIR = process.env.PROFILE_AVATAR_DIR || 'profile-avatars';
 const LEGACY_SELFIE_DIR = 'selfies';
 const PUBLIC_UPLOAD_PATH = '/api/attendance/selfie';
+const PROFILE_AVATAR_ROUTE = '/api/profile/avatar';
 
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const EXTENSION_BY_MIME_TYPE: Record<string, string> = {
@@ -41,6 +43,8 @@ export const MAX_IMAGE_BYTES = Number.isFinite(configuredSelfieSizeMb) && config
 
 const DATA_URL_PATTERN = /^data:(image\/(?:jpeg|jpg|png|webp));base64,([A-Za-z0-9+/=\s]+)$/;
 const SAFE_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
+const SAFE_DIR_SEGMENT = /^[A-Za-z0-9_-]+$/;
+const SAFE_FILENAME = /^[a-z0-9_-]+\.(jpg|jpeg|png|webp)$/i;
 
 export interface UploadResult {
   filename: string;
@@ -59,6 +63,11 @@ export interface SaveAttendanceSelfieInput {
   employeeId: string;
   attendanceId: string;
   type: AttendanceSelfieType;
+}
+
+export interface SaveProfileAvatarInput {
+  file: File;
+  employeeId: string;
 }
 
 export class UploadError extends Error {
@@ -97,6 +106,14 @@ export function buildAttendanceSelfieKey(input: {
   const attendance = safeSegment(input.attendanceId, randomUUID());
   const typeSegment = input.type === 'check-out' ? 'checkout' : 'checkin';
   return `${ATTENDANCE_SELFIE_DIR}/${year}/${month}/${employee}/${attendance}-${typeSegment}.${input.extension}`;
+}
+
+export function buildProfileAvatarKey(input: { employeeId: string; extension: string; date?: Date }): string {
+  const date = input.date ?? new Date();
+  const year = date.getUTCFullYear();
+  const month = pad2(date.getUTCMonth() + 1);
+  const employee = safeSegment(input.employeeId, 'unknown-employee');
+  return `${PROFILE_AVATAR_DIR}/${year}/${month}/${employee}/avatar-${randomUUID()}.${input.extension}`;
 }
 
 export function validateImageFile(file: File): void {
@@ -201,6 +218,20 @@ export function resolveSelfieStoragePath(input: string): string | null {
   return candidate;
 }
 
+export function resolveUploadStoragePath(input: string): string | null {
+  if (!input) return null;
+  let key = input.trim();
+  if (key.startsWith(`${PUBLIC_UPLOAD_PATH}/`)) key = key.slice(`${PUBLIC_UPLOAD_PATH}/`.length);
+  if (key.startsWith(`${PROFILE_AVATAR_ROUTE}/`)) key = key.slice(`${PROFILE_AVATAR_ROUTE}/`.length);
+  if (key.includes('..') || key.includes('\\') || key.startsWith('/')) return null;
+  const segments = key.split('/').filter(Boolean);
+  if (segments.length === 0 || segments.some((segment) => !SAFE_DIR_SEGMENT.test(segment) && !SAFE_FILENAME.test(segment))) return null;
+  const candidate = path.resolve(path.join(UPLOAD_DIR, ...segments));
+  const root = path.resolve(UPLOAD_DIR);
+  if (!candidate.startsWith(root + path.sep) && candidate !== root) return null;
+  return candidate;
+}
+
 /**
  * @deprecated Prefer saveAttendanceSelfie. Kept for legacy callers that do not
  * know the attendance/employee context yet.
@@ -261,6 +292,27 @@ export async function saveAttendanceSelfie(input: SaveAttendanceSelfieInput): Pr
   return {
     filename: path.basename(absolutePath),
     path: `${PUBLIC_UPLOAD_PATH}/${key}`,
+    storageKey: key,
+    mimeType,
+    size: buffer.length,
+  };
+}
+
+export async function saveProfileAvatar(input: SaveProfileAvatarInput): Promise<UploadResult> {
+  validateImageFile(input.file);
+  const mimeType = normalizeMimeType(input.file.type);
+  const extension = EXTENSION_BY_MIME_TYPE[mimeType];
+  if (!extension) throw new UploadError('Tipe file tidak valid');
+  const bytes = await input.file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+  validateImageBuffer(buffer, mimeType);
+  const key = buildProfileAvatarKey({ employeeId: input.employeeId, extension });
+  const absolutePath = path.join(UPLOAD_DIR, key);
+  await mkdir(path.dirname(absolutePath), { recursive: true });
+  await writeFile(absolutePath, buffer);
+  return {
+    filename: path.basename(absolutePath),
+    path: `${PROFILE_AVATAR_ROUTE}/${key}`,
     storageKey: key,
     mimeType,
     size: buffer.length,

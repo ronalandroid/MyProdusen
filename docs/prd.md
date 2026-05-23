@@ -1979,3 +1979,13 @@ Role dan identitas kerja dipisahkan. Role produksi final hanya `SUPERADMIN`, `LE
 - Near-real-time assignment sync uses authenticated profile refetch on dashboard focus and a light 60-second dashboard interval; role/nav updates after refetch/refresh while backend permissions apply immediately.
 - Phone/address are private employee data. Owner and Superadmin may access them; Leader team APIs do not expose employee phone/address by default.
 - Real-device GPS+selfie, protected selfie authorization, and authenticated live E2E remain required before production signoff.
+
+## UAT Production Polish Decisions — 2026-05-24
+
+- Superadmin does not use normal selfie attendance check-in/check-out. Superadmin uses attendance monitoring, approval, protected selfie evidence, and reports.
+- Normal GPS+selfie attendance is only for Leader and Employee.
+- First-login onboarding requires personal avatar/photo, phone number, and address. Work identity remains Superadmin-only.
+- Avatar/photo must be optimized client-side where supported and served through protected access, not public upload paths.
+- Attendance UI must show assigned location sync, current distance, official radius, GPS accuracy, and inside/outside radius status.
+- Pengguna navigation must be visually distinct from Beranda.
+- This batch also confirms requested future UAT scope: configurable KPI targets, leave balance settings, payroll target/bonus rules, paid/unpaid notifications, and combined professional PDF reports.

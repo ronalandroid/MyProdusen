@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bell, ArrowLeft, ClipboardList, Info, MapPin, Navigation } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ClientUserProfile, fetchProfile, getAuthHeaders } from "@/lib/auth-client";
 import { SelfieViewer } from "@/components/attendance/SelfieViewer";
@@ -75,6 +76,13 @@ function calculateDistanceMeters(lat1: number, lon1: number, lat2: number, lon2:
   return earthRadiusMeters * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
+function formatDistanceMeters(distance: number) {
+  if (distance >= 1000) {
+    return `${(distance / 1000).toFixed(1)} km`;
+  }
+  return `${Math.round(distance)} m`;
+}
+
 
 function getCleanAttendanceError(error: unknown, fallback = "Terjadi kendala saat memuat data. Silakan coba lagi.") {
   const message = error instanceof Error ? error.message : String(error || "");
@@ -129,6 +137,7 @@ export default function AttendancePage() {
     record: AttendanceRecord;
     kind: "check-in" | "check-out";
   } | null>(null);
+  const isSuperadminAttendanceViewer = profile?.role === "SUPERADMIN";
 
   const employee = profile?.employee;
   const locationName = todayAttendance?.workLocation?.name || employee?.defaultLocation?.name || "Lokasi kerja belum tersedia";
@@ -175,6 +184,12 @@ export default function AttendancePage() {
     try {
       const currentProfile = await fetchProfile();
       setProfile(currentProfile);
+
+      if (currentProfile.role === "SUPERADMIN") {
+        setTodayAttendance(null);
+        setHistory([]);
+        return;
+      }
 
       const [todayResponse, historyResponse] = await Promise.all([
         fetch("/api/attendance/today", { headers: getAuthHeaders(), cache: "no-store" }),
@@ -308,6 +323,42 @@ export default function AttendancePage() {
       ? missingRequirements.join(" • ")
       : "Data siap. Server tetap memvalidasi GPS, selfie, dan geofence.";
 
+  if (isSuperadminAttendanceViewer) {
+    return (
+      <div className="phone-screen attendance-screen" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <button type="button" className="btn btn-secondary btn-icon" onClick={() => router.back()} aria-label="Kembali">
+            <ArrowLeft size={20} aria-hidden="true" />
+          </button>
+          <div>
+            <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Kehadiran</h1>
+            <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
+              Superadmin mengelola monitoring, approval, dan laporan. Absensi selfie mandiri hanya untuk Karyawan dan Leader.
+            </p>
+          </div>
+        </div>
+
+        <section className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }} aria-labelledby="admin-attendance-title">
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+            <div style={{ backgroundColor: "var(--primary)", padding: "10px", borderRadius: "14px", color: "var(--text-primary)", display: "flex", alignItems: "center", justifyContent: "center" }} aria-hidden="true">
+              <ClipboardList size={20} aria-hidden="true" />
+            </div>
+            <div>
+              <h2 id="admin-attendance-title" style={{ fontSize: "16px", fontWeight: 700, marginBottom: "4px" }}>Laporan Kehadiran</h2>
+              <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                Gunakan halaman laporan dan approval untuk memantau absensi, geo-fence, dan bukti selfie terlindungi.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link href="/dashboard/reports/attendance" className="btn btn-primary min-h-[44px]">Buka Laporan Kehadiran</Link>
+            <Link href="/dashboard/attendance/exceptions" className="btn btn-secondary min-h-[44px]">Approval Absensi</Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="phone-screen attendance-screen" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -411,11 +462,11 @@ export default function AttendancePage() {
           </div>
           <div className="hris-card-highlight" style={{ border: "1px solid var(--border-color)", borderRadius: "16px", padding: "12px" }}>
             <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Jarak ke lokasi</span>
-            <strong style={{ fontSize: "13px" }}>{gpsDistanceMeters !== null ? `${Math.round(gpsDistanceMeters)} meter` : "-"}</strong>
+            <strong style={{ fontSize: "13px" }}>{gpsDistanceMeters !== null ? formatDistanceMeters(gpsDistanceMeters) : "-"}</strong>
           </div>
           <div className="hris-card-highlight" style={{ border: "1px solid var(--border-color)", borderRadius: "16px", padding: "12px" }}>
             <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Radius resmi</span>
-            <strong style={{ fontSize: "13px" }}>{assignedLocation ? `${assignedLocation.radius} meter` : "-"}</strong>
+            <strong style={{ fontSize: "13px" }}>{assignedLocation ? formatDistanceMeters(assignedLocation.radius) : "-"}</strong>
           </div>
         </div>
         {isInsideRadius !== null && (
@@ -430,7 +481,7 @@ export default function AttendancePage() {
               fontWeight: 700,
             }}
           >
-            {isInsideRadius ? "Anda berada di dalam radius lokasi kerja" : "Anda berada di luar radius lokasi kerja"}
+            {`Jarak Anda: ${formatDistanceMeters(gpsDistanceMeters || 0)} dari lokasi resmi · Radius diizinkan: ${assignedLocation ? formatDistanceMeters(assignedLocation.radius) : "-"} · Status: ${isInsideRadius ? "Di dalam radius" : "Di luar radius"}`}
           </div>
         )}
         {gpsError && <div role="alert" style={{ color: "var(--danger)", fontSize: "12px", fontWeight: 600 }}>{gpsError}</div>}

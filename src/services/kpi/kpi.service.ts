@@ -1,7 +1,8 @@
-import { db, kpiTemplates, kpiItems, kpiAssignments, kpiResults, employees } from '@/lib/db';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { db, kpiTemplates, kpiItems, kpiAssignments, kpiResults, employees, kpiMetrics, kpiTargets, employeeTeamAssignments, positions } from '@/lib/db';
+import { eq, and, desc, sql, ne } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { notifyUser } from '@/lib/notifications/dispatch';
+import { logAudit } from '@/lib/audit';
 
 export type KpiScoringType = 'HIGHER_IS_BETTER' | 'LOWER_IS_BETTER' | 'BOOLEAN';
 
@@ -549,6 +550,205 @@ export class KpiService {
       items: results,
     };
   }
+
+  // ============================================
+  // KPI METRICS AND TARGET RULES
+  // ============================================
+
+  async createMetric(actorUserId: string, data: { name: string; unit: string; active?: boolean }) {
+    if (!data.name?.trim()) throw new Error('Nama metrik KPI wajib diisi');
+    const id = uuidv4();
+    const [metric] = await db
+      .insert(kpiMetrics)
+      .values({
+        id,
+        name: data.name.trim(),
+        unit: data.unit || 'pcs',
+        active: data.active ?? true,
+      })
+      .returning();
+
+    await logAudit(actorUserId, 'KPI_METRIC_CREATE', 'KpiMetric', id, undefined, metric);
+    return metric;
+  }
+
+  async getMetrics(filters?: { active?: boolean }) {
+    let query = db.select().from(kpiMetrics);
+    const conditions = [];
+    if (filters?.active !== undefined) {
+      conditions.push(eq(kpiMetrics.active, filters.active));
+    }
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    return query.orderBy(desc(kpiMetrics.createdAt));
+  }
+
+  async getMetricById(id: string) {
+    const [metric] = await db.select().from(kpiMetrics).where(eq(kpiMetrics.id, id)).limit(1);
+    if (!metric) throw new Error('Metrik KPI tidak ditemukan');
+    return metric;
+  }
+
+  async updateMetric(actorUserId: string, id: string, data: Partial<{ name: string; unit: string; active: boolean }>) {
+    const [existing] = await db.select().from(kpiMetrics).where(eq(kpiMetrics.id, id)).limit(1);
+    if (!existing) throw new Error('Metrik KPI tidak ditemukan');
+
+    const [updated] = await db
+      .update(kpiMetrics)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(kpiMetrics.id, id))
+      .returning();
+
+    await logAudit(actorUserId, 'KPI_METRIC_UPDATE', 'KpiMetric', id, JSON.stringify(existing), JSON.stringify(updated));
+    return updated;
+  }
+
+  async deleteMetric(actorUserId: string, id: string) {
+    return this.updateMetric(actorUserId, id, { active: false });
+  }
+
+  async createTarget(actorUserId: string, data: {
+    metricId: string;
+    scopeType: string;
+    scopeId?: string | null;
+    periodType: string;
+    targetQuantity: number;
+    active?: boolean;
+    effectiveFrom?: Date;
+    effectiveTo?: Date;
+  }) {
+    if (!data.metricId) throw new Error('Metrik KPI wajib diisi');
+    if (!data.scopeType) throw new Error('Tipe scope target wajib diisi');
+    if (data.targetQuantity < 0) throw new Error('Target kuantitas tidak boleh negatif');
+
+    const id = uuidv4();
+    const [target] = await db
+      .insert(kpiTargets)
+      .values({
+        id,
+        metricId: data.metricId,
+        scopeType: data.scopeType,
+        scopeId: data.scopeId || null,
+        periodType: data.periodType || 'DAILY',
+        targetQuantity: data.targetQuantity,
+        active: data.active ?? true,
+        effectiveFrom: data.effectiveFrom || null,
+        effectiveTo: data.effectiveTo || null,
+        createdBy: actorUserId,
+      })
+      .returning();
+
+    await logAudit(actorUserId, 'KPI_TARGET_CREATE', 'KpiTarget', id, undefined, target);
+    return target;
+  }
+
+  async getTargets(filters?: { active?: boolean; scopeType?: string; scopeId?: string }) {
+    let query = db
+      .select({
+        target: kpiTargets,
+        metric: kpiMetrics,
+      })
+      .from(kpiTargets)
+      .innerJoin(kpiMetrics, eq(kpiTargets.metricId, kpiMetrics.id));
+
+    const conditions = [];
+    if (filters?.active !== undefined) {
+      conditions.push(eq(kpiTargets.active, filters.active));
+    }
+    if (filters?.scopeType) {
+      conditions.push(eq(kpiTargets.scopeType, filters.scopeType));
+    }
+    if (filters?.scopeId) {
+      conditions.push(eq(kpiTargets.scopeId, filters.scopeId));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    return query.orderBy(desc(kpiTargets.createdAt));
+  }
+
+  async getTargetById(id: string) {
+    const [target] = await db.select().from(kpiTargets).where(eq(kpiTargets.id, id)).limit(1);
+    if (!target) throw new Error('Target KPI tidak ditemukan');
+    return target;
+  }
+
+  async updateTarget(actorUserId: string, id: string, data: Partial<{
+    targetQuantity: number;
+    active: boolean;
+    effectiveFrom: Date;
+    effectiveTo: Date;
+  }>) {
+    const [existing] = await db.select().from(kpiTargets).where(eq(kpiTargets.id, id)).limit(1);
+    if (!existing) throw new Error('Target KPI tidak ditemukan');
+
+    const [updated] = await db
+      .update(kpiTargets)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(kpiTargets.id, id))
+      .returning();
+
+    await logAudit(actorUserId, 'KPI_TARGET_UPDATE', 'KpiTarget', id, JSON.stringify(existing), JSON.stringify(updated));
+    return updated;
+  }
+
+  async deleteTarget(actorUserId: string, id: string) {
+    return this.updateTarget(actorUserId, id, { active: false });
+  }
+
+  async resolveActiveTarget(employeeId: string, metricId: string, targetDate = new Date()) {
+    const [emp] = await db.select().from(employees).where(eq(employees.id, employeeId)).limit(1);
+    if (!emp) return null;
+
+    const [teamAssignment] = await db
+      .select()
+      .from(employeeTeamAssignments)
+      .where(and(eq(employeeTeamAssignments.employeeId, employeeId), eq(employeeTeamAssignments.active, true)))
+      .limit(1);
+
+    const allTargets = await db
+      .select()
+      .from(kpiTargets)
+      .where(and(eq(kpiTargets.metricId, metricId), eq(kpiTargets.active, true)));
+
+    const activeTargets = allTargets.filter((t) => {
+      if (t.effectiveFrom && t.effectiveFrom > targetDate) return false;
+      if (t.effectiveTo && t.effectiveTo < targetDate) return false;
+      return true;
+    });
+
+    // Resolve by hierarchy:
+    // H1: EMPLOYEE
+    const empTarget = activeTargets.find((t) => t.scopeType === 'EMPLOYEE' && t.scopeId === employeeId);
+    if (empTarget) return empTarget;
+
+    // H2: POSITION
+    if (emp.position) {
+      const posTarget = activeTargets.find((t) => t.scopeType === 'POSITION' && t.scopeId === emp.position);
+      if (posTarget) return posTarget;
+    }
+
+    // H3: TEAM
+    if (teamAssignment?.teamId) {
+      const teamTarget = activeTargets.find((t) => t.scopeType === 'TEAM' && t.scopeId === teamAssignment.teamId);
+      if (teamTarget) return teamTarget;
+    }
+
+    // H4: COMPANY
+    const companyTarget = activeTargets.find((t) => t.scopeType === 'COMPANY');
+    if (companyTarget) return companyTarget;
+
+    return null;
+  }
 }
 
 export const kpiService = new KpiService();
+

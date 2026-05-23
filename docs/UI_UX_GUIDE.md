@@ -598,3 +598,11 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Near-real-time assignment sync uses authenticated profile refetch on dashboard focus and a light 60-second dashboard interval; role/nav updates after refetch/refresh while backend permissions apply immediately.
 - Phone/address are private employee data. Owner and Superadmin may access them; Leader team APIs do not expose employee phone/address by default.
 - Real-device GPS+selfie, protected selfie authorization, and authenticated live E2E remain required before production signoff.
+
+## UAT UI/UX Polish — 2026-05-24
+
+- Superadmin attendance page uses monitoring/report actions, not employee selfie check-in/out controls.
+- Employee/Leader attendance GPS card shows clear Indonesian copy: current distance, official radius, and inside/outside status.
+- Distance displays in meters below 1000m and kilometers at 1000m or more.
+- First-login onboarding asks for Foto profil/avatar, Nomor HP, and Alamat lengkap with mobile-safe controls and logout as the only escape while incomplete.
+- Pengguna nav icon uses an account-management icon distinct from Beranda and Karyawan while keeping existing icon style.

@@ -1,4 +1,4 @@
-import { db, leaveBalanceLedger } from '@/lib/db';
+import { db, leaveBalanceLedger, companySettings, employees } from '@/lib/db';
 import { and, eq, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { calculateLeaveDays, summarizeLeaveLedger, type LeaveBalanceTransactionType } from '@/lib/leave/balance-ledger';
@@ -17,11 +17,14 @@ export class LeaveBalanceService {
 
     if (existing) return existing;
 
+    // Load global quota dynamically
+    const globalQuota = await this.getGlobalLeaveQuota();
+
     const [created] = await db.insert(leaveBalanceLedger).values({
       id: uuidv4(),
       employeeId,
       transactionType: 'ENTITLEMENT',
-      amount: 12,
+      amount: globalQuota,
       balanceYear: year,
       reason: `Jatah cuti tahunan ${year}`,
       createdBy,
@@ -111,6 +114,137 @@ export class LeaveBalanceService {
       .orderBy(desc(leaveBalanceLedger.createdAt));
 
     return history;
+  }
+
+  // ============================================
+  // GLOBAL & INDIVIDUAL LEAVE SETTINGS
+  // ============================================
+
+  async getGlobalLeaveQuota(): Promise<number> {
+    const [setting] = await db
+      .select()
+      .from(companySettings)
+      .where(eq(companySettings.key, 'DEFAULT_LEAVE_QUOTA'))
+      .limit(1);
+
+    if (!setting) return 12;
+    const val = parseInt(setting.value, 10);
+    return isNaN(val) ? 12 : val;
+  }
+
+  async updateGlobalLeaveQuota(actorUserId: string, quota: number) {
+    const [existing] = await db
+      .select()
+      .from(companySettings)
+      .where(eq(companySettings.key, 'DEFAULT_LEAVE_QUOTA'))
+      .limit(1);
+
+    if (existing) {
+      const [updated] = await db
+        .update(companySettings)
+        .set({
+          value: quota.toString(),
+          updatedBy: actorUserId,
+          updatedAt: new Date(),
+        })
+        .where(eq(companySettings.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(companySettings)
+        .values({
+          id: uuidv4(),
+          key: 'DEFAULT_LEAVE_QUOTA',
+          value: quota.toString(),
+          description: 'Default annual leave entitlement for employees',
+          updatedBy: actorUserId,
+        })
+        .returning();
+      return created;
+    }
+  }
+
+  async syncGlobalQuota(actorUserId: string, year = new Date().getFullYear()) {
+    const quota = await this.getGlobalLeaveQuota();
+
+    const activeEmployees = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.status, 'ACTIVE'));
+
+    for (const emp of activeEmployees) {
+      const [existing] = await db
+        .select()
+        .from(leaveBalanceLedger)
+        .where(and(
+          eq(leaveBalanceLedger.employeeId, emp.id),
+          eq(leaveBalanceLedger.balanceYear, year),
+          eq(leaveBalanceLedger.transactionType, 'ENTITLEMENT')
+        ))
+        .limit(1);
+
+      if (existing) {
+        if (existing.reason && existing.reason.includes('Jatah cuti tahunan')) {
+          await db
+            .update(leaveBalanceLedger)
+            .set({
+              amount: quota,
+              createdBy: actorUserId,
+            })
+            .where(eq(leaveBalanceLedger.id, existing.id));
+        }
+      } else {
+        await db.insert(leaveBalanceLedger).values({
+          id: uuidv4(),
+          employeeId: emp.id,
+          transactionType: 'ENTITLEMENT',
+          amount: quota,
+          balanceYear: year,
+          reason: `Jatah cuti tahunan ${year}`,
+          createdBy: actorUserId,
+        });
+      }
+    }
+  }
+
+  async adjustIndividualQuota(actorUserId: string, employeeId: string, quota: number, year = new Date().getFullYear(), reason = 'Koreksi jatah cuti individu') {
+    const [existing] = await db
+      .select()
+      .from(leaveBalanceLedger)
+      .where(and(
+        eq(leaveBalanceLedger.employeeId, employeeId),
+        eq(leaveBalanceLedger.balanceYear, year),
+        eq(leaveBalanceLedger.transactionType, 'ENTITLEMENT')
+      ))
+      .limit(1);
+
+    if (existing) {
+      const [updated] = await db
+        .update(leaveBalanceLedger)
+        .set({
+          amount: quota,
+          reason,
+          createdBy: actorUserId,
+        })
+        .where(eq(leaveBalanceLedger.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(leaveBalanceLedger)
+        .values({
+          id: uuidv4(),
+          employeeId,
+          transactionType: 'ENTITLEMENT',
+          amount: quota,
+          balanceYear: year,
+          reason,
+          createdBy: actorUserId,
+        })
+        .returning();
+      return created;
+    }
   }
 }
 

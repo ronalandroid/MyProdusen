@@ -14,6 +14,7 @@ type ProfileMe = {
   role: UserRole;
   phone: string;
   address: string;
+  profilePhoto: string;
   profileCompleted: boolean;
   assignmentStatus: { hasDivision: boolean; hasPosition: boolean; hasLocation: boolean; hasShift: boolean; hasTeam: boolean };
 };
@@ -91,7 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {profileMe && profile.role !== "SUPERADMIN" && <AssignmentStatusCards profileMe={profileMe} />}
           {children}
         </main>
-        {profileMe && !profileMe.profileCompleted && <ProfileCompletionModal initialPhone={profileMe.phone} initialAddress={profileMe.address} onSaved={() => loadProfileState(true)} />}
+        {profileMe && !profileMe.profileCompleted && <ProfileCompletionModal initialPhone={profileMe.phone} initialAddress={profileMe.address} initialProfilePhoto={profileMe.profilePhoto} onSaved={() => loadProfileState(true)} />}
       </div>
     </ToastProvider>
   );
@@ -106,17 +107,58 @@ function AssignmentStatusCards({ profileMe }: { profileMe: ProfileMe }) {
   return <section className="mb-4 grid gap-3 sm:grid-cols-2" aria-label="Status data pekerjaan">{missing.map(([key]) => <div key={key} className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">{missingMessages[key as keyof typeof missingMessages]}</div>)}</section>;
 }
 
-function ProfileCompletionModal({ initialPhone, initialAddress, onSaved }: { initialPhone: string; initialAddress: string; onSaved: () => Promise<unknown> }) {
+async function compressAvatarImage(file: File) {
+  if (!file.type.startsWith("image/")) throw new Error("File avatar harus berupa gambar.");
+  const bitmap = await createImageBitmap(file);
+  const maxSize = 512;
+  const ratio = Math.min(1, maxSize / bitmap.width, maxSize / bitmap.height);
+  const width = Math.max(1, Math.round(bitmap.width * ratio));
+  const height = Math.max(1, Math.round(bitmap.height * ratio));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Browser tidak mendukung kompresi avatar.");
+  context.drawImage(bitmap, 0, 0, width, height);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", 0.8));
+  if (!blob) throw new Error("Gagal mengompres avatar.");
+  return new File([blob], "profile-avatar.webp", { type: blob.type || "image/webp" });
+}
+
+function ProfileCompletionModal({ initialPhone, initialAddress, initialProfilePhoto, onSaved }: { initialPhone: string; initialAddress: string; initialProfilePhoto: string; onSaved: () => Promise<unknown> }) {
   const [phone, setPhone] = useState(initialPhone || "");
   const [address, setAddress] = useState(initialAddress || "");
+  const avatarRef = useRef<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState(initialProfilePhoto || "");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
 
+  async function handleAvatarChange(file: File | null) {
+    setError("");
+    if (!file) return;
+    try {
+      const compressed = await compressAvatarImage(file);
+      avatarRef.current = compressed;
+      setAvatarPreview((current) => {
+        if (current?.startsWith("blob:")) URL.revokeObjectURL(current);
+        return URL.createObjectURL(compressed);
+      });
+    } catch (err) {
+      avatarRef.current = null;
+      setError(err instanceof Error ? err.message : "Gagal memproses avatar.");
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setSuccess(""); setSaving(true);
     try {
-      const response = await fetch("/api/profile/me", { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, address }) });
+      if (!initialProfilePhoto && !avatarRef.current) throw new Error("Foto profil wajib diunggah.");
+      const formData = new FormData();
+      formData.set("phone", phone);
+      formData.set("address", address);
+      if (avatarRef.current) formData.set("avatar", avatarRef.current, avatarRef.current.name);
+      const response = await fetch("/api/profile/me", { method: "PATCH", credentials: "include", body: formData });
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.success) throw new Error(payload?.error?.message || "Gagal menyimpan data pribadi");
       setSuccess("Data pribadi berhasil disimpan.");
@@ -130,8 +172,12 @@ function ProfileCompletionModal({ initialPhone, initialAddress, onSaved }: { ini
     <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="profile-onboarding-title">
       <div className="w-full max-w-lg rounded-3xl bg-white p-5 shadow-xl sm:p-6">
         <h2 id="profile-onboarding-title" className="text-xl font-extrabold text-[var(--text-primary)]">Lengkapi Data Pribadi</h2>
-        <p className="mt-2 text-sm text-[var(--text-secondary)]">Isi nomor HP dan alamat agar data karyawan Anda lengkap. Divisi, posisi, lokasi kerja, dan shift akan ditetapkan oleh Superadmin.</p>
+        <p className="mt-2 text-sm text-[var(--text-secondary)]">Isi foto profil, nomor HP, dan alamat agar data karyawan Anda lengkap. Divisi, posisi, lokasi kerja, dan shift akan ditetapkan oleh Superadmin.</p>
         <form onSubmit={handleSubmit} className="mt-5 grid gap-4">
+          <label className="text-sm font-bold text-[var(--text-primary)]">Foto profil / avatar
+            <input className="input mt-2 min-h-[44px]" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => handleAvatarChange(e.target.files?.[0] || null)} required={!initialProfilePhoto} />
+          </label>
+          {avatarPreview && <img src={avatarPreview} alt="Preview avatar" className="h-20 w-20 rounded-full object-cover ring-2 ring-[var(--primary)]" />}
           <label className="text-sm font-bold text-[var(--text-primary)]">Nomor HP<input className="input mt-2 min-h-[44px]" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xxxxxxxxxx" autoComplete="tel" required /></label>
           <label className="text-sm font-bold text-[var(--text-primary)]">Alamat lengkap<textarea className="input mt-2 min-h-[116px] resize-y" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Alamat lengkap tempat tinggal" required /></label>
           {error && <div className="alert alert-error" role="alert">{error}</div>}

@@ -9,6 +9,11 @@ describe('profile onboarding source policy', () => {
     expect(layoutSource).toContain('Lengkapi Data Pribadi');
     expect(layoutSource).toContain('Nomor HP');
     expect(layoutSource).toContain('Alamat lengkap');
+    expect(layoutSource).toContain('Foto profil / avatar');
+    expect(layoutSource).toContain('compressAvatarImage');
+    expect(layoutSource).toContain('image/webp');
+    expect(layoutSource).toContain('512');
+    expect(layoutSource).toContain('0.8');
     expect(layoutSource).toContain('Simpan Data');
     expect(layoutSource).toContain('Keluar');
     expect(layoutSource).not.toContain('aria-label="Tutup"');

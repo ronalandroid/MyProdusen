@@ -315,3 +315,10 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Near-real-time assignment sync uses authenticated profile refetch on dashboard focus and a light 60-second dashboard interval; role/nav updates after refetch/refresh while backend permissions apply immediately.
 - Phone/address are private employee data. Owner and Superadmin may access them; Leader team APIs do not expose employee phone/address by default.
 - Real-device GPS+selfie, protected selfie authorization, and authenticated live E2E remain required before production signoff.
+
+## UAT Data Model Notes — 2026-05-24
+
+- No destructive database change added in this patch.
+- Existing `Employee.profilePhoto` now participates in profile completion with `phone`, `address`, and `profileCompletedAt`.
+- Existing `Employee.defaultLocationId` and `Employee.defaultShiftId` remain source of truth for attendance validation.
+- Avatar files are stored in persistent upload storage under `profile-avatars/YYYY/MM/{employeeId}/...`; database stores the protected `/api/profile/avatar/...` path only.

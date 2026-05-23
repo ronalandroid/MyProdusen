@@ -2095,6 +2095,14 @@
         "rules": [
           "react-doctor/server-hoist-static-io"
         ]
+      },
+      {
+        "files": [
+          "app/api/profile/avatar/**/route.ts"
+        ],
+        "rules": [
+          "react-doctor/server-hoist-static-io"
+        ]
       }
     ]
   }
