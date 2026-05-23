@@ -437,3 +437,23 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Accessibility: 10/10
 - E2E Wiring Sync: 10/10
 
+
+## Coolify Docker Build Timeout Hotfix — 2026-05-24
+
+### Evidence
+- Coolify deployment log stopped during Docker build step `RUN npm run build:next` after repeated heartbeat output and before any Next.js compile error.
+- Failure happened in image build, not runtime migration or app startup.
+- Local Docker is unavailable in this agent environment, so Docker image build could not be reproduced locally.
+
+### Fix
+- Added `libc6-compat` to Docker `deps` and `builder` stages so Next.js native SWC/image packages run on Alpine through the fast native compatibility path instead of slower fallback behavior on low-resource VPS builders.
+- No app behavior, auth, RBAC, database, UI style, or migration logic changed.
+
+### Verification
+- `npm run lint`: pass.
+- `npm run test`: pass, `74` files / `368` tests.
+- `npm run build`: pass.
+- `npm run release:check`: pass.
+
+### Remaining Required Check
+- Re-run Coolify deployment from latest `main` to verify Docker build finishes on target builder.

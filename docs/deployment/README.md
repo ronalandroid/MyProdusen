@@ -205,3 +205,7 @@ BASE_URL=https://myprodusen.online npm run verify:live-routes
 ```
 
 Purge Cloudflare cache after image/static-asset changes. If Cloudflare causes login, upload, or private route failures, emergency rollback is switching `@` and `www` to DNS-only while app image rollback stays available in Coolify.
+
+## Coolify Docker Build Timeout Hotfix — 2026-05-24
+
+If deployment log stops during `RUN npm run build:next` with heartbeat lines and no Next.js error, redeploy latest `main` containing the Dockerfile Alpine `libc6-compat` compatibility fix. This keeps Next.js native build tooling on the faster path in low-resource Alpine builders. `release:runtime` remains a runtime/container command and must not replace local/CI `release:check`.

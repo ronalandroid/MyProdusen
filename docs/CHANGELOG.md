@@ -339,3 +339,9 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Near-real-time assignment sync uses authenticated profile refetch on dashboard focus and a light 60-second dashboard interval; role/nav updates after refetch/refresh while backend permissions apply immediately.
 - Phone/address are private employee data. Owner and Superadmin may access them; Leader team APIs do not expose employee phone/address by default.
 - Real-device GPS+selfie, protected selfie authorization, and authenticated live E2E remain required before production signoff.
+
+## 2026-05-24 — Coolify Docker Build Timeout Hotfix
+
+- Added Alpine `libc6-compat` in Docker dependency and builder stages to keep Next.js native build tooling on the faster compatible path during Coolify image builds.
+- Local lint, test, Next build, and release check passed after the Dockerfile change.
+- Docker build must be re-run in Coolify because Docker is not available in the local agent environment.

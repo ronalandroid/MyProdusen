@@ -11,6 +11,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV npm_config_audit=false
 ENV npm_config_fund=false
 
+# Next.js native SWC/image packages run faster and more reliably on Alpine with
+# glibc compatibility available. Without this, low-resource VPS builders can
+# fall back to slower paths and hit Coolify's deployment command timeout.
+RUN apk add --no-cache libc6-compat
+
 COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev --prefer-offline --no-audit --fund=false
@@ -28,6 +33,8 @@ ENV NODE_OPTIONS=--max-old-space-size=1024
 ENV BUILD_HEARTBEAT_MS=5000
 ENV NEXT_PRIVATE_BUILD_WORKER=1
 ENV NEXT_BUILD_CPUS=2
+
+RUN apk add --no-cache libc6-compat
 
 # Dummy DATABASE_URL keeps build-time imports safe.
 # The real value is injected at runtime via Coolify env vars.
