@@ -308,8 +308,9 @@ The mobile bottom navigation must hold ≤ 5 tabs per role.
 
 | Role | Primary tabs (left → right) |
 | ---- | --------------------------- |
-| EMPLOYEE | Beranda · Kehadiran · Cuti · KPI · Akun |
-| SUPERADMIN | Beranda · Cabang · Approval · Laporan · Akun |
+| EMPLOYEE | Beranda · Absensi · Cuti · KPI · Akun |
+| LEADER | Beranda · Absensi · Input KPI · Tim · Akun |
+| SUPERADMIN | Beranda · Pengguna · KPI · Payroll · Akun |
 
 `lib/navigation/role-navigation.ts` holds the policy.
 `getPrimaryNavigationForRole(role)` returns the ≤ 5 tabs for the bottom

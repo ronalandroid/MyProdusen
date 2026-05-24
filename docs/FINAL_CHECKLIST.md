@@ -272,3 +272,18 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 ## Talenta-Inspired GO/NO-GO Addendum — 2026-05-24
 
 GO requires core MyProdusen modules visible and working, non-core modules hidden or feature-flagged off by default, no destructive migration, no private data exposure, backend RBAC intact, docs updated, and lint/test/build/release checks passing. NO-GO if optional Talenta-style modules clutter main nav, core attendance/leave/KPI/payroll/report flows are broken, tests fail, or hidden modules require data deletion.
+
+## Navigation Simplified Polish Gate — 2026-05-24
+
+- [x] Superadmin mobile navigation limited to exactly 5 items: Beranda, Pengguna, KPI, Payroll, and Akun.
+- [x] Leader mobile navigation limited to exactly 5 items: Beranda, Absensi, Input KPI, Tim, and Akun.
+- [x] Employee mobile navigation limited to exactly 5 items: Beranda, Absensi, Cuti, KPI, and Akun.
+- [x] Non-core modules (overtime, documents, lms, recruitment, etc.) completely hidden from primary navigations while keeping routes fully reversible.
+- [x] No horizontal overflow, no clipped select/buttons, and no visual clutter on widths 320px/360px/390px/768px/1440px.
+- [x] Visually verified that sidebar is used from tablet upward and removes bottom nav there.
+- [x] Verified and passed `npm run lint`, `npm run test` (388 tests), `npm run build`, and `npm run release:check`.
+- [x] Live route verification and public Playwright E2E browser smoke tests passed against `https://myprodusen.online`.
+- [x] Real `Keluar` button and confirmation dialog preserved on Akun page.
+
+**Final Status:** READY FOR REDEPLOY.
+

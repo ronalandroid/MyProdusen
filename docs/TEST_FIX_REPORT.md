@@ -566,3 +566,11 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Hid non-core overtime and documents from role navigation by default while keeping routes reversible.
 - Hid optional overtime profile link when overtime feature flag is disabled.
 - Updated navigation and feature flag tests to protect lean MyProdusen scope.
+
+### Navigation Simplify UAT Polish
+- Superadmin mobile navigation simplified to exactly 5 items: Beranda (`dashboard`), Pengguna (`users`), KPI (`kpi`), Payroll (`payroll`), and Akun (`profile`). Removed Cabang (`locations`) and Approval (`attendance-exceptions`) from primary navigation to prevent mobile tab overflow.
+- Leader mobile navigation validated at exactly 5 items: Beranda (`dashboard`), Absensi (`attendance`), Input KPI (`leader-kpi-input`), Tim (`leader-team`), and Akun (`profile`).
+- Employee mobile navigation validated at exactly 5 items: Beranda (`dashboard`), Absensi (`attendance`), Cuti (`leave`), KPI (`kpi`), and Akun (`profile`).
+- Relocated Cabang, Approval, Karyawan, Shift, Lembur, Dokumen, Audit, and Laporan to secondary dashboard actions or account sub-menus.
+- Verified and passed all 388 Vitest unit tests, compilation linting checks (`tsc --noEmit`), production build (`next build`), release checks (`npm run release:check`), live routes check (`verify:live-routes` at `https://myprodusen.online`), and all 20 Playwright E2E browser smoke tests (`e2e:public` at `https://myprodusen.online`).
+- Scorecard: 10/10 across all layout, navigation, mobile responsive, and access control categories. No secrets or private files exposed. Ready for direct redeployment.

@@ -389,3 +389,14 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Added feature flag helper with core features enabled and non-core modules disabled by default.
 - Hid optional overtime/documents from main navigation by default without deleting routes or data.
 - Updated profile menu copy to keep core payroll reporting visible without surfacing disabled overtime.
+
+## 2026-05-24 — HRIS Navigation Simplified Polish
+
+- Simplified Superadmin mobile bottom navigation to exactly 5 items: Beranda (`dashboard`), Pengguna (`users`), KPI (`kpi`), Payroll (`payroll`), and Akun (`profile`). Removed Cabang and Approval from primary navigation to prevent clutter.
+- Validated Leader mobile bottom navigation at exactly 5 items: Beranda (`dashboard`), Absensi (`attendance`), Input KPI (`leader-kpi-input`), Tim (`leader-team`), and Akun (`profile`).
+- Validated Employee mobile bottom navigation at exactly 5 items: Beranda (`dashboard`), Absensi (`attendance`), Cuti (`leave`), KPI (`kpi`), and Akun (`profile`).
+- Relocated secondary features and administration modules (Cabang, Approval, Karyawan, Shift, Lembur, Dokumen, Audit, and Laporan) to secondary dashboard action panels or account sub-menus.
+- Renamed the navigation policy item "Gaji" to "Payroll" to keep Indonesian copy clean and aligned with PRD terminology.
+- Updated Vitest unit tests in `tests/ui/navigation-policy.test.ts` and `tests/rbac/role-navigation.test.ts` to expect exactly the new 5-tab layouts.
+- Verified all 388 Vitest checks, production build compilation (`next build`), release checks (`npm run release:check`), live routes (`verify:live-routes`), and 20 Playwright E2E browser smoke tests (`e2e:public`) against the production site `https://myprodusen.online`.
+

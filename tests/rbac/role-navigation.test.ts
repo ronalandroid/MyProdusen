@@ -84,7 +84,7 @@ describe('Role Navigation Policy', () => {
 
   it('SUPERADMIN primary tabs match the design', () => {
     const keys = getPrimaryNavigationForRole('SUPERADMIN').map((item) => item.key);
-    expect(keys).toEqual(['dashboard', 'locations', 'attendance-exceptions', 'users', 'profile']);
+    expect(keys).toEqual(['dashboard', 'users', 'kpi', 'payroll', 'profile']);
   });
 
   it('LEADER primary tabs match the design', () => {

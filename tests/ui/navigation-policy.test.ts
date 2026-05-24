@@ -8,9 +8,9 @@ describe('responsive primary navigation policy', () => {
   it('keeps Superadmin mobile nav to five items', () => {
     expect(getPrimaryNavigationForRole('SUPERADMIN').map((item) => item.name)).toEqual([
       'Beranda',
-      'Cabang',
-      'Approval',
       'Pengguna',
+      'KPI',
+      'Payroll',
       'Akun',
     ]);
   });
