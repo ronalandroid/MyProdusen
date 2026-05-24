@@ -392,7 +392,7 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 
 ## 2026-05-24 — HRIS Navigation Simplified Polish
 
-- Simplified Superadmin mobile bottom navigation to exactly 5 items: Beranda (`dashboard`), Pengguna (`users`), KPI (`kpi`), Payroll (`payroll`), and Akun (`profile`). Removed Cabang and Approval from primary navigation to prevent clutter.
+- Simplified Superadmin mobile bottom navigation to exactly 5 items: Beranda (`dashboard`), Pengguna (`users`), KPI (`kpi`), Payroll (`payroll`), and Akun (`profile`). Removed Cabang and Approval from primary navigation to prevent mobile tab overflow.
 - Validated Leader mobile bottom navigation at exactly 5 items: Beranda (`dashboard`), Absensi (`attendance`), Input KPI (`leader-kpi-input`), Tim (`leader-team`), and Akun (`profile`).
 - Validated Employee mobile bottom navigation at exactly 5 items: Beranda (`dashboard`), Absensi (`attendance`), Cuti (`leave`), KPI (`kpi`), and Akun (`profile`).
 - Relocated secondary features and administration modules (Cabang, Approval, Karyawan, Shift, Lembur, Dokumen, Audit, and Laporan) to secondary dashboard action panels or account sub-menus.
@@ -400,3 +400,13 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Updated Vitest unit tests in `tests/ui/navigation-policy.test.ts` and `tests/rbac/role-navigation.test.ts` to expect exactly the new 5-tab layouts.
 - Verified all 388 Vitest checks, production build compilation (`next build`), release checks (`npm run release:check`), live routes (`verify:live-routes`), and 20 Playwright E2E browser smoke tests (`e2e:public`) against the production site `https://myprodusen.online`.
 
+## 2026-05-24 — Major Dashboard UX Restructure
+
+- Personalized greeting headers showing time-of-day greetings, avatar initials/profile images, and unread notification bell triggers added to Employee, Leader, and Superadmin dashboards.
+- Rewrote the Employee and Leader dashboards with a real-time GPS Geofence attendance tracker that calculates distance (meters/kilometers) and inside/outside geofence statuses on component mount.
+- Placed premium Clock In and Clock Out buttons side-by-side inside the geofence attendance card, linking directly to the full-screen camera selfie Absensi flows.
+- Built a mobile-responsive 8-item Quick Actions Grid (icons on top, labels below, 4 columns) across Employee, Leader, and Superadmin layouts, with irrelevant Talenta modules hidden.
+- Created dashboard summary sections displaying Cuti balances, active Attendance statuses, monthly metrics, and leader team statistics.
+- Superadmin dashboard completely restricted from rendering normal employee camera selfie check-in or check-out button elements.
+- Superadmin control center updated with an Executive Summary Card, Quick Actions Grid, performance charts, and audit logs/approval queues.
+- Ran all 388 Vitest units, `npm run lint`, `npm run build`, `npm run release:check`, `verify:live-routes` (live domain verified), `e2e:public` Playwright E2E smoke (20 passed), and `verify:cdn` successfully.

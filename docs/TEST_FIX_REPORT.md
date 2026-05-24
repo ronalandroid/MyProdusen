@@ -574,3 +574,12 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Relocated Cabang, Approval, Karyawan, Shift, Lembur, Dokumen, Audit, and Laporan to secondary dashboard actions or account sub-menus.
 - Verified and passed all 388 Vitest unit tests, compilation linting checks (`tsc --noEmit`), production build (`next build`), release checks (`npm run release:check`), live routes check (`verify:live-routes` at `https://myprodusen.online`), and all 20 Playwright E2E browser smoke tests (`e2e:public` at `https://myprodusen.online`).
 - Scorecard: 10/10 across all layout, navigation, mobile responsive, and access control categories. No secrets or private files exposed. Ready for direct redeployment.
+
+### Major Dashboard UX Restructure — 2026-05-24
+- **Greeting Header**: Personalized time-of-day greeting, initials/avatar, and notification bell added to Employee, Leader, and Superadmin page shells.
+- **Primary Attendance Card**: Integrated real-time GPS Geofence widget directly on Employee and Leader dashboards. Computes distance and radius (meters/kilometers) and features large, highly-accessible side-by-side Clock In and Clock Out buttons.
+- **Quick Action Grid**: 8 responsive action cards (4-column grid, icons on top, labels below) added to Employee, Leader, and Superadmin layouts, with irrelevant Talenta modules hidden.
+- **Personal/Team Summary Cards**: Added Cuti quota balances, today's Absen status badges, monthly summaries, and team production statistics cards.
+- **Pengumuman / Notifikasi**: Aggregated recent unread notifications with clean empty states.
+- **Verification Gates**: Passed `npm run lint` (no Emit errors), `npm run test` (388 tests passed), `npm run build` (Next compilation succeeded), `npm run release:check` (successful release coverage), `verify:live-routes` (live domain passed), `e2e:public` (all 20 Playwright E2E viewports passed), and `verify:cdn` (Cloudflare dynamic/no-store checks passed).
+

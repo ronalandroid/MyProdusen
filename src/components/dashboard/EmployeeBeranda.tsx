@@ -2,14 +2,27 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
-import { Bell, Camera, CheckCircle2, FileWarning, LockKeyhole, MapPin, ArrowRight, Clock, Calendar, Stethoscope, Banknote, TimerReset } from "lucide-react";
+import {
+  Bell,
+  Camera,
+  CheckCircle2,
+  FileWarning,
+  MapPin,
+  ArrowRight,
+  Clock,
+  Calendar,
+  Stethoscope,
+  Banknote,
+  TimerReset,
+  FileText,
+  User,
+  AlertTriangle,
+  BarChart3,
+  Check,
+  ChevronRight,
+  Map,
+} from "lucide-react";
 import { getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
-
-const WorkLocationMap = dynamic(
-  () => import("@/components/locations/WorkLocationMap").then((mod) => mod.WorkLocationMap),
-  { ssr: false, loading: () => <div className="h-32 rounded-2xl bg-[var(--bg-input)] animate-pulse" /> },
-);
 
 interface AttendanceRecord {
   id: string;
@@ -46,9 +59,25 @@ interface WorkLocationResponse {
   error?: string;
 }
 
+interface LeaveBalance {
+  year: number;
+  entitlement: number;
+  used: number;
+  pending: number;
+  available: number;
+}
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
 const statusLabel: Record<string, string> = {
   PRESENT: "Hadir",
-  LATE: "Hadir",
+  LATE: "Terlambat",
   ABSENT: "Tidak Hadir",
   LEAVE: "Cuti",
   SICK: "Sakit",
@@ -89,6 +118,32 @@ function formatTime(value?: string | null): string {
   return new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
 }
 
+function calculateDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const earthRadiusMeters = 6371e3;
+  const phi1 = (lat1 * Math.PI) / 180;
+  const phi2 = (lat2 * Math.PI) / 180;
+  const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+  const a = Math.sin(deltaPhi / 2) ** 2 + Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) ** 2;
+  return earthRadiusMeters * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+function formatDistance(distance: number | null): string {
+  if (distance === null) return "-";
+  if (distance >= 1000) {
+    return `${(distance / 1000).toFixed(1)} km`;
+  }
+  return `${Math.round(distance)} m`;
+}
+
+function getTimeOfDayGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 11) return "Selamat pagi";
+  if (hour >= 11 && hour < 15) return "Selamat siang";
+  if (hour >= 15 && hour < 19) return "Selamat sore";
+  return "Selamat malam";
+}
+
 interface Props {
   profile: ClientUserProfile | null;
 }
@@ -97,20 +152,31 @@ export default function EmployeeBeranda({ profile }: Props) {
   const [heatmap, setHeatmap] = useState<Record<string, string>>({});
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
   const [workLocation, setWorkLocation] = useState<WorkLocationDetail | null>(null);
+  const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loadError, setLoadError] = useState("");
+
+  // GPS states
+  const [gpsPosition, setGpsPosition] = useState<GeolocationPosition | null>(null);
+  const [gpsError, setGpsError] = useState("");
+  const [isGettingGps, setIsGettingGps] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadEverything() {
       try {
-        const [heatmapRes, attendanceRes] = await Promise.all([
+        const [heatmapRes, attendanceRes, balanceRes, notifRes] = await Promise.all([
           fetch("/api/dashboard/heatmap", { headers: getAuthHeaders(), cache: "no-store" }),
           fetch("/api/attendance", { headers: getAuthHeaders(), cache: "no-store" }),
+          fetch("/api/leave/balance", { headers: getAuthHeaders(), cache: "no-store" }),
+          fetch("/api/notifications", { headers: getAuthHeaders(), cache: "no-store" }),
         ]);
 
         const heatmapPayload = (await heatmapRes.json()) as HeatmapResponse;
         const attendancePayload = (await attendanceRes.json()) as AttendanceResponse;
+        const balancePayload = balanceRes.ok ? await balanceRes.json().catch(() => null) : null;
+        const notifPayload = notifRes.ok ? await notifRes.json().catch(() => null) : null;
 
         if (cancelled) return;
 
@@ -120,6 +186,14 @@ export default function EmployeeBeranda({ profile }: Props) {
 
         if (attendanceRes.ok && attendancePayload.success && attendancePayload.data) {
           setHistory(attendancePayload.data.slice(0, 5));
+        }
+
+        if (balancePayload?.success && balancePayload?.data) {
+          setLeaveBalance(balancePayload.data);
+        }
+
+        if (notifPayload?.success && notifPayload?.data) {
+          setNotifications(notifPayload.data.slice(0, 3));
         }
 
         const locationId = profile?.employee?.defaultLocation?.id;
@@ -141,6 +215,27 @@ export default function EmployeeBeranda({ profile }: Props) {
     }
 
     loadEverything();
+
+    // Trigger GPS acquisition on mount
+    if (typeof window !== "undefined" && navigator.geolocation) {
+      setIsGettingGps(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (!cancelled) {
+            setGpsPosition(pos);
+            setIsGettingGps(false);
+          }
+        },
+        (err) => {
+          if (!cancelled) {
+            setGpsError(err.message || "GPS belum siap");
+            setIsGettingGps(false);
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
     return () => {
       cancelled = true;
     };
@@ -162,296 +257,332 @@ export default function EmployeeBeranda({ profile }: Props) {
     return counts;
   }, [heatmap]);
 
-  const sevenDaySeries = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return Array.from({ length: 7 }, (_, index) => {
-      const date = new Date(today);
-      date.setDate(today.getDate() - (6 - index));
-      const key = isoDate(date);
-      const status = heatmap[key];
-      const present = status === "PRESENT" || status === "LATE";
-      return {
-        key,
-        label: new Intl.DateTimeFormat("id-ID", { weekday: "narrow" }).format(date),
-        dayLabel: String(date.getDate()),
-        present,
-        status: status || null,
-      };
-    });
-  }, [heatmap]);
-
-  const greetingName = (profile?.employee?.fullName || profile?.username || "Karyawan").split(" ")[0];
-  const initials = (profile?.employee?.fullName || profile?.username || "U").charAt(0).toUpperCase();
-  const roleLabel = profile?.role === "SUPERADMIN" ? "Super Admin" : "Karyawan";
-  const nip = profile?.employee?.nip || "NIP belum tersedia";
+  const displayName = profile?.employee?.fullName || profile?.username || "Karyawan";
+  const initials = displayName.substring(0, 2).toUpperCase();
   const todayRecord = history[0];
-  const attendanceCta = todayRecord?.checkInTime && !todayRecord?.checkOutTime ? "Absen Keluar" : todayRecord?.checkOutTime ? "Absensi Selesai" : "Absen Masuk";
-  const attendanceHint = todayRecord?.checkOutTime
-    ? "Satu check-in dan check-out hari ini sudah tercatat."
-    : todayRecord?.checkInTime
-      ? "Selfie pulang, GPS, dan radius lokasi tetap divalidasi backend."
-      : "GPS, akurasi, radius, shift aktif, dan selfie realtime wajib valid.";
+
+  // Geofencing calculations
+  const gpsDistanceMeters = gpsPosition && workLocation?.latitude && workLocation?.longitude
+    ? calculateDistanceMeters(
+        gpsPosition.coords.latitude,
+        gpsPosition.coords.longitude,
+        Number(workLocation.latitude),
+        Number(workLocation.longitude),
+      )
+    : null;
+
+  const isInsideRadius = gpsDistanceMeters !== null && workLocation?.radius
+    ? gpsDistanceMeters <= Number(workLocation.radius)
+    : null;
+
+  const defaultShift = profile?.employee?.defaultShift;
+  const shiftTimeText = defaultShift
+    ? `${defaultShift.name} (${defaultShift.startTime.slice(0, 5)} - ${defaultShift.endTime.slice(0, 5)})`
+    : "Shift belum tersedia";
+
+  // Clock status checks
+  const hasCheckedIn = Boolean(todayRecord?.checkInTime);
+  const hasCheckedOut = Boolean(todayRecord?.checkOutTime);
+
+  const greetingTitle = getTimeOfDayGreeting();
+
+  const quickActions = [
+    { name: "Absensi", path: "/dashboard/attendance", icon: Clock, bg: "var(--primary-light)", text: "var(--primary-dark)" },
+    { name: "Cuti", path: "/dashboard/leave", icon: Calendar, bg: "rgba(34,197,94,0.1)", text: "var(--success)" },
+    { name: "KPI Saya", path: "/dashboard/kpi", icon: BarChart3, bg: "rgba(59,130,246,0.1)", text: "var(--info)" },
+    { name: "Payroll Saya", path: "/dashboard/payroll", icon: Banknote, bg: "rgba(245,158,11,0.1)", text: "var(--warning)" },
+    { name: "Lembur", path: "/dashboard/overtime", icon: TimerReset, bg: "rgba(229,57,53,0.1)", text: "var(--danger)" },
+    { name: "Dokumen", path: "/dashboard/documents", icon: FileText, bg: "rgba(107,114,128,0.1)", text: "#6B7280" },
+    { name: "Notifikasi", path: "/dashboard/notifications", icon: Bell, bg: "rgba(124,58,237,0.1)", text: "#7C3AED" },
+    { name: "Akun", path: "/dashboard/profile", icon: User, bg: "rgba(251,191,36,0.15)", text: "#D97706" },
+  ];
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* Yellow greeting card */}
-      <section
-        className="card animate-slide-up"
-        aria-labelledby="employee-greeting-title"
-        style={{
-          background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)",
-          color: "var(--text-primary)",
-          padding: "20px",
-          display: "flex",
-          alignItems: "center",
-          gap: "14px",
-          border: "none",
-        }}
-      >
-        <div
-          className="avatar"
-          aria-hidden="true"
-          style={{ width: 56, height: 56, fontSize: 22, background: "rgba(255,255,255,0.35)", color: "var(--text-primary)" }}
-        >
-          {initials}
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "rgba(17,17,17,0.7)" }}>
-            {roleLabel}
-          </p>
-          <h2 id="employee-greeting-title" className="text-lg sm:text-xl font-bold leading-tight truncate">
-            Halo, {greetingName}
-          </h2>
-          <p className="text-xs sm:text-sm" style={{ color: "rgba(17,17,17,0.85)" }}>
-            NIP: {nip}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {/* Removed debug role and API pills to adhere to Production UI Cleanliness rules */}
+    <div className="flex flex-col gap-5 pb-6">
+      {/* Header Greeting */}
+      <header className="flex items-center justify-between gap-4 py-2">
+        <div className="flex items-center gap-3">
+          <div className="avatar ring-2 ring-[var(--primary)] shrink-0" style={{ width: 48, height: 48, fontSize: 18 }}>
+            {profile?.employee?.profilePhoto ? (
+              <img src={profile.employee.profilePhoto} alt="" className="object-cover w-full h-full rounded-full" />
+            ) : (
+              initials
+            )}
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-extrabold text-[var(--text-primary)] leading-tight truncate">
+              {greetingTitle}, {displayName.split(" ")[0]}!
+            </h1>
+            <p className="text-xs text-[var(--text-secondary)] font-medium mt-0.5">
+              {profile?.employee?.position || "Karyawan"} · NIP {profile?.employee?.nip || "-"}
+            </p>
           </div>
         </div>
-      </section>
+        <Link href="/dashboard/notifications" className="icon-button shrink-0 relative bg-white border border-[var(--border-color)] hover:bg-[var(--bg-secondary)]" aria-label="Notifikasi">
+          <Bell size={20} className="text-[var(--text-primary)]" />
+          {notifications.some(n => !n.read) && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--danger)]" />}
+        </Link>
+      </header>
 
       {loadError && (
-        <div role="status" className="card text-xs text-[var(--text-secondary)]">
+        <div className="card border-dashed border-[var(--danger)] bg-red-50/50 p-4 text-xs font-medium text-[var(--danger)]" role="alert">
           {loadError}
         </div>
       )}
 
-      <section className="card stitch-attendance-card" aria-labelledby="employee-attendance-sync-title">
-        <div className="flex items-start justify-between gap-3">
+      {/* Primary Attendance Card */}
+      <section className="card shadow-md overflow-hidden bg-gradient-to-br from-[#FFFDEB] to-white border border-[#FFECB3] p-5 relative" aria-labelledby="attendance-card-title">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--primary)] opacity-10 rounded-bl-full pointer-events-none" />
+        
+        <div className="flex flex-col gap-4">
           <div>
-            <p className="eyebrow">Absensi Hari Ini</p>
-            <h2 id="employee-attendance-sync-title" className="text-xl sm:text-2xl">{attendanceCta}</h2>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">{attendanceHint}</p>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white text-[var(--primary-dark)] border border-[#FFE082] shadow-sm">
+              <Clock size={12} strokeWidth={2.5} />
+              {shiftTimeText}
+            </span>
+            <h2 id="attendance-card-title" className="text-base sm:text-lg font-extrabold text-[var(--text-primary)] mt-3">
+              {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            </h2>
+            <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] mt-1.5 font-medium">
+              <MapPin size={13} className="text-[var(--text-muted)]" />
+              <span>{workLocation?.name || "Lokasi belum ditentukan"}</span>
+            </div>
           </div>
-          <span className="h-11 w-11 rounded-2xl bg-white/80 flex items-center justify-center text-[var(--primary-dark)]"><Camera size={22} aria-hidden="true" /></span>
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <SyncMini label="Masuk" value={formatTime(todayRecord?.checkInTime)} tone="success" />
-          <SyncMini label="Pulang" value={formatTime(todayRecord?.checkOutTime)} tone={todayRecord?.checkOutTime ? "success" : "warning"} />
-          <SyncMini label="GPS" value={workLocation?.radius ? `Radius ${workLocation.radius}m` : "Perlu lokasi"} tone={workLocation?.radius ? "info" : "warning"} />
-          <SyncMini label="Selfie" value="Realtime saja" tone="primary" />
-        </div>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Link href="/dashboard/attendance" className="btn btn-primary min-h-[44px] flex-1">Buka Absensi</Link>
-        </div>
-      </section>
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-label="Aksi karyawan">
-        <Link href="/dashboard/payroll" className="card flex min-h-[88px] items-center justify-between gap-3 p-4">
-          <span className="min-w-0">
-            <span className="block text-sm font-bold text-[var(--text-primary)]">Gaji Saya</span>
-            <span className="block text-xs text-[var(--text-secondary)]">Payroll, payslip, dan notifikasi gaji pribadi.</span>
-          </span>
-          <Banknote size={22} className="text-[var(--primary-dark)] flex-shrink-0" aria-hidden="true" />
-        </Link>
-        <Link href="/dashboard/overtime" className="card flex min-h-[88px] items-center justify-between gap-3 p-4">
-          <span className="min-w-0">
-            <span className="block text-sm font-bold text-[var(--text-primary)]">Lembur</span>
-            <span className="block text-xs text-[var(--text-secondary)]">Pengajuan Lembur dan rate overtime aktif.</span>
-          </span>
-          <TimerReset size={22} className="text-[var(--primary-dark)] flex-shrink-0" aria-hidden="true" />
-        </Link>
-      </section>
-
-      {/* Metric cards: Hadir / Izin / Cuti / Sakit */}
-      <section aria-labelledby="employee-metrics-title">
-        <div className="section-heading">
-          <h2 id="employee-metrics-title">Bulan Ini</h2>
-        </div>
-        <div className="employee-metrics-grid">
-          <MetricCard tone="success" icon={<CheckCircle2 size={18} aria-hidden="true" />} label="Hadir" value={monthCounts.hadir} />
-          <MetricCard tone="info" icon={<FileWarning size={18} aria-hidden="true" />} label="Izin" value={monthCounts.izin} />
-          <MetricCard tone="primary" icon={<Calendar size={18} aria-hidden="true" />} label="Cuti" value={monthCounts.cuti} />
-          <MetricCard tone="danger" icon={<Stethoscope size={18} aria-hidden="true" />} label="Sakit" value={monthCounts.sakit} />
-        </div>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-2" aria-label="Fitur pribadi tersinkron">
-        <FeatureSyncCard icon={<Calendar size={20} />} title="Cuti, Izin, Sakit" description="Saldo, overlap, status pending/disetujui/ditolak, dan alasan penolakan diproses server-side." href="/dashboard/leave" tone="warning" />
-        <FeatureSyncCard icon={<CheckCircle2 size={20} />} title="KPI Pribadi" description="Karyawan hanya melihat KPI sendiri. Skor read-only dan approval tidak bisa diedit sendiri." href="/dashboard/kpi" tone="success" />
-        <FeatureSyncCard icon={<LockKeyhole size={20} />} title="Payroll Pribadi" description="Slip gaji privat, tanpa URL publik. Akses lewat endpoint terproteksi dan no-store." href="/dashboard/payroll/me" tone="info" />
-        <FeatureSyncCard icon={<Bell size={20} />} title="Notifikasi & Sinkron" description="Notifikasi, mark-all-read, antrean offline, dan konflik tetap balik ke backend sebagai sumber kebenaran." href="/dashboard/notifications" tone="primary" />
-      </section>
-
-      {/* 7-day attendance bar chart */}
-      <section className="card" aria-labelledby="employee-bar-title">
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <div>
-            <p className="eyebrow">7 Hari Terakhir</p>
-            <h3 id="employee-bar-title" className="text-base sm:text-lg">Kehadiran Saya</h3>
-          </div>
-          <Clock size={22} className="text-[var(--primary-dark)]" aria-hidden="true" />
-        </div>
-        <div className="flex items-end gap-2 h-28" role="img" aria-label="Diagram batang kehadiran 7 hari terakhir">
-          {sevenDaySeries.map((day) => (
-            <div key={day.key} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-              <div className="employee-bar">
-                <span
-                  className="employee-bar-fill"
-                  style={{
-                    height: day.present ? "100%" : "12%",
-                    background: day.present ? "var(--primary)" : "var(--bg-input)",
-                    border: day.present ? "none" : "1px solid var(--border-color)",
-                  }}
-                />
+          {/* GPS and Geofence Status Strip */}
+          <div className="rounded-2xl bg-white/80 border border-[#FFF8E1] p-3 flex flex-col gap-2 shadow-sm text-xs">
+            <div className="flex flex-wrap justify-between gap-2 items-center">
+              <span className="font-semibold text-[var(--text-secondary)]">GPS & Radius:</span>
+              <span className="flex items-center gap-1">
+                {isGettingGps ? (
+                  <span className="text-[var(--text-muted)] animate-pulse">Memuat lokasi...</span>
+                ) : gpsError ? (
+                  <span className="text-[var(--danger)] font-bold">{gpsError}</span>
+                ) : gpsPosition ? (
+                  <span className="text-[var(--success)] font-bold flex items-center gap-0.5">
+                    <Check size={12} strokeWidth={2.5} /> Aktif (±{Math.round(gpsPosition.coords.accuracy)}m)
+                  </span>
+                ) : (
+                  <span className="text-[var(--warning)] font-bold">Mencari GPS...</span>
+                )}
+              </span>
+            </div>
+            
+            {workLocation && gpsPosition && (
+              <div className="flex justify-between items-center border-t border-[var(--border-color)] pt-2 mt-1">
+                <span className="text-[var(--text-secondary)]">Jarak Anda:</span>
+                <span className={`font-bold ${isInsideRadius ? "text-[var(--success)]" : "text-[var(--danger)]"}`}>
+                  {formatDistance(gpsDistanceMeters)} ({isInsideRadius ? "Di dalam radius" : "Di luar radius"})
+                </span>
               </div>
-              <span className="text-[10px] font-semibold text-[var(--text-secondary)] uppercase">{day.label}</span>
-              <span className="text-[10px] text-[var(--text-muted)]">{day.dayLabel}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Lokasi Kerja card */}
-      <section className="card" aria-labelledby="employee-location-title">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="min-w-0">
-            <p className="eyebrow">Lokasi Kerja</p>
-            <h3 id="employee-location-title" className="text-base sm:text-lg truncate">
-              {workLocation?.name || profile?.employee?.defaultLocation?.name || "Lokasi belum ditetapkan"}
-            </h3>
-            <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
-              {workLocation?.address || profile?.employee?.defaultLocation?.address || "Hubungi HR untuk pengaturan lokasi kerja."}
-            </p>
-            {workLocation?.radius ? (
-              <p className="text-[11px] text-[var(--text-muted)] mt-1">Radius geo-fence {workLocation.radius} meter.</p>
-            ) : null}
+            )}
           </div>
-          <MapPin size={22} className="text-[var(--primary-dark)] flex-shrink-0" aria-hidden="true" />
-        </div>
-        {workLocation?.latitude && workLocation?.longitude ? (
-          <WorkLocationMap
-            latitude={Number(workLocation.latitude)}
-            longitude={Number(workLocation.longitude)}
-            radiusMeters={Number(workLocation.radius) || 100}
-            label={workLocation.name}
-            height={140}
-          />
-        ) : null}
-        <Link href="/dashboard/attendance" className="text-link text-sm mt-3 inline-flex items-center gap-1">
-          Buka Kehadiran <ArrowRight size={14} aria-hidden="true" />
-        </Link>
-      </section>
 
-      {/* Riwayat Kehadiran (last 5) */}
-      <section aria-labelledby="employee-history-title">
-        <div className="section-heading flex items-center justify-between">
-          <h2 id="employee-history-title">Riwayat Kehadiran</h2>
-          <Link href="/dashboard/attendance" className="text-link text-sm">Lihat semua</Link>
-        </div>
-        <div className="card p-0 overflow-hidden">
-          {history.length === 0 ? (
-            <div className="p-4 text-sm text-[var(--text-secondary)]" role="status">
-              Belum ada riwayat kehadiran.
+          {/* Geofence outside radius warnings */}
+          {workLocation && gpsPosition && !isInsideRadius && (
+            <div className="flex items-start gap-2 rounded-2xl bg-[var(--danger-bg)] border border-red-200 p-3 text-xs text-[var(--danger)] font-semibold leading-relaxed">
+              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+              <span>Anda berada di luar radius lokasi kerja diizinkan (maks. {workLocation.radius}m).</span>
             </div>
-          ) : (
-            <ul className="divide-y" style={{ borderColor: "var(--border-color)" }}>
-              {history.map((record) => {
-                const status = (record.status || "PRESENT").toUpperCase();
-                const tone = statusTone[status] || statusTone.PRESENT;
-                return (
-                  <li key={record.id} className="flex items-center justify-between gap-3 p-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
-                        {formatShortDate(record.checkInTime)}
-                      </p>
-                      <p className="text-xs text-[var(--text-secondary)]">
-                        Masuk {formatTime(record.checkInTime)} · Pulang {formatTime(record.checkOutTime)}
-                      </p>
-                    </div>
-                    <span
-                      className="text-[11px] font-semibold rounded-full px-2 py-1 whitespace-nowrap"
-                      style={{ background: tone.bg, color: tone.color }}
-                    >
-                      {statusLabel[status] || status}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
           )}
+
+          {!profile?.employee?.defaultLocation && (
+            <div className="flex items-start gap-2 rounded-2xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 font-semibold leading-relaxed">
+              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+              <span>Lokasi kerja belum tersedia. Hubungi Superadmin.</span>
+            </div>
+          )}
+
+          {!profile?.employee?.defaultShift && (
+            <div className="flex items-start gap-2 rounded-2xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 font-semibold leading-relaxed">
+              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+              <span>Shift belum tersedia. Hubungi Superadmin.</span>
+            </div>
+          )}
+
+          {/* Real Clock-In / Clock-Out Buttons side-by-side */}
+          <div className="grid grid-cols-2 gap-3 mt-1">
+            <Link
+              href="/dashboard/attendance"
+              className={`btn min-h-[46px] rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm text-sm transition-all ${
+                hasCheckedIn
+                  ? "bg-gray-100 text-gray-400 border border-gray-200 pointer-events-none"
+                  : "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--text-primary)] border-none"
+              }`}
+              aria-disabled={hasCheckedIn}
+            >
+              <Camera size={16} />
+              <span>{hasCheckedIn ? "Sudah Masuk" : "Clock In"}</span>
+            </Link>
+
+            <Link
+              href="/dashboard/attendance"
+              className={`btn min-h-[46px] rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm text-sm transition-all ${
+                !hasCheckedIn || hasCheckedOut
+                  ? "bg-gray-100 text-gray-400 border border-gray-200 pointer-events-none"
+                  : "bg-[var(--danger)] hover:bg-red-600 text-white border-none"
+              }`}
+              aria-disabled={!hasCheckedIn || hasCheckedOut}
+            >
+              <Clock size={16} />
+              <span>{hasCheckedOut ? "Sudah Pulang" : "Clock Out"}</span>
+            </Link>
+          </div>
         </div>
       </section>
+
+      {/* Quick Actions Grid (Max 2 rows on mobile) */}
+      <section aria-labelledby="quick-actions-title">
+        <div className="section-heading mb-3">
+          <h2 id="quick-actions-title" className="text-sm font-extrabold text-[var(--text-secondary)] uppercase tracking-wider">
+            Menu Utama
+          </h2>
+        </div>
+        <div className="grid grid-cols-4 gap-3">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link
+                key={action.name}
+                href={action.path}
+                className="flex flex-col items-center gap-2 rounded-2xl bg-white border border-[var(--border-color)] p-3 text-center transition-all hover:shadow-md hover:border-[var(--primary)] min-h-[92px] group"
+              >
+                <div
+                  className="flex items-center justify-center rounded-2xl shrink-0 transition-transform group-hover:scale-105"
+                  style={{ width: 44, height: 44, backgroundColor: action.bg, color: action.text }}
+                  aria-hidden="true"
+                >
+                  <Icon size={20} strokeWidth={2.2} />
+                </div>
+                <span className="text-[11px] font-bold text-[var(--text-primary)] leading-tight line-clamp-1 w-full">
+                  {action.name}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Personal Summary Cards */}
+      <section aria-labelledby="summary-title">
+        <div className="section-heading mb-3">
+          <h2 id="summary-title" className="text-sm font-extrabold text-[var(--text-secondary)] uppercase tracking-wider">
+            Ringkasan Saya
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {/* Quota Cuti */}
+          <article className="card p-4 flex flex-col justify-between gap-1.5 shadow-sm min-h-[96px]">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)]">
+              <Calendar size={14} className="text-[var(--primary-dark)]" />
+              <span>Sisa Cuti</span>
+            </span>
+            <div className="mt-1">
+              <strong className="text-xl sm:text-2xl font-extrabold text-[var(--text-primary)]">
+                {leaveBalance?.available ?? "-"}
+              </strong>
+              <span className="text-xs font-medium text-[var(--text-secondary)] ml-1">hari</span>
+            </div>
+            <Link href="/dashboard/leave/balance" className="text-[11px] font-bold text-[var(--primary-dark)] hover:underline mt-1 flex items-center gap-0.5">
+              <span>Detail Saldo</span> <ChevronRight size={10} />
+            </Link>
+          </article>
+
+          {/* Attendance Status */}
+          <article className="card p-4 flex flex-col justify-between gap-1.5 shadow-sm min-h-[96px]">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)]">
+              <CheckCircle2 size={14} className="text-[var(--success)]" />
+              <span>Status Absen</span>
+            </span>
+            <div className="mt-1">
+              <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${
+                hasCheckedOut
+                  ? "bg-gray-100 text-gray-600"
+                  : hasCheckedIn
+                    ? "bg-green-50 text-[var(--success)] border border-green-200"
+                    : "bg-amber-50 text-[var(--warning)] border border-amber-200"
+              }`}>
+                {hasCheckedOut ? "Selesai" : hasCheckedIn ? "Aktif Kerja" : "Belum Absen"}
+              </span>
+            </div>
+            <span className="text-[10px] text-[var(--text-muted)] font-medium mt-1">
+              {todayRecord?.checkInTime ? `Masuk: ${formatTime(todayRecord.checkInTime)}` : "Belum check-in"}
+            </span>
+          </article>
+
+          {/* Payroll Status */}
+          <article className="card p-4 flex flex-col justify-between gap-1.5 shadow-sm min-h-[96px]">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)]">
+              <Banknote size={14} className="text-[var(--warning)]" />
+              <span>Payroll Gaji</span>
+            </span>
+            <div className="mt-1">
+              <span className="text-xs font-bold text-[var(--text-primary)]">Slip bulan ini</span>
+            </div>
+            <Link href="/dashboard/payroll" className="text-[11px] font-bold text-[var(--primary-dark)] hover:underline mt-1 flex items-center gap-0.5">
+              <span>Buka Payroll</span> <ChevronRight size={10} />
+            </Link>
+          </article>
+
+          {/* Bulan Ini Summary */}
+          <article className="card p-4 flex flex-col justify-between gap-1.5 shadow-sm min-h-[96px]">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)]">
+              <Stethoscope size={14} className="text-[var(--danger)]" />
+              <span>Kehadiran</span>
+            </span>
+            <div className="mt-1">
+              <strong className="text-xl sm:text-2xl font-extrabold text-[var(--text-primary)]">
+                {monthCounts.hadir}
+              </strong>
+              <span className="text-xs font-medium text-[var(--text-secondary)] ml-1">hadir</span>
+            </div>
+            <span className="text-[10px] text-[var(--text-muted)] font-medium mt-1">
+              Bulan ini: {monthCounts.cuti} cuti · {monthCounts.sakit} sakit
+            </span>
+          </article>
+        </div>
+      </section>
+
+      {/* Pengumuman / Notifikasi Section */}
+      <section aria-labelledby="notifications-announcement-title" className="card p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-3 mb-3 border-b border-[var(--border-color)] pb-3">
+          <h2 id="notifications-announcement-title" className="text-sm font-extrabold text-[var(--text-secondary)] uppercase tracking-wider">
+            Pengumuman & Notifikasi
+          </h2>
+          <Link href="/dashboard/notifications" className="text-xs font-extrabold text-[var(--primary-dark)] hover:underline">
+            Lihat Semua
+          </Link>
+        </div>
+        
+        {notifications.length === 0 ? (
+          <div className="py-6 text-center text-xs text-[var(--text-muted)] font-medium">
+            Belum ada pengumuman baru hari ini.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {notifications.map((item) => (
+              <Link
+                key={item.id}
+                href="/dashboard/notifications"
+                className="flex items-start gap-3 p-2 rounded-xl transition-all hover:bg-[var(--bg-secondary)] group"
+              >
+                <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${item.read ? "bg-gray-300" : "bg-[var(--primary-dark)]"}`} />
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xs font-extrabold text-[var(--text-primary)] leading-snug group-hover:text-[var(--primary-dark)] truncate">
+                    {item.title}
+                  </h3>
+                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed mt-0.5 line-clamp-1">
+                    {item.message}
+                  </p>
+                  <span className="text-[9px] text-[var(--text-muted)] font-medium mt-1 block">
+                    {new Date(item.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
-  );
-}
-
-interface MetricCardProps {
-  tone: "success" | "info" | "primary" | "danger";
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-}
-
-function MetricCard({ tone, icon, label, value }: MetricCardProps) {
-  const palette: Record<MetricCardProps["tone"], { bg: string; color: string; chip: string }> = {
-    success: { bg: "var(--success-bg)", color: "var(--success)", chip: "rgba(34,197,94,0.18)" },
-    info: { bg: "var(--info-bg)", color: "var(--info)", chip: "rgba(59,130,246,0.18)" },
-    primary: { bg: "var(--primary-light)", color: "var(--primary-dark)", chip: "rgba(255,193,7,0.25)" },
-    danger: { bg: "var(--danger-bg)", color: "var(--danger)", chip: "rgba(229,57,53,0.18)" },
-  };
-  const colors = palette[tone];
-  return (
-    <article className="card flex items-center gap-3 p-3 sm:p-4">
-      <span
-        className="flex items-center justify-center rounded-2xl flex-shrink-0"
-        style={{ width: 40, height: 40, background: colors.bg, color: colors.color }}
-        aria-hidden="true"
-      >
-        {icon}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs text-[var(--text-secondary)] font-semibold truncate">{label}</p>
-        <strong className="block text-xl sm:text-2xl text-[var(--text-primary)]">{value}</strong>
-      </div>
-    </article>
-  );
-}
-
-function SyncMini({ label, value, tone }: { label: string; value: string; tone: "success" | "warning" | "info" | "primary" }) {
-  const toneClass = tone === "success" ? "badge-success" : tone === "warning" ? "badge-warning" : tone === "info" ? "badge-info" : "badge-primary";
-  return (
-    <div className="rounded-2xl border border-[var(--border-color)] bg-white/75 p-3">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">{label}</p>
-      <span className={`badge ${toneClass} mt-2 inline-flex`}>{value}</span>
-    </div>
-  );
-}
-
-function FeatureSyncCard({ icon, title, description, href, tone }: { icon: React.ReactNode; title: string; description: string; href: string; tone: "success" | "warning" | "info" | "primary" }) {
-  const toneClass = tone === "success" ? "badge-success" : tone === "warning" ? "badge-warning" : tone === "info" ? "badge-info" : "badge-primary";
-  return (
-    <Link href={href} className="card group flex min-h-[156px] flex-col gap-3 p-4 transition-transform hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex items-start justify-between gap-3">
-        <span className={`badge ${toneClass} h-10 w-10 justify-center rounded-2xl p-0`} aria-hidden="true">{icon}</span>
-        <ArrowRight size={18} className="text-[var(--text-muted)] transition-transform group-hover:translate-x-1" aria-hidden="true" />
-      </div>
-      <div>
-        <h3 className="text-base font-bold text-[var(--text-primary)]">{title}</h3>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">{description}</p>
-      </div>
-    </Link>
   );
 }

@@ -317,6 +317,34 @@ The mobile bottom navigation must hold ≤ 5 tabs per role.
 bar; remaining allowed items remain reachable from the secondary menu.
 `tests/rbac/role-navigation.test.ts` enforces the per-role primary set.
 
+### Role-Based Dashboard UX Structures
+
+The live dashboards are structured strictly around roles, keeping core HRIS operations clean, direct, and clutter-free:
+
+#### 1. EMPLOYEE Dashboard Layout
+- **Greeting Header**: Personalized time-of-day greeting ("Selamat pagi", etc.), employee avatar (WebP compressed), NIP label, and unread notifications count trigger.
+- **Primary Attendance Card**:
+  - Displays today's date, assigned work shift times, and work location name.
+  - Features real-time GPS Geofence widget showing: GPS Accuracy, Distance to work location (under 1000m in meters, 1000m and above in kilometers), and inside/outside geofence warnings.
+  - Clean side-by-side Clock In and Clock Out buttons that redirect to the camera selfie Absensi flow, shifting states dynamically depending on check-in/out records.
+- **Menu Utama Quick Action Grid**: 8 responsive actions mapped cleanly without horizontal scroll (Absensi, Cuti, KPI Saya, Payroll Saya, Lembur, Dokumen, Notifikasi, Akun).
+- **Ringkasan Saya (Personal Summary)**: Quick metrics cards showing available Cuti balance, today's Attendance status, monthly Attendance summaries, and payroll Payslip shortcuts.
+- **Pengumuman & Notifikasi**: Latest 3 unread items with an empty state placeholder and a direct "Lihat Semua" link.
+
+#### 2. LEADER Dashboard Layout
+- **Greeting Header**: Personalized time-of-day greeting, avatar, and notification trigger.
+- **Primary Attendance Card**: Captures the leader's own shift schedule, geofenced GPS proximity, and Clock In/Out buttons.
+- **Menu Leader Quick Action Grid**: Integrates leader-scoped features (Absensi Saya, Input KPI Tim, Tim Saya, KPI Saya, Laporan Tim, Payroll Saya, Notifikasi, Akun).
+- **Ringkasan Tim Saya (Team Summary)**: Tracks assigned team metadata and today's team KPI production count.
+- **Pengumuman & Notifikasi**: Latest 3 notifications scoped to the leader's access level.
+
+#### 3. SUPERADMIN Dashboard Layout
+- **Executive Summary Card**: Company-wide statistics showing active employee count, present attendance rate, pending leave approvals, pending KPI template actions, and payroll periods.
+- **Menu Utama Admin Quick Action Grid**: Renders the 8 control center buttons (Pengguna, Cabang/Lokasi, KPI, Payroll, Cuti, Laporan PDF, Approval, Notifikasi).
+- **Company Performance Summary**: Visual monitoring panels tracking attendance trends (7-day chart), KPI average scores, per-division compliance rates, and attention/risk alerts.
+- **Aktivitas Terbaru / Approval Queue**: Lists pending leave/exception approvals with inline quick-actions (Setujui/Tolak) and system-wide auditable logs.
+- *Strict Rule*: Superadmin dashboard is dedicated to administrative control and reports; it never renders employee check-in or check-out camera selfie CTA elements.
+
 ### Status & geo badge palette
 
 Use these named tokens, never hard-code hex values in components:

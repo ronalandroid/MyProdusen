@@ -285,5 +285,19 @@ GO requires core MyProdusen modules visible and working, non-core modules hidden
 - [x] Live route verification and public Playwright E2E browser smoke tests passed against `https://myprodusen.online`.
 - [x] Real `Keluar` button and confirmation dialog preserved on Akun page.
 
-**Final Status:** READY FOR REDEPLOY.
+## Major Dashboard UX Restructure Gate — 2026-05-24
 
+- [x] Employee and Leader greeting headers show personalized time-of-day greetings, user avatar, position, NIP, and notification bell trigger.
+- [x] Employee and Leader primary attendance cards integrate real-time GPS coordinates, shift startTime/endTime, allowed radius, distance (meters/kilometers), and inside/outside geofence statuses.
+- [x] Clock In and Clock Out buttons placed side-by-side on the attendance card, directing to the camera selfie Absensi flow, shifting states dynamically depending on active records.
+- [x] Employee, Leader, and Superadmin dashboards show an 8-item Quick Actions Grid (icons on top, labels below, 4 columns, no horizontal overflow, tap targets min 44px).
+- [x] Hidden all irrelevant Talenta modules (recruitment, lms, reimbursement, EWA, survey, asset) to keep layouts focused.
+- [x] Superadmin dashboard does NOT render clock-in or clock-out camera selfie button elements.
+- [x] Superadmin dashboard renders an Executive Summary Card, Quick Actions Grid, Performance Summary panels, and recent Audit Logs/approvals.
+- [x] Personal/Team summary cards correctly fetch Cuti available days, active Absen status badges, monthly metrics, and leader team production metrics.
+- [x] Clean Indonesian operational copy maintained with MyProdusen warm yellow/cream visual identity intact.
+- [x] Verified and passed all 388 Vitest units, `npm run lint`, `npm run build`, and `npm run release:check`.
+- [x] Public Playwright smoke browser E2E tests (20/20 viewports) and live routes checked successfully against `https://myprodusen.online`.
+- [x] Cloudflare CDN cache private no-store headers checked successfully (`verify:cdn`).
+
+**Final Status:** READY FOR REDEPLOY.

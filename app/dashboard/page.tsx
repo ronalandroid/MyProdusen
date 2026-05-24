@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCircle, Clock, Users, AlertTriangle, RefreshCcw, ShieldCheck, BarChart3, ThumbsUp, ThumbsDown, Eye } from "lucide-react";
+import { Bell, CheckCircle, Clock, Users, AlertTriangle, RefreshCcw, ShieldCheck, BarChart3, ThumbsUp, ThumbsDown, Eye, UserCog, MapPin, Calendar, FileText, Banknote } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders, fetchProfile, type ClientUserProfile } from "@/lib/auth-client";
 import EmployeeBeranda from "@/components/dashboard/EmployeeBeranda";
@@ -211,64 +211,126 @@ export default function DashboardPage() {
 }
 
 function SuperadminQuickActions({ stats }: { stats: DashboardStats }) {
-  const panels = [
-    {
-      title: "Karyawan, User, NIP",
-      eyebrow: "Master Data",
-      description: "NIP otomatis MPD-{YEAR}-{DIVISION_CODE}-{SEQUENCE}, user inactive perlu review, role produksi hanya Superadmin dan Karyawan.",
-      href: "/dashboard/employees",
-      value: `${numberFormatter.format(stats.activeEmployees)} aktif`,
-      tone: "info" as DashboardActionTone,
-    },
-    {
-      title: "Absensi & Geo-fence",
-      eyebrow: "Operasional Harian",
-      description: "Check-in/out, akurasi GPS, radius lokasi, selfie privat, dan koreksi manual wajib alasan + audit.",
-      href: "/dashboard/attendance",
-      value: `${numberFormatter.format(stats.todayAttendance.present)} hadir`,
-      tone: "success" as DashboardActionTone,
-    },
-    {
-      title: "Cuti & KPI Approval",
-      eyebrow: "Persetujuan",
-      description: "Penolakan wajib alasan, overlap cuti ditolak, bobot template KPI harus 100, hasil approved terkunci.",
-      href: "/dashboard/leave",
-      value: `${numberFormatter.format(stats.pendingLeave + stats.pendingKpiApprovals)} pending`,
-      tone: "warning" as DashboardActionTone,
-    },
-    {
-      title: "Laporan & Audit Log",
-      eyebrow: "Kontrol Produksi",
-      description: "Export respect filter + permission, laporan PDF no-store, aksi sensitif tercatat tanpa stack trace ke user.",
-      href: "/dashboard/reports",
-      value: stats.payrollPeriodStatus?.period || "Siap audit",
-      tone: "primary" as DashboardActionTone,
-    },
+  const quickActions = [
+    { name: "Pengguna", path: "/dashboard/users", icon: UserCog, bg: "rgba(59,130,246,0.1)", text: "var(--info)" },
+    { name: "Cabang/Lokasi", path: "/dashboard/locations", icon: MapPin, bg: "rgba(251,191,36,0.15)", text: "#D97706" },
+    { name: "KPI", path: "/dashboard/kpi/template", icon: BarChart3, bg: "rgba(34,197,94,0.1)", text: "var(--success)" },
+    { name: "Payroll", path: "/dashboard/payroll", icon: Banknote, bg: "rgba(245,158,11,0.1)", text: "var(--warning)" },
+    { name: "Cuti", path: "/dashboard/leave", icon: Calendar, bg: "rgba(124,58,237,0.1)", text: "#7C3AED" },
+    { name: "Laporan PDF", path: "/dashboard/reports/pdf", icon: FileText, bg: "rgba(107,114,128,0.1)", text: "#6B7280" },
+    { name: "Approval", path: "/dashboard/attendance/exceptions", icon: CheckCircle, bg: "rgba(229,57,53,0.1)", text: "var(--danger)" },
+    { name: "Notifikasi", path: "/dashboard/notifications", icon: Bell, bg: "var(--primary-light)", text: "var(--primary-dark)" },
   ];
 
   return (
-    <section aria-labelledby="superadmin-sync-title" className="mb-5">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Aksi Cepat</p>
-          <h2 id="superadmin-sync-title">Control Center Produksi</h2>
+    <>
+      {/* Executive Summary Card */}
+      <section aria-labelledby="executive-summary-title" className="mb-5">
+        <div className="section-heading mb-3">
+          <p className="eyebrow">Ringkasan Sistem</p>
+          <h2 id="executive-summary-title">Executive Summary</h2>
         </div>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {panels.map((panel) => (
-          <Link key={panel.title} href={panel.href} className="card group flex min-h-[218px] flex-col gap-3 p-4 transition-transform hover:-translate-y-0.5 hover:shadow-md" style={{ borderColor: mapToneToColor(panel.tone) }}>
-            <div className="flex items-start justify-between gap-3">
-              <span className="eyebrow">{panel.eyebrow}</span>
-              <span className={`badge badge-${panel.tone === "primary" ? "primary" : panel.tone}`}>{panel.value}</span>
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+          <div className="card p-4 flex flex-col justify-between gap-1 shadow-sm min-h-[96px]">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)]">
+              <Users size={14} className="text-[var(--info)]" />
+              <span>Total Karyawan</span>
+            </span>
+            <div className="mt-1">
+              <strong className="text-xl font-extrabold text-[var(--text-primary)]">
+                {numberFormatter.format(stats.activeEmployees)}
+              </strong>
+              <span className="text-xs font-medium text-[var(--text-secondary)] ml-1">aktif</span>
             </div>
-            <div>
-              <h3 className="text-base font-bold text-[var(--text-primary)]">{panel.title}</h3>
-              <p className="mt-2 text-sm text-[var(--text-secondary)]">{panel.description}</p>
+          </div>
+
+          <div className="card p-4 flex flex-col justify-between gap-1 shadow-sm min-h-[96px]">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)]">
+              <Clock size={14} className="text-[var(--success)]" />
+              <span>Hadir Hari Ini</span>
+            </span>
+            <div className="mt-1">
+              <strong className="text-xl font-extrabold text-[var(--text-primary)]">
+                {numberFormatter.format(stats.todayAttendance.present)}
+              </strong>
+              <span className="text-xs font-medium text-[var(--text-secondary)] ml-1">orang ({stats.todayAttendance.percentage}%)</span>
             </div>
-          </Link>
-        ))}
-      </div>
-    </section>
+          </div>
+
+          <div className="card p-4 flex flex-col justify-between gap-1 shadow-sm min-h-[96px]">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)]">
+              <Calendar size={14} className="text-[var(--warning)]" />
+              <span>Persetujuan Cuti</span>
+            </span>
+            <div className="mt-1">
+              <strong className="text-xl font-extrabold text-[var(--text-primary)]">
+                {numberFormatter.format(stats.pendingLeave)}
+              </strong>
+              <span className="text-xs font-medium text-[var(--text-secondary)] ml-1">pending</span>
+            </div>
+          </div>
+
+          <div className="card p-4 flex flex-col justify-between gap-1 shadow-sm min-h-[96px]">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)]">
+              <CheckCircle size={14} className="text-[var(--danger)]" />
+              <span>Pending KPI</span>
+            </span>
+            <div className="mt-1">
+              <strong className="text-xl font-extrabold text-[var(--text-primary)]">
+                {numberFormatter.format(stats.pendingKpiApprovals)}
+              </strong>
+              <span className="text-xs font-medium text-[var(--text-secondary)] ml-1">approval</span>
+            </div>
+          </div>
+
+          <div className="card p-4 flex flex-col justify-between gap-1 shadow-sm min-h-[96px] col-span-2 md:col-span-1">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)]">
+              <AlertTriangle size={14} className="text-amber-600" />
+              <span>Status Gaji</span>
+            </span>
+            <div className="mt-1">
+              <strong className="text-sm font-extrabold text-[var(--text-primary)] line-clamp-1">
+                {stats.payrollPeriodStatus?.period || "Siap audit"}
+              </strong>
+              <span className="text-[10px] text-[var(--text-secondary)] block">
+                {stats.payrollPeriodStatus?.status || "Belum diproses"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Actions Grid */}
+      <section aria-labelledby="superadmin-quick-actions-title" className="mb-5">
+        <div className="section-heading mb-3">
+          <p className="eyebrow">Aksi Cepat</p>
+          <h2 id="superadmin-quick-actions-title">Menu Utama Admin</h2>
+        </div>
+        <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link
+                key={action.name}
+                href={action.path}
+                className="flex flex-col items-center gap-2 rounded-2xl bg-white border border-[var(--border-color)] p-3 text-center transition-all hover:shadow-md hover:border-[var(--primary)] min-h-[92px] group"
+              >
+                <div
+                  className="flex items-center justify-center rounded-2xl shrink-0 transition-transform group-hover:scale-105"
+                  style={{ width: 44, height: 44, backgroundColor: action.bg, color: action.text }}
+                  aria-hidden="true"
+                >
+                  <Icon size={20} strokeWidth={2.2} />
+                </div>
+                <span className="text-[11px] font-bold text-[var(--text-primary)] leading-tight line-clamp-1 w-full">
+                  {action.name}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+    </>
   );
 }
 
