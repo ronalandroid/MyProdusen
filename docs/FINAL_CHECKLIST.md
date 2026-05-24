@@ -268,3 +268,7 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - [x] React Doctor full offline scan returned 0 diagnostics.
 - [x] `DRY_RUN=true npm run sync:leave-balance-period` passed with no writes.
 - [x] Public live route, public E2E, CDN, and production npm audit checks passed.
+
+## Talenta-Inspired GO/NO-GO Addendum — 2026-05-24
+
+GO requires core MyProdusen modules visible and working, non-core modules hidden or feature-flagged off by default, no destructive migration, no private data exposure, backend RBAC intact, docs updated, and lint/test/build/release checks passing. NO-GO if optional Talenta-style modules clutter main nav, core attendance/leave/KPI/payroll/report flows are broken, tests fail, or hidden modules require data deletion.

@@ -331,3 +331,7 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - No destructive SQL detected: no `DROP`, `DELETE`, `TRUNCATE`, or destructive `ALTER`.
 - Leave balance quota changes must be append-only via `MANUAL_ADJUSTMENT` ledger rows.
 - `npm run sync:leave-balance-period` supports `DRY_RUN=true`, `LEAVE_BALANCE_YEAR`, `LEAVE_BALANCE_QUOTA`, and `LEAVE_BALANCE_ACTOR_USER_ID`.
+
+## Talenta-Inspired Feature Flag Data Safety — 2026-05-24
+
+Non-core Talenta-style modules are hidden by feature flags, not removed from the database. Do not drop existing overtime, document, reimbursement, announcement, or related tables without a separate approved destructive-change plan. Core production data remains attendance, shifts, work locations, leave ledger, KPI production/targets, payroll rules/items, notifications, protected uploads, teams/positions, users/employees, and audit logs.

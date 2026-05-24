@@ -494,3 +494,11 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - `npm run release:check` passed after all changes.
 - React Doctor full offline scan returned `0` diagnostics.
 - Public/live/CDN gates passed.
+
+## Talenta-Inspired Scope Regression Checklist — 2026-05-24
+
+- Core modules visible by role: attendance, leave, KPI, payroll, reports/PDF, notifications, PWA, account/profile.
+- Non-core modules hidden from main navigation by default: recruitment, LMS, reimbursement, business travel, survey, asset, announcements, documents, overtime.
+- Direct routes are not deleted; backend RBAC and feature decisions remain explicit.
+- Feature flag defaults are covered by automated tests.
+- Superadmin selfie attendance remains hidden; Leader/Employee attendance remains available.

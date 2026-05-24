@@ -346,3 +346,7 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Role model remains `SUPERADMIN`, `LEADER`, `EMPLOYEE` only for production UI/access.
 - Superadmin normal selfie attendance remains blocked; Leader/Employee attendance remains self-service only.
 - Protected avatar/selfie routes remain no-store/private and require ownership or Superadmin authorization.
+
+## Feature Flag and Module Exposure Policy — 2026-05-24
+
+Feature flags may hide navigation and entry points, but backend RBAC remains mandatory for every route. Disabled optional modules must not expose private data through main navigation. Core private APIs for attendance, profile/avatar, selfie, payroll, PDF reports, leave, KPI, notifications, and dashboard data must remain authenticated, role-scoped, and `no-store`/private where applicable.

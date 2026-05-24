@@ -382,3 +382,10 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Reran full local and public live gates after append-only leave ledger and sync script changes.
 - Test count is now 76 files / 385 tests.
 - React Doctor baseline updated for current advisory findings; full offline scan returns 0 diagnostics.
+
+## Talenta-Inspired Lean HRIS Scope — 2026-05-24
+
+- Documented Mekari Talenta-inspired benchmark matrix for MyProdusen without expanding into non-core HR suites.
+- Added feature flag helper with core features enabled and non-core modules disabled by default.
+- Hid optional overtime/documents from main navigation by default without deleting routes or data.
+- Updated profile menu copy to keep core payroll reporting visible without surfacing disabled overtime.

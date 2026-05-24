@@ -444,3 +444,7 @@ Public registration must create `EMPLOYEE` only. Users must never self-select `L
 - `release:runtime` is the production-container command and must remain free of lint/test/build steps.
 - Leave balance quota sync must be append-only through `LeaveBalanceLedger`; do not mutate existing ledger rows for quota corrections.
 - `sync:leave-balance-period` must support dry-run and must not delete, truncate, reset, or overwrite historical leave records.
+
+## Talenta-Inspired Lean HRIS Scope — 2026-05-24
+
+MyProdusen may use Mekari Talenta as a benchmark, but implementation must remain lean for Produsen Dimsum Medan. Core enabled modules are attendance, leave, KPI, payroll, reports/PDF, PWA, notifications, protected uploads, teams/positions, and audit logs. Non-core modules including recruitment, LMS, reimbursement, business travel, survey, asset, announcements, documents, overtime, fingerprint, AI CV scoring, earned wage access, and full BPJS/PPh21 automation must be hidden or feature-flagged off by default, not deleted. Feature hiding must not weaken backend RBAC or remove historical data.

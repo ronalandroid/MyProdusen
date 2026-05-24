@@ -606,3 +606,7 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Distance displays in meters below 1000m and kilometers at 1000m or more.
 - First-login onboarding asks for Foto profil/avatar, Nomor HP, and Alamat lengkap with mobile-safe controls and logout as the only escape while incomplete.
 - Pengguna nav icon uses an account-management icon distinct from Beranda and Karyawan while keeping existing icon style.
+
+## Lean HRIS Navigation Policy — 2026-05-24
+
+Main navigation follows MyProdusen core scope instead of showing every Talenta-like module. Visible defaults stay focused: Superadmin sees Beranda, Pengguna, Cabang/Lokasi, KPI, Payroll, Cuti, Reports/PDF, and Akun; Leader sees Beranda, Absensi, Input KPI, Tim, Cuti, Payroll Saya, and Akun; Employee sees Beranda, Absensi, Cuti, KPI, Payroll Saya, and Akun. Recruitment, LMS, reimbursement, business travel, survey, asset, announcements, documents, and overtime stay hidden unless enabled by feature flag. Do not redesign colors, logo, spacing, or component tone.

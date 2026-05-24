@@ -1997,3 +1997,16 @@ Migration `0023_kpi_targets_payroll_rules.sql` supports backend-driven KPI metri
 Leave balance changes must be ledger-safe and append-only. Global or individual quota sync uses `MANUAL_ADJUSTMENT` deltas instead of overwriting prior ledger rows. Approval records release pending hold and approved usage as new ledger rows.
 
 Current status is GO for Coolify redeploy/staging UAT, not production signoff. Production signoff requires target DB migration, authenticated E2E, real-device GPS+selfie validation, protected avatar/selfie live authorization checks, and backup/restore drill.
+
+## Talenta-Inspired Lean HRIS Scope — 2026-05-24
+
+MyProdusen uses Mekari Talenta as an HRIS benchmark, but does not clone Talenta. Scope stays focused on Produsen Dimsum Medan factory operations: Superadmin control/reporting, Leader KPI input, Employee self-service, GPS+selfie attendance, leave, KPI production, payroll bonus, PDF reporting, notifications, PWA, protected uploads, and audit logs.
+
+### Keep / Upgrade
+
+- Employee self-service, employee profile, attendance GPS+selfie, shift/work location, leave approval, KPI/performance, payroll/payslip, payroll status notification, organization/team/position management, workflow approval, analytics dashboard, PDF report, PWA/mobile experience, protected avatar/selfie/document storage, and audit logs.
+
+### Hide / Feature Flag Off
+
+- Recruitment/ATS, LMS/learning, employee survey, reimbursement, business travel, asset management, AI CV scoring, earned wage access, fingerprint integration, full BPJS/PPh21 automation, announcement module, document management, and overtime stay hidden by default unless explicitly enabled.
+- Hidden modules are not deleted and no data/table is dropped. They are reversible by feature flags and must not clutter main navigation.

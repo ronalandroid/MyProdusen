@@ -7,6 +7,7 @@ import { ArrowLeft, ChevronRight, LogOut, Settings } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import { ClientUserProfile, fetchProfile, logout } from "@/lib/auth-client";
+import { isFeatureEnabled } from "@/lib/features/feature-flags";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function ProfilePage() {
   const employee = profile?.employee;
   const initials = (employee?.fullName || profile?.username || "U").charAt(0).toUpperCase();
   const roleLabel = profile?.role === "SUPERADMIN" ? "Super Admin" : "Karyawan";
+  const overtimeEnabled = isFeatureEnabled("overtime");
 
   async function performLogout() {
     if (isLoggingOut) return;
@@ -138,10 +140,10 @@ export default function ProfilePage() {
           <ProfileLink href="/dashboard/leave" label="Cuti & Saldo Cuti" />
           <ProfileLink href="/dashboard/leave/balance" label="Riwayat Saldo Cuti" />
           <ProfileLink href="/dashboard/attendance" label="Riwayat Absensi & Selfie" />
-          <ProfileLink href="/dashboard/reports" label="Laporan Payroll & Lembur" />
+          <ProfileLink href="/dashboard/reports" label="Laporan Payroll" />
           <ProfileLink href="/dashboard/kpi" label="KPI" />
           <ProfileLink href="/dashboard/payroll" label="Gaji / Payroll" />
-          <ProfileLink href="/dashboard/overtime" label="Pengajuan Lembur" />
+          {overtimeEnabled && <ProfileLink href="/dashboard/overtime" label="Pengajuan Lembur" />}
           <ProfileLink href="/dashboard/profile/password" label="Ubah Kata Sandi" />
           <ProfileLink href="/dashboard/profile/notifications" label="Notifikasi" />
           <ProfileLink href="/dashboard/profile/about" label="Tentang Aplikasi" />

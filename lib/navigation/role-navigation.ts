@@ -1,4 +1,5 @@
 import type { UserRole } from '@/lib/permissions';
+import { type FeatureFlagKey, isFeatureEnabled } from '@/lib/features/feature-flags';
 
 export type NavigationItemKey =
   | 'dashboard'
@@ -29,6 +30,7 @@ export interface NavigationPolicyItem {
   path: string;
   primaryFor: readonly UserRole[];
   allowedRoles: readonly UserRole[];
+  featureFlag?: FeatureFlagKey;
 }
 
 export interface NavigationItem extends Omit<NavigationPolicyItem, 'primaryFor'> {
@@ -51,8 +53,8 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
   { key: 'leader-report', name: 'Laporan Tim', path: '/dashboard/leader/reports', primaryFor: [], allowedRoles: ['LEADER'] },
   { key: 'reports', name: 'Laporan', path: '/dashboard/reports', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'payroll', name: 'Gaji', path: '/dashboard/payroll', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
-  { key: 'overtime', name: 'Lembur', path: '/dashboard/overtime', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
-  { key: 'documents', name: 'Dokumen', path: '/dashboard/documents', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'overtime', name: 'Lembur', path: '/dashboard/overtime', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], featureFlag: 'overtime' },
+  { key: 'documents', name: 'Dokumen', path: '/dashboard/documents', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], featureFlag: 'documents' },
   { key: 'notifications', name: 'Notifikasi', path: '/dashboard/notifications', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
   { key: 'audit', name: 'Audit', path: '/dashboard/audit', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'profile', name: 'Akun', path: '/dashboard/profile', primaryFor: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
@@ -71,6 +73,7 @@ const MAX_PRIMARY_SLOTS = 5;
 export function getNavigationForRole(role: UserRole | string): readonly NavigationItem[] {
   return navigationPolicy
     .filter((item) => item.allowedRoles.includes(role as UserRole))
+    .filter((item) => !item.featureFlag || isFeatureEnabled(item.featureFlag))
     .map((item) => ({ ...item, primary: item.primaryFor.includes(role as UserRole) }));
 }
 

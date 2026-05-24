@@ -559,3 +559,10 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - `E2E_BASE_URL=https://myprodusen.online npm run e2e:public`: passed, 20 tests.
 - `npm run verify:cdn`: passed.
 - `npm audit --omit=dev --audit-level=high`: passed, 0 vulnerabilities.
+
+## Talenta-Inspired Lean Scope Fix — 2026-05-24
+
+- Added feature flag defaults for core enabled modules and non-core disabled modules.
+- Hid non-core overtime and documents from role navigation by default while keeping routes reversible.
+- Hid optional overtime profile link when overtime feature flag is disabled.
+- Updated navigation and feature flag tests to protect lean MyProdusen scope.
