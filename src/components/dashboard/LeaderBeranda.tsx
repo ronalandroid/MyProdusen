@@ -113,10 +113,56 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [error, setError] = useState("");
 
+  // KPI Cetak states
+  const [kpiMembers, setKpiMembers] = useState<any[]>([]);
+  const [kpiValues, setKpiValues] = useState<Record<string, string>>({});
+  const [isKpiLoading, setIsKpiLoading] = useState(false);
+  const [isKpiSaving, setIsKpiSaving] = useState(false);
+  const [kpiFeedback, setKpiFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
   // GPS states
   const [gpsPosition, setGpsPosition] = useState<GeolocationPosition | null>(null);
   const [gpsError, setGpsError] = useState("");
   const [isGettingGps, setIsGettingGps] = useState(false);
+
+  async function saveKpiCetak() {
+    if (teams.length === 0) return;
+    setIsKpiSaving(true);
+    setKpiFeedback(null);
+    try {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const entries = kpiMembers
+        .filter((member) => kpiValues[member.id] !== undefined && kpiValues[member.id] !== "")
+        .map((member) => ({
+          employeeId: member.id,
+          teamId: teams[0].id,
+          date: todayStr,
+          metricType: "production_count",
+          quantity: Number(kpiValues[member.id]),
+          unit: "cetakan",
+        }));
+
+      if (entries.length === 0) {
+        throw new Error("Masukkan jumlah cetakan terlebih dahulu.");
+      }
+
+      const response = await fetch("/api/leader/kpi-production", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entries }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || payload?.message || "Gagal menyimpan KPI tim");
+      }
+      setKpiFeedback({ type: "success", message: "KPI tim berhasil disimpan." });
+    } catch (err) {
+      setKpiFeedback({ type: "error", message: err instanceof Error ? err.message : "Gagal menyimpan KPI tim" });
+    } finally {
+      setIsKpiSaving(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -140,7 +186,33 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
         if (cancelled) return;
 
         if (leaderPayload.success) {
-          setTeams(leaderPayload.data?.teams || []);
+          const fetchedTeams = leaderPayload.data?.teams || [];
+          setTeams(fetchedTeams);
+          if (fetchedTeams.length > 0) {
+            setIsKpiLoading(true);
+            try {
+              const teamRes = await fetch(`/api/leader/team-employees?teamId=${encodeURIComponent(fetchedTeams[0].id)}`, { credentials: "include", cache: "no-store" });
+              const teamPayload = await teamRes.json();
+              if (teamPayload.success && !cancelled) {
+                setKpiMembers(teamPayload.data || []);
+              }
+
+              const todayStr = new Date().toISOString().slice(0, 10);
+              const kpiEntriesRes = await fetch(`/api/leader/kpi-production?teamId=${encodeURIComponent(fetchedTeams[0].id)}&date=${todayStr}`, { credentials: "include", cache: "no-store" });
+              const kpiEntriesPayload = await kpiEntriesRes.json();
+              if (kpiEntriesPayload.success && kpiEntriesPayload.data && !cancelled) {
+                const initialValues: Record<string, string> = {};
+                kpiEntriesPayload.data.forEach((entry: any) => {
+                  initialValues[entry.employeeId] = String(entry.quantity);
+                });
+                setKpiValues(initialValues);
+              }
+            } catch (kpiErr) {
+              console.error("Gagal memuat KPI tim:", kpiErr);
+            } finally {
+              if (!cancelled) setIsKpiLoading(false);
+            }
+          }
         } else {
           setError(leaderPayload.error || leaderPayload.message || "Anda belum ditetapkan ke tim. Hubungi Superadmin.");
         }
@@ -355,7 +427,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
           {/* Real Clock-In / Clock-Out Buttons side-by-side */}
           <div className="grid grid-cols-2 gap-3 mt-1">
             <Link
-              href="/dashboard/attendance"
+              href="/dashboard/attendance?action=check-in"
               className={`btn min-h-[46px] rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm text-sm transition-all ${
                 hasCheckedIn
                   ? "bg-gray-100 text-gray-400 border border-gray-200 pointer-events-none"
@@ -368,7 +440,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
             </Link>
 
             <Link
-              href="/dashboard/attendance"
+              href="/dashboard/attendance?action=check-out"
               className={`btn min-h-[46px] rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm text-sm transition-all ${
                 !hasCheckedIn || hasCheckedOut
                   ? "bg-gray-100 text-gray-400 border border-gray-200 pointer-events-none"
@@ -413,6 +485,68 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
             );
           })}
         </div>
+      </section>
+
+      {/* Input KPI Cetak Card */}
+      <section aria-labelledby="kpi-cetak-title" className="card p-5 shadow-sm border border-[var(--border-color)]">
+        <div className="flex items-center justify-between gap-3 mb-4 border-b border-[var(--border-color)] pb-3">
+          <div>
+            <h2 id="kpi-cetak-title" className="text-base font-extrabold text-[var(--text-primary)]">
+              Input KPI Cetak Hari Ini
+            </h2>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+              Isi jumlah produksi cetakan untuk anggota tim Anda ({new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short" })}).
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-[var(--primary-dark)] border border-[#FFE082] shadow-sm">
+            <ClipboardList size={12} /> Cetak
+          </span>
+        </div>
+
+        {kpiFeedback && (
+          <div role="status" className={`rounded-xl p-3 text-xs font-semibold mb-3 ${
+            kpiFeedback.type === "success" ? "bg-green-50 text-[var(--success)] border border-green-200" : "bg-red-50 text-[var(--danger)] border border-red-200"
+          }`}>
+            {kpiFeedback.message}
+          </div>
+        )}
+
+        {isKpiLoading ? (
+          <div className="py-4 text-center text-xs text-[var(--text-muted)] animate-pulse">Memuat anggota tim...</div>
+        ) : kpiMembers.length === 0 ? (
+          <div className="py-6 text-center text-xs text-[var(--text-muted)] font-medium bg-[var(--bg-secondary)] rounded-2xl border border-dashed border-[var(--border-color)]">
+            Belum ada anggota tim terdaftar atau tidak ada Karyawan Cetak.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {kpiMembers.map((member) => (
+              <div key={member.id} className="grid grid-cols-[1fr_100px] items-center gap-3 rounded-2xl border border-[var(--border-color)] p-3 hover:border-[var(--primary)] transition-all">
+                <div className="min-w-0">
+                  <p className="font-extrabold text-[var(--text-primary)] text-sm truncate leading-snug">{member.fullName}</p>
+                  <p className="text-[10px] text-[var(--text-secondary)] font-medium mt-0.5">{member.nip} · Cetak</p>
+                </div>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  className="min-h-[44px] w-full rounded-xl border border-[var(--border-color)] p-2 text-center font-bold text-sm bg-[var(--bg-secondary)] focus:bg-white focus:border-[var(--primary)] transition-all"
+                  placeholder="0"
+                  value={kpiValues[member.id] || ""}
+                  onChange={(e) => setKpiValues(prev => ({ ...prev, [member.id]: e.target.value }))}
+                />
+              </div>
+            ))}
+
+            <button
+              type="button"
+              disabled={isKpiSaving || !Object.values(kpiValues).some(v => v !== "")}
+              onClick={saveKpiCetak}
+              className="btn btn-primary min-h-[44px] rounded-xl font-bold w-full mt-2"
+            >
+              {isKpiSaving ? "Menyimpan..." : "Simpan Semua Cetakan"}
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Team Summary */}

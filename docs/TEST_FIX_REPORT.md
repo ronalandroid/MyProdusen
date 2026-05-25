@@ -598,3 +598,10 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - KPI Cetak flow: Leader may input production count only for assigned team members, especially Karyawan Cetak. Employee sees only own KPI. KPI production can feed payroll bonus when linked to configured payroll rule.
 - Profile photo/avatar is private protected upload data. Users can update own avatar; Superadmin employee list must refresh near-realtime and show protected avatar or initials fallback.
 - Production payroll deductions and multipliers must be reviewed and approved by company policy/legal owner before production payroll use.
+
+### UAT Polish and Verification
+
+- **Camera Auto-Trigger Flow**: Integrated `autoStart` property in `RealtimeSelfieCamera` to bypass extra click gates when launching Absensi from dashboard cards.
+- **Embedded Leader KPI Cetak Card**: Integrated the production input card directly on the leader's main dashboard (`LeaderBeranda.tsx`), allowing immediate pack entry, pre-population of today's existing entries, and robust "Simpan Semua" POST submission.
+- **Superadmin Mobile Nav Karyawan Swap**: Replaced `Pengguna` bottom navigation tab allocation with `Karyawan` for Superadmins, verified by navigation unit and RBAC checks.
+- **Complete Release Validation**: Executed `npm run release:check` passing compiling (`npm run build`), unit/integration testing (398 tests passed), linter checks (`npm run lint`), and Drizzle/DB mapping checks completely.

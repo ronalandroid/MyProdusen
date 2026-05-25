@@ -133,10 +133,21 @@ export default function AttendancePage() {
   const [gpsPosition, setGpsPosition] = useState<GeolocationPosition | null>(null);
   const [gpsError, setGpsError] = useState("");
   const [isGettingGps, setIsGettingGps] = useState(false);
+  const [autoStart, setAutoStart] = useState(false);
   const [viewerState, setViewerState] = useState<{
     record: AttendanceRecord;
     kind: "check-in" | "check-out";
   } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const action = searchParams.get("action");
+      if (action === "check-in" || action === "check-out") {
+        setAutoStart(true);
+      }
+    }
+  }, []);
   const isSuperadminAttendanceViewer = profile?.role === "SUPERADMIN";
 
   const employee = profile?.employee;
@@ -429,6 +440,7 @@ export default function AttendancePage() {
       <RealtimeSelfieCamera
         capturedPreviewUrl={selfiePreviewUrl}
         disabled={isSubmitting}
+        autoStart={autoStart}
         onCapture={({ blob, previewUrl, meta }) => {
           if (selfiePreviewUrl) {
             URL.revokeObjectURL(selfiePreviewUrl);

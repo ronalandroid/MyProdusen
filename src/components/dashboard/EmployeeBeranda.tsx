@@ -403,7 +403,7 @@ export default function EmployeeBeranda({ profile }: Props) {
           {/* Real Clock-In / Clock-Out Buttons side-by-side */}
           <div className="grid grid-cols-2 gap-3 mt-1">
             <Link
-              href="/dashboard/attendance"
+              href="/dashboard/attendance?action=check-in"
               className={`btn min-h-[46px] rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm text-sm transition-all ${
                 hasCheckedIn
                   ? "bg-gray-100 text-gray-400 border border-gray-200 pointer-events-none"
@@ -416,7 +416,7 @@ export default function EmployeeBeranda({ profile }: Props) {
             </Link>
 
             <Link
-              href="/dashboard/attendance"
+              href="/dashboard/attendance?action=check-out"
               className={`btn min-h-[46px] rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm text-sm transition-all ${
                 !hasCheckedIn || hasCheckedOut
                   ? "bg-gray-100 text-gray-400 border border-gray-200 pointer-events-none"

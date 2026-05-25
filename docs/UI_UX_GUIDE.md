@@ -84,9 +84,9 @@ Employee mobile bottom navigation should prioritize:
 Superadmin mobile bottom navigation should prioritize:
 
 1. Beranda
-2. Cabang
-3. Approval
-4. Pengguna
+2. Karyawan
+3. KPI
+4. Payroll
 5. Akun
 
 Navigation rules:
@@ -95,8 +95,8 @@ Navigation rules:
 - Disabled or unauthorized items must not appear as accessible routes.
 - Backend RBAC remains source of truth even if navigation hides items.
 - Navigation labels should be short and understandable in Indonesian UI.
-- Mobile bottom navigation must contain at most five primary items, one row only, safe-area aware, and no mascot or marketing copy.
-- Superadmin mobile primary items are `Beranda`, `Cabang`, `Approval`, `Pengguna`, and `Akun`.
+- Bottom navigation must contain at most five primary items, one row only, safe-area aware, and no mascot or marketing copy.
+- Superadmin mobile primary items are `Beranda`, `Karyawan`, `KPI`, `Payroll`, and `Akun`.
 - Employee mobile primary items are `Beranda`, `Absensi`, `Cuti`, `KPI`, and `Akun`.
 - Secondary items such as KPI management, reports, payroll, audit, documents, shifts, and notifications belong in desktop sidebar, dashboard shortcuts, or Akun menu.
 
@@ -310,7 +310,7 @@ The mobile bottom navigation must hold ≤ 5 tabs per role.
 | ---- | --------------------------- |
 | EMPLOYEE | Beranda · Absensi · Cuti · KPI · Akun |
 | LEADER | Beranda · Absensi · Input KPI · Tim · Akun |
-| SUPERADMIN | Beranda · Pengguna · KPI · Payroll · Akun |
+| SUPERADMIN | Beranda · Karyawan · KPI · Payroll · Akun |
 
 `lib/navigation/role-navigation.ts` holds the policy.
 `getPrimaryNavigationForRole(role)` returns the ≤ 5 tabs for the bottom
@@ -536,7 +536,7 @@ These sections do not create frontend-only authorization. Backend APIs and servi
 - Phone widths below `768px` use fixed bottom navigation only.
 - Mobile bottom navigation is one row, max five primary items, `72px–84px` high plus safe-area inset.
 - Mobile nav must never contain mascot/chicken artwork, marketing copy, endpoint/debug text, or logout helper text.
-- Superadmin mobile tabs: `Beranda`, `Cabang`, `Approval`, `Pengguna`, `Akun`.
+- Superadmin mobile tabs: `Beranda`, `Karyawan`, `KPI`, `Payroll`, `Akun`.
 - Employee mobile tabs: `Beranda`, `Absensi`, `Cuti`, `KPI`, `Akun`.
 - Tablet widths from `768px` use compact sidebar behavior, not bottom nav.
 - Desktop widths from `1024px` use wider sidebar behavior.
@@ -638,7 +638,7 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 
 ## Lean HRIS Navigation Policy — 2026-05-24
 
-Main navigation follows MyProdusen core scope instead of showing every Talenta-like module. Visible defaults stay focused: Superadmin sees Beranda, Pengguna, Cabang/Lokasi, KPI, Payroll, Cuti, Reports/PDF, and Akun; Leader sees Beranda, Absensi, Input KPI, Tim, Cuti, Payroll Saya, and Akun; Employee sees Beranda, Absensi, Cuti, KPI, Payroll Saya, and Akun. Recruitment, LMS, reimbursement, business travel, survey, asset, announcements, documents, and overtime stay hidden unless enabled by feature flag. Do not redesign colors, logo, spacing, or component tone.
+Main navigation follows MyProdusen core scope instead of showing every Talenta-like module. Visible defaults stay focused: Superadmin sees Beranda, Karyawan, Cabang/Lokasi, KPI, Payroll, Cuti, Reports/PDF, and Akun; Leader sees Beranda, Absensi, Input KPI, Tim, Cuti, Payroll Saya, and Akun; Employee sees Beranda, Absensi, Cuti, KPI, Payroll Saya, and Akun. Recruitment, LMS, reimbursement, business travel, survey, asset, announcements, documents, and overtime stay hidden unless enabled by feature flag. Do not redesign colors, logo, spacing, or component tone.
 
 
 

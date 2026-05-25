@@ -13,6 +13,7 @@ type RealtimeSelfieCameraProps = {
   disabled?: boolean;
   onCapture: (selfie: { blob: Blob; previewUrl: string; meta: CompressedSelfie }) => void;
   onClear: () => void;
+  autoStart?: boolean;
 };
 
 const CAMERA_NOT_SUPPORTED = "Browser tidak mendukung akses kamera realtime.";
@@ -30,6 +31,7 @@ export function RealtimeSelfieCamera({
   disabled,
   onCapture,
   onClear,
+  autoStart,
 }: RealtimeSelfieCameraProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -134,6 +136,16 @@ export function RealtimeSelfieCamera({
   useEffect(() => {
     if (disabled) stopCamera();
   }, [disabled]);
+
+  useEffect(() => {
+    if (autoStart && !capturedPreviewUrl && !isCameraOpen && !disabled) {
+      // Delay slightly to ensure browser has initialized components
+      const t = setTimeout(() => {
+        void openCamera();
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  }, [autoStart, disabled, capturedPreviewUrl]);
 
   return (
     <div className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
