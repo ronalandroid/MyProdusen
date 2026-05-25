@@ -12,6 +12,9 @@ export const kpiScoringTypeEnum = pgEnum('KpiScoringType', ['HIGHER_IS_BETTER', 
 export const attendanceExceptionTypeEnum = pgEnum('AttendanceExceptionType', ['OUTSIDE_GEOFENCE', 'BAD_GPS_ACCURACY', 'MISSING_SELFIE', 'MANUAL_ADJUSTMENT', 'LATE_CORRECTION', 'MISSING_CHECKOUT']);
 export const attendanceExceptionStatusEnum = pgEnum('AttendanceExceptionStatus', ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']);
 export const leaveBalanceTransactionTypeEnum = pgEnum('LeaveBalanceTransactionType', ['ENTITLEMENT', 'CARRY_FORWARD', 'REQUEST_HOLD', 'REQUEST_APPROVED', 'REQUEST_REJECTED_RELEASE', 'MANUAL_ADJUSTMENT', 'EXPIRY']);
+export const policyScopeTypeEnum = pgEnum('PolicyScopeType', ['COMPANY', 'TEAM', 'EMPLOYEE']);
+export const workCalendarDayTypeEnum = pgEnum('WorkCalendarDayType', ['WORKDAY', 'HOLIDAY', 'COMPANY_HOLIDAY', 'SPECIAL_WORKDAY']);
+export const payrollCalculationSourceTypeEnum = pgEnum('PayrollCalculationSourceType', ['ATTENDANCE', 'KPI', 'HOLIDAY', 'MANUAL', 'ADJUSTMENT']);
 
 // User table
 export const users = pgTable('User', {
@@ -66,7 +69,7 @@ export const workLocations = pgTable('WorkLocation', {
   address: text('address').notNull(),
   latitude: real('latitude').notNull(),
   longitude: real('longitude').notNull(),
-  radius: integer('radius').default(100).notNull(),
+  radius: integer('radius').default(150).notNull(),
   isActive: boolean('isActive').default(true).notNull(),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
@@ -1237,12 +1240,16 @@ export const payrollRules = pgTable('PayrollRule', {
   id: text('id').primaryKey(),
   employeeId: text('employeeId'),
   teamId: text('teamId'),
+  divisionId: text('divisionId'),
   periodType: text('periodType').notNull(), // WEEKLY / MONTHLY
   baseSalary: real('baseSalary').notNull(),
   targetMetricId: text('targetMetricId'),
   targetQuantity: real('targetQuantity'),
   bonusType: text('bonusType').default('PER_EXTRA_UNIT').notNull(), // PER_EXTRA_UNIT / FIXED / PERCENTAGE
   bonusAmountPerUnit: real('bonusAmountPerUnit'),
+  attendancePolicyId: text('attendancePolicyId'),
+  holidayMultiplierEnabled: boolean('holidayMultiplierEnabled').default(true).notNull(),
+  realtimeCalculationEnabled: boolean('realtimeCalculationEnabled').default(true).notNull(),
   active: boolean('active').default(true).notNull(),
   effectiveFrom: timestamp('effectiveFrom', { mode: 'date' }),
   effectiveTo: timestamp('effectiveTo', { mode: 'date' }),
@@ -1253,6 +1260,89 @@ export const payrollRules = pgTable('PayrollRule', {
   activeIdx: index('PayrollRule_active_idx').on(table.active),
   employeeIdIdx: index('PayrollRule_employeeId_idx').on(table.employeeId),
   teamIdIdx: index('PayrollRule_teamId_idx').on(table.teamId),
+  divisionIdIdx: index('PayrollRule_divisionId_idx').on(table.divisionId),
+  attendancePolicyIdIdx: index('PayrollRule_attendancePolicyId_idx').on(table.attendancePolicyId),
+}));
+
+export const attendancePolicies = pgTable('AttendancePolicy', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  active: boolean('active').default(true).notNull(),
+  appliesScopeType: policyScopeTypeEnum('appliesScopeType').default('COMPANY').notNull(),
+  appliesScopeId: text('appliesScopeId'),
+  graceMinutes: integer('graceMinutes').default(0).notNull(),
+  lateTier1Min: integer('lateTier1Min').default(1).notNull(),
+  lateTier1Max: integer('lateTier1Max').default(15).notNull(),
+  lateTier1Deduction: real('lateTier1Deduction').default(5000).notNull(),
+  lateTier2Min: integer('lateTier2Min').default(16).notNull(),
+  lateTier2Max: integer('lateTier2Max').default(30).notNull(),
+  lateTier2Deduction: real('lateTier2Deduction').default(10000).notNull(),
+  halfDayAfterMinutes: integer('halfDayAfterMinutes').default(30).notNull(),
+  halfDayPayFactor: real('halfDayPayFactor').default(0.5).notNull(),
+  geofenceRadiusMeters: integer('geofenceRadiusMeters').default(150).notNull(),
+  payrollSyncEnabled: boolean('payrollSyncEnabled').default(true).notNull(),
+  createdBy: text('createdBy'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  activeIdx: index('AttendancePolicy_active_idx').on(table.active),
+  scopeIdx: index('AttendancePolicy_scope_idx').on(table.appliesScopeType, table.appliesScopeId),
+}));
+
+export const attendanceDailySummaries = pgTable('AttendanceDailySummary', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId').notNull(),
+  attendanceId: text('attendanceId'),
+  workDate: date('workDate').notNull(),
+  shiftStartAt: timestamp('shiftStartAt', { mode: 'date' }),
+  clockInAt: timestamp('clockInAt', { mode: 'date' }),
+  clockOutAt: timestamp('clockOutAt', { mode: 'date' }),
+  lateMinutes: integer('lateMinutes').default(0).notNull(),
+  lateDeduction: real('lateDeduction').default(0).notNull(),
+  isHalfDay: boolean('isHalfDay').default(false).notNull(),
+  geofenceDistanceMeters: real('geofenceDistanceMeters'),
+  gpsAccuracyMeters: real('gpsAccuracyMeters'),
+  selfieRequired: boolean('selfieRequired').default(true).notNull(),
+  selfieVerified: boolean('selfieVerified').default(false).notNull(),
+  payrollImpactStatus: text('payrollImpactStatus').default('NO_IMPACT').notNull(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  employeeWorkDateIdx: uniqueIndex('AttendanceDailySummary_employee_workDate_idx').on(table.employeeId, table.workDate),
+  attendanceIdIdx: index('AttendanceDailySummary_attendanceId_idx').on(table.attendanceId),
+  payrollImpactStatusIdx: index('AttendanceDailySummary_payrollImpactStatus_idx').on(table.payrollImpactStatus),
+}));
+
+export const workCalendarDays = pgTable('WorkCalendarDay', {
+  id: text('id').primaryKey(),
+  date: date('date').notNull(),
+  name: text('name').notNull(),
+  type: workCalendarDayTypeEnum('type').default('WORKDAY').notNull(),
+  isPaidHoliday: boolean('isPaidHoliday').default(false).notNull(),
+  payMultiplier: real('payMultiplier').default(1).notNull(),
+  createdBy: text('createdBy'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  dateIdx: uniqueIndex('WorkCalendarDay_date_idx').on(table.date),
+  typeIdx: index('WorkCalendarDay_type_idx').on(table.type),
+}));
+
+export const payrollCalculationHistory = pgTable('PayrollCalculationHistory', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId').notNull(),
+  payrollPeriodId: text('payrollPeriodId'),
+  workDate: date('workDate'),
+  sourceType: payrollCalculationSourceTypeEnum('sourceType').notNull(),
+  sourceId: text('sourceId'),
+  description: text('description').notNull(),
+  amount: real('amount').default(0).notNull(),
+  calculationSnapshot: jsonb('calculationSnapshot').$type<Record<string, unknown>>(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  employeeWorkDateIdx: index('PayrollCalculationHistory_employee_workDate_idx').on(table.employeeId, table.workDate),
+  sourceIdx: index('PayrollCalculationHistory_source_idx').on(table.sourceType, table.sourceId),
+  payrollPeriodIdIdx: index('PayrollCalculationHistory_payrollPeriodId_idx').on(table.payrollPeriodId),
 }));
 
 // Relations

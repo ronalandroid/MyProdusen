@@ -1,16 +1,58 @@
-import { db, attendances, employees, workLocations, shifts } from '@/lib/db';
+import { db, attendances, employees, workLocations, shifts, attendancePolicies, attendanceDailySummaries, payrollRules, payrollCalculationHistory, workCalendarDays, notifications } from '@/lib/db';
 import { calculateDistance, isWithinGeofence, isGpsAccuracyAcceptable } from '@/lib/geofencing';
 import { calculateLateMinutes, calculateEarlyLeaveMinutes, calculateMinutesDifference } from '@/utils/date';
-import { eq, and, gte, lt, desc } from 'drizzle-orm';
+import { eq, and, gte, lt, desc, or, isNull } from 'drizzle-orm';
 import { cacheManager } from '@/lib/cache/cache-manager';
 import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
 import { CacheStrategy } from '@/lib/cache/cache-strategies';
 import { saveAttendanceSelfie } from '@/lib/upload';
 import { validateGpsAttendance } from '@/lib/attendance/gps-validation';
+import { nanoid } from 'nanoid';
+import { calculateAttendancePayrollImpact, DEFAULT_ATTENDANCE_POLICY } from '@/services/attendance/attendance-payroll-impact.service';
 
 export type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'SICK' | 'PERMISSION';
 
 export class AttendanceService {
+  private buildShiftStartAt(workDate: Date, startTime: string): Date {
+    const [hours = '8', minutes = '0'] = startTime.split(':');
+    const shiftStartAt = new Date(workDate);
+    shiftStartAt.setHours(Number(hours), Number(minutes), 0, 0);
+    return shiftStartAt;
+  }
+
+  private formatWorkDate(date: Date): string {
+    return date.toISOString().slice(0, 10);
+  }
+
+  private async getActiveAttendancePolicy(employee: typeof employees.$inferSelect) {
+    const [employeePolicy] = await db.select().from(attendancePolicies).where(and(
+      eq(attendancePolicies.active, true),
+      eq(attendancePolicies.appliesScopeType, 'EMPLOYEE'),
+      eq(attendancePolicies.appliesScopeId, employee.id),
+    )).limit(1);
+
+    if (employeePolicy) return employeePolicy;
+
+    const [companyPolicy] = await db.select().from(attendancePolicies).where(and(
+      eq(attendancePolicies.active, true),
+      eq(attendancePolicies.appliesScopeType, 'COMPANY'),
+    )).limit(1);
+
+    return companyPolicy ?? null;
+  }
+
+  private async getActivePayrollRule(employee: typeof employees.$inferSelect) {
+    const now = new Date();
+    const [rule] = await db.select().from(payrollRules).where(and(
+      eq(payrollRules.active, true),
+      or(eq(payrollRules.employeeId, employee.id), eq(payrollRules.divisionId, employee.division ?? ''), isNull(payrollRules.employeeId)),
+      or(isNull(payrollRules.effectiveFrom), lt(payrollRules.effectiveFrom, now)),
+      or(isNull(payrollRules.effectiveTo), gte(payrollRules.effectiveTo, now)),
+    )).limit(1);
+
+    return rule ?? null;
+  }
+
   async checkIn(data: {
     employeeId: string;
     workLocationId: string;
@@ -92,6 +134,9 @@ export class AttendanceService {
       throw new Error('Lokasi kerja tidak aktif');
     }
 
+    const attendancePolicy = await this.getActiveAttendancePolicy(employee);
+    const effectiveRadius = attendancePolicy?.geofenceRadiusMeters ?? Math.max(workLocation.radius, DEFAULT_ATTENDANCE_POLICY.geofenceRadiusMeters);
+
     // Hardened GPS + geo-fence validation. Server is the only source of truth.
     const validation = validateGpsAttendance(
       {
@@ -104,7 +149,7 @@ export class AttendanceService {
         id: workLocation.id,
         latitude: workLocation.latitude,
         longitude: workLocation.longitude,
-        radius: workLocation.radius,
+        radius: effectiveRadius,
         isActive: workLocation.isActive,
       },
     );
@@ -136,16 +181,49 @@ export class AttendanceService {
       throw new Error('Shift kerja tidak aktif');
     }
 
-    // Calculate late minutes
+    // Calculate late minutes and payroll impact from configurable policy.
     const checkInTime = new Date();
-    let lateMinutes = 0;
+    const shiftStartAt = this.buildShiftStartAt(checkInTime, shift.startTime);
+    const payrollRule = await this.getActivePayrollRule(employee);
+    const workDate = this.formatWorkDate(checkInTime);
+    const [workCalendarDay] = await db
+      .select()
+      .from(workCalendarDays)
+      .where(eq(workCalendarDays.date, workDate))
+      .limit(1);
+    const policyImpact = calculateAttendancePayrollImpact({
+      employeeId: employee.id,
+      shiftStartAt,
+      clockInAt: checkInTime,
+      attendancePolicy: attendancePolicy ? {
+        graceMinutes: attendancePolicy.graceMinutes,
+        lateTier1Min: attendancePolicy.lateTier1Min,
+        lateTier1Max: attendancePolicy.lateTier1Max,
+        lateTier1Deduction: attendancePolicy.lateTier1Deduction,
+        lateTier2Min: attendancePolicy.lateTier2Min,
+        lateTier2Max: attendancePolicy.lateTier2Max,
+        lateTier2Deduction: attendancePolicy.lateTier2Deduction,
+        halfDayAfterMinutes: attendancePolicy.halfDayAfterMinutes,
+        halfDayPayFactor: attendancePolicy.halfDayPayFactor,
+        geofenceRadiusMeters: attendancePolicy.geofenceRadiusMeters,
+        payrollSyncEnabled: attendancePolicy.payrollSyncEnabled,
+      } : DEFAULT_ATTENDANCE_POLICY,
+      timezone: 'Asia/Jakarta',
+      workCalendarDay: workCalendarDay ? {
+        type: workCalendarDay.type,
+        isPaidHoliday: workCalendarDay.isPaidHoliday,
+        payMultiplier: workCalendarDay.payMultiplier,
+      } : null,
+      baseDailyPay: payrollRule ? payrollRule.baseSalary / (payrollRule.periodType === 'WEEKLY' ? 6 : 26) : null,
+      payrollRule: payrollRule ? {
+        holidayMultiplierEnabled: payrollRule.holidayMultiplierEnabled,
+        realtimeCalculationEnabled: payrollRule.realtimeCalculationEnabled,
+      } : null,
+    });
+    let lateMinutes = policyImpact.lateMinutes;
     let status: AttendanceStatus = 'PRESENT';
-
-    if (shift) {
-      lateMinutes = calculateLateMinutes(checkInTime, shift.startTime);
-      if (lateMinutes > 0) {
-        status = 'LATE';
-      }
+    if (lateMinutes > 0) {
+      status = 'LATE';
     }
 
     // Generate attendance ID
@@ -185,6 +263,77 @@ export class AttendanceService {
         lateMinutes,
       })
       .returning();
+
+    await db.insert(attendanceDailySummaries).values({
+      id: nanoid(),
+      employeeId: data.employeeId,
+      attendanceId,
+      workDate,
+      shiftStartAt,
+      clockInAt: checkInTime,
+      lateMinutes: policyImpact.lateMinutes,
+      lateDeduction: policyImpact.lateDeduction,
+      isHalfDay: policyImpact.isHalfDay,
+      geofenceDistanceMeters: distance,
+      gpsAccuracyMeters: data.accuracy,
+      selfieRequired: true,
+      selfieVerified: true,
+      payrollImpactStatus: policyImpact.payrollImpactStatus,
+    }).onConflictDoUpdate({
+      target: [attendanceDailySummaries.employeeId, attendanceDailySummaries.workDate],
+      set: {
+        attendanceId,
+        shiftStartAt,
+        clockInAt: checkInTime,
+        lateMinutes: policyImpact.lateMinutes,
+        lateDeduction: policyImpact.lateDeduction,
+        isHalfDay: policyImpact.isHalfDay,
+        geofenceDistanceMeters: distance,
+        gpsAccuracyMeters: data.accuracy,
+        selfieVerified: true,
+        payrollImpactStatus: policyImpact.payrollImpactStatus,
+        updatedAt: new Date(),
+      },
+    });
+
+    if (policyImpact.shouldCreatePayrollHistory) {
+      await db.insert(payrollCalculationHistory).values({
+        id: nanoid(),
+        employeeId: data.employeeId,
+        workDate,
+        sourceType: policyImpact.holidayMultiplier > 1 ? 'HOLIDAY' : 'ATTENDANCE',
+        sourceId: attendanceId,
+        description: policyImpact.holidayMultiplier > 1
+          ? 'Multiplier payroll hari libur'
+          : policyImpact.isHalfDay
+            ? 'Dampak payroll setengah hari karena terlambat'
+            : 'Potongan keterlambatan absensi',
+        amount: policyImpact.estimatedPayrollAmount,
+        calculationSnapshot: policyImpact.calculationSnapshot,
+      });
+    }
+
+    if (policyImpact.lateDeduction > 0 || policyImpact.isHalfDay || policyImpact.holidayMultiplier > 1) {
+      await db.insert(notifications).values({
+        id: nanoid(),
+        userId: employee.userId,
+        title: policyImpact.holidayMultiplier > 1
+          ? 'Multiplier hari libur tercatat'
+          : policyImpact.isHalfDay
+            ? 'Absensi dihitung setengah hari'
+            : 'Potongan keterlambatan tercatat',
+        message: policyImpact.holidayMultiplier > 1
+          ? `Kerja hari libur tercatat dengan multiplier ${policyImpact.holidayMultiplier}x sesuai kebijakan.`
+          : policyImpact.isHalfDay
+            ? 'Keterlambatan melewati batas kebijakan. Estimasi payroll akan mengikuti kebijakan perusahaan.'
+            : `Keterlambatan ${policyImpact.lateMinutes} menit tercatat dengan estimasi potongan Rp${policyImpact.lateDeduction.toLocaleString('id-ID')}.`,
+        type: policyImpact.holidayMultiplier > 1
+          ? 'payroll.holiday_multiplier'
+          : policyImpact.isHalfDay
+            ? 'attendance.half_day'
+            : 'attendance.late_deduction',
+      });
+    }
 
     // Invalidate attendance caches
     await this.invalidateAttendanceCaches(data.employeeId);
@@ -257,7 +406,7 @@ export class AttendanceService {
         id: workLocation.id,
         latitude: workLocation.latitude,
         longitude: workLocation.longitude,
-        radius: workLocation.radius,
+        radius: Math.max(workLocation.radius, DEFAULT_ATTENDANCE_POLICY.geofenceRadiusMeters),
         isActive: workLocation.isActive,
       },
     );
@@ -326,6 +475,11 @@ export class AttendanceService {
       })
       .where(eq(attendances.id, attendance.id))
       .returning();
+
+    await db.update(attendanceDailySummaries).set({
+      clockOutAt: checkOutTime,
+      updatedAt: new Date(),
+    }).where(eq(attendanceDailySummaries.attendanceId, attendance.id));
 
     // Invalidate attendance caches
     await this.invalidateAttendanceCaches(data.employeeId);

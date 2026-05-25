@@ -862,12 +862,16 @@ export class PayrollService {
   async createPayrollRule(actorUserId: string, data: {
     employeeId?: string | null;
     teamId?: string | null;
+    divisionId?: string | null;
     periodType: 'WEEKLY' | 'MONTHLY';
     baseSalary: number;
     targetMetricId?: string | null;
     targetQuantity?: number | null;
     bonusType?: 'PER_EXTRA_UNIT' | 'FIXED' | 'PERCENTAGE';
     bonusAmountPerUnit?: number | null;
+    attendancePolicyId?: string | null;
+    holidayMultiplierEnabled?: boolean;
+    realtimeCalculationEnabled?: boolean;
     effectiveFrom?: Date | null;
     effectiveTo?: Date | null;
   }) {
@@ -878,12 +882,16 @@ export class PayrollService {
         id,
         employeeId: data.employeeId || null,
         teamId: data.teamId || null,
+        divisionId: data.divisionId || null,
         periodType: data.periodType,
         baseSalary: data.baseSalary,
         targetMetricId: data.targetMetricId || null,
         targetQuantity: data.targetQuantity || null,
         bonusType: data.bonusType || 'PER_EXTRA_UNIT',
         bonusAmountPerUnit: data.bonusAmountPerUnit || null,
+        attendancePolicyId: data.attendancePolicyId || null,
+        holidayMultiplierEnabled: data.holidayMultiplierEnabled ?? true,
+        realtimeCalculationEnabled: data.realtimeCalculationEnabled ?? true,
         effectiveFrom: data.effectiveFrom || null,
         effectiveTo: data.effectiveTo || null,
         active: true,
@@ -895,7 +903,7 @@ export class PayrollService {
     return rule;
   }
 
-  async getPayrollRules(filters?: { active?: boolean; employeeId?: string; teamId?: string }) {
+  async getPayrollRules(filters?: { active?: boolean; employeeId?: string; teamId?: string; divisionId?: string }) {
     let query = db.select().from(payrollRules);
     const conditions = [];
     if (filters?.active !== undefined) {
@@ -906,6 +914,9 @@ export class PayrollService {
     }
     if (filters?.teamId) {
       conditions.push(eq(payrollRules.teamId, filters.teamId));
+    }
+    if (filters?.divisionId) {
+      conditions.push(eq(payrollRules.divisionId, filters.divisionId));
     }
 
     if (conditions.length > 0) {
@@ -922,10 +933,14 @@ export class PayrollService {
 
   async updatePayrollRule(actorUserId: string, id: string, data: Partial<{
     baseSalary: number;
+    divisionId: string | null;
     targetMetricId: string | null;
     targetQuantity: number | null;
     bonusType: 'PER_EXTRA_UNIT' | 'FIXED' | 'PERCENTAGE';
     bonusAmountPerUnit: number | null;
+    attendancePolicyId: string | null;
+    holidayMultiplierEnabled: boolean;
+    realtimeCalculationEnabled: boolean;
     active: boolean;
     effectiveFrom: Date | null;
     effectiveTo: Date | null;
