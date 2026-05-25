@@ -1,5 +1,14 @@
 # Changelog — MyProdusen
 
+## 2026-05-26 — Final UAT UI/UX Pass
+
+- Implemented the Superadmin Attendance Policy Control Panel in `/dashboard/settings` enabling customizable grace minutes, geofence radius, two-tier late deductions, half-day pay factors, and global realtime payroll sync.
+- Implemented the Superadmin Work Calendar & Custom Holiday Scheduler in `/dashboard/settings` allowing custom holiday names, active toggles, type selections, and Pengali Gaji (multiplier 2x) display.
+- Integrated camera auto-trigger flow E2E: Clock In/Out buttons on the Beranda now pass target actions via URL params and automatically stream the user webcam on mount without extra clicks.
+- Embedded the Leader KPI Cetak Count Entry Card directly on the main dashboard (`LeaderBeranda.tsx`) with pre-populated inputs and bulk-save handlers.
+- Aligned the Superadmin primary navigation menu to exactly 5 columns with `Karyawan` replacing `Pengguna` and registered all route pages.
+- Verified and passed all local lint, Vitest unit/integration (403 tests), standalone build compiler, and release verification gates.
+
 ## 2026-05-20 — Deployment Readiness Hardening
 
 - Fixed `npm run db:seed` so local/staging seed is executable and idempotent without duplicate user failures.

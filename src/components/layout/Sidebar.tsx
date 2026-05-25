@@ -16,6 +16,7 @@ import {
   Shield,
   User,
   Users,
+  Settings,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { getNavigationForRole } from "@/lib/navigation/role-navigation";
@@ -40,6 +41,7 @@ const iconMap: Record<string, LucideIcon> = {
   "/dashboard/documents": FileText,
   "/dashboard/notifications": Bell,
   "/dashboard/audit": Shield,
+  "/dashboard/settings": Settings,
   "/dashboard/profile": User,
 };
 

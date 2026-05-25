@@ -654,3 +654,10 @@ Main navigation follows MyProdusen core scope instead of showing every Talenta-l
 - KPI Cetak flow: Leader may input production count only for assigned team members, especially Karyawan Cetak. Employee sees only own KPI. KPI production can feed payroll bonus when linked to configured payroll rule.
 - Profile photo/avatar is private protected upload data. Users can update own avatar; Superadmin employee list must refresh near-realtime and show protected avatar or initials fallback.
 - Production payroll deductions and multipliers must be reviewed and approved by company policy/legal owner before production payroll use.
+
+## Production Attendance-Payroll-Policy UIs — 2026-05-26
+
+- **Superadmin Attendance Policy Panel**: Integrated grace minutes, geofence radius, two-tier late deduction settings, half-day pay factors, and a global realtime sync switch in `/dashboard/settings`.
+- **Superadmin Work Calendar Panel**: Interactive custom holiday scheduler supporting holiday type selections, custom names, active toggles, and Pengali Gaji (multiplier 2x) displays.
+- **Realtime Selfie Camera Integration**: Launches camera user stream automatically when clicking Clock In/Out on the Beranda.
+- **Embedded Leader KPI Cetak Card**: Streamlined pack input, pre-populated daily entries, and POST save handlers directly on `LeaderBeranda.tsx`.

@@ -22,6 +22,7 @@ export type NavigationItemKey =
   | 'documents'
   | 'notifications'
   | 'audit'
+  | 'settings'
   | 'profile';
 
 export interface NavigationPolicyItem {
@@ -57,6 +58,7 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
   { key: 'documents', name: 'Dokumen', path: '/dashboard/documents', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], featureFlag: 'documents' },
   { key: 'notifications', name: 'Notifikasi', path: '/dashboard/notifications', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
   { key: 'audit', name: 'Audit', path: '/dashboard/audit', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'settings', name: 'Kebijakan', path: '/dashboard/settings', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'profile', name: 'Akun', path: '/dashboard/profile', primaryFor: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
 ];
 
