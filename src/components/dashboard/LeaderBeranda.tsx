@@ -156,7 +156,8 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
       if (!response.ok || !payload?.success) {
         throw new Error(payload?.error || payload?.message || "Gagal menyimpan KPI tim");
       }
-      setKpiFeedback({ type: "success", message: "KPI tim berhasil disimpan." });
+      setKpiRows((previousRows) => [...entries.map((entry) => ({ quantity: String(entry.quantity), unit: entry.unit, date: entry.date })), ...previousRows].slice(0, 6));
+      setKpiFeedback({ type: "success", message: "KPI tim berhasil disimpan. Progress leaderboard diperbarui." });
     } catch (err) {
       setKpiFeedback({ type: "error", message: err instanceof Error ? err.message : "Gagal menyimpan KPI tim" });
     } finally {
@@ -309,6 +310,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
   const hasCheckedOut = Boolean(todayRecord?.checkOutTime);
 
   const greetingTitle = getTimeOfDayGreeting();
+  const totalCetakan = kpiRows.reduce((sum, row) => sum + Number(row.quantity || 0), 0);
 
   const quickActions = [
     { name: "Absensi Saya", path: "/dashboard/attendance", icon: Clock, bg: "var(--primary-light)", text: "var(--primary-dark)" },
@@ -353,6 +355,31 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
           {error}
         </div>
       )}
+
+      <section className="gamification-hub leader-quest-board" aria-labelledby="leader-quest-title">
+        <div>
+          <p className="eyebrow">Gamification</p>
+          <h2 id="leader-quest-title">Leader Quest Board</h2>
+          <p>Streak absensi, cetakan tim, dan cuti sehat.</p>
+        </div>
+        <div className="gamification-metrics" role="list">
+          <article className="gamification-badge gamification-badge-success" role="listitem">
+            <span>Daily Attendance</span>
+            <strong>{hasCheckedIn ? "1/1" : "0/1"}</strong>
+            <div className="progress-track" aria-label="Daily Attendance progress"><i style={{ width: hasCheckedIn ? "100%" : "0%" }} /></div>
+          </article>
+          <article className="gamification-badge gamification-badge-warning" role="listitem">
+            <span>Team Cetakan</span>
+            <strong>{totalCetakan}</strong>
+            <div className="progress-track" aria-label="Team Cetakan progress"><i style={{ width: `${Math.min(100, totalCetakan)}%` }} /></div>
+          </article>
+          <article className="gamification-badge gamification-badge-info" role="listitem">
+            <span>Leave Balance</span>
+            <strong>{leaveBalance?.available ?? 0}</strong>
+            <div className="progress-track" aria-label="Leave Balance progress"><i style={{ width: `${leaveBalance?.entitlement ? Math.round(((leaveBalance.available ?? 0) / leaveBalance.entitlement) * 100) : 0}%` }} /></div>
+          </article>
+        </div>
+      </section>
 
       {/* Primary Attendance Card */}
       <section className="card shadow-md overflow-hidden bg-gradient-to-br from-[#FFFDEB] to-white border border-[#FFECB3] p-5 relative" aria-labelledby="leader-attendance-card-title">

@@ -17,11 +17,20 @@ Additional available checks:
 
 ```bash
 npm run release:migrations
+npm run release:gates
 npm run e2e:public
 npm run e2e:staging
 npm run e2e:browsers
 BASE_URL=https://myprodusen.online npm run verify:live-routes
 ```
+
+## Gamification/theme release gates
+
+- Gamification release gate: `FEATURE_GAMIFICATION_ENABLED=true` or `NEXT_PUBLIC_FEATURE_GAMIFICATION_ENABLED=true` is blocked unless `GAMIFICATION_RELEASE_APPROVED=true` is set for a signed-off release.
+- Theme release gate: `THEME_EXPERIMENT_ENABLED=true` or `NEXT_PUBLIC_THEME_EXPERIMENT_ENABLED=true` is blocked unless `THEME_RELEASE_APPROVED=true` is set for a signed-off release.
+- QA must verify no payroll, attendance, leave, KPI, employee identifier, or private document data appears in gamified UI.
+- QA must verify MyProdusen yellow/black/white theme, responsive layout, contrast, and PWA `theme_color` remain aligned unless design approval exists.
+- `npm run release:check` includes `npm run release:gates`; failed gate means release is not ready.
 
 ## E2E And Live Test Commands
 
@@ -517,3 +526,16 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - KPI Cetak flow: Leader may input production count only for assigned team members, especially Karyawan Cetak. Employee sees only own KPI. KPI production can feed payroll bonus when linked to configured payroll rule.
 - Profile photo/avatar is private protected upload data. Users can update own avatar; Superadmin employee list must refresh near-realtime and show protected avatar or initials fallback.
 - Production payroll deductions and multipliers must be reviewed and approved by company policy/legal owner before production payroll use.
+
+
+## Gamification & Performance Score Update
+
+- Performance score module adds Attendance Score (30%), KPI Score (50%), and Leader Score (20%) defaults; configuration must total 100 or return `GAMIFICATION_WEIGHT_INVALID`.
+- New active Employee and Leader start from score 100 and can maintain annual 365-day performance for configurable raise projection tiers.
+- Default Platinum projection: score 100 maintained 365 days = +10%, with disclaimer: “Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.”
+- Badge service definitions cover Streak 7 Hari, Streak 30 Hari, KPI Perfect Month, Zero Alpha Quarter, Top Performer, and Consistent Gold. Badges are backend-calculated, not fake frontend state.
+- Leader Score is limited to assigned team members, disallows self-scoring, requires score 0–100 plus notes minimum 10 characters, and queues anomalies for score < 40 or score delta > 30.
+- Superadmin controls periods, score weights, raise tiers, anomalies, score overrides with audit reason, reports, and company distribution.
+- Theme customization stores sanitized hex colors only, validates contrast, emits safe CSS tokens, audits changes, and resets to default MyProdusen yellow/cream/charcoal/red identity.
+- Private performance/theme APIs use no-store responses; payroll/attendance/security actions must not use fake optimistic success.
+- UX includes skeleton states, safe progress states (Memvalidasi GPS…, Mengaktifkan kamera…, Menyimpan data…, Menghitung payroll…, Memperbarui skor…), double-submit prevention, and input preservation on error.

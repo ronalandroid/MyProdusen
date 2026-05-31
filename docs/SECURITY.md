@@ -128,6 +128,14 @@ Triggered by:
 - Attendance selfies are served only through protected API endpoints with ownership/RBAC checks.
 - Payroll endpoints must enforce employee/leader-own access and Superadmin full access server-side. `ADMIN_HR` and `SUPERVISOR` must be denied.
 - PDF report page and API remain Superadmin-only; non-Superadmin access must be tested after deploy.
+
+## Gamification/theme release gates
+
+- Gamification must stay disabled by default and must not expose private HR data, payroll, attendance, leave, KPI, employee identifiers, document names, upload paths, selfie paths, or rank/score data that can identify another employee without RBAC approval.
+- Theme experiments must stay disabled by default and must not weaken auth, RBAC, CSRF, private cache, upload, or protected route controls.
+- `scripts/check-release-gates.mjs` blocks enabled gamification flags unless `GAMIFICATION_RELEASE_APPROVED=true` is present.
+- `scripts/check-release-gates.mjs` blocks theme experiment flags unless `THEME_RELEASE_APPROVED=true` is present.
+- Release approval env keys are approval markers only; they do not replace server-side authorization tests.
 - Secrets live only in Coolify/password manager: never commit `.env`, database dumps, upload archives, Resend keys, JWT secrets, or payroll exports.
 - Protected API responses for selfies, PDF reports, payroll exports, and health checks must use private/no-store cache where sensitive.
 - Production smoke test must verify unauthorized employee-to-employee, legacy-role, and public upload access denial.
@@ -365,3 +373,16 @@ Feature flags may hide navigation and entry points, but backend RBAC remains man
 - KPI Cetak flow: Leader may input production count only for assigned team members, especially Karyawan Cetak. Employee sees only own KPI. KPI production can feed payroll bonus when linked to configured payroll rule.
 - Profile photo/avatar is private protected upload data. Users can update own avatar; Superadmin employee list must refresh near-realtime and show protected avatar or initials fallback.
 - Production payroll deductions and multipliers must be reviewed and approved by company policy/legal owner before production payroll use.
+
+
+## Gamification & Performance Score Update
+
+- Performance score module adds Attendance Score (30%), KPI Score (50%), and Leader Score (20%) defaults; configuration must total 100 or return `GAMIFICATION_WEIGHT_INVALID`.
+- New active Employee and Leader start from score 100 and can maintain annual 365-day performance for configurable raise projection tiers.
+- Default Platinum projection: score 100 maintained 365 days = +10%, with disclaimer: “Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.”
+- Badge service definitions cover Streak 7 Hari, Streak 30 Hari, KPI Perfect Month, Zero Alpha Quarter, Top Performer, and Consistent Gold. Badges are backend-calculated, not fake frontend state.
+- Leader Score is limited to assigned team members, disallows self-scoring, requires score 0–100 plus notes minimum 10 characters, and queues anomalies for score < 40 or score delta > 30.
+- Superadmin controls periods, score weights, raise tiers, anomalies, score overrides with audit reason, reports, and company distribution.
+- Theme customization stores sanitized hex colors only, validates contrast, emits safe CSS tokens, audits changes, and resets to default MyProdusen yellow/cream/charcoal/red identity.
+- Private performance/theme APIs use no-store responses; payroll/attendance/security actions must not use fake optimistic success.
+- UX includes skeleton states, safe progress states (Memvalidasi GPS…, Mengaktifkan kamera…, Menyimpan data…, Menghitung payroll…, Memperbarui skor…), double-submit prevention, and input preservation on error.

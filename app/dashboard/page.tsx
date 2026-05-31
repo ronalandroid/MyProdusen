@@ -203,10 +203,46 @@ export default function DashboardPage() {
         </section>
       )}
 
+      <SuperadminGamificationHub stats={stats} insights={stats.superadminInsights} />
+
       <SuperadminQuickActions stats={stats} />
 
       {stats.superadminInsights && <SuperadminMonitoring insights={stats.superadminInsights} />}
     </div>
+  );
+}
+
+function SuperadminGamificationHub({ stats, insights }: { stats: DashboardStats; insights?: SuperadminInsights }) {
+  const attendancePercent = Math.round(stats.todayAttendance.percentage || 0);
+  const kpiScore = insights?.kpiOverview.averageScore ?? 0;
+  const healthyTeams = insights?.divisionMonitoring.filter((division) => division.attendanceRate >= 90).length ?? 0;
+  const totalTeams = insights?.divisionMonitoring.length ?? 0;
+
+  return (
+    <section className="gamification-hub animate-slide-up" aria-labelledby="superadmin-gamification-title" style={{ animationDelay: "160ms" }}>
+      <div>
+        <p className="eyebrow">Gamification</p>
+        <h2 id="superadmin-gamification-title">Company Quest Board</h2>
+        <p>Progress absensi, KPI, dan kesehatan divisi hari ini.</p>
+      </div>
+      <div className="gamification-metrics" role="list">
+        <GamificationBadge label="Attendance Streak" value={`${attendancePercent}%`} progress={attendancePercent} tone="success" />
+        <GamificationBadge label="KPI Power" value={`${kpiScore}`} progress={Math.min(100, kpiScore)} tone="warning" />
+        <GamificationBadge label="Division Shield" value={`${healthyTeams}/${totalTeams}`} progress={totalTeams ? Math.round((healthyTeams / totalTeams) * 100) : 0} tone="info" />
+      </div>
+    </section>
+  );
+}
+
+function GamificationBadge({ label, value, progress, tone }: { label: string; value: string; progress: number; tone: "success" | "warning" | "info" }) {
+  return (
+    <article className={`gamification-badge gamification-badge-${tone}`} role="listitem">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <div className="progress-track" aria-label={`${label} progress ${progress}%`}>
+        <i style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
+      </div>
+    </article>
   );
 }
 

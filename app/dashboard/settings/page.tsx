@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Calendar, Clock, Plus, Save, Settings, ShieldAlert, Trash2 } from "lucide-react";
+import { AlertTriangle, Calendar, Clock, Palette, Plus, Save, Settings, ShieldAlert, Trash2 } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth-client";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
@@ -40,6 +40,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [themeColor, setThemeColor] = useState("#FFC107");
 
   // Policy state
   const [policies, setPolicies] = useState<Policy[]>([]);
@@ -161,6 +162,27 @@ export default function SettingsPage() {
           <p>Kelola parameter absensi, potongan terlambat, radius geofence, dan libur kerja.</p>
         </div>
       </header>
+
+      <section className="card p-5 mb-5 theme-color-wheel-panel" aria-labelledby="theme-color-wheel-title">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">Theme</p>
+            <h2 id="theme-color-wheel-title" className="text-base sm:text-lg font-extrabold">Color Wheel</h2>
+            <p className="text-xs text-[var(--text-secondary)]">Preview warna brand sebelum deploy.</p>
+          </div>
+          <Palette size={22} className="text-[var(--primary-dark)]" aria-hidden="true" />
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-[160px_1fr] items-center">
+          <label className="theme-color-wheel" aria-label="Theme color wheel">
+            <input type="color" value={themeColor} onChange={(event) => setThemeColor(event.target.value)} />
+            <span style={{ backgroundColor: themeColor }} />
+          </label>
+          <div className="theme-color-preview" style={{ borderColor: themeColor }}>
+            <strong style={{ color: themeColor }}>{themeColor.toUpperCase()}</strong>
+            <p>Accent badge, tombol utama, dan progress bar memakai token warna sama.</p>
+          </div>
+        </div>
+      </section>
 
       {/* Tabs */}
       <div className="flex gap-2 p-1 rounded-2xl bg-gray-100 mb-5 max-w-md">

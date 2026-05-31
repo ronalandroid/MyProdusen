@@ -1998,30 +1998,16 @@ Leave balance changes must be ledger-safe and append-only. Global or individual 
 
 Current status is GO for Coolify redeploy/staging UAT, not production signoff. Production signoff requires target DB migration, authenticated E2E, real-device GPS+selfie validation, protected avatar/selfie live authorization checks, and backup/restore drill.
 
-## Talenta-Inspired Lean HRIS Scope — 2026-05-24
-
-MyProdusen uses Mekari Talenta as an HRIS benchmark, but does not clone Talenta. Scope stays focused on Produsen Dimsum Medan factory operations: Superadmin control/reporting, Leader KPI input, Employee self-service, GPS+selfie attendance, leave, KPI production, payroll bonus, PDF reporting, notifications, PWA, protected uploads, and audit logs.
-
-### Keep / Upgrade
-
-- Employee self-service, employee profile, attendance GPS+selfie, shift/work location, leave approval, KPI/performance, payroll/payslip, payroll status notification, organization/team/position management, workflow approval, analytics dashboard, PDF report, PWA/mobile experience, protected avatar/selfie/document storage, and audit logs.
-
-### Hide / Feature Flag Off
-
-- Recruitment/ATS, LMS/learning, employee survey, reimbursement, business travel, asset management, AI CV scoring, earned wage access, fingerprint integration, full BPJS/PPh21 automation, announcement module, document management, and overtime stay hidden by default unless explicitly enabled.
-- Hidden modules are not deleted and no data/table is dropped. They are reversible by feature flags and must not clutter main navigation.
 
 
+## Gamification & Performance Score Update
 
-## Production Attendance, KPI, Payroll Realtime Sync — 2026-05-26
-
-- Attendance priority flow is GPS + realtime selfie for `EMPLOYEE` and `LEADER`; `SUPERADMIN` does not use normal employee selfie clock-in/out.
-- Official geofence default radius is 150 meters. Backend remains source of truth for distance, GPS accuracy, stale GPS rejection, selfie requirement, and inside/outside decision.
-- Attendance late payroll policy is configurable by Superadmin and must not be treated as irreversible legal/business law. Default policy: 1–15 minutes late deducts Rp5.000, 16–30 minutes late deducts Rp10.000, and more than 30 minutes late counts as half-day payroll with pay factor 0.5.
-- Shift start uses assigned active shift. Default 08:00 is a fallback reference only for policy defaults; production attendance should require assigned employee shift and show a clear Indonesian error when missing.
-- Payroll realtime sync can be ON/OFF globally through company policy and ON/OFF per payroll rule. Payroll rules may target company/division/team/employee, weekly or monthly periods, base salary, attendance policy, KPI target, bonus type, and bonus amount.
-- Payroll calculation includes attendance deductions, half-day impact, holiday multiplier, KPI production bonus, and manual adjustments. Approval/reject/paid/unpaid status changes require audit log and user notification.
-- Work calendar is configurable by Superadmin. Custom holidays such as Hari Buruh, Hari Pahlawan, Company Holiday, or Custom Libur Pabrik may use paid holiday multiplier; default holiday work multiplier is 2x when enabled by payroll rule.
-- KPI Cetak flow: Leader may input production count only for assigned team members, especially Karyawan Cetak. Employee sees only own KPI. KPI production can feed payroll bonus when linked to configured payroll rule.
-- Profile photo/avatar is private protected upload data. Users can update own avatar; Superadmin employee list must refresh near-realtime and show protected avatar or initials fallback.
-- Production payroll deductions and multipliers must be reviewed and approved by company policy/legal owner before production payroll use.
+- Performance score module adds Attendance Score (30%), KPI Score (50%), and Leader Score (20%) defaults; configuration must total 100 or return `GAMIFICATION_WEIGHT_INVALID`.
+- New active Employee and Leader start from score 100 and can maintain annual 365-day performance for configurable raise projection tiers.
+- Default Platinum projection: score 100 maintained 365 days = +10%, with disclaimer: “Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.”
+- Badge service definitions cover Streak 7 Hari, Streak 30 Hari, KPI Perfect Month, Zero Alpha Quarter, Top Performer, and Consistent Gold. Badges are backend-calculated, not fake frontend state.
+- Leader Score is limited to assigned team members, disallows self-scoring, requires score 0–100 plus notes minimum 10 characters, and queues anomalies for score < 40 or score delta > 30.
+- Superadmin controls periods, score weights, raise tiers, anomalies, score overrides with audit reason, reports, and company distribution.
+- Theme customization stores sanitized hex colors only, validates contrast, emits safe CSS tokens, audits changes, and resets to default MyProdusen yellow/cream/charcoal/red identity.
+- Private performance/theme APIs use no-store responses; payroll/attendance/security actions must not use fake optimistic success.
+- UX includes skeleton states, safe progress states (Memvalidasi GPS…, Mengaktifkan kamera…, Menyimpan data…, Menghitung payroll…, Memperbarui skor…), double-submit prevention, and input preservation on error.

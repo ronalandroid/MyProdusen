@@ -121,6 +121,97 @@ body {
   width: 100%;
 }
 
+.skeleton-card,
+.skeleton-line,
+.skeleton-avatar {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #f3f4f6 25%, #fff7d6 37%, #f3f4f6 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+.gamification-hub {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-2xl);
+  background: radial-gradient(circle at top left, var(--primary-light), var(--bg-card));
+  box-shadow: var(--shadow-sm);
+}
+
+.gamification-metrics {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.gamification-badge {
+  display: flex;
+  min-height: 104px;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-radius: var(--radius-xl);
+  padding: 0.875rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.gamification-badge strong { font-size: 1.5rem; line-height: 1; }
+.gamification-badge span { font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+.gamification-badge-success { border-color: var(--success-border); }
+.gamification-badge-warning { border-color: var(--warning-border); }
+.gamification-badge-info { border-color: var(--info-border); }
+
+.progress-track {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--bg-hover);
+}
+
+.progress-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), var(--success));
+  transition: width var(--transition-base);
+}
+
+.theme-color-wheel input {
+  width: 132px;
+  height: 132px;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+  cursor: pointer;
+}
+
+.theme-color-wheel span {
+  display: block;
+  width: 44px;
+  height: 44px;
+  margin-top: -88px;
+  margin-left: 44px;
+  border-radius: 9999px;
+  border: 3px solid white;
+  pointer-events: none;
+}
+
+.theme-color-preview {
+  border: 2px solid;
+  border-radius: var(--radius-xl);
+  padding: 1rem;
+}
+
 @keyframes landing-rise-in {
   from {
     opacity: 0;

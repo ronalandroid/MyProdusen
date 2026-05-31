@@ -1345,6 +1345,134 @@ export const payrollCalculationHistory = pgTable('PayrollCalculationHistory', {
   payrollPeriodIdIdx: index('PayrollCalculationHistory_payrollPeriodId_idx').on(table.payrollPeriodId),
 }));
 
+export const performancePeriods = pgTable('PerformancePeriod', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  startDate: date('startDate').notNull(),
+  endDate: date('endDate').notNull(),
+  status: text('status').default('OPEN').notNull(),
+  createdBy: text('createdBy'),
+  closedBy: text('closedBy'),
+  closedAt: timestamp('closedAt', { mode: 'date' }),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  statusIdx: index('PerformancePeriod_status_idx').on(table.status),
+  dateIdx: index('PerformancePeriod_date_idx').on(table.startDate, table.endDate),
+}));
+
+export const performanceScoreSnapshots = pgTable('PerformanceScoreSnapshot', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId').notNull(),
+  periodId: text('periodId'),
+  scoreDate: date('scoreDate').notNull(),
+  attendanceScore: real('attendanceScore').default(100).notNull(),
+  kpiScore: real('kpiScore').default(100).notNull(),
+  leaderScore: real('leaderScore').default(100).notNull(),
+  totalScore: real('totalScore').default(100).notNull(),
+  tier: text('tier').default('Platinum').notNull(),
+  explanation: text('explanation').notNull(),
+  sourceBreakdown: jsonb('sourceBreakdown').$type<Record<string, unknown>>(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  employeeDateIdx: uniqueIndex('PerformanceScoreSnapshot_employee_date_idx').on(table.employeeId, table.scoreDate),
+  periodIdx: index('PerformanceScoreSnapshot_period_idx').on(table.periodId),
+  totalScoreIdx: index('PerformanceScoreSnapshot_totalScore_idx').on(table.totalScore),
+}));
+
+export const performanceScoreSummaries = pgTable('PerformanceScoreSummary', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId').notNull().unique(),
+  currentScore: real('currentScore').default(100).notNull(),
+  attendanceScore: real('attendanceScore').default(100).notNull(),
+  kpiScore: real('kpiScore').default(100).notNull(),
+  leaderScore: real('leaderScore').default(100).notNull(),
+  tier: text('tier').default('Platinum').notNull(),
+  maintainedPerfectDays: integer('maintainedPerfectDays').default(0).notNull(),
+  projectedRaisePercent: real('projectedRaisePercent').default(0).notNull(),
+  lastCalculatedAt: timestamp('lastCalculatedAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  employeeIdx: index('PerformanceScoreSummary_employee_idx').on(table.employeeId),
+  scoreIdx: index('PerformanceScoreSummary_score_idx').on(table.currentScore),
+  tierIdx: index('PerformanceScoreSummary_tier_idx').on(table.tier),
+}));
+
+export const leaderScoreEntries = pgTable('LeaderScoreEntry', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId').notNull(),
+  leaderEmployeeId: text('leaderEmployeeId').notNull(),
+  score: integer('score').notNull(),
+  notes: text('notes').notNull(),
+  scoreDate: date('scoreDate').notNull(),
+  createdBy: text('createdBy').notNull(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  employeeDateIdx: index('LeaderScoreEntry_employee_date_idx').on(table.employeeId, table.scoreDate),
+  leaderIdx: index('LeaderScoreEntry_leader_idx').on(table.leaderEmployeeId),
+}));
+
+export const leaderScoreAnomalies = pgTable('LeaderScoreAnomaly', {
+  id: text('id').primaryKey(),
+  leaderScoreEntryId: text('leaderScoreEntryId').notNull(),
+  employeeId: text('employeeId').notNull(),
+  type: text('type').notNull(),
+  status: text('status').default('PENDING').notNull(),
+  reviewedBy: text('reviewedBy'),
+  reviewNote: text('reviewNote'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  reviewedAt: timestamp('reviewedAt', { mode: 'date' }),
+}, (table) => ({
+  statusIdx: index('LeaderScoreAnomaly_status_idx').on(table.status),
+  employeeIdx: index('LeaderScoreAnomaly_employee_idx').on(table.employeeId),
+}));
+
+export const badgeDefinitions = pgTable('BadgeDefinition', {
+  id: text('id').primaryKey(),
+  code: text('code').notNull().unique(),
+  name: text('name').notNull(),
+  description: text('description'),
+  isActive: boolean('isActive').default(true).notNull(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  codeIdx: index('BadgeDefinition_code_idx').on(table.code),
+}));
+
+export const employeeBadges = pgTable('EmployeeBadge', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId').notNull(),
+  badgeDefinitionId: text('badgeDefinitionId').notNull(),
+  awardedAt: timestamp('awardedAt', { mode: 'date' }).defaultNow().notNull(),
+  sourceSnapshotId: text('sourceSnapshotId'),
+}, (table) => ({
+  employeeBadgeIdx: uniqueIndex('EmployeeBadge_employee_badge_idx').on(table.employeeId, table.badgeDefinitionId),
+  employeeIdx: index('EmployeeBadge_employee_idx').on(table.employeeId),
+}));
+
+export const companyThemeSettings = pgTable('CompanyThemeSetting', {
+  id: text('id').primaryKey(),
+  primaryColor: text('primaryColor').default('#f6c343').notNull(),
+  secondaryColor: text('secondaryColor').default('#111827').notNull(),
+  accentColor: text('accentColor').default('#dc2626').notNull(),
+  safeTokens: jsonb('safeTokens').$type<Record<string, string>>(),
+  updatedBy: text('updatedBy'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+});
+
+export const themeChangeAudits = pgTable('ThemeChangeAudit', {
+  id: text('id').primaryKey(),
+  themeSettingId: text('themeSettingId').notNull(),
+  changedBy: text('changedBy').notNull(),
+  oldValue: jsonb('oldValue').$type<Record<string, unknown>>(),
+  newValue: jsonb('newValue').$type<Record<string, unknown>>(),
+  reason: text('reason').notNull(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  themeIdx: index('ThemeChangeAudit_theme_idx').on(table.themeSettingId),
+  changedByIdx: index('ThemeChangeAudit_changedBy_idx').on(table.changedBy),
+}));
+
 // Relations
 export const kpiMetricsRelations = relations(kpiMetrics, ({ many }) => ({
   targets: many(kpiTargets),
