@@ -467,11 +467,11 @@ MyProdusen may use Mekari Talenta as a benchmark, but implementation must remain
 
 ## Gamification & Performance Score Update
 
-- Performance score module adds Attendance Score (30%), KPI Score (50%), and Leader Score (20%) defaults; configuration must total 100 or return `GAMIFICATION_WEIGHT_INVALID`.
+- Performance score module adds Attendance Score (30%), KPI Score (50%), and Culture & Discipline Score / Penilaian Perilaku Kerja (20%) defaults; configuration must total 100 or return `GAMIFICATION_WEIGHT_INVALID`.
 - New active Employee and Leader start from score 100 and can maintain annual 365-day performance for configurable raise projection tiers.
 - Default Platinum projection: score 100 maintained 365 days = +10%, with disclaimer: “Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.”
 - Badge service definitions cover Streak 7 Hari, Streak 30 Hari, KPI Perfect Month, Zero Alpha Quarter, Top Performer, and Consistent Gold. Badges are backend-calculated, not fake frontend state.
-- Leader Score is limited to assigned team members, disallows self-scoring, requires score 0–100 plus notes minimum 10 characters, and queues anomalies for score < 40 or score delta > 30.
+- Culture & Discipline Score / Penilaian Perilaku Kerja is limited to assigned team members, disallows self-scoring, requires score 0–100 plus notes minimum 10 characters, and queues anomalies for score < 40 or score delta > 30.
 - Superadmin controls periods, score weights, raise tiers, anomalies, score overrides with audit reason, reports, and company distribution.
 - Theme customization stores sanitized hex colors only, validates contrast, emits safe CSS tokens, audits changes, and resets to default MyProdusen yellow/cream/charcoal/red identity.
 - Private performance/theme APIs use no-store responses; payroll/attendance/security actions must not use fake optimistic success.

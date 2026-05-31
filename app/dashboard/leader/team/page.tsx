@@ -118,7 +118,7 @@ export default function LeaderTeamPage() {
 
     setIsSubmitting(true);
     setSubmitFeedback(null);
-    setProgressState("Memproses Leader Score…");
+    setProgressState("Memproses Penilaian Perilaku…");
 
     try {
       const score = Number(scoreInput);
@@ -143,12 +143,12 @@ export default function LeaderTeamPage() {
       const payload = await res.json().catch(() => null);
 
       if (!res.ok || !payload?.success) {
-        throw new Error(payload?.error || "Gagal menyimpan Leader Score.");
+        throw new Error(payload?.error || "Gagal menyimpan Penilaian Perilaku.");
       }
 
       setSubmitFeedback({
         type: "success",
-        message: payload.message || "Leader Score berhasil disimpan!",
+        message: payload.message || "Penilaian Perilaku berhasil disimpan!",
       });
 
       // Reload to reflect new scores
@@ -162,7 +162,7 @@ export default function LeaderTeamPage() {
     } catch (err) {
       setSubmitFeedback({
         type: "error",
-        message: err instanceof Error ? err.message : "Gagal menyimpan Leader Score.",
+        message: err instanceof Error ? err.message : "Gagal menyimpan Penilaian Perilaku.",
       });
     } finally {
       setIsSubmitting(false);
@@ -289,7 +289,7 @@ export default function LeaderTeamPage() {
                           className="btn btn-primary btn-sm rounded-xl font-bold flex items-center gap-1 min-h-[36px]"
                         >
                           <ClipboardList size={13} />
-                          <span>Input Leader Score</span>
+                          <span>Input Penilaian Perilaku</span>
                         </button>
                       </div>
                     </article>
@@ -362,7 +362,7 @@ export default function LeaderTeamPage() {
           <div className="bg-white rounded-3xl border border-[var(--border-color)] shadow-2xl p-5 sm:p-6 w-full max-w-md flex flex-col gap-4 animate-scale-in relative">
             <div className="border-b border-[var(--border-color)] pb-3">
               <h2 className="text-base sm:text-lg font-black text-[var(--text-primary)]">
-                Leader Score: {activeScoringMember.fullName}
+                Penilaian Perilaku: {activeScoringMember.fullName}
               </h2>
               <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-semibold">
                 Skor leader saat ini: {activeScoringMember.leaderScore ?? 100}

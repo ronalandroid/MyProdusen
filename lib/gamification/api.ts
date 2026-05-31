@@ -7,8 +7,9 @@ import { requireAuth } from '@/lib/middleware';
 import { errorResponse, forbiddenResponse, successResponse, unauthorizedResponse } from '@/lib/utils/response';
 import {
   DEFAULT_GAMIFICATION_SETTINGS,
+  calculateCultureDisciplineScore,
   calculatePerformanceScore,
-  detectLeaderScoreAnomaly,
+  detectCultureScoreAnomaly,
   mapRaiseTier,
   sanitizeThemeInput,
   validateGamificationWeights,
@@ -44,7 +45,7 @@ export async function getPerformanceMe(request: NextRequest) {
     if (!employee) return errorResponse('Data karyawan tidak ditemukan', 404);
     const [summary] = await db.select().from(performanceScoreSummaries).where(eq(performanceScoreSummaries.employeeId, employee.id)).limit(1);
     const score = summary ?? { employeeId: employee.id, currentScore: 100, attendanceScore: 100, kpiScore: 100, leaderScore: 100, tier: 'Platinum', maintainedPerfectDays: 0, projectedRaisePercent: 0 };
-    return successResponse({ ...score, raiseProjectionDisclaimer: 'Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.' });
+    return successResponse({ ...score, cultureScore: score.leaderScore, scoreLabels: { attendance: 'Attendance 30%', kpi: 'KPI Produksi 50%', culture: 'Perilaku Kerja 20%' }, cultureExplanation: 'Perilaku Kerja dinilai dari kebersihan, disiplin, kerapian, kepatuhan SOP, kerja sama tim, dan tanggung jawab.', raiseProjectionDisclaimer: 'Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.' });
   } catch (error: any) { return handleError(error); }
 }
 
@@ -151,33 +152,56 @@ export async function patchTheme(request: NextRequest) {
   } catch (error: any) { return error.message === 'FORBIDDEN' ? forbiddenResponse() : handleError(error); }
 }
 
-export async function leaderScore(request: NextRequest) {
+export async function cultureScore(request: NextRequest) {
   try {
     const user = await requireAuth(request);
-    if (!isLeader(user.role)) return forbiddenResponse();
-    const leader = await currentEmployee(user.userId);
-    if (!leader) return errorResponse('Data leader tidak ditemukan', 404);
+    if (!isLeader(user.role) && !isSuperadmin(user.role)) return forbiddenResponse();
+    const reviewer = await currentEmployee(user.userId);
+    if (!reviewer && isLeader(user.role)) return errorResponse('Data leader tidak ditemukan', 404);
     const body = await request.json();
     const [target] = await db.select().from(employees).where(eq(employees.id, body.employeeId)).limit(1);
-    if (!target || target.supervisorId !== leader.id) return forbiddenResponse('Leader hanya dapat menilai anggota tim sendiri');
-    if (target.id === leader.id) return forbiddenResponse('Leader tidak dapat menilai diri sendiri');
-    const score = Number(body.score);
-    const notes = String(body.notes || '').trim();
-    if (!Number.isInteger(score) || score < 0 || score > 100 || notes.length < 10) return errorResponse('Score 0-100 dan notes minimal 10 karakter', 422);
+    if (!target) return errorResponse('Data karyawan tidak ditemukan', 404);
+    if (isLeader(user.role)) {
+      if (!reviewer || target.supervisorId !== reviewer.id) return forbiddenResponse('Leader hanya dapat menilai anggota tim sendiri');
+      if (target.id === reviewer.id) return forbiddenResponse('Leader tidak dapat menilai diri sendiri');
+      if (body.overrideFinal) return forbiddenResponse('Leader tidak dapat override nilai final Superadmin');
+    }
     const settings = await readGamificationSettings();
+    const score = calculateCultureDisciplineScore({ score: body.score, subcriteriaEnabled: Boolean(body.subcriteriaEnabled ?? settings.cultureSubcriteriaEnabled), cleanlinessScore: body.cleanlinessScore, disciplineScore: body.disciplineScore, punctualityBehaviorScore: body.punctualityBehaviorScore, neatnessScore: body.neatnessScore, sopComplianceScore: body.sopComplianceScore, teamworkScore: body.teamworkScore, responsibilityScore: body.responsibilityScore, attitudeScore: body.attitudeScore });
+    const notes = String(body.notes || '').trim();
+    if (!Number.isInteger(score) || score < 0 || score > 100 || notes.length < 10) return errorResponse('Penilaian perilaku 0-100 dan notes minimal 10 karakter', 422);
+    if (body.editingPrevious && String(body.reason || '').trim().length < 10) return errorResponse('Alasan edit penilaian perilaku minimal 10 karakter', 422);
     const scoreDate = body.scoreDate ?? new Date().toISOString().slice(0, 10);
     if (!validateRetroactiveScoreDate(scoreDate, settings.retroactiveLeaderScoreDays ?? 7)) return errorResponse('Tanggal score melewati batas retroaktif', 422);
     const [activePeriod] = await db.select().from(performancePeriods).where(eq(performancePeriods.status, 'ACTIVE')).limit(1);
     const [previous] = await db.select().from(leaderScoreEntries).where(eq(leaderScoreEntries.employeeId, target.id)).orderBy(desc(leaderScoreEntries.createdAt)).limit(1);
-    const [entry] = await db.insert(leaderScoreEntries).values({ id: nanoid(), employeeId: target.id, leaderEmployeeId: leader.id, score, notes, scoreDate, periodId: activePeriod?.id, periodType: settings.leaderScorePeriodType ?? 'MONTHLY', createdBy: user.userId }).returning();
-    const anomalies = detectLeaderScoreAnomaly({ score, previousScore: previous?.score });
+    const subcriteria = body.subcriteriaEnabled ? { cleanlinessScore: body.cleanlinessScore, disciplineScore: body.disciplineScore, punctualityBehaviorScore: body.punctualityBehaviorScore, neatnessScore: body.neatnessScore, sopComplianceScore: body.sopComplianceScore, teamworkScore: body.teamworkScore, responsibilityScore: body.responsibilityScore, attitudeScore: body.attitudeScore } : undefined;
+    const [entry] = await db.insert(leaderScoreEntries).values({ id: nanoid(), employeeId: target.id, leaderEmployeeId: reviewer?.id ?? target.id, score, notes, scoreDate, periodId: body.periodId ?? activePeriod?.id, periodType: settings.leaderScorePeriodType ?? 'MONTHLY', scoreType: 'CULTURE_DISCIPLINE', scorerRole: user.role, subcriteria, isFinal: isSuperadmin(user.role), reason: body.reason, createdBy: user.userId }).returning();
+    const anomalies = detectCultureScoreAnomaly({ score, previousScore: previous?.score });
     for (const type of anomalies) await db.insert(leaderScoreAnomalies).values({ id: nanoid(), leaderScoreEntryId: entry.id, employeeId: target.id, type });
     if (anomalies.length) {
       const superadmins = await db.select({ id: users.id }).from(users).where(eq(users.role, 'SUPERADMIN'));
-      for (const admin of superadmins) await db.insert(notifications).values({ id: nanoid(), userId: admin.id, title: 'Anomali Leader Score', message: `Skor ${target.fullName} perlu review Superadmin.`, type: 'PERFORMANCE_ANOMALY' });
+      for (const admin of superadmins) await db.insert(notifications).values({ id: nanoid(), userId: admin.id, title: 'Anomali Penilaian Perilaku', message: 'Anomali penilaian perilaku terdeteksi.', type: 'PERFORMANCE_ANOMALY' });
     }
-    await logAudit(user.userId, 'CREATE', 'LeaderScoreEntry', entry.id, undefined, { ...entry, anomalies }, request);
-    return successResponse({ entry, anomalies }, anomalies.length ? 'Skor tersimpan dan masuk antrian review' : 'Skor leader tersimpan');
+    const auditAction = body.overrideFinal ? 'CULTURE_SCORE_OVERRIDDEN' : body.editingPrevious ? 'CULTURE_SCORE_UPDATED' : 'CULTURE_SCORE_SUBMITTED';
+    await logAudit(user.userId, auditAction, 'LeaderScoreEntry', entry.id, undefined, { ...entry, cultureScore: score, anomalies, reason: body.reason }, request);
+    return successResponse({ entry: { ...entry, cultureScore: score, cultureLabel: 'Penilaian Perilaku Kerja' }, anomalies }, anomalies.length ? 'Penilaian perilaku tersimpan dan masuk antrian review' : 'Penilaian perilaku tersimpan');
+  } catch (error: any) { return handleError(error); }
+}
+
+export const leaderScore = cultureScore;
+
+export async function getCultureScores(request: NextRequest) {
+  try {
+    const user = await requireAuth(request);
+    if (isSuperadmin(user.role)) return successResponse(await db.select().from(leaderScoreEntries).where(eq(leaderScoreEntries.scoreType, 'CULTURE_DISCIPLINE')).orderBy(desc(leaderScoreEntries.createdAt)).limit(200));
+    const employee = await currentEmployee(user.userId);
+    if (!employee) return errorResponse('Data karyawan tidak ditemukan', 404);
+    if (isLeader(user.role)) {
+      const rows = await db.select().from(leaderScoreEntries).innerJoin(employees, eq(leaderScoreEntries.employeeId, employees.id)).where(and(eq(leaderScoreEntries.scoreType, 'CULTURE_DISCIPLINE'), eq(employees.supervisorId, employee.id))).orderBy(desc(leaderScoreEntries.createdAt)).limit(100);
+      return successResponse(rows);
+    }
+    return successResponse(await db.select().from(leaderScoreEntries).where(and(eq(leaderScoreEntries.scoreType, 'CULTURE_DISCIPLINE'), eq(leaderScoreEntries.employeeId, employee.id))).orderBy(desc(leaderScoreEntries.createdAt)).limit(25));
   } catch (error: any) { return handleError(error); }
 }
 

@@ -377,11 +377,11 @@ Feature flags may hide navigation and entry points, but backend RBAC remains man
 
 ## Gamification & Performance Score Update
 
-- Performance score module adds Attendance Score (30%), KPI Score (50%), and Leader Score (20%) defaults; configuration must total 100 or return `GAMIFICATION_WEIGHT_INVALID`.
+- Performance score module adds Attendance Score (30%), KPI Score (50%), and Culture & Discipline Score / Penilaian Perilaku Kerja (20%) defaults; configuration must total 100 or return `GAMIFICATION_WEIGHT_INVALID`.
 - New active Employee and Leader start from score 100 and can maintain annual 365-day performance for configurable raise projection tiers.
 - Default Platinum projection: score 100 maintained 365 days = +10%, with disclaimer: “Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.”
 - Badge service definitions cover Streak 7 Hari, Streak 30 Hari, KPI Perfect Month, Zero Alpha Quarter, Top Performer, and Consistent Gold. Badges are backend-calculated, not fake frontend state.
-- Leader Score is limited to assigned team members, disallows self-scoring, requires score 0–100 plus notes minimum 10 characters, and queues anomalies for score < 40 or score delta > 30.
+- Culture & Discipline Score / Penilaian Perilaku Kerja is limited to assigned team members, disallows self-scoring, requires score 0–100 plus notes minimum 10 characters, and queues anomalies for score < 40 or score delta > 30.
 - Superadmin controls periods, score weights, raise tiers, anomalies, score overrides with audit reason, reports, and company distribution.
 - Theme customization stores sanitized hex colors only, validates contrast, emits safe CSS tokens, audits changes, and resets to default MyProdusen yellow/cream/charcoal/red identity.
 - Private performance/theme APIs use no-store responses; payroll/attendance/security actions must not use fake optimistic success.
@@ -396,3 +396,15 @@ Feature flags may hide navigation and entry points, but backend RBAC remains man
 - Active Employee/Leader score baseline remains 100 for the active period; 365 days at average score 100 projects +10% and remains an estimate, not final payroll commitment.
 - Badge service is idempotent and avoids duplicate awards. `scripts/run-gamification-badges.mjs` is a manual hook; production worker must call the service with real attendance/KPI/alpha/ranking aggregation before marking automated badge runs complete.
 - Score override, config/theme changes, exports, leader score submissions, and period state changes require audit trails; Leader scope is own team only.
+
+## Culture & Discipline Score Update
+- Old user-facing "Leader Score" label is now "Culture & Discipline Score" / "Penilaian Perilaku Kerja".
+- Legacy `LeaderScoreEntry` storage remains for backward compatibility; no destructive rename.
+- Formula: Attendance 30% + KPI Produksi 50% + Perilaku Kerja 20%.
+- `GAMIFICATION_WEIGHT_CULTURE=20` is primary; `GAMIFICATION_WEIGHT_LEADER` remains legacy alias fallback.
+- Superadmin can input/edit Culture & Discipline Score for any Employee/Leader and final score has priority by default (`CULTURE_SCORE_SUPERADMIN_PRIORITY=true`).
+- Leader can input only assigned team members, cannot score self, cannot score outside team, cannot see team salary projection amounts, and cannot override Superadmin final score.
+- Advanced subcriteria can evaluate kebersihan, disiplin, ketepatan waktu perilaku, kerapian, kepatuhan SOP, kerja sama tim, tanggung jawab, and optional attitude.
+- All submit/update/override actions require audit log: `CULTURE_SCORE_SUBMITTED`, `CULTURE_SCORE_UPDATED`, `CULTURE_SCORE_OVERRIDDEN`.
+- Employee sees transparent score breakdown with Perilaku Kerja explanation.
+- Preferred API: `/api/performance/culture-score`; legacy `/api/leader/performance/leader-score` remains alias.

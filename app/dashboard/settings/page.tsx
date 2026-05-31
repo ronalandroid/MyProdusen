@@ -46,9 +46,12 @@ type GamificationConfig = {
   weights: {
     attendance: number;
     kpi: number;
+    culture?: number;
     leader: number;
   };
   retroactiveLeaderScoreDays: number;
+  cultureScoreSuperadminPriority?: boolean;
+  cultureSubcriteriaEnabled?: boolean;
 };
 
 type ThemeConfig = {
@@ -96,8 +99,10 @@ export default function SettingsPage() {
 
   // Gamification Config state
   const [gamificationConfig, setGamificationConfig] = useState<GamificationConfig>({
-    weights: { attendance: 30, kpi: 50, leader: 20 },
+    weights: { attendance: 30, kpi: 50, culture: 20, leader: 20 },
     retroactiveLeaderScoreDays: 7,
+    cultureScoreSuperadminPriority: true,
+    cultureSubcriteriaEnabled: false,
   });
   const [periods, setPeriods] = useState<PerformancePeriod[]>([]);
   const [newPeriodName, setNewPeriodName] = useState("");
@@ -848,7 +853,7 @@ export default function SettingsPage() {
                 </label>
 
                 <label className="flex flex-col gap-1.5 text-xs font-bold text-[var(--text-primary)]">
-                  Leader Score (%)
+                  Perilaku Kerja (%)
                   <input
                     type="number"
                     min="0"
@@ -879,7 +884,7 @@ export default function SettingsPage() {
               )}
 
               <label className="flex flex-col gap-1.5 text-xs font-bold text-[var(--text-primary)] border-t border-gray-100 pt-4">
-                Batas Hari Retroaktif Leader Score
+                Batas Hari Retroaktif Penilaian Perilaku
                 <input
                   type="number"
                   min="1"
@@ -1004,7 +1009,7 @@ export default function SettingsPage() {
               <ul className="text-xs leading-relaxed text-[var(--text-secondary)] list-disc list-inside space-y-1">
                 <li><strong>Absensi:</strong> Dihitung otomatis dari riwayat clock-in/out.</li>
                 <li><strong>KPI Cetak:</strong> Diinput bulanan/harian oleh Leader.</li>
-                <li><strong>Leader Score:</strong> Ulasan subjektif bulanan dari atasan langsung.</li>
+                <li><strong>Penilaian Perilaku:</strong> Ulasan subjektif bulanan dari atasan langsung.</li>
               </ul>
             </div>
           </div>

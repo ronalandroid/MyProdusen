@@ -16,7 +16,7 @@ describe('Gamification, Theme, and Perceived-Speed UX UI safeguards', () => {
     // Breakdown
     expect(employee).toContain('Kehadiran (Bobot 30%)');
     expect(employee).toContain('KPI Cetak (Bobot 50%)');
-    expect(employee).toContain('Leader Score (Bobot 20%)');
+    expect(employee).toContain('Perilaku Kerja (Bobot 20%)');
 
     // Raise projection banner & message
     expect(employee).toContain('Proyeksi Kenaikan Gaji');
@@ -39,7 +39,7 @@ describe('Gamification, Theme, and Perceived-Speed UX UI safeguards', () => {
 
   it('leader team management includes score inputs, anomaly warnings, and leaderboard', () => {
     // Leader score inputs
-    expect(leader).toContain('Input Leader Score');
+    expect(leader).toContain('Input Penilaian Perilaku');
     expect(leader).toContain('Score:');
     
     // Notes validation
@@ -74,7 +74,7 @@ describe('Gamification, Theme, and Perceived-Speed UX UI safeguards', () => {
     expect(dashboard).toContain('Karyawan Berisiko');
     
     // Anomaly queue & audit overrides
-    expect(dashboard).toContain('Antrean Review Anomali Skor Atasan');
+    expect(dashboard).toContain('Antrean Review Anomali Penilaian Perilaku');
     expect(dashboard).toContain('overrideScoreInput');
     expect(dashboard).toContain('Alasan override minimal 10 karakter.');
     expect(dashboard).toContain('overrideScore');
@@ -113,7 +113,7 @@ describe('Gamification, Theme, and Perceived-Speed UX UI safeguards', () => {
     // Exact progress states
     expect(employee).toContain('Memuat skor performa…');
     expect(employee).toContain('Menghitung proyeksi kenaikan…');
-    expect(leader).toContain('Memproses Leader Score…');
+    expect(leader).toContain('Memproses Penilaian Perilaku…');
     expect(leader).toContain('Memeriksa anomali…');
     expect(settings).toContain('Menyimpan tema...');
     expect(settings).toContain('Memvalidasi bobot skor...');

@@ -549,7 +549,8 @@ export default function EmployeeBeranda({ profile }: Props) {
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-extrabold text-[var(--text-primary)]">Indeks Performa Kumulatif</h3>
                   <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-medium leading-relaxed">
-                    Dihitung realtime berdasarkan Kehadiran (30%), KPI Cetak (50%), dan Leader Score (20%).
+                    Dihitung realtime berdasarkan Attendance (30%), KPI Produksi (50%), dan Perilaku Kerja (20%).
+                    Perilaku Kerja dinilai dari kebersihan, disiplin, kerapian, kepatuhan SOP, kerja sama tim, dan tanggung jawab.
                   </p>
                 </div>
               </div>
@@ -578,7 +579,7 @@ export default function EmployeeBeranda({ profile }: Props) {
 
                 <div>
                   <div className="flex justify-between items-center text-xs mb-1.5 font-bold text-[var(--text-secondary)]">
-                    <span>Leader Score (Bobot 20%)</span>
+                    <span>Perilaku Kerja (Bobot 20%)</span>
                     <span className="text-[var(--text-primary)]">{perfScore?.leaderScore ?? 100}/100</span>
                   </div>
                   <div className="h-2 rounded-full bg-gray-200 overflow-hidden">

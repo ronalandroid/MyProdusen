@@ -609,11 +609,11 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 
 ## Gamification & Performance Score Update
 
-- Performance score module adds Attendance Score (30%), KPI Score (50%), and Leader Score (20%) defaults; configuration must total 100 or return `GAMIFICATION_WEIGHT_INVALID`.
+- Performance score module adds Attendance Score (30%), KPI Score (50%), and Culture & Discipline Score / Penilaian Perilaku Kerja (20%) defaults; configuration must total 100 or return `GAMIFICATION_WEIGHT_INVALID`.
 - New active Employee and Leader start from score 100 and can maintain annual 365-day performance for configurable raise projection tiers.
 - Default Platinum projection: score 100 maintained 365 days = +10%, with disclaimer: “Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.”
 - Badge service definitions cover Streak 7 Hari, Streak 30 Hari, KPI Perfect Month, Zero Alpha Quarter, Top Performer, and Consistent Gold. Badges are backend-calculated, not fake frontend state.
-- Leader Score is limited to assigned team members, disallows self-scoring, requires score 0–100 plus notes minimum 10 characters, and queues anomalies for score < 40 or score delta > 30.
+- Culture & Discipline Score / Penilaian Perilaku Kerja is limited to assigned team members, disallows self-scoring, requires score 0–100 plus notes minimum 10 characters, and queues anomalies for score < 40 or score delta > 30.
 - Superadmin controls periods, score weights, raise tiers, anomalies, score overrides with audit reason, reports, and company distribution.
 - Theme customization stores sanitized hex colors only, validates contrast, emits safe CSS tokens, audits changes, and resets to default MyProdusen yellow/cream/charcoal/red identity.
 - Private performance/theme APIs use no-store responses; payroll/attendance/security actions must not use fake optimistic success.
@@ -633,7 +633,7 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 
 ### Employee Gamification Dashboard
 - **Score Card**: Beautifully styled cumulative Score Card (0–100) displaying active tier and clear labels.
-- **Score Breakdown**: Interactive card presenting Kehadiran (30%), KPI Cetak (50%), and Leader Score (20%).
+- **Score Breakdown**: Interactive card presenting Kehadiran (30%), KPI Cetak (50%), and Culture & Discipline Score / Penilaian Perilaku Kerja (20%).
 - **SVG History Chart**: Dynamic inline SVG line chart mapping the 7-day score trend snapshot.
 - **Raise Projection Banner**: Interactive banner stating: "Jika skor ini dipertahankan, estimasi kenaikan gaji tahun depan: +X%." and a Platinum projection disclaimer.
 - **Badge Showcase**: Rich grid displaying earned performance badges (e.g., Streak 7 Hari, consistent gold) with beautiful border-warm tokens.
@@ -641,7 +641,7 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 
 ### Leader Team Workspace
 - **Team Score Table & Leaderboard**: Rich dashboard displaying team scores and leaderboard lists.
-- **Input Leader Score**: Secure form allowing leaders to submit score (0–100) for team members. Minimum 10 characters notes are strictly enforced client-side and server-side.
+- **Input Penilaian Perilaku**: Secure form allowing leaders to submit score (0–100) for team members. Minimum 10 characters notes are strictly enforced client-side and server-side.
 - **Anomaly Warnings**: Live warnings shown when input score is under 40 or delta change exceeds 30 points.
 - **Salary Privacy**: Absolute isolation: no salary or raise projection information is exposed in leader context.
 
@@ -651,3 +651,14 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - **Anomaly Review Queue**: Audit queue enabling superadmins to inspect and manually override leader score inputs with required audit notes.
 - **Period & Settings Tab**: Integrated E2E tabs for closing/opening performance periods and configuring weights and theme hex colors with contrast alerts.
 
+## Culture & Discipline Score Update
+- Old user-facing "Leader Score" label is now "Culture & Discipline Score" / "Penilaian Perilaku Kerja".
+- Legacy `LeaderScoreEntry` storage remains for backward compatibility; no destructive rename.
+- Formula: Attendance 30% + KPI Produksi 50% + Perilaku Kerja 20%.
+- `GAMIFICATION_WEIGHT_CULTURE=20` is primary; `GAMIFICATION_WEIGHT_LEADER` remains legacy alias fallback.
+- Superadmin can input/edit Culture & Discipline Score for any Employee/Leader and final score has priority by default (`CULTURE_SCORE_SUPERADMIN_PRIORITY=true`).
+- Leader can input only assigned team members, cannot score self, cannot score outside team, cannot see team salary projection amounts, and cannot override Superadmin final score.
+- Advanced subcriteria can evaluate kebersihan, disiplin, ketepatan waktu perilaku, kerapian, kepatuhan SOP, kerja sama tim, tanggung jawab, and optional attitude.
+- All submit/update/override actions require audit log: `CULTURE_SCORE_SUBMITTED`, `CULTURE_SCORE_UPDATED`, `CULTURE_SCORE_OVERRIDDEN`.
+- Employee sees transparent score breakdown with Perilaku Kerja explanation.
+- Preferred API: `/api/performance/culture-score`; legacy `/api/leader/performance/leader-score` remains alias.

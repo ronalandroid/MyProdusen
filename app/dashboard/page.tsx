@@ -468,11 +468,11 @@ function SuperadminGamificationHub({
         </div>
       </div>
 
-      {/* Leader Score Anomaly Queue */}
+      {/* Culture & Discipline Score Anomaly Queue */}
       <div className="card p-5 bg-white border border-[var(--border-color)] shadow-sm flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3 border-b border-[var(--border-color)] pb-3">
           <div>
-            <h3 className="text-base font-extrabold text-[var(--text-primary)]">Antrean Review Anomali Skor Atasan</h3>
+            <h3 className="text-base font-extrabold text-[var(--text-primary)]">Antrean Review Anomali Penilaian Perilaku</h3>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
               Skor leader di bawah 40 atau perubahan ekstrem (&gt;30 poin) masuk review Superadmin untuk persetujuan.
             </p>

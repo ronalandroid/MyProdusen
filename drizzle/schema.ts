@@ -1409,6 +1409,11 @@ export const leaderScoreEntries = pgTable('LeaderScoreEntry', {
   scoreDate: date('scoreDate').notNull(),
   periodId: text('periodId'),
   periodType: text('periodType').default('MONTHLY').notNull(),
+  scoreType: text('scoreType').default('CULTURE_DISCIPLINE').notNull(),
+  scorerRole: text('scorerRole'),
+  subcriteria: jsonb('subcriteria').$type<Record<string, number>>(),
+  isFinal: boolean('isFinal').default(false).notNull(),
+  reason: text('reason'),
   createdBy: text('createdBy').notNull(),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({

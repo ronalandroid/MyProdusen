@@ -1,12 +1,28 @@
 export const GAMIFICATION_WEIGHT_INVALID = 'GAMIFICATION_WEIGHT_INVALID';
 export const RAISE_PROJECTION_DISCLAIMER = 'Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.';
+export const CULTURE_SCORE_LABEL = 'Culture & Discipline Score';
+export const CULTURE_SCORE_LABEL_ID = 'Penilaian Perilaku Kerja';
 
-export type GamificationWeights = { attendance: number; kpi: number; leader: number };
+export type GamificationWeights = { attendance: number; kpi: number; culture?: number; leader?: number };
+export type ResolvedGamificationWeights = { attendance: number; kpi: number; culture: number; leader: number };
 export type RaiseTier = { name: 'Platinum' | 'Gold' | 'Silver' | 'Bronze' | 'Standard'; minScore: number; requiredDays: number; raisePercent: number };
+export type CultureSubcriteria = {
+  cleanlinessScore?: number;
+  disciplineScore?: number;
+  punctualityBehaviorScore?: number;
+  neatnessScore?: number;
+  sopComplianceScore?: number;
+  teamworkScore?: number;
+  responsibilityScore?: number;
+  attitudeScore?: number;
+};
 
 export const DEFAULT_GAMIFICATION_SETTINGS = {
-  weights: { attendance: 30, kpi: 50, leader: 20 } satisfies GamificationWeights,
+  weights: { attendance: 30, kpi: 50, culture: 20, leader: 20 } satisfies ResolvedGamificationWeights,
   retroactiveLeaderScoreDays: 7,
+  leaderScorePeriodType: 'MONTHLY',
+  cultureScoreSuperadminPriority: true,
+  cultureSubcriteriaEnabled: false,
   raiseTiers: [
     { name: 'Platinum', minScore: 100, requiredDays: 365, raisePercent: 10 },
     { name: 'Gold', minScore: 85, requiredDays: 365, raisePercent: 7 },
@@ -21,31 +37,61 @@ function clampScore(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+export function resolveGamificationWeights(weights: GamificationWeights): ResolvedGamificationWeights {
+  const culture = weights.culture ?? weights.leader ?? 0;
+  return { attendance: weights.attendance, kpi: weights.kpi, culture, leader: culture };
+}
+
 export function validateGamificationWeights(weights: GamificationWeights) {
-  const total = weights.attendance + weights.kpi + weights.leader;
+  const resolved = resolveGamificationWeights(weights);
+  const total = resolved.attendance + resolved.kpi + resolved.culture;
   if (total !== 100) throw new Error(GAMIFICATION_WEIGHT_INVALID);
-  return weights;
+  return resolved;
+}
+
+export function calculateCultureDisciplineScore(input: ({ score?: number; subcriteriaEnabled?: false } & CultureSubcriteria) | ({ subcriteriaEnabled: true } & CultureSubcriteria)) {
+  if (!input.subcriteriaEnabled) return clampScore(input.score ?? 100);
+  const values = [
+    input.cleanlinessScore,
+    input.disciplineScore,
+    input.punctualityBehaviorScore,
+    input.neatnessScore,
+    input.sopComplianceScore,
+    input.teamworkScore,
+    input.responsibilityScore,
+    input.attitudeScore,
+  ].filter((value): value is number => typeof value === 'number');
+  if (values.length === 0) return 100;
+  return clampScore(values.reduce((sum, value) => sum + clampScore(value), 0) / values.length);
 }
 
 export function calculatePerformanceScore(input: {
   attendanceScore: number;
   kpiScore: number;
-  leaderScore: number;
+  leaderScore?: number;
+  cultureScore?: number;
   weights?: GamificationWeights;
 }) {
   const weights = validateGamificationWeights(input.weights ?? DEFAULT_GAMIFICATION_SETTINGS.weights);
   const attendance = clampScore(input.attendanceScore);
   const kpi = clampScore(input.kpiScore);
-  const leader = clampScore(input.leaderScore);
-  const totalScore = clampScore((attendance * weights.attendance + kpi * weights.kpi + leader * weights.leader) / 100);
+  const culture = clampScore(input.cultureScore ?? input.leaderScore ?? 100);
+  const totalScore = clampScore((attendance * weights.attendance + kpi * weights.kpi + culture * weights.culture) / 100);
   return {
     totalScore,
     breakdown: {
       initialScore: 100,
       attendanceScore: attendance,
       kpiScore: kpi,
-      leaderScore: leader,
+      cultureScore: culture,
+      leaderScore: culture,
       weights,
+      labels: {
+        attendance: 'Attendance Score',
+        kpi: 'KPI Produksi',
+        culture: CULTURE_SCORE_LABEL_ID,
+        legacyLeader: 'Leader Score (legacy alias)',
+      },
     },
   };
 }
@@ -73,11 +119,21 @@ export function calculateLeaderScore(scores: number[]) {
   return clampScore(scores.reduce((sum, score) => sum + clampScore(score), 0) / scores.length);
 }
 
-export function detectLeaderScoreAnomaly(input: { score: number; previousScore?: number | null }) {
+export function detectCultureScoreAnomaly(input: { score: number; previousScore?: number | null }) {
   const anomalies: Array<'LOW_SCORE' | 'SCORE_DELTA'> = [];
   if (input.score < 40) anomalies.push('LOW_SCORE');
   if (typeof input.previousScore === 'number' && Math.abs(input.score - input.previousScore) > 30) anomalies.push('SCORE_DELTA');
   return anomalies;
+}
+
+export const detectLeaderScoreAnomaly = detectCultureScoreAnomaly;
+
+export function resolveFinalCultureScore(input: { leaderScore?: number; superadminScore?: number; superadminPriority?: boolean }) {
+  const superadminPriority = input.superadminPriority ?? true;
+  if (superadminPriority && typeof input.superadminScore === 'number') return { finalScore: clampScore(input.superadminScore), source: 'SUPERADMIN' as const };
+  if (typeof input.leaderScore === 'number') return { finalScore: clampScore(input.leaderScore), source: 'LEADER' as const };
+  if (typeof input.superadminScore === 'number') return { finalScore: clampScore(input.superadminScore), source: 'SUPERADMIN' as const };
+  return { finalScore: 100, source: 'BASELINE' as const };
 }
 
 export function mapRaiseTier(score: number, maintainedDays: number, tiers = DEFAULT_GAMIFICATION_SETTINGS.raiseTiers) {
@@ -90,7 +146,7 @@ export function mapRaiseTier(score: number, maintainedDays: number, tiers = DEFA
 export function getInitialPerformanceScore(input: { isActive: boolean; role: string }) {
   const eligible = input.isActive && ['EMPLOYEE', 'LEADER'].includes(input.role);
   const baseline = eligible ? 100 : 0;
-  return calculatePerformanceScore({ attendanceScore: baseline, kpiScore: baseline, leaderScore: baseline });
+  return calculatePerformanceScore({ attendanceScore: baseline, kpiScore: baseline, cultureScore: baseline });
 }
 
 export function calculateRaiseProjection(input: {

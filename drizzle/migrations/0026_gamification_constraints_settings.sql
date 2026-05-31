@@ -52,7 +52,7 @@ INSERT INTO "CompanySetting" ("id", "key", "value", "description", "updatedAt") 
   (
     'setting-gamification-config',
     'GAMIFICATION_CONFIG',
-    '{"weights":{"attendance":30,"kpi":50,"leader":20},"retroactiveLeaderScoreDays":7,"leaderScorePeriodType":"MONTHLY","raiseTiers":[{"name":"Platinum","minScore":100,"requiredDays":365,"raisePercent":10},{"name":"Gold","minScore":85,"requiredDays":365,"raisePercent":7},{"name":"Silver","minScore":75,"requiredDays":365,"raisePercent":5},{"name":"Bronze","minScore":65,"requiredDays":365,"raisePercent":3},{"name":"Standard","minScore":0,"requiredDays":0,"raisePercent":0}]}',
+    '{"weights":{"attendance":30,"kpi":50,"culture":20,"leader":20},"retroactiveLeaderScoreDays":7,"leaderScorePeriodType":"MONTHLY","cultureScoreSuperadminPriority":true,"cultureSubcriteriaEnabled":false,"raiseTiers":[{"name":"Platinum","minScore":100,"requiredDays":365,"raisePercent":10},{"name":"Gold","minScore":85,"requiredDays":365,"raisePercent":7},{"name":"Silver","minScore":75,"requiredDays":365,"raisePercent":5},{"name":"Bronze","minScore":65,"requiredDays":365,"raisePercent":3},{"name":"Standard","minScore":0,"requiredDays":0,"raisePercent":0}]}',
     'Konfigurasi resmi gamification dan performance score MyProdusen.',
     now()
   ),
