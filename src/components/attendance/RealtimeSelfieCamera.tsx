@@ -164,6 +164,7 @@ export function RealtimeSelfieCamera({
 
       <div
         style={{
+          position: "relative",
           borderRadius: "16px",
           overflow: "hidden",
           border: "1px solid var(--border-color)",
@@ -194,6 +195,14 @@ export function RealtimeSelfieCamera({
               transform: "scaleX(-1)",
             }}
           />
+        )}
+        {!capturedPreviewUrl && isCameraOpen && (
+          <div aria-label="Face guide overlay" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+            <div style={{ width: "54%", maxWidth: "220px", aspectRatio: "3 / 4", border: "2px dashed rgba(255,255,255,0.92)", borderRadius: "50%", boxShadow: "0 0 0 999px rgba(0,0,0,0.18)" }} />
+            <div style={{ position: "absolute", bottom: "14px", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.58)", color: "white", borderRadius: "999px", padding: "6px 12px", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap" }}>
+              Posisikan wajah di dalam frame
+            </div>
+          </div>
         )}
         {!capturedPreviewUrl && !isCameraOpen && (
           <div style={{ textAlign: "center", padding: "32px 16px", color: "var(--text-secondary)", fontSize: "12px" }}>

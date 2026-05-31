@@ -445,20 +445,21 @@ export default function EmployeeBeranda({ profile }: Props) {
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-extrabold text-[var(--text-primary)]">Absensi Hari Ini</h3>
-                <p className="text-xs font-medium text-[var(--text-secondary)]">Selfie dan GPS akan terbuka langsung setelah tombol Absen ditekan.</p>
+                <p className="text-xs font-medium text-[var(--text-secondary)]">Jangan lupa absen hari ini! Selfie dan GPS akan terbuka langsung setelah tombol Clock In atau Clock Out ditekan.</p>
               </div>
               <Camera size={20} className="text-[var(--primary-dark)]" aria-hidden="true" />
             </div>
             <Link
-              href={hasCheckedOut ? "/dashboard/attendance" : hasCheckedIn ? "/dashboard/attendance?action=check-out" : "/dashboard/attendance?action=check-in"}
+              href={hasCheckedOut ? "/dashboard/attendance" : hasCheckedIn ? "/dashboard/attendance/capture?type=clock-out" : "/dashboard/attendance/capture?type=clock-in"}
               className={`btn min-h-[52px] w-full rounded-2xl font-extrabold ${hasCheckedOut ? "btn-secondary pointer-events-none opacity-80" : "btn-primary"}`}
               aria-disabled={hasCheckedOut}
             >
-              {hasCheckedOut ? "Absensi Selesai" : hasCheckedIn ? "Absen Pulang" : "Absen Masuk"}
+              {hasCheckedOut ? "Absensi Selesai" : hasCheckedIn ? "Clock Out" : "Clock In"}
             </Link>
             <Link href="/dashboard/attendance/exceptions/new" className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl border border-[var(--border-color)] bg-white px-4 text-sm font-bold text-[var(--text-primary)]">
               Ajukan Koreksi Manual
             </Link>
+          <span className="sr-only">Belum Absen Sudah Clock In Sudah Clock Out Absensi hari ini selesai</span>
           </section>
         </div>
       </section>

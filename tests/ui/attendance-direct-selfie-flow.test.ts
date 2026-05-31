@@ -4,18 +4,19 @@ import { readFileSync } from 'node:fs';
 const employeeDashboard = readFileSync('src/components/dashboard/EmployeeBeranda.tsx', 'utf8');
 const leaderDashboard = readFileSync('src/components/dashboard/LeaderBeranda.tsx', 'utf8');
 const attendancePage = readFileSync('app/dashboard/attendance/page.tsx', 'utf8');
+const capturePage = readFileSync('app/dashboard/attendance/capture/page.tsx', 'utf8');
 const camera = readFileSync('src/components/attendance/RealtimeSelfieCamera.tsx', 'utf8');
 
 describe('direct attendance selfie flow source contract', () => {
   it('shows one primary Absensi Hari Ini CTA for employee and leader', () => {
     for (const source of [employeeDashboard, leaderDashboard]) {
       expect(source).toContain('Absensi Hari Ini');
-      expect(source).toContain('Absen Masuk');
-      expect(source).toContain('Absen Pulang');
+      expect(source).toContain('Clock In');
+      expect(source).toContain('Clock Out');
       expect(source).toContain('Absensi Selesai');
       expect(source).toContain('Ajukan Koreksi Manual');
-      expect(source).toContain('/dashboard/attendance?action=check-in');
-      expect(source).toContain('/dashboard/attendance?action=check-out');
+      expect(source).toContain('/dashboard/attendance/capture?type=clock-in');
+      expect(source).toContain('/dashboard/attendance/capture?type=clock-out');
     }
   });
 
@@ -24,8 +25,8 @@ describe('direct attendance selfie flow source contract', () => {
     expect(attendancePage).toContain('Bukti Lokasi GPS');
     expect(attendancePage).toContain('Jarak ke lokasi');
     expect(attendancePage).toContain('Radius resmi');
-    expect(attendancePage).toContain('Kirim Absen Masuk');
-    expect(attendancePage).toContain('Kirim Absen Pulang');
+    expect(capturePage).toContain('Kirim Clock In');
+    expect(capturePage).toContain('Kirim Clock Out');
     expect(camera).toContain('Ambil Selfie');
     expect(camera).toContain('Kamera tidak dapat diakses. Izinkan kamera di browser Anda.');
   });

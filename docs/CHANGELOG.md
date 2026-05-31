@@ -550,3 +550,8 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - RBAC unchanged: Leader can input KPI only for active employees assigned to the Leader team; outside-team input remains 403/404/422.
 - Permanent official location verify fix: `verify:uat-leader-flow` now checks stable WorkLocation id `loc_produsen_dimsum_medan_tbm_grup` plus `isActive=true`; no brittle exact coordinate/radius match.
 - Safe local relation debug printed only ids/booleans and no passwords/secrets; local env had no matching UAT row, production verify remains target-container task.
+
+## Attendance selfie mobile clocking UX
+- Added reference-video inspired attendance card and dedicated Clock In / Clock Out selfie capture page.
+- Added face guide overlay, GPS validation, optional note, manual correction copy, and source tests.
+- Preserved strict backend RBAC and protected selfie handling.

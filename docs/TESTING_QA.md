@@ -625,3 +625,6 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - RBAC unchanged: Leader can input KPI only for active employees assigned to the Leader team; outside-team input remains 403/404/422.
 - Permanent official location verify fix: `verify:uat-leader-flow` now checks stable WorkLocation id `loc_produsen_dimsum_medan_tbm_grup` plus `isActive=true`; no brittle exact coordinate/radius match.
 - Safe local relation debug printed only ids/booleans and no passwords/secrets; local env had no matching UAT row, production verify remains target-container task.
+
+## Attendance Selfie QA
+Run source/unit gates plus Playwright. Headless Playwright cannot prove real camera/GPS permission; real Android/iPhone UAT remains mandatory. Verify 320x568, 360x800, 390x844, 430x932, 768x1024, 1024x768, 1440x900 for no overflow, centered guide, sticky submit safe-area padding, and 44px tap targets.

@@ -426,3 +426,11 @@ GO requires core MyProdusen modules visible and working, non-core modules hidden
 - RBAC unchanged: Leader can input KPI only for active employees assigned to the Leader team; outside-team input remains 403/404/422.
 - Permanent official location verify fix: `verify:uat-leader-flow` now checks stable WorkLocation id `loc_produsen_dimsum_medan_tbm_grup` plus `isActive=true`; no brittle exact coordinate/radius match.
 - Safe local relation debug printed only ids/booleans and no passwords/secrets; local env had no matching UAT row, production verify remains target-container task.
+
+## Attendance Selfie Redeploy Checklist
+- [ ] Dashboard attendance card shows Clock In / Clock Out.
+- [ ] Capture screen opens camera after tap and displays face guide.
+- [ ] GPS validation displays accuracy, distance, radius, status.
+- [ ] Submit disabled without selfie and GPS.
+- [ ] Superadmin reports sync after action/refocus.
+- [ ] Real Android/iPhone UAT completed.

@@ -760,3 +760,8 @@ The total employee/leader performance score utilizes the official weighted break
 - RBAC unchanged: Leader can input KPI only for active employees assigned to the Leader team; outside-team input remains 403/404/422.
 - Permanent official location verify fix: `verify:uat-leader-flow` now checks stable WorkLocation id `loc_produsen_dimsum_medan_tbm_grup` plus `isActive=true`; no brittle exact coordinate/radius match.
 - Safe local relation debug printed only ids/booleans and no passwords/secrets; local env had no matching UAT row, production verify remains target-container task.
+
+## Attendance Selfie Flow Update
+- Added mobile-first Clock In / Clock Out capture route.
+- Added face guide overlay, GPS/radius/distance validation labels, optional catatan, manual correction copy, and attendance history source contract test.
+- Backend RBAC remains strict: Employee/Leader only, selfie and GPS required, Superadmin normal clocking forbidden.

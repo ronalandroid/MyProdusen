@@ -736,3 +736,10 @@ Main navigation follows MyProdusen core scope instead of showing every Talenta-l
 - Profile and Superadmin employee list source now surface work duration, payroll estimate copy, chicken streak, score/raise projection copy.
 - Executive PDF remains protected/no-store and must include work duration/payroll/performance fields after report template expansion.
 - UAT: validate payroll privacy, protected PDF, work duration sync, chicken streak calendar, and raise disclaimer after redeploy.
+
+## Attendance Selfie Clocking UX
+- Reference-video inspired flow: dashboard greeting, one attendance card, Clock In / Clock Out, dedicated capture screen.
+- MyProdusen keeps yellow/cream rounded card style, readable dark text, simple bottom navigation.
+- Capture screen opens camera after user gesture, shows face guide overlay, GPS validation, optional note, and sticky submit.
+- Outside radius shows manual correction entry; Superadmin approval and audit trail required.
+- Real Android/iPhone GPS + selfie UAT required after redeploy.

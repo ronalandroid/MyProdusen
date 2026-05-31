@@ -45,3 +45,11 @@ Reason: no physical Android/iPhone device execution evidence in this automation 
 - Sidebar brand contrast improved with dark charcoal/brown brand text and readable cream Super Admin badge while preserving yellow/cream MyProdusen style.
 - No destructive DB changes.
 - Production signoff still requires redeploy, authenticated E2E, real-device GPS+selfie UAT, and protected avatar/selfie live verification.
+
+## Attendance Selfie Real Device UAT
+1. Login Employee/Leader on Android Chrome and iPhone Safari.
+2. Open dashboard attendance card, tap Clock In then Clock Out when allowed.
+3. Confirm camera opens, face guide appears, selfie capture/retake works.
+4. Confirm GPS permission, accuracy, distance, radius, and inside/outside status render.
+5. Submit and verify dashboard history updates and Superadmin attendance report shows selfie status, GPS distance, inside/outside radius, and correction request if manual.
+6. Superadmin must not see normal Clock In / Clock Out.
