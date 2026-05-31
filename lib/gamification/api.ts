@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { nanoid } from 'nanoid';
 import { and, desc, eq, sql } from 'drizzle-orm';
-import { db, badgeDefinitions, employeeBadges, employees, leaderScoreAnomalies, leaderScoreEntries, performancePeriods, performanceScoreSnapshots, performanceScoreSummaries } from '@/lib/db';
+import { db, badgeDefinitions, companySettings, companyThemeSettings, employeeBadges, employees, leaderScoreAnomalies, leaderScoreEntries, notifications, performancePeriods, performanceScoreSnapshots, performanceScoreSummaries, users } from '@/lib/db';
 import { logAudit } from '@/lib/audit';
 import { requireAuth } from '@/lib/middleware';
 import { errorResponse, forbiddenResponse, successResponse, unauthorizedResponse } from '@/lib/utils/response';
@@ -12,6 +12,7 @@ import {
   mapRaiseTier,
   sanitizeThemeInput,
   validateGamificationWeights,
+  validateRetroactiveScoreDate,
 } from './performance-core';
 
 const gamificationSettings = { ...DEFAULT_GAMIFICATION_SETTINGS };
@@ -99,33 +100,54 @@ export async function closePeriod(request: NextRequest, id: string) {
   } catch (error: any) { return error.message === 'FORBIDDEN' ? forbiddenResponse() : handleError(error); }
 }
 
+async function readGamificationSettings() {
+  const [setting] = await db.select().from(companySettings).where(eq(companySettings.key, 'GAMIFICATION_CONFIG')).limit(1);
+  if (!setting) return gamificationSettings;
+  try {
+    const parsed = JSON.parse(setting.value);
+    validateGamificationWeights(parsed.weights ?? gamificationSettings.weights);
+    return { ...gamificationSettings, ...parsed };
+  } catch {
+    return gamificationSettings;
+  }
+}
+
 export async function getSettings(request: NextRequest) {
-  try { await requireSuperadmin(request); return successResponse(gamificationSettings); } catch (error: any) { return error.message === 'FORBIDDEN' ? forbiddenResponse() : handleError(error); }
+  try { await requireSuperadmin(request); return successResponse(await readGamificationSettings()); } catch (error: any) { return error.message === 'FORBIDDEN' ? forbiddenResponse() : handleError(error); }
 }
 
 export async function patchSettings(request: NextRequest) {
   try {
     const user = await requireSuperadmin(request);
     const body = await request.json();
-    if (body.weights) gamificationSettings.weights = validateGamificationWeights(body.weights);
-    if (body.raiseTiers) gamificationSettings.raiseTiers = body.raiseTiers;
-    await logAudit(user.userId, 'UPDATE', 'GamificationSetting', 'company', undefined, gamificationSettings, request);
-    return successResponse(gamificationSettings, 'Pengaturan gamification diperbarui');
+    const current = await readGamificationSettings();
+    const next = { ...current, ...body };
+    if (next.weights) next.weights = validateGamificationWeights(next.weights);
+    const value = JSON.stringify(next);
+    await db.insert(companySettings).values({ id: 'setting-gamification-config', key: 'GAMIFICATION_CONFIG', value, description: 'Konfigurasi resmi gamification dan performance score MyProdusen.', updatedBy: user.userId, updatedAt: new Date() }).onConflictDoUpdate({ target: companySettings.key, set: { value, updatedBy: user.userId, updatedAt: new Date() } });
+    await logAudit(user.userId, 'UPDATE', 'GamificationSetting', 'company', current, next, request);
+    return successResponse(next, 'Pengaturan gamification diperbarui');
   } catch (error: any) { return error.message === 'FORBIDDEN' ? forbiddenResponse() : handleError(error); }
 }
 
 export async function getTheme(request: NextRequest) {
-  try { await requireAuth(request); return successResponse(themeSetting); } catch (error: any) { return handleError(error); }
+  try {
+    await requireAuth(request);
+    const [stored] = await db.select().from(companyThemeSettings).limit(1);
+    return successResponse(stored ?? themeSetting);
+  } catch (error: any) { return handleError(error); }
 }
 
 export async function patchTheme(request: NextRequest) {
   try {
     const user = await requireSuperadmin(request);
     const body = await request.json();
-    const oldTheme = themeSetting;
+    const [oldTheme] = await db.select().from(companyThemeSettings).limit(1);
     themeSetting = body.reset ? sanitizeThemeInput({}) : sanitizeThemeInput(body);
-    await logAudit(user.userId, 'UPDATE', 'CompanyThemeSetting', 'company', oldTheme, themeSetting, request);
-    return successResponse(themeSetting, 'Tema MyProdusen diperbarui');
+    const row = { id: oldTheme?.id ?? 'default-theme', primaryColor: themeSetting.primaryColor, secondaryColor: themeSetting.secondaryColor, accentColor: themeSetting.accentColor, themeMode: body.themeMode ?? 'default', safeTokens: themeSetting.tokens, updatedBy: user.userId, updatedAt: new Date() };
+    const [saved] = await db.insert(companyThemeSettings).values(row).onConflictDoUpdate({ target: companyThemeSettings.id, set: row }).returning();
+    await logAudit(user.userId, 'UPDATE', 'CompanyThemeSetting', saved.id, oldTheme, saved, request);
+    return successResponse(saved, 'Tema MyProdusen diperbarui');
   } catch (error: any) { return error.message === 'FORBIDDEN' ? forbiddenResponse() : handleError(error); }
 }
 
@@ -142,10 +164,18 @@ export async function leaderScore(request: NextRequest) {
     const score = Number(body.score);
     const notes = String(body.notes || '').trim();
     if (!Number.isInteger(score) || score < 0 || score > 100 || notes.length < 10) return errorResponse('Score 0-100 dan notes minimal 10 karakter', 422);
+    const settings = await readGamificationSettings();
+    const scoreDate = body.scoreDate ?? new Date().toISOString().slice(0, 10);
+    if (!validateRetroactiveScoreDate(scoreDate, settings.retroactiveLeaderScoreDays ?? 7)) return errorResponse('Tanggal score melewati batas retroaktif', 422);
+    const [activePeriod] = await db.select().from(performancePeriods).where(eq(performancePeriods.status, 'ACTIVE')).limit(1);
     const [previous] = await db.select().from(leaderScoreEntries).where(eq(leaderScoreEntries.employeeId, target.id)).orderBy(desc(leaderScoreEntries.createdAt)).limit(1);
-    const [entry] = await db.insert(leaderScoreEntries).values({ id: nanoid(), employeeId: target.id, leaderEmployeeId: leader.id, score, notes, scoreDate: body.scoreDate ?? new Date().toISOString().slice(0, 10), createdBy: user.userId }).returning();
+    const [entry] = await db.insert(leaderScoreEntries).values({ id: nanoid(), employeeId: target.id, leaderEmployeeId: leader.id, score, notes, scoreDate, periodId: activePeriod?.id, periodType: settings.leaderScorePeriodType ?? 'MONTHLY', createdBy: user.userId }).returning();
     const anomalies = detectLeaderScoreAnomaly({ score, previousScore: previous?.score });
     for (const type of anomalies) await db.insert(leaderScoreAnomalies).values({ id: nanoid(), leaderScoreEntryId: entry.id, employeeId: target.id, type });
+    if (anomalies.length) {
+      const superadmins = await db.select({ id: users.id }).from(users).where(eq(users.role, 'SUPERADMIN'));
+      for (const admin of superadmins) await db.insert(notifications).values({ id: nanoid(), userId: admin.id, title: 'Anomali Leader Score', message: `Skor ${target.fullName} perlu review Superadmin.`, type: 'PERFORMANCE_ANOMALY' });
+    }
     await logAudit(user.userId, 'CREATE', 'LeaderScoreEntry', entry.id, undefined, { ...entry, anomalies }, request);
     return successResponse({ entry, anomalies }, anomalies.length ? 'Skor tersimpan dan masuk antrian review' : 'Skor leader tersimpan');
   } catch (error: any) { return handleError(error); }

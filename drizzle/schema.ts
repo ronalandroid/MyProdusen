@@ -1365,6 +1365,7 @@ export const performanceScoreSnapshots = pgTable('PerformanceScoreSnapshot', {
   id: text('id').primaryKey(),
   employeeId: text('employeeId').notNull(),
   periodId: text('periodId'),
+  month: text('month'),
   scoreDate: date('scoreDate').notNull(),
   attendanceScore: real('attendanceScore').default(100).notNull(),
   kpiScore: real('kpiScore').default(100).notNull(),
@@ -1383,6 +1384,7 @@ export const performanceScoreSnapshots = pgTable('PerformanceScoreSnapshot', {
 export const performanceScoreSummaries = pgTable('PerformanceScoreSummary', {
   id: text('id').primaryKey(),
   employeeId: text('employeeId').notNull().unique(),
+  periodId: text('periodId'),
   currentScore: real('currentScore').default(100).notNull(),
   attendanceScore: real('attendanceScore').default(100).notNull(),
   kpiScore: real('kpiScore').default(100).notNull(),
@@ -1405,6 +1407,8 @@ export const leaderScoreEntries = pgTable('LeaderScoreEntry', {
   score: integer('score').notNull(),
   notes: text('notes').notNull(),
   scoreDate: date('scoreDate').notNull(),
+  periodId: text('periodId'),
+  periodType: text('periodType').default('MONTHLY').notNull(),
   createdBy: text('createdBy').notNull(),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
@@ -1454,6 +1458,7 @@ export const companyThemeSettings = pgTable('CompanyThemeSetting', {
   primaryColor: text('primaryColor').default('#f6c343').notNull(),
   secondaryColor: text('secondaryColor').default('#111827').notNull(),
   accentColor: text('accentColor').default('#dc2626').notNull(),
+  themeMode: text('themeMode').default('default').notNull(),
   safeTokens: jsonb('safeTokens').$type<Record<string, string>>(),
   updatedBy: text('updatedBy'),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),

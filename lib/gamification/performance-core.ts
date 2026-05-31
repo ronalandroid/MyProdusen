@@ -87,6 +87,51 @@ export function mapRaiseTier(score: number, maintainedDays: number, tiers = DEFA
   return tier ? { ...tier, disclaimer: RAISE_PROJECTION_DISCLAIMER } : undefined;
 }
 
+export function getInitialPerformanceScore(input: { isActive: boolean; role: string }) {
+  const eligible = input.isActive && ['EMPLOYEE', 'LEADER'].includes(input.role);
+  const baseline = eligible ? 100 : 0;
+  return calculatePerformanceScore({ attendanceScore: baseline, kpiScore: baseline, leaderScore: baseline });
+}
+
+export function calculateRaiseProjection(input: {
+  averageScore: number;
+  maintainedDays: number;
+  baseSalary?: number | null;
+  tiers?: RaiseTier[];
+}) {
+  const tier = mapRaiseTier(input.averageScore, input.maintainedDays, input.tiers ?? DEFAULT_GAMIFICATION_SETTINGS.raiseTiers);
+  const raisePercent = tier?.raisePercent ?? 0;
+  if (!input.baseSalary || input.baseSalary <= 0) {
+    return {
+      tier: tier?.name ?? 'Standard',
+      raisePercent,
+      projectedAmount: null,
+      projectedSalary: null,
+      message: 'Data gaji belum tersedia.',
+      disclaimer: RAISE_PROJECTION_DISCLAIMER,
+      finalPayrollCommitment: false,
+    };
+  }
+  const projectedAmount = Math.round(input.baseSalary * (raisePercent / 100));
+  return {
+    tier: tier?.name ?? 'Standard',
+    raisePercent,
+    projectedAmount,
+    projectedSalary: input.baseSalary + projectedAmount,
+    message: `${raisePercent}% estimasi kenaikan berdasarkan performa.`,
+    disclaimer: RAISE_PROJECTION_DISCLAIMER,
+    finalPayrollCommitment: false,
+  };
+}
+
+export function validateRetroactiveScoreDate(scoreDate: string, allowedDays: number, now = new Date()) {
+  const parsed = new Date(`${scoreDate}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return false;
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const diffDays = Math.floor((today.getTime() - parsed.getTime()) / 86_400_000);
+  return diffDays >= 0 && diffDays <= allowedDays;
+}
+
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 const DEFAULT_THEME = { primaryColor: '#f6c343', secondaryColor: '#111827', accentColor: '#dc2626' };
 
