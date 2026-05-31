@@ -338,3 +338,16 @@ GO requires core MyProdusen modules visible and working, non-core modules hidden
 - Active Employee/Leader score baseline remains 100 for the active period; 365 days at average score 100 projects +10% and remains an estimate, not final payroll commitment.
 - Badge service is idempotent and avoids duplicate awards. `scripts/run-gamification-badges.mjs` is a manual hook; production worker must call the service with real attendance/KPI/alpha/ranking aggregation before marking automated badge runs complete.
 - Score override, config/theme changes, exports, leader score submissions, and period state changes require audit trails; Leader scope is own team only.
+
+## Gamification & Theme UI UAT Polish Checklist — 2026-05-31
+
+- [x] Employee Gamification Dashboard has a cumulative Score Card (0-100), active tier display, Kehadiran/KPI/Leader score breakdown, interactive raise projection banner with Platinum projection disclaimer, earned badges grid showcase, recent change reason notes, and responsive inline SVG 7-day trend chart.
+- [x] Leader workspace (`/dashboard/leader/team`) includes Team Score Table, Team Leaderboard, and Input Leader Score form with client-side/server-side note validations (>10 characters) and live anomaly warning states (<40 or delta >30). Salary/raise info completely isolated.
+- [x] Superadmin Dashboard Overview renders performance metric summaries, tier distributions, raise budget projections, top performers list, period state manager, and Leader Score anomaly review override queue with required audit notes.
+- [x] Superadmin Settings UI renders dynamic 4-tab dashboard containing color wheel customization palettes with WCAG contrast validations (>4.5:1 ratio), brand default resets, and weight configs.
+- [x] Perceived speed loading skeletons are integrated across dashboard score cards, leaderboard, employee list, payroll, attendance, and KPI entry tables. Loading copy transitions are mapped E2E.
+- [x] Real data integration wired without any fake optimistic success for attendance or payroll.
+- [x] Responsive layout verified across all viewports (320x568 up to 1440x900) without card clipping, nav overlaps, modal overflows, tiny tap buttons, or horizontal scrolling.
+- [x] All 432 unit/E2E test files passed successfully (`npm run test`).
+- [x] Build compiler generated production package bundles cleanly (`npm run build`).
+

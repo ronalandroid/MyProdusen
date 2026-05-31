@@ -674,3 +674,9 @@ Main navigation follows MyProdusen core scope instead of showing every Talenta-l
 - Theme customization stores sanitized hex colors only, validates contrast, emits safe CSS tokens, audits changes, and resets to default MyProdusen yellow/cream/charcoal/red identity.
 - Private performance/theme APIs use no-store responses; payroll/attendance/security actions must not use fake optimistic success.
 - UX includes skeleton states, safe progress states (Memvalidasi GPS…, Mengaktifkan kamera…, Menyimpan data…, Menghitung payroll…, Memperbarui skor…), double-submit prevention, and input preservation on error.
+
+## Gamification & Theme UI UAT Pass — 2026-05-31
+
+- **Employee Gamification Dashboard**: Styled cumulative Score Card (0–100) displaying active tier, SVG trend line chart, raise projection banner, and showcase badges with loading skeletons.
+- **Leader Scoring and Team UI**: Interactive team management card on `/dashboard/leader/team` with Team Score Table, Team Leaderboard, and Input Leader Score form validating score (0-100), note minimums, and client-side anomaly warnings.
+- **Superadmin Control Hub**: Features performance overview distributions, raise budget projections, top performers list, period controllers, and a full theme color wheel kustomisasi page with contrast check safeguards.

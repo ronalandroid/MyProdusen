@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCircle, Clock, Users, AlertTriangle, RefreshCcw, ShieldCheck, BarChart3, ThumbsUp, ThumbsDown, Eye, UserCog, MapPin, Calendar, FileText, Banknote } from "lucide-react";
+import { Bell, CheckCircle, Clock, Users, AlertTriangle, RefreshCcw, ShieldCheck, BarChart3, ThumbsUp, ThumbsDown, Eye, UserCog, MapPin, Calendar, FileText, Banknote, TrendingUp, Sparkles, Settings, ClipboardList } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders, fetchProfile, type ClientUserProfile } from "@/lib/auth-client";
 import EmployeeBeranda from "@/components/dashboard/EmployeeBeranda";
@@ -66,6 +66,10 @@ export default function DashboardPage() {
     role: "EMPLOYEE",
   });
 
+  // Gamification & Performance states for Superadmin
+  const [performanceSummaries, setPerformanceSummaries] = useState<any[]>([]);
+  const [performanceAnomalies, setPerformanceAnomalies] = useState<any[]>([]);
+
   useEffect(() => {
     loadDashboardData();
   }, []);
@@ -87,6 +91,27 @@ export default function DashboardPage() {
 
       setStats(statsData.data);
       setLastUpdated(new Date());
+
+      // Fetch Gamification data for Superadmin
+      if (statsData.data.role === "SUPERADMIN") {
+        try {
+          const [scoresRes, anomaliesRes] = await Promise.all([
+            fetch("/api/performance/scores", { headers: getAuthHeaders(), cache: "no-store" }),
+            fetch("/api/performance/anomalies", { headers: getAuthHeaders(), cache: "no-store" }),
+          ]);
+          
+          if (scoresRes.ok) {
+            const scoresPayload = await scoresRes.json();
+            if (scoresPayload.success) setPerformanceSummaries(scoresPayload.data || []);
+          }
+          if (anomaliesRes.ok) {
+            const anomaliesPayload = await anomaliesRes.json();
+            if (anomaliesPayload.success) setPerformanceAnomalies(anomaliesPayload.data || []);
+          }
+        } catch (err) {
+          console.error("Gagal memuat data gamifikasi Superadmin:", err);
+        }
+      }
     } catch (dashboardError) {
       console.error("Failed to load dashboard data:", dashboardError);
       setError(dashboardError instanceof Error ? dashboardError.message : "Dashboard gagal dimuat.");
@@ -203,7 +228,13 @@ export default function DashboardPage() {
         </section>
       )}
 
-      <SuperadminGamificationHub stats={stats} insights={stats.superadminInsights} />
+      <SuperadminGamificationHub
+        stats={stats}
+        insights={stats.superadminInsights}
+        performanceSummaries={performanceSummaries}
+        performanceAnomalies={performanceAnomalies}
+        onReload={loadDashboardData}
+      />
 
       <SuperadminQuickActions stats={stats} />
 
@@ -212,24 +243,365 @@ export default function DashboardPage() {
   );
 }
 
-function SuperadminGamificationHub({ stats, insights }: { stats: DashboardStats; insights?: SuperadminInsights }) {
+interface SuperadminGamificationHubProps {
+  stats: DashboardStats;
+  insights?: SuperadminInsights;
+  performanceSummaries: any[];
+  performanceAnomalies: any[];
+  onReload: () => void;
+}
+
+function SuperadminGamificationHub({
+  stats,
+  insights,
+  performanceSummaries,
+  performanceAnomalies,
+  onReload,
+}: SuperadminGamificationHubProps) {
   const attendancePercent = Math.round(stats.todayAttendance.percentage || 0);
   const kpiScore = insights?.kpiOverview.averageScore ?? 0;
   const healthyTeams = insights?.divisionMonitoring.filter((division) => division.attendanceRate >= 90).length ?? 0;
   const totalTeams = insights?.divisionMonitoring.length ?? 0;
 
+  // Tier distributions
+  const tierCounts = performanceSummaries.reduce(
+    (acc: Record<string, number>, curr: any) => {
+      const tier = curr.tier || "Standard";
+      acc[tier] = (acc[tier] || 0) + 1;
+      return acc;
+    },
+    { Platinum: 0, Gold: 0, Silver: 0, Bronze: 0, Standard: 0 }
+  );
+
+  // Raise Budget Projection estimation
+  // Base Salary fallback is Rp3.500.000 for Medan Dimsum employee reference
+  const DEFAULT_MEDAN_BASE_SALARY = 3500000;
+  const totalProjectedRaiseAmount = performanceSummaries.reduce((sum: number, curr: any) => {
+    const raisePercent = curr.projectedRaisePercent ?? 0;
+    const raiseAmount = DEFAULT_MEDAN_BASE_SALARY * (raisePercent / 100);
+    return sum + raiseAmount;
+  }, 0);
+
+  // Override State for anomalies
+  const [activeOverrideMemberId, setActiveOverrideMemberId] = useState<string | null>(null);
+  const [overrideScoreInput, setOverrideScoreInput] = useState<number | "">("");
+  const [overrideReason, setOverrideReason] = useState("");
+  const [overrideSaving, setOverrideSaving] = useState(false);
+  const [overrideFeedback, setOverrideFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const handleOpenOverride = (employeeId: string, currentScore: number) => {
+    setActiveOverrideMemberId(employeeId);
+    setOverrideScoreInput(currentScore);
+    setOverrideReason("");
+    setOverrideFeedback(null);
+  };
+
+  const handleOverrideSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeOverrideMemberId || overrideScoreInput === "") return;
+    setOverrideSaving(true);
+    setOverrideFeedback(null);
+
+    try {
+      if (overrideReason.trim().length < 10) {
+        throw new Error("Alasan override minimal 10 karakter.");
+      }
+
+      const res = await fetch(`/api/performance/scores/${activeOverrideMemberId}/override`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({
+          score: Number(overrideScoreInput),
+          reason: overrideReason.trim(),
+        }),
+      });
+
+      const payload = await res.json().catch(() => null);
+
+      if (!res.ok || !payload?.success) {
+        throw new Error(payload?.error || "Gagal meng-override skor.");
+      }
+
+      setOverrideFeedback({ type: "success", message: "Skor berhasil dioverride dengan audit!" });
+      onReload();
+      setTimeout(() => {
+        setActiveOverrideMemberId(null);
+      }, 1500);
+    } catch (err) {
+      setOverrideFeedback({
+        type: "error",
+        message: err instanceof Error ? err.message : "Gagal meng-override skor.",
+      });
+    } finally {
+      setOverrideSaving(false);
+    }
+  };
+
   return (
-    <section className="gamification-hub animate-slide-up" aria-labelledby="superadmin-gamification-title" style={{ animationDelay: "160ms" }}>
-      <div>
-        <p className="eyebrow">Gamification</p>
-        <h2 id="superadmin-gamification-title">Company Quest Board</h2>
-        <p>Progress absensi, KPI, dan kesehatan divisi hari ini.</p>
+    <section className="flex flex-col gap-5 mb-6" aria-labelledby="superadmin-gamification-title">
+      {/* Company Quest Board */}
+      <div className="gamification-hub animate-slide-up" style={{ animationDelay: "160ms" }}>
+        <div>
+          <p className="eyebrow">Gamifikasi</p>
+          <h2 id="superadmin-gamification-title">Company Quest Board</h2>
+          <p>Progress absensi, KPI, dan kesehatan divisi hari ini.</p>
+        </div>
+        <div className="gamification-metrics" role="list">
+          <GamificationBadge label="Attendance Streak" value={`${attendancePercent}%`} progress={attendancePercent} tone="success" />
+          <GamificationBadge label="KPI Power" value={`${kpiScore}`} progress={Math.min(100, kpiScore)} tone="warning" />
+          <GamificationBadge label="Division Shield" value={`${healthyTeams}/${totalTeams}`} progress={totalTeams ? Math.round((healthyTeams / totalTeams) * 100) : 0} tone="info" />
+        </div>
       </div>
-      <div className="gamification-metrics" role="list">
-        <GamificationBadge label="Attendance Streak" value={`${attendancePercent}%`} progress={attendancePercent} tone="success" />
-        <GamificationBadge label="KPI Power" value={`${kpiScore}`} progress={Math.min(100, kpiScore)} tone="warning" />
-        <GamificationBadge label="Division Shield" value={`${healthyTeams}/${totalTeams}`} progress={totalTeams ? Math.round((healthyTeams / totalTeams) * 100) : 0} tone="info" />
+
+      {/* Performance Overview Panel */}
+      <div className="grid gap-5 md:grid-cols-2">
+        {/* Tier Distribution & Budget Projection */}
+        <div className="card p-5 bg-white border border-[var(--border-color)] shadow-sm flex flex-col gap-4">
+          <div>
+            <p className="eyebrow">Analisis Distribusi</p>
+            <h3 className="text-base font-extrabold text-[var(--text-primary)]">Distribusi Tier Performa</h3>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">Jumlah karyawan aktif berdasarkan peringkat pencapaian.</p>
+          </div>
+
+          <div className="flex flex-col gap-2.5 bg-gray-50/50 p-4 rounded-2xl border border-[var(--border-color)]">
+            {["Platinum", "Gold", "Silver", "Bronze", "Standard"].map((tier) => {
+              const count = tierCounts[tier] || 0;
+              const maxCount = Math.max(...Object.values(tierCounts));
+              const percent = maxCount > 0 ? (count / maxCount) * 100 : 0;
+              return (
+                <div key={tier} className="text-xs">
+                  <div className="flex justify-between items-center mb-1 font-bold text-[var(--text-secondary)]">
+                    <span>Tier {tier}</span>
+                    <span className="text-[var(--text-primary)]">{count} Karyawan</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${percent}%`,
+                        backgroundColor:
+                          tier === "Platinum"
+                            ? "var(--success)"
+                            : tier === "Gold"
+                            ? "var(--primary)"
+                            : tier === "Silver"
+                            ? "var(--info)"
+                            : tier === "Bronze"
+                            ? "var(--warning)"
+                            : "var(--text-muted)",
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Raise Budget Projection */}
+          <div className="rounded-2xl border border-[#FFE082] bg-gradient-to-r from-[#FFFDF0] to-[#FFFDEB] p-4 flex flex-col gap-1.5 shadow-sm">
+            <span className="flex items-center gap-1.5 text-xs font-bold text-[#B7791F]">
+              <TrendingUp size={14} />
+              <span>Proyeksi Anggaran Kenaikan Gaji</span>
+            </span>
+            <strong className="text-lg font-black text-[var(--text-primary)]">
+              {numberFormatter.format(totalProjectedRaiseAmount)}
+            </strong>
+            <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed font-medium mt-0.5">
+              Estimasi total kenaikan gaji bulanan tim jika performance dipertahankan setahun. 
+              <br />
+              <span className="italic">Disclaimer: Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Top Performers and At-Risk Panel */}
+        <div className="card p-5 bg-white border border-[var(--border-color)] shadow-sm flex flex-col gap-4">
+          <div>
+            <p className="eyebrow">Sorotan Anggota</p>
+            <h3 className="text-base font-extrabold text-[var(--text-primary)]">Top & At-Risk Employees</h3>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">Daftar performa terbaik dan karyawan butuh perhatian.</p>
+          </div>
+
+          {/* Top Performers list */}
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2">⭐ Top Performers</p>
+            <div className="flex flex-col gap-2">
+              {performanceSummaries.slice(0, 3).length === 0 ? (
+                <p className="text-xs text-[var(--text-muted)] italic">Belum ada data performa kumulatif.</p>
+              ) : (
+                performanceSummaries.slice(0, 3).map((snap, idx) => (
+                  <div key={snap.employeeId || idx} className="flex justify-between items-center gap-3 p-2 rounded-xl bg-gray-50/50 border">
+                    <div className="min-w-0">
+                      <span className="text-xs font-black text-[var(--text-primary)]">#{idx+1} Karyawan</span>
+                      <span className="badge badge-success text-[10px] font-bold ml-2">Tier {snap.tier}</span>
+                    </div>
+                    <strong className="text-xs text-[var(--text-primary)] bg-white px-2 py-0.5 rounded border shadow-sm">
+                      Score: {snap.currentScore}
+                    </strong>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* At-Risk list */}
+          <div className="border-t border-gray-100 pt-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-danger)] mb-2">⚠️ Karyawan Berisiko (Score &lt; 70)</p>
+            <div className="flex flex-col gap-2">
+              {performanceSummaries.filter((s: any) => s.currentScore < 70).slice(0, 3).length === 0 ? (
+                <p className="text-xs text-[var(--text-muted)] italic">Tidak ada karyawan di bawah ambang batas performa.</p>
+              ) : (
+                performanceSummaries.filter((s: any) => s.currentScore < 70).slice(0, 3).map((snap) => (
+                  <div key={snap.employeeId} className="flex justify-between items-center gap-3 p-2 rounded-xl bg-red-50/50 border border-red-100">
+                    <div>
+                      <span className="text-xs font-bold text-red-900">Karyawan Berisiko</span>
+                      <span className="badge badge-danger text-[10px] font-bold ml-2">Tier {snap.tier}</span>
+                    </div>
+                    <strong className="text-xs text-red-700 bg-white px-2 py-0.5 rounded border border-red-200">
+                      Score: {snap.currentScore}
+                    </strong>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Leader Score Anomaly Queue */}
+      <div className="card p-5 bg-white border border-[var(--border-color)] shadow-sm flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--border-color)] pb-3">
+          <div>
+            <h3 className="text-base font-extrabold text-[var(--text-primary)]">Antrean Review Anomali Skor Atasan</h3>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+              Skor leader di bawah 40 atau perubahan ekstrem (&gt;30 poin) masuk review Superadmin untuk persetujuan.
+            </p>
+          </div>
+          <span className="badge badge-danger font-extrabold text-xs">{performanceAnomalies.length} Pending</span>
+        </div>
+
+        {performanceAnomalies.length === 0 ? (
+          <p className="text-xs text-[var(--text-muted)] font-semibold italic bg-gray-50/50 p-4 rounded-2xl border border-dashed border-[var(--border-color)] text-center">
+            Semua skor atasan bersih. Tidak ada anomali terdeteksi.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {performanceAnomalies.map((anomaly) => (
+              <div key={anomaly.id} className="rounded-2xl border border-red-200 p-4 bg-red-50/10 flex flex-col gap-3">
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <span className="badge badge-danger text-[10px] font-black">{anomaly.type.replace(/_/g, " ")}</span>
+                    <p className="text-xs text-[var(--text-secondary)] font-bold mt-1.5">
+                      Karyawan ID: <span className="font-extrabold text-[var(--text-primary)]">{anomaly.employeeId.slice(0, 8)}...</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 justify-end mt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenOverride(anomaly.employeeId, 100)}
+                    className="btn btn-secondary btn-xs rounded-xl font-bold min-h-[30px] text-[11px]"
+                  >
+                    Override Skor
+                  </button>
+                  <Link
+                    href="/dashboard/settings"
+                    className="btn btn-primary btn-xs rounded-xl font-bold min-h-[30px] text-[11px] flex items-center justify-center"
+                  >
+                    Tinjau Aturan
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Override Score Modal Form */}
+      {activeOverrideMemberId && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+        >
+          <div className="bg-white rounded-3xl border border-[var(--border-color)] shadow-2xl p-5 sm:p-6 w-full max-w-md flex flex-col gap-4 animate-scale-in relative">
+            <div className="border-b border-[var(--border-color)] pb-3">
+              <h2 className="text-base sm:text-lg font-black text-[var(--text-primary)]">
+                Override Skor Karyawan (Audit)
+              </h2>
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                Nilai performa diubah paksa oleh Superadmin dengan pencatatan audit.
+              </p>
+            </div>
+
+            {overrideFeedback && (
+              <div
+                role="status"
+                className={`rounded-xl p-3 text-xs font-semibold ${
+                  overrideFeedback.type === "success"
+                    ? "bg-green-50 text-[var(--success)] border border-green-200"
+                    : "bg-red-50 text-[var(--danger)] border border-red-200"
+                }`}
+              >
+                {overrideFeedback.message}
+              </div>
+            )}
+
+            <form onSubmit={handleOverrideSubmit} className="flex flex-col gap-4">
+              <label className="flex flex-col gap-1.5 text-xs font-bold text-[var(--text-primary)]">
+                Input Skor Performa Baru (0–100)
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  required
+                  placeholder="Contoh: 90"
+                  className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none font-bold text-center"
+                  value={overrideScoreInput}
+                  onChange={(e) => setOverrideScoreInput(e.target.value !== "" ? Number(e.target.value) : "")}
+                  disabled={overrideSaving}
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5 text-xs font-bold text-[var(--text-primary)]">
+                Alasan Override Skor (Min. 10 Karakter)
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Contoh: Koreksi ulasan subjektif leader setelah rapat tim..."
+                  className="rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none resize-none leading-relaxed"
+                  value={overrideReason}
+                  onChange={(e) => setOverrideReason(e.target.value)}
+                  disabled={overrideSaving}
+                />
+                <span className="text-[10px] text-[var(--text-secondary)] font-bold text-right">
+                  {overrideReason.trim().length} karakter (Min. 10)
+                </span>
+              </label>
+
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="submit"
+                  disabled={overrideSaving || overrideScoreInput === "" || overrideReason.trim().length < 10}
+                  className="btn btn-primary flex-1 min-h-[44px] rounded-xl font-bold flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles size={14} />
+                  <span>{overrideSaving ? "Menyimpan..." : "Terapkan Override"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveOverrideMemberId(null)}
+                  disabled={overrideSaving}
+                  className="btn btn-secondary flex-1 min-h-[44px] rounded-xl font-bold"
+                >
+                  Batal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -248,14 +620,14 @@ function GamificationBadge({ label, value, progress, tone }: { label: string; va
 
 function SuperadminQuickActions({ stats }: { stats: DashboardStats }) {
   const quickActions = [
-    { name: "Pengguna", path: "/dashboard/users", icon: UserCog, bg: "rgba(59,130,246,0.1)", text: "var(--info)" },
-    { name: "Cabang/Lokasi", path: "/dashboard/locations", icon: MapPin, bg: "rgba(251,191,36,0.15)", text: "#D97706" },
-    { name: "KPI", path: "/dashboard/kpi/template", icon: BarChart3, bg: "rgba(34,197,94,0.1)", text: "var(--success)" },
-    { name: "Payroll", path: "/dashboard/payroll", icon: Banknote, bg: "rgba(245,158,11,0.1)", text: "var(--warning)" },
-    { name: "Cuti", path: "/dashboard/leave", icon: Calendar, bg: "rgba(124,58,237,0.1)", text: "#7C3AED" },
-    { name: "Laporan PDF", path: "/dashboard/reports/pdf", icon: FileText, bg: "rgba(107,114,128,0.1)", text: "#6B7280" },
-    { name: "Approval", path: "/dashboard/attendance/exceptions", icon: CheckCircle, bg: "rgba(229,57,53,0.1)", text: "var(--danger)" },
-    { name: "Notifikasi", path: "/dashboard/notifications", icon: Bell, bg: "var(--primary-light)", text: "var(--primary-dark)" },
+    { name: "Karyawan", path: "/dashboard/employees", icon: Users, bg: "rgba(59,130,246,0.1)", text: "var(--info)" },
+    { name: "Lokasi/Shift", path: "/dashboard/locations", icon: MapPin, bg: "rgba(251,191,36,0.15)", text: "#D97706" },
+    { name: "Kebijakan Absensi", path: "/dashboard/settings", icon: Settings, bg: "rgba(34,197,94,0.1)", text: "var(--success)" },
+    { name: "Kalender Kerja", path: "/dashboard/settings", icon: Calendar, bg: "rgba(245,158,11,0.1)", text: "var(--warning)" },
+    { name: "KPI", path: "/dashboard/kpi/template", icon: BarChart3, bg: "rgba(124,58,237,0.1)", text: "#7C3AED" },
+    { name: "Payroll", path: "/dashboard/payroll", icon: Banknote, bg: "rgba(229,57,53,0.1)", text: "var(--danger)" },
+    { name: "Cuti", path: "/dashboard/leave", icon: ClipboardList, bg: "rgba(107,114,128,0.1)", text: "#6B7280" },
+    { name: "Laporan PDF", path: "/dashboard/reports/pdf", icon: FileText, bg: "var(--primary-light)", text: "var(--primary-dark)" },
   ];
 
   return (

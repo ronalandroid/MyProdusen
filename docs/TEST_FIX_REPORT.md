@@ -628,3 +628,26 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Active Employee/Leader score baseline remains 100 for the active period; 365 days at average score 100 projects +10% and remains an estimate, not final payroll commitment.
 - Badge service is idempotent and avoids duplicate awards. `scripts/run-gamification-badges.mjs` is a manual hook; production worker must call the service with real attendance/KPI/alpha/ranking aggregation before marking automated badge runs complete.
 - Score override, config/theme changes, exports, leader score submissions, and period state changes require audit trails; Leader scope is own team only.
+
+## Gamification & Theme UI UAT Pass — 2026-05-31
+
+### Employee Gamification Dashboard
+- **Score Card**: Beautifully styled cumulative Score Card (0–100) displaying active tier and clear labels.
+- **Score Breakdown**: Interactive card presenting Kehadiran (30%), KPI Cetak (50%), and Leader Score (20%).
+- **SVG History Chart**: Dynamic inline SVG line chart mapping the 7-day score trend snapshot.
+- **Raise Projection Banner**: Interactive banner stating: "Jika skor ini dipertahankan, estimasi kenaikan gaji tahun depan: +X%." and a Platinum projection disclaimer.
+- **Badge Showcase**: Rich grid displaying earned performance badges (e.g., Streak 7 Hari, consistent gold) with beautiful border-warm tokens.
+- **Latest Change Reason**: Detailed note showing the latest score change note from leader inputs or superadmin overrides.
+
+### Leader Team Workspace
+- **Team Score Table & Leaderboard**: Rich dashboard displaying team scores and leaderboard lists.
+- **Input Leader Score**: Secure form allowing leaders to submit score (0–100) for team members. Minimum 10 characters notes are strictly enforced client-side and server-side.
+- **Anomaly Warnings**: Live warnings shown when input score is under 40 or delta change exceeds 30 points.
+- **Salary Privacy**: Absolute isolation: no salary or raise projection information is exposed in leader context.
+
+### Superadmin Control Panel
+- **Tier & Raise Budget Distribution**: Overview metrics displaying total projected raise amount and employee tier counts.
+- **At-Risk & Top Performers**: Scans all active employees, listing top-tier and at-risk performers for proactive management.
+- **Anomaly Review Queue**: Audit queue enabling superadmins to inspect and manually override leader score inputs with required audit notes.
+- **Period & Settings Tab**: Integrated E2E tabs for closing/opening performance periods and configuring weights and theme hex colors with contrast alerts.
+

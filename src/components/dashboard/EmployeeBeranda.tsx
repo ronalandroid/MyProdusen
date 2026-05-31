@@ -21,6 +21,10 @@ import {
   Check,
   ChevronRight,
   Map,
+  Award,
+  TrendingUp,
+  Activity,
+  HelpCircle,
 } from "lucide-react";
 import { getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
 
@@ -156,6 +160,13 @@ export default function EmployeeBeranda({ profile }: Props) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loadError, setLoadError] = useState("");
 
+  // Gamification & Performance states
+  const [perfScore, setPerfScore] = useState<any>(null);
+  const [perfHistory, setPerfHistory] = useState<any[]>([]);
+  const [perfBadges, setPerfBadges] = useState<any[]>([]);
+  const [isPerfLoading, setIsPerfLoading] = useState(true);
+  const [perfProgressState, setPerfProgressState] = useState("");
+
   // GPS states
   const [gpsPosition, setGpsPosition] = useState<GeolocationPosition | null>(null);
   const [gpsError, setGpsError] = useState("");
@@ -166,11 +177,15 @@ export default function EmployeeBeranda({ profile }: Props) {
 
     async function loadEverything() {
       try {
-        const [heatmapRes, attendanceRes, balanceRes, notifRes] = await Promise.all([
+        setPerfProgressState("Memuat skor performa…");
+        const [heatmapRes, attendanceRes, balanceRes, notifRes, perfRes, historyRes, badgesRes] = await Promise.all([
           fetch("/api/dashboard/heatmap", { headers: getAuthHeaders(), cache: "no-store" }),
           fetch("/api/attendance", { headers: getAuthHeaders(), cache: "no-store" }),
           fetch("/api/leave/balance", { headers: getAuthHeaders(), cache: "no-store" }),
           fetch("/api/notifications", { headers: getAuthHeaders(), cache: "no-store" }),
+          fetch("/api/performance/me", { headers: getAuthHeaders(), cache: "no-store" }),
+          fetch("/api/performance/me/history", { headers: getAuthHeaders(), cache: "no-store" }),
+          fetch("/api/performance/me/badges", { headers: getAuthHeaders(), cache: "no-store" }),
         ]);
 
         const heatmapPayload = (await heatmapRes.json()) as HeatmapResponse;
@@ -196,6 +211,27 @@ export default function EmployeeBeranda({ profile }: Props) {
           setNotifications(notifPayload.data.slice(0, 3));
         }
 
+        // Handle Performance/Gamification
+        setPerfProgressState("Menghitung proyeksi kenaikan…");
+        if (perfRes.ok) {
+          const perfPayload = await perfRes.json().catch(() => null);
+          if (perfPayload?.success && perfPayload?.data) {
+            setPerfScore(perfPayload.data);
+          }
+        }
+        if (historyRes.ok) {
+          const historyPayload = await historyRes.json().catch(() => null);
+          if (historyPayload?.success && historyPayload?.data) {
+            setPerfHistory(historyPayload.data);
+          }
+        }
+        if (badgesRes.ok) {
+          const badgesPayload = await badgesRes.json().catch(() => null);
+          if (badgesPayload?.success && badgesPayload?.data) {
+            setPerfBadges(badgesPayload.data);
+          }
+        }
+
         const locationId = profile?.employee?.defaultLocation?.id;
         if (locationId) {
           const detailRes = await fetch(`/api/work-locations/${locationId}`, {
@@ -210,6 +246,11 @@ export default function EmployeeBeranda({ profile }: Props) {
       } catch (error) {
         if (!cancelled) {
           setLoadError(error instanceof Error ? error.message : "Beranda belum lengkap.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsPerfLoading(false);
+          setPerfProgressState("");
         }
       }
     }
@@ -429,6 +470,244 @@ export default function EmployeeBeranda({ profile }: Props) {
             </Link>
           </div>
         </div>
+      </section>
+
+      {/* Kinerja & Gamifikasi Section */}
+      <section aria-labelledby="gamification-section-title" className="flex flex-col gap-4">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Gamifikasi & Skor</p>
+            <h2 id="gamification-section-title" className="text-sm font-extrabold text-[var(--text-secondary)] uppercase tracking-wider">
+              Performa & Kinerja Saya
+            </h2>
+          </div>
+        </div>
+
+        {isPerfLoading ? (
+          /* Skeletons screens for dashboard cards / score card */
+          <div className="card p-5 flex flex-col gap-4 animate-pulse border border-[var(--border-color)] bg-white">
+            <div className="flex items-center justify-between gap-4">
+              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+              <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+            </div>
+            <div className="flex items-center gap-4 py-2">
+              <div className="w-16 h-16 rounded-full bg-gray-200"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+              </div>
+            </div>
+            <div className="h-10 bg-gray-200 rounded-2xl w-full"></div>
+            <div className="h-20 bg-gray-200 rounded-2xl w-full"></div>
+            <div className="text-xs text-[var(--text-secondary)] font-medium text-center italic">
+              {perfProgressState || "Memuat skor performa…"}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {/* Primary Score Card */}
+            <div className="card p-5 sm:p-6 bg-white border border-[var(--border-color)] shadow-sm flex flex-col gap-4">
+              <div className="flex items-center justify-between gap-3 border-b border-[var(--border-color)] pb-3">
+                <span className="flex items-center gap-1.5 text-xs font-extrabold text-[var(--text-secondary)] uppercase tracking-wide">
+                  <Activity size={14} className="text-[var(--primary-dark)] animate-pulse" />
+                  <span>Skor Performa</span>
+                </span>
+                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-extrabold border ${
+                  (perfScore?.currentScore ?? 100) >= 90
+                    ? "bg-green-50 text-[var(--success)] border-green-200"
+                    : (perfScore?.currentScore ?? 100) >= 75
+                    ? "bg-blue-50 text-[var(--info)] border-blue-200"
+                    : "bg-amber-50 text-[var(--warning)] border-amber-200"
+                }`}>
+                  Tier {perfScore?.tier || "Standard"}
+                </span>
+              </div>
+
+              {/* Progress and Score Layout */}
+              <div className="flex items-center gap-5 py-2">
+                <div className="relative flex items-center justify-center shrink-0" style={{ width: 72, height: 72 }}>
+                  {/* SVG Circle Progress */}
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle cx="36" cy="36" r="32" stroke="var(--border-color)" strokeWidth="5" fill="transparent" />
+                    <circle
+                      cx="36"
+                      cy="36"
+                      r="32"
+                      stroke="var(--primary)"
+                      strokeWidth="6"
+                      fill="transparent"
+                      strokeDasharray={2 * Math.PI * 32}
+                      strokeDashoffset={(2 * Math.PI * 32) * (1 - (perfScore?.currentScore ?? 100) / 100)}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <span className="absolute text-xl font-black text-[var(--text-primary)]">
+                    {perfScore?.currentScore ?? 100}
+                  </span>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-extrabold text-[var(--text-primary)]">Indeks Performa Kumulatif</h3>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-medium leading-relaxed">
+                    Dihitung realtime berdasarkan Kehadiran (30%), KPI Cetak (50%), dan Leader Score (20%).
+                  </p>
+                </div>
+              </div>
+
+              {/* Attendance/KPI/Leader breakdown progress bars */}
+              <div className="flex flex-col gap-3 rounded-2xl bg-gray-50/50 p-4 border border-[var(--border-color)]">
+                <div>
+                  <div className="flex justify-between items-center text-xs mb-1.5 font-bold text-[var(--text-secondary)]">
+                    <span>Kehadiran (Bobot 30%)</span>
+                    <span className="text-[var(--text-primary)]">{perfScore?.attendanceScore ?? 100}/100</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                    <div className="h-full bg-[var(--success)] transition-all" style={{ width: `${perfScore?.attendanceScore ?? 100}%` }}></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center text-xs mb-1.5 font-bold text-[var(--text-secondary)]">
+                    <span>KPI Cetak (Bobot 50%)</span>
+                    <span className="text-[var(--text-primary)]">{perfScore?.kpiScore ?? 100}/100</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                    <div className="h-full bg-[var(--info)] transition-all" style={{ width: `${perfScore?.kpiScore ?? 100}%` }}></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center text-xs mb-1.5 font-bold text-[var(--text-secondary)]">
+                    <span>Leader Score (Bobot 20%)</span>
+                    <span className="text-[var(--text-primary)]">{perfScore?.leaderScore ?? 100}/100</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                    <div className="h-full bg-[var(--primary)] transition-all" style={{ width: `${perfScore?.leaderScore ?? 100}%` }}></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Raise Projection Banner */}
+              <div className="rounded-2xl border border-[#FFE082] bg-gradient-to-r from-[#FFFDF0] to-[#FFFDEB] p-4 flex flex-col gap-2">
+                <span className="flex items-center gap-1.5 text-xs font-bold text-[#B7791F]">
+                  <TrendingUp size={15} />
+                  <span>Proyeksi Kenaikan Gaji</span>
+                </span>
+                <p className="text-xs font-bold text-[var(--text-primary)] leading-relaxed">
+                  Jika skor ini dipertahankan, estimasi kenaikan gaji tahun depan: <span className="text-[var(--success)] font-extrabold text-sm ml-0.5">+{perfScore?.projectedRaisePercent ?? 0}%</span>.
+                </p>
+                {perfScore?.currentScore === 100 && (
+                  <p className="text-[10px] text-[#B7791F] font-bold mt-1 border-t border-[#FFF9C4] pt-2">
+                    Pertahankan skor 100 selama 365 hari untuk peluang kenaikan hingga 10%.
+                  </p>
+                )}
+                <span className="text-[10px] text-[var(--text-muted)] font-medium italic leading-normal border-t border-[#FFF9C4] pt-2 mt-1">
+                  Disclaimer: {perfScore?.raiseProjectionDisclaimer || "Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan."}
+                </span>
+              </div>
+
+              {/* Latest score change reason */}
+              {perfHistory.length > 0 && perfHistory[0].changeReason && (
+                <div className="text-[11px] text-[var(--text-secondary)] font-medium leading-relaxed bg-gray-50 p-2.5 rounded-xl border border-[var(--border-color)]">
+                  <span className="font-bold block text-[var(--text-primary)] mb-0.5">Catatan Perubahan Terakhir:</span>
+                  {perfHistory[0].changeReason}
+                </div>
+              )}
+            </div>
+
+            {/* SVG Score History Line Chart */}
+            <div className="card p-5 bg-white border border-[var(--border-color)] shadow-sm flex flex-col gap-4">
+              <span className="flex items-center gap-1.5 text-xs font-extrabold text-[var(--text-secondary)] uppercase tracking-wide border-b border-[var(--border-color)] pb-3">
+                <Activity size={14} className="text-[var(--info)]" />
+                <span>Tren Skor 7 Hari Terakhir</span>
+              </span>
+
+              {perfHistory.length < 2 ? (
+                <div className="py-6 text-center text-xs text-[var(--text-muted)] font-semibold bg-gray-50/50 rounded-2xl border border-dashed border-[var(--border-color)]">
+                  Tren performa akan muncul setelah skor tercatat beberapa hari.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="h-32 w-full flex items-end">
+                    {/* Visual SVG Line Graph */}
+                    <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      {/* Grid Lines */}
+                      <line x1="0" y1="20" x2="100" y2="20" stroke="#f3f4f6" strokeWidth="0.5" />
+                      <line x1="0" y1="50" x2="100" y2="50" stroke="#f3f4f6" strokeWidth="0.5" />
+                      <line x1="0" y1="80" x2="100" y2="80" stroke="#f3f4f6" strokeWidth="0.5" />
+
+                      {/* Score Polyline */}
+                      <path
+                        fill="none"
+                        stroke="var(--info)"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d={perfHistory
+                          .slice(0, 7)
+                          .reverse()
+                          .map((snap, idx, arr) => {
+                            const x = arr.length > 1 ? (idx / (arr.length - 1)) * 100 : 50;
+                            // Map score 0-100 to y 95-5 (invert scale)
+                            const y = 95 - (snap.currentScore / 100) * 90;
+                            return `${idx === 0 ? "M" : "L"} ${x} ${y}`;
+                          })
+                          .join(" ")}
+                      />
+                      
+                      {/* Score dots */}
+                      {perfHistory.slice(0, 7).reverse().map((snap, idx, arr) => {
+                        const x = arr.length > 1 ? (idx / (arr.length - 1)) * 100 : 50;
+                        const y = 95 - (snap.currentScore / 100) * 90;
+                        return (
+                          <circle key={snap.id || idx} cx={x} cy={y} r="2.5" fill="white" stroke="var(--info)" strokeWidth="1.5" />
+                        );
+                      })}
+                    </svg>
+                  </div>
+                  
+                  {/* Chart Label Dates */}
+                  <div className="flex justify-between items-center text-[10px] text-[var(--text-secondary)] font-bold px-1 pt-1">
+                    <span>{new Date(perfHistory.slice(0, 7).reverse()[0].scoreDate).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</span>
+                    <span>Tren performa harian</span>
+                    <span>{new Date(perfHistory[0].scoreDate).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Badge Showcase */}
+            <div className="card p-5 bg-white border border-[var(--border-color)] shadow-sm flex flex-col gap-4">
+              <span className="flex items-center justify-between gap-3 border-b border-[var(--border-color)] pb-3">
+                <span className="flex items-center gap-1.5 text-xs font-extrabold text-[var(--text-secondary)] uppercase tracking-wide">
+                  <Award size={14} className="text-[var(--primary-dark)]" />
+                  <span>Showcase Badge ({perfBadges.length})</span>
+                </span>
+                <span className="text-[10px] font-bold text-[var(--text-muted)]">Pencapaian Karyawan</span>
+              </span>
+
+              {perfBadges.length === 0 ? (
+                <div className="py-6 text-center text-xs text-[var(--text-muted)] font-semibold bg-gray-50/50 rounded-2xl border border-dashed border-[var(--border-color)]">
+                  Belum ada badge diraih. Terus berkinerja baik!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {perfBadges.map((badge) => (
+                    <div key={badge.id} className="flex gap-3 items-center rounded-2xl border border-[var(--border-color)] p-3 bg-gray-50/30">
+                      <div className="w-10 h-10 rounded-2xl bg-[var(--primary-light)] flex items-center justify-center shrink-0 border border-[#FFE082]">
+                        <Award size={20} className="text-[var(--primary-dark)]" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-extrabold text-sm text-[var(--text-primary)] leading-tight">{badge.name}</p>
+                        <p className="text-[11px] text-[var(--text-secondary)] mt-0.5 leading-normal">{badge.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Quick Actions Grid (Max 2 rows on mobile) */}

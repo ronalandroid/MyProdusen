@@ -1,5 +1,14 @@
 # Changelog — MyProdusen
 
+## 2026-05-31 — Gamification & Theme UI UAT Pass
+
+- **Employee Gamification UI**: Implemented interactive cumulative Score Card (0-100), active tier badges, dynamic Kehadiran/KPI/Leader score breakdowns, earned badge showcase grid, recent change reason notes, and responsive inline SVG 7-day trend chart. Added raise projection estimate banner (+X%) with Platinum projection disclaimer.
+- **Leader Gamification UI**: Developed a unified `/dashboard/leader/team` team management workspace containing Team Score Table, Team Leaderboard, and Input Leader Score form with dynamic note validations (>10 characters) and live anomaly warning states (<40 or delta >30). Salary/raise information is completely isolated.
+- **Superadmin Gamification UI**: Designed a comprehensive executive Performance Overview hub displaying tier distributions, raise budget projections, top performers list, period state managers, and an anomaly review override queue with required audit notes.
+- **Theme Color Customizer**: Created a dynamic setting tab rendering color wheel customization palettes with real-time WCAG contrast validations (>4.5:1 ratio), brand default resets, and performance scoring weights configuration.
+- **Perceived Speed & skeletons**: Mapped loading skeletons across dashboard score cards, leaderboard, employee list, payroll, attendance, and KPI entry tables. Mapped exact E2E loading copy transitions.
+- **Verification Gates**: Passed ESLint/TSC check, compiled Next.js production build package cleanly, and ran all 432 unit/E2E tests successfully.
+
 ## 2026-05-26 — Final UAT UI/UX Pass
 
 - Implemented the Superadmin Attendance Policy Control Panel in `/dashboard/settings` enabling customizable grace minutes, geofence radius, two-tier late deductions, half-day pay factors, and global realtime payroll sync.
