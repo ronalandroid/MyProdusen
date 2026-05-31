@@ -555,7 +555,7 @@ export default function EmployeeBeranda({ profile }: Props) {
                 </div>
               </div>
 
-              {/* Attendance/KPI/Leader breakdown progress bars */}
+              {/* Attendance/KPI/Culture breakdown progress bars */}
               <div className="flex flex-col gap-3 rounded-2xl bg-gray-50/50 p-4 border border-[var(--border-color)]">
                 <div>
                   <div className="flex justify-between items-center text-xs mb-1.5 font-bold text-[var(--text-secondary)]">
@@ -569,7 +569,7 @@ export default function EmployeeBeranda({ profile }: Props) {
 
                 <div>
                   <div className="flex justify-between items-center text-xs mb-1.5 font-bold text-[var(--text-secondary)]">
-                    <span>KPI Cetak (Bobot 50%)</span>
+                    <span>KPI Produksi (Bobot 50%)</span>
                     <span className="text-[var(--text-primary)]">{perfScore?.kpiScore ?? 100}/100</span>
                   </div>
                   <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
@@ -585,6 +585,48 @@ export default function EmployeeBeranda({ profile }: Props) {
                   <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
                     <div className="h-full bg-[var(--primary)] transition-all" style={{ width: `${perfScore?.leaderScore ?? 100}%` }}></div>
                   </div>
+
+                  {/* Subcriteria values if available */}
+                  {perfScore?.subcriteria && (
+                    <div className="mt-3 grid grid-cols-2 gap-2 border-t border-gray-200/60 pt-3 text-[10px] font-bold text-[var(--text-secondary)]">
+                      {perfScore.subcriteria.cleanlinessScore !== undefined && (
+                        <div className="flex justify-between items-center bg-white/80 rounded-xl p-1.5 px-2 border border-gray-100 shadow-sm">
+                          <span>Kebersihan</span>
+                          <span className="font-extrabold text-[var(--text-primary)]">{perfScore.subcriteria.cleanlinessScore}/100</span>
+                        </div>
+                      )}
+                      {perfScore.subcriteria.disciplineScore !== undefined && (
+                        <div className="flex justify-between items-center bg-white/80 rounded-xl p-1.5 px-2 border border-gray-100 shadow-sm">
+                          <span>Disiplin</span>
+                          <span className="font-extrabold text-[var(--text-primary)]">{perfScore.subcriteria.disciplineScore}/100</span>
+                        </div>
+                      )}
+                      {perfScore.subcriteria.neatnessScore !== undefined && (
+                        <div className="flex justify-between items-center bg-white/80 rounded-xl p-1.5 px-2 border border-gray-100 shadow-sm">
+                          <span>Kerapian</span>
+                          <span className="font-extrabold text-[var(--text-primary)]">{perfScore.subcriteria.neatnessScore}/100</span>
+                        </div>
+                      )}
+                      {perfScore.subcriteria.sopComplianceScore !== undefined && (
+                        <div className="flex justify-between items-center bg-white/80 rounded-xl p-1.5 px-2 border border-gray-100 shadow-sm">
+                          <span>Kepatuhan SOP</span>
+                          <span className="font-extrabold text-[var(--text-primary)]">{perfScore.subcriteria.sopComplianceScore}/100</span>
+                        </div>
+                      )}
+                      {perfScore.subcriteria.teamworkScore !== undefined && (
+                        <div className="flex justify-between items-center bg-white/80 rounded-xl p-1.5 px-2 border border-gray-100 shadow-sm">
+                          <span>Kerja Sama Tim</span>
+                          <span className="font-extrabold text-[var(--text-primary)]">{perfScore.subcriteria.teamworkScore}/100</span>
+                        </div>
+                      )}
+                      {perfScore.subcriteria.responsibilityScore !== undefined && (
+                        <div className="flex justify-between items-center bg-white/80 rounded-xl p-1.5 px-2 border border-gray-100 shadow-sm">
+                          <span>Tanggung Jawab</span>
+                          <span className="font-extrabold text-[var(--text-primary)]">{perfScore.subcriteria.responsibilityScore}/100</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

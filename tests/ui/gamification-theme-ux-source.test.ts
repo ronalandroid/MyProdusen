@@ -15,8 +15,16 @@ describe('Gamification, Theme, and Perceived-Speed UX UI safeguards', () => {
     
     // Breakdown
     expect(employee).toContain('Kehadiran (Bobot 30%)');
-    expect(employee).toContain('KPI Cetak (Bobot 50%)');
+    expect(employee).toContain('KPI Produksi (Bobot 50%)');
     expect(employee).toContain('Perilaku Kerja (Bobot 20%)');
+
+    // Subcriteria
+    expect(employee).toContain('Kebersihan');
+    expect(employee).toContain('Disiplin');
+    expect(employee).toContain('Kerapian');
+    expect(employee).toContain('Kepatuhan SOP');
+    expect(employee).toContain('Kerja Sama Tim');
+    expect(employee).toContain('Tanggung Jawab');
 
     // Raise projection banner & message
     expect(employee).toContain('Proyeksi Kenaikan Gaji');
@@ -39,9 +47,18 @@ describe('Gamification, Theme, and Perceived-Speed UX UI safeguards', () => {
 
   it('leader team management includes score inputs, anomaly warnings, and leaderboard', () => {
     // Leader score inputs
-    expect(leader).toContain('Input Penilaian Perilaku');
-    expect(leader).toContain('Score:');
+    expect(leader).toContain('Input Penilaian Perilaku Tim');
+    expect(leader).toContain('Input Skor Perilaku Kerja (0–100)');
     
+    // Subcriteria sliders
+    expect(leader).toContain('Input Subkriteria Nilai (Opsional)');
+    expect(leader).toContain('Kebersihan');
+    expect(leader).toContain('Disiplin');
+    expect(leader).toContain('Kerapian');
+    expect(leader).toContain('Kepatuhan SOP');
+    expect(leader).toContain('Kerja Sama Tim');
+    expect(leader).toContain('Tanggung Jawab');
+
     // Notes validation
     expect(leader).toContain('notes.length < 10');
     expect(leader).toContain('Notes/catatan minimal 10 karakter.');
@@ -75,9 +92,19 @@ describe('Gamification, Theme, and Perceived-Speed UX UI safeguards', () => {
     
     // Anomaly queue & audit overrides
     expect(dashboard).toContain('Antrean Review Anomali Penilaian Perilaku');
-    expect(dashboard).toContain('overrideScoreInput');
+    expect(dashboard).toContain('overrideLeaderScoreInput');
     expect(dashboard).toContain('Alasan override minimal 10 karakter.');
-    expect(dashboard).toContain('overrideScore');
+    expect(dashboard).toContain('override');
+
+    // Superadmin subcriteria sliders
+    expect(dashboard).toContain('adminSubcriteriaEnabled');
+    expect(dashboard).toContain('Kebersihan');
+    expect(dashboard).toContain('Disiplin');
+    expect(dashboard).toContain('Kerapian');
+    expect(dashboard).toContain('Kepatuhan SOP');
+    expect(dashboard).toContain('Kerja Sama Tim');
+    expect(dashboard).toContain('Tanggung Jawab');
+    expect(dashboard).toContain('Nilai Superadmin menjadi nilai final jika sudah diisi.');
   });
 
   it('theme customizer color wheel, reset button, and contrast check exist', () => {

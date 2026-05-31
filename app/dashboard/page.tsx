@@ -284,21 +284,50 @@ function SuperadminGamificationHub({
 
   // Override State for anomalies
   const [activeOverrideMemberId, setActiveOverrideMemberId] = useState<string | null>(null);
-  const [overrideScoreInput, setOverrideScoreInput] = useState<number | "">("");
+  const [overrideLeaderScoreInput, setOverrideLeaderScoreInput] = useState<number | "">("");
   const [overrideReason, setOverrideReason] = useState("");
   const [overrideSaving, setOverrideSaving] = useState(false);
   const [overrideFeedback, setOverrideFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
+  // Superadmin subcriteria states
+  const [adminSubcriteriaEnabled, setAdminSubcriteriaEnabled] = useState(false);
+  const [adminCleanliness, setAdminCleanliness] = useState(80);
+  const [adminDiscipline, setAdminDiscipline] = useState(80);
+  const [adminNeatness, setAdminNeatness] = useState(80);
+  const [adminSop, setAdminSop] = useState(80);
+  const [adminTeamwork, setAdminTeamwork] = useState(80);
+  const [adminResponsibility, setAdminResponsibility] = useState(80);
+
   const handleOpenOverride = (employeeId: string, currentScore: number) => {
     setActiveOverrideMemberId(employeeId);
-    setOverrideScoreInput(currentScore);
+    setOverrideLeaderScoreInput(currentScore);
     setOverrideReason("");
     setOverrideFeedback(null);
+    setAdminSubcriteriaEnabled(false);
+    setAdminCleanliness(80);
+    setAdminDiscipline(80);
+    setAdminNeatness(80);
+    setAdminSop(80);
+    setAdminTeamwork(80);
+    setAdminResponsibility(80);
+  };
+
+  const handleAdminSubcriteriaChange = (key: string, val: number) => {
+    let c = adminCleanliness, d = adminDiscipline, n = adminNeatness, s = adminSop, t = adminTeamwork, r = adminResponsibility;
+    if (key === 'cleanliness') { setAdminCleanliness(val); c = val; }
+    else if (key === 'discipline') { setAdminDiscipline(val); d = val; }
+    else if (key === 'neatness') { setAdminNeatness(val); n = val; }
+    else if (key === 'sop') { setAdminSop(val); s = val; }
+    else if (key === 'teamwork') { setAdminTeamwork(val); t = val; }
+    else if (key === 'responsibility') { setAdminResponsibility(val); r = val; }
+    
+    const avg = Math.round((c + d + n + s + t + r) / 6);
+    setOverrideLeaderScoreInput(avg);
   };
 
   const handleOverrideSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeOverrideMemberId || overrideScoreInput === "") return;
+    if (!activeOverrideMemberId || overrideLeaderScoreInput === "") return;
     setOverrideSaving(true);
     setOverrideFeedback(null);
 
@@ -307,11 +336,18 @@ function SuperadminGamificationHub({
         throw new Error("Alasan override minimal 10 karakter.");
       }
 
+      const currentSummary = performanceSummaries.find(s => s.employeeId === activeOverrideMemberId);
+      const existingAttendance = currentSummary?.attendanceScore ?? 100;
+      const existingKpi = currentSummary?.kpiScore ?? 100;
+
       const res = await fetch(`/api/performance/scores/${activeOverrideMemberId}/override`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({
-          score: Number(overrideScoreInput),
+          score: Number(overrideLeaderScoreInput),
+          attendanceScore: existingAttendance,
+          kpiScore: existingKpi,
+          leaderScore: Number(overrideLeaderScoreInput),
           reason: overrideReason.trim(),
         }),
       });
@@ -468,13 +504,51 @@ function SuperadminGamificationHub({
         </div>
       </div>
 
+      {/* Penilaian Perilaku Kerja dashboard card */}
+      <div className="card p-5 bg-white border border-[var(--border-color)] shadow-sm flex flex-col gap-4 animate-slide-up" style={{ animationDelay: "180ms" }}>
+        <div className="flex flex-wrap justify-between items-start gap-2 border-b border-[var(--border-color)] pb-3">
+          <div>
+            <h3 className="text-base font-extrabold text-[var(--text-primary)]">Penilaian Perilaku Kerja (Culture & Discipline)</h3>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">Daftar karyawan aktif untuk review nilai perilaku kerja final.</p>
+            <span className="text-[10px] text-[var(--danger)] font-bold mt-1.5 block">
+              💡 Nilai Superadmin menjadi nilai final jika sudah diisi.
+            </span>
+          </div>
+          <span className="badge badge-info text-xs font-bold shrink-0">{performanceSummaries.length} Karyawan</span>
+        </div>
+
+        <div className="max-h-[300px] overflow-y-auto flex flex-col gap-2 pr-1">
+          {performanceSummaries.length === 0 ? (
+            <p className="text-xs text-[var(--text-muted)] italic text-center py-4">Belum ada data performa karyawan.</p>
+          ) : (
+            performanceSummaries.map((snap, idx) => (
+              <div key={snap.employeeId || idx} className="flex justify-between items-center gap-3 p-3 rounded-2xl bg-gray-50/50 border hover:border-[var(--primary)] transition-all">
+                <div className="min-w-0">
+                  <strong className="text-xs text-[var(--text-primary)] font-extrabold block">Karyawan: {snap.employeeId.slice(0, 8)}...</strong>
+                  <span className="text-[10px] text-[var(--text-secondary)] font-bold">
+                    Nilai Perilaku Saat Ini: <span className="font-extrabold text-[var(--text-primary)]">{snap.leaderScore ?? 100}</span>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenOverride(snap.employeeId, snap.leaderScore ?? 100)}
+                  className="btn btn-primary btn-xs rounded-xl font-bold min-h-[32px] px-3 text-[11px]"
+                >
+                  Input Nilai Final
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
       {/* Culture & Discipline Score Anomaly Queue */}
       <div className="card p-5 bg-white border border-[var(--border-color)] shadow-sm flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3 border-b border-[var(--border-color)] pb-3">
           <div>
             <h3 className="text-base font-extrabold text-[var(--text-primary)]">Antrean Review Anomali Penilaian Perilaku</h3>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-              Skor leader di bawah 40 atau perubahan ekstrem (&gt;30 poin) masuk review Superadmin untuk persetujuan.
+              Skor perilaku kerja di bawah 40 atau perubahan ekstrem (&gt;30 poin) masuk review Superadmin untuk persetujuan.
             </p>
           </div>
           <span className="badge badge-danger font-extrabold text-xs">{performanceAnomalies.length} Pending</span>
@@ -547,10 +621,9 @@ function SuperadminGamificationHub({
                 {overrideFeedback.message}
               </div>
             )}
-
             <form onSubmit={handleOverrideSubmit} className="flex flex-col gap-4">
               <label className="flex flex-col gap-1.5 text-xs font-bold text-[var(--text-primary)]">
-                Input Skor Performa Baru (0–100)
+                Input Skor Perilaku Kerja Baru (Final)
                 <input
                   type="number"
                   min="0"
@@ -558,11 +631,74 @@ function SuperadminGamificationHub({
                   required
                   placeholder="Contoh: 90"
                   className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none font-bold text-center"
-                  value={overrideScoreInput}
-                  onChange={(e) => setOverrideScoreInput(e.target.value !== "" ? Number(e.target.value) : "")}
-                  disabled={overrideSaving}
+                  value={overrideLeaderScoreInput}
+                  onChange={(e) => setOverrideLeaderScoreInput(e.target.value !== "" ? Number(e.target.value) : "")}
+                  disabled={overrideSaving || adminSubcriteriaEnabled}
                 />
               </label>
+
+              {/* Quick score buttons */}
+              <div className="flex gap-2 justify-center">
+                {[80, 90, 100].map((quickVal) => (
+                  <button
+                    key={quickVal}
+                    type="button"
+                    onClick={() => setOverrideLeaderScoreInput(quickVal)}
+                    disabled={overrideSaving || adminSubcriteriaEnabled}
+                    className="btn btn-secondary btn-xs rounded-xl font-bold min-h-[36px] flex-1 text-xs"
+                  >
+                    Set {quickVal}
+                  </button>
+                ))}
+              </div>
+
+              {/* Optional subcriteria sliders */}
+              <div className="border border-[var(--border-color)] bg-gray-50/50 rounded-2xl p-4 flex flex-col gap-3">
+                <label className="flex items-center gap-2 text-xs font-black text-[var(--text-primary)] cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer"
+                    checked={adminSubcriteriaEnabled}
+                    onChange={(e) => setAdminSubcriteriaEnabled(e.target.checked)}
+                  />
+                  <span>Input Subkriteria Nilai (Opsional)</span>
+                </label>
+
+                {adminSubcriteriaEnabled && (
+                  <div className="flex flex-col gap-3.5 mt-2 border-t border-gray-200/60 pt-3">
+                    {[
+                      { key: 'cleanliness', label: 'Kebersihan', value: adminCleanliness },
+                      { key: 'discipline', label: 'Disiplin', value: adminDiscipline },
+                      { key: 'neatness', label: 'Kerapian', value: adminNeatness },
+                      { key: 'sop', label: 'Kepatuhan SOP', value: adminSop },
+                      { key: 'teamwork', label: 'Kerja Sama Tim', value: adminTeamwork },
+                      { key: 'responsibility', label: 'Tanggung Jawab', value: adminResponsibility }
+                    ].map((sub) => (
+                      <div key={sub.key} className="flex flex-col gap-1 text-xs font-bold text-[var(--text-secondary)]">
+                        <div className="flex justify-between items-center">
+                          <span>{sub.label}</span>
+                          <span className="text-[var(--text-primary)] font-extrabold">{sub.value}/100</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          className="w-full accent-[var(--primary)] h-1.5 bg-gray-200 rounded-lg cursor-pointer"
+                          value={sub.value}
+                          onChange={(e) => handleAdminSubcriteriaChange(sub.key, Number(e.target.value))}
+                        />
+                      </div>
+                    ))}
+                    <div className="text-[10px] text-gray-500 font-bold bg-white p-2 rounded-xl border border-gray-200/60 leading-normal text-center">
+                      * Nilai utama otomatis terhitung dari rata-rata 6 subkriteria di atas.
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-[10px] text-[var(--danger)] font-bold text-center">
+                * Nilai Superadmin menjadi nilai final jika sudah diisi.
+              </div>
 
               <label className="flex flex-col gap-1.5 text-xs font-bold text-[var(--text-primary)]">
                 Alasan Override Skor (Min. 10 Karakter)
@@ -583,7 +719,7 @@ function SuperadminGamificationHub({
               <div className="flex gap-2 mt-2">
                 <button
                   type="submit"
-                  disabled={overrideSaving || overrideScoreInput === "" || overrideReason.trim().length < 10}
+                  disabled={overrideSaving || overrideLeaderScoreInput === "" || overrideReason.trim().length < 10}
                   className="btn btn-primary flex-1 min-h-[44px] rounded-xl font-bold flex items-center justify-center gap-1.5"
                 >
                   <Sparkles size={14} />

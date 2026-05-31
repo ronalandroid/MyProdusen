@@ -662,3 +662,37 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - All submit/update/override actions require audit log: `CULTURE_SCORE_SUBMITTED`, `CULTURE_SCORE_UPDATED`, `CULTURE_SCORE_OVERRIDDEN`.
 - Employee sees transparent score breakdown with Perilaku Kerja explanation.
 - Preferred API: `/api/performance/culture-score`; legacy `/api/leader/performance/leader-score` remains alias.
+
+## Gamification & Culture/Discipline UX UAT Verification Report — 2026-05-31
+
+### Overview
+Updated all gamification UI labels, breakdowns, and flows from the legacy "Leader Score" to "Penilaian Perilaku Kerja / Culture & Discipline Score" as per UAT production specifications.
+
+### Final Score Formula
+The total employee/leader performance score utilizes the official weighted breakdown:
+- **Kehadiran (Attendance Score)**: 30% weight
+- **KPI Produksi**: 50% weight
+- **Penilaian Perilaku Kerja (Culture & Discipline Score)**: 20% weight
+
+### UI & UX Implementations
+
+#### 1. Employee Dashboard UI
+- Replaced all user-facing "Leader Score" labels with "Perilaku Kerja (Bobot 20%)" and "Kehadiran (Bobot 30%)" / "KPI Produksi (Bobot 50%)".
+- Added localized explanation: *"Perilaku Kerja dinilai dari kebersihan, disiplin, kerapian, kepatuhan SOP, kerja sama tim, dan tanggung jawab."*
+- Integrated dynamic subcriteria list cards mapping Kebersihan, Disiplin, Kerapian, Kepatuhan SOP, Kerja Sama Tim, and Tanggung Jawab when database snapshot values are populated.
+
+#### 2. Leader Workspace
+- Replaced the action buttons and triggers from "Input Leader Score" to "Input Penilaian Perilaku Tim".
+- Fitted the submission form with the required Employee Profile summary, a 0–100 integer input, and a minimum 10-character notes field.
+- Added optional subcriteria sliders (Kebersihan, Disiplin, Kerapian, Kepatuhan SOP, Kerja Sama Tim, Tanggung Jawab) that automatically compute a rounded average to set the main behavior score.
+- Implemented real-time client-side anomaly alerts whenever a score is set under 40 points or the score delta exceeds 30 points.
+- Guaranteed complete salary privacy with zero exposure of projection budgets.
+
+#### 3. Superadmin Control Center
+- Maintained a dedicated "Penilaian Perilaku Kerja" review list, anomaly queues, and overview metrics.
+- Integrated quick preset score triggers (Set 80, Set 90, Set 100) and optional subcriteria sliders in the override panel.
+- Displayed the final score priority disclaimer note: *"Nilai Superadmin menjadi nilai final jika sudah diisi."*
+
+### Automated Verification
+- Upgraded the automated Vitest test suite (`tests/ui/gamification-theme-ux-source.test.ts`) to assert the presence of "Perilaku Kerja (Bobot 20%)", "KPI Produksi (Bobot 50%)", subcriteria labels, anomaly warning states, and priority disclaimers.
+- All 438/438 regression checks successfully passed local gates.

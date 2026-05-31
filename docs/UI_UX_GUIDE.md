@@ -677,9 +677,9 @@ Main navigation follows MyProdusen core scope instead of showing every Talenta-l
 
 ## Gamification & Theme UI UAT Pass — 2026-05-31
 
-- **Employee Gamification Dashboard**: Styled cumulative Score Card (0–100) displaying active tier, SVG trend line chart, raise projection banner, and showcase badges with loading skeletons.
-- **Leader Scoring and Team UI**: Interactive team management card on `/dashboard/leader/team` with Team Score Table, Team Leaderboard, and Input Penilaian Perilaku form validating score (0-100), note minimums, and client-side anomaly warnings.
-- **Superadmin Control Hub**: Features performance overview distributions, raise budget projections, top performers list, period controllers, and a full theme color wheel kustomisasi page with contrast check safeguards.
+- **Employee Gamification Dashboard**: Styled cumulative Score Card (0–100) displaying active tier, SVG trend line chart, raise projection banner, and showcase badges with loading skeletons. Included dynamic subcriteria display (Kebersihan, Disiplin, Kerapian, Kepatuhan SOP, Kerja Sama Tim, Tanggung Jawab) if available in backend records.
+- **Leader Scoring and Team UI**: Interactive team management card on `/dashboard/leader/team` with Team Score Table, Team Leaderboard, and Input Penilaian Perilaku Tim form validating score (0-100), note minimums, optional subcriteria sliders, and client-side anomaly warnings. No employee private salary info is exposed in the leader team space.
+- **Superadmin Control Hub**: Features performance overview distributions, raise budget projections, top performers list, period controllers, and a full theme color wheel kustomisasi page with contrast check safeguards. Includes direct final score inputs with priority warnings and optional subcriteria sliders.
 
 ## Culture & Discipline Score Update
 - Old user-facing "Leader Score" label is now "Culture & Discipline Score" / "Penilaian Perilaku Kerja".

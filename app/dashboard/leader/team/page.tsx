@@ -46,6 +46,15 @@ export default function LeaderTeamPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitFeedback, setSubmitFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
+  // Subcriteria states
+  const [subcriteriaEnabled, setSubcriteriaEnabled] = useState(false);
+  const [cleanlinessScore, setCleanlinessScore] = useState(80);
+  const [disciplineScore, setDisciplineScore] = useState(80);
+  const [neatnessScore, setNeatnessScore] = useState(80);
+  const [sopComplianceScore, setSopComplianceScore] = useState(80);
+  const [teamworkScore, setTeamworkScore] = useState(80);
+  const [responsibilityScore, setResponsibilityScore] = useState(80);
+
   useEffect(() => {
     loadTeamAndLeaderboard();
   }, []);
@@ -110,6 +119,26 @@ export default function LeaderTeamPage() {
     setScoreInput(member.leaderScore ?? 100);
     setNotesInput("");
     setSubmitFeedback(null);
+    setSubcriteriaEnabled(false);
+    setCleanlinessScore(80);
+    setDisciplineScore(80);
+    setNeatnessScore(80);
+    setSopComplianceScore(80);
+    setTeamworkScore(80);
+    setResponsibilityScore(80);
+  };
+
+  const handleSubcriteriaSliderChange = (key: string, val: number) => {
+    let c = cleanlinessScore, d = disciplineScore, n = neatnessScore, s = sopComplianceScore, t = teamworkScore, r = responsibilityScore;
+    if (key === 'cleanliness') { setCleanlinessScore(val); c = val; }
+    else if (key === 'discipline') { setDisciplineScore(val); d = val; }
+    else if (key === 'neatness') { setNeatnessScore(val); n = val; }
+    else if (key === 'sop') { setSopComplianceScore(val); s = val; }
+    else if (key === 'teamwork') { setTeamworkScore(val); t = val; }
+    else if (key === 'responsibility') { setResponsibilityScore(val); r = val; }
+    
+    const avg = Math.round((c + d + n + s + t + r) / 6);
+    setScoreInput(avg);
   };
 
   const handleScoreSubmit = async (e: React.FormEvent) => {
@@ -137,6 +166,13 @@ export default function LeaderTeamPage() {
           score,
           notes,
           scoreDate: new Date().toISOString().slice(0, 10),
+          subcriteriaEnabled,
+          cleanlinessScore: subcriteriaEnabled ? cleanlinessScore : undefined,
+          disciplineScore: subcriteriaEnabled ? disciplineScore : undefined,
+          neatnessScore: subcriteriaEnabled ? neatnessScore : undefined,
+          sopComplianceScore: subcriteriaEnabled ? sopComplianceScore : undefined,
+          teamworkScore: subcriteriaEnabled ? teamworkScore : undefined,
+          responsibilityScore: subcriteriaEnabled ? responsibilityScore : undefined,
         }),
       });
 
@@ -270,11 +306,11 @@ export default function LeaderTeamPage() {
                           <strong className="text-sm text-[var(--text-primary)]">{member.attendanceScore ?? 100}</strong>
                         </div>
                         <div>
-                          <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase">KPI Cetak (50%)</p>
+                          <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase">KPI Produksi (50%)</p>
                           <strong className="text-sm text-[var(--text-primary)]">{member.kpiScore ?? 100}</strong>
                         </div>
                         <div>
-                          <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase">Leader (20%)</p>
+                          <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase">Perilaku (20%)</p>
                           <strong className="text-sm text-[var(--text-primary)]">{member.leaderScore ?? 100}</strong>
                         </div>
                       </div>
@@ -289,7 +325,7 @@ export default function LeaderTeamPage() {
                           className="btn btn-primary btn-sm rounded-xl font-bold flex items-center gap-1 min-h-[36px]"
                         >
                           <ClipboardList size={13} />
-                          <span>Input Penilaian Perilaku</span>
+                          <span>Input Penilaian Perilaku Tim</span>
                         </button>
                       </div>
                     </article>
@@ -362,10 +398,10 @@ export default function LeaderTeamPage() {
           <div className="bg-white rounded-3xl border border-[var(--border-color)] shadow-2xl p-5 sm:p-6 w-full max-w-md flex flex-col gap-4 animate-scale-in relative">
             <div className="border-b border-[var(--border-color)] pb-3">
               <h2 className="text-base sm:text-lg font-black text-[var(--text-primary)]">
-                Penilaian Perilaku: {activeScoringMember.fullName}
+                Penilaian Perilaku Kerja: {activeScoringMember.fullName}
               </h2>
               <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-semibold">
-                Skor leader saat ini: {activeScoringMember.leaderScore ?? 100}
+                Skor perilaku saat ini: {activeScoringMember.leaderScore ?? 100}
               </p>
             </div>
 
@@ -384,7 +420,7 @@ export default function LeaderTeamPage() {
 
             <form onSubmit={handleScoreSubmit} className="flex flex-col gap-4">
               <label className="flex flex-col gap-1.5 text-xs font-bold text-[var(--text-primary)]">
-                Input Skor Leader (0–100)
+                Input Skor Perilaku Kerja (0–100)
                 <input
                   type="number"
                   min="0"
@@ -394,9 +430,53 @@ export default function LeaderTeamPage() {
                   className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none font-bold text-center"
                   value={scoreInput}
                   onChange={(e) => setScoreInput(e.target.value !== "" ? Number(e.target.value) : "")}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || subcriteriaEnabled}
                 />
               </label>
+
+              {/* Optional subcriteria sliders */}
+              <div className="border border-[var(--border-color)] bg-gray-50/50 rounded-2xl p-4 flex flex-col gap-3">
+                <label className="flex items-center gap-2 text-xs font-black text-[var(--text-primary)] cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer"
+                    checked={subcriteriaEnabled}
+                    onChange={(e) => setSubcriteriaEnabled(e.target.checked)}
+                  />
+                  <span>Input Subkriteria Nilai (Opsional)</span>
+                </label>
+
+                {subcriteriaEnabled && (
+                  <div className="flex flex-col gap-3.5 mt-2 border-t border-gray-200/60 pt-3">
+                    {[
+                      { key: 'cleanliness', label: 'Kebersihan', value: cleanlinessScore },
+                      { key: 'discipline', label: 'Disiplin', value: disciplineScore },
+                      { key: 'neatness', label: 'Kerapian', value: neatnessScore },
+                      { key: 'sop', label: 'Kepatuhan SOP', value: sopComplianceScore },
+                      { key: 'teamwork', label: 'Kerja Sama Tim', value: teamworkScore },
+                      { key: 'responsibility', label: 'Tanggung Jawab', value: responsibilityScore }
+                    ].map((sub) => (
+                      <div key={sub.key} className="flex flex-col gap-1 text-xs font-bold text-[var(--text-secondary)]">
+                        <div className="flex justify-between items-center">
+                          <span>{sub.label}</span>
+                          <span className="text-[var(--text-primary)] font-extrabold">{sub.value}/100</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          className="w-full accent-[var(--primary)] h-1.5 bg-gray-200 rounded-lg cursor-pointer"
+                          value={sub.value}
+                          onChange={(e) => handleSubcriteriaSliderChange(sub.key, Number(e.target.value))}
+                        />
+                      </div>
+                    ))}
+                    <div className="text-[10px] text-gray-500 font-bold bg-white p-2 rounded-xl border border-gray-200/60 leading-normal text-center">
+                      * Nilai utama otomatis terhitung dari rata-rata 6 subkriteria di atas.
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <label className="flex flex-col gap-1.5 text-xs font-bold text-[var(--text-primary)]">
                 Catatan Alasan / Feedback (Min. 10 Karakter)

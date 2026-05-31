@@ -478,3 +478,11 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - All submit/update/override actions require audit log: `CULTURE_SCORE_SUBMITTED`, `CULTURE_SCORE_UPDATED`, `CULTURE_SCORE_OVERRIDDEN`.
 - Employee sees transparent score breakdown with Perilaku Kerja explanation.
 - Preferred API: `/api/performance/culture-score`; legacy `/api/leader/performance/leader-score` remains alias.
+
+## 2026-05-31 — Gamification Scoring Terminology & UX UAT Polish
+
+- **Score & Breakdown Recalibration**: Updated the final performance score breakdown across all dashboards to 30% Kehadiran (Attendance), 50% KPI Produksi, and 20% Penilaian Perilaku Kerja (Culture & Discipline).
+- **Employee Gamification View**: Removed all old "Leader Score" labels. Configured the Score Card breakdown to map to Kehadiran (30%), KPI Produksi (50%), and Perilaku Kerja (20%) along with the detailed Indonesian subcriteria explanation (*kebersihan, disiplin, kerapian, kepatuhan SOP, kerja sama tim, tanggung jawab*). Rendered dynamic subcriteria rating cards whenever database snapshots are available.
+- **Leader "Penilaian Perilaku Tim"**: Renamed triggers and forms to "Input Penilaian Perilaku Tim". Configured the score input form with optional sliders mapping the 6 subcriteria (automatically averaging into the main score), client-side anomaly alerts (score < 40 or delta > 30), and verified zero private salary projection leakage.
+- **Superadmin Control Panels**: Added a dedicated "Penilaian Perilaku Kerja" review list, quick override actions (Set 80/90/100 presets), subcriteria sliders, and a final priority disclaimer note: *"Nilai Superadmin menjadi nilai final jika sudah diisi."*
+- **Vitest Regression Suite**: Refactored the UI gamification source tests (`tests/ui/gamification-theme-ux-source.test.ts`) to assert the new 20% Perilaku Kerja breakdown, subcriteria sliders, anomaly alert conditions, and final score priorities. All 438 checks pass successfully.

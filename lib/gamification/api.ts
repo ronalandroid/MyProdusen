@@ -44,8 +44,9 @@ export async function getPerformanceMe(request: NextRequest) {
     const employee = await currentEmployee(user.userId);
     if (!employee) return errorResponse('Data karyawan tidak ditemukan', 404);
     const [summary] = await db.select().from(performanceScoreSummaries).where(eq(performanceScoreSummaries.employeeId, employee.id)).limit(1);
+    const [latestEntry] = await db.select().from(leaderScoreEntries).where(and(eq(leaderScoreEntries.employeeId, employee.id), eq(leaderScoreEntries.scoreType, 'CULTURE_DISCIPLINE'))).orderBy(desc(leaderScoreEntries.createdAt)).limit(1);
     const score = summary ?? { employeeId: employee.id, currentScore: 100, attendanceScore: 100, kpiScore: 100, leaderScore: 100, tier: 'Platinum', maintainedPerfectDays: 0, projectedRaisePercent: 0 };
-    return successResponse({ ...score, cultureScore: score.leaderScore, scoreLabels: { attendance: 'Attendance 30%', kpi: 'KPI Produksi 50%', culture: 'Perilaku Kerja 20%' }, cultureExplanation: 'Perilaku Kerja dinilai dari kebersihan, disiplin, kerapian, kepatuhan SOP, kerja sama tim, dan tanggung jawab.', raiseProjectionDisclaimer: 'Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.' });
+    return successResponse({ ...score, cultureScore: score.leaderScore, subcriteria: latestEntry?.subcriteria ?? null, scoreLabels: { attendance: 'Attendance 30%', kpi: 'KPI Produksi 50%', culture: 'Perilaku Kerja 20%' }, cultureExplanation: 'Perilaku Kerja dinilai dari kebersihan, disiplin, kerapian, kepatuhan SOP, kerja sama tim, dan tanggung jawab.', raiseProjectionDisclaimer: 'Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.' });
   } catch (error: any) { return handleError(error); }
 }
 
