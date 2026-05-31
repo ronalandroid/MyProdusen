@@ -412,3 +412,10 @@ GO requires core MyProdusen modules visible and working, non-core modules hidden
 - Profile and Superadmin employee list source now surface work duration, payroll estimate copy, chicken streak, score/raise projection copy.
 - Executive PDF remains protected/no-store and must include work duration/payroll/performance fields after report template expansion.
 - UAT: validate payroll privacy, protected PDF, work duration sync, chicken streak calendar, and raise disclaimer after redeploy.
+
+## UAT Auth Credential Stabilization
+- Root cause: UAT structural verification checked users/team/shift but did not verify that existing UAT user password hashes still matched `UAT_*_PASSWORD`; E2E could skip on missing `E2E_*` aliases or fail login with 401/429.
+- `setup:uat-leader-flow` now refreshes password hashes for existing Leader/Employee UAT users when `UAT_*_PASSWORD` is provided and verifies bcrypt match without printing passwords.
+- `verify:uat-leader-flow` / `verify:uat-auth` now checks `leader_login_ready`, `employee_a_login_ready`, and `employee_b_login_ready` via bcrypt compare, still without printing passwords.
+- RBAC unchanged: Leader remains team-scoped; Employee remains own-scope; no payroll/private data exposure changed.
+- If live login returns 429, wait cooldown before authenticated Playwright; 401 means rerun setup and verify auth readiness in target env.

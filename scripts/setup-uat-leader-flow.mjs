@@ -69,6 +69,12 @@ function required(value, label) {
   return normalized;
 }
 
+async function verifyPassword(label, plainText, passwordHash) {
+  const ok = await bcrypt.compare(plainText, passwordHash);
+  if (!ok) throw new Error(`${label} password hash was not refreshed`);
+  return true;
+}
+
 function parseLegacyNip(nip) {
   const match = String(nip || '').match(/^(\d{6})-(\d{4})$/);
   return match ? Number(match[2]) : 0;
@@ -149,7 +155,7 @@ async function ensureUser(tx, input) {
       update "User"
       set username = ${username}, password = ${passwordHash}, role = ${input.role}, "isActive" = true, "updatedAt" = now()
       where id = ${byEmail[0].id}
-      returning id, email, username, role, "isActive"
+      returning id, email, username, role, "isActive", password
     `;
     return rows[0];
   }
@@ -161,7 +167,7 @@ async function ensureUser(tx, input) {
   const rows = await tx`
     insert into "User" (id, email, username, password, role, "isActive", "createdAt", "updatedAt")
     values (${id}, ${email}, ${username}, ${passwordHash}, ${input.role}, true, now(), now())
-    returning id, email, username, role, "isActive"
+    returning id, email, username, role, "isActive", password
   `;
   return rows[0];
 }
@@ -232,6 +238,7 @@ try {
       password: process.env.UAT_LEADER_PASSWORD,
       role: 'LEADER',
     });
+    await verifyPassword('Leader UAT', process.env.UAT_LEADER_PASSWORD, leaderUser.password);
     const leaderEmployee = await ensureEmployee(tx, {
       userId: leaderUser.id,
       email: normEmail(process.env.UAT_LEADER_EMAIL),
@@ -249,6 +256,7 @@ try {
       password: process.env.UAT_EMPLOYEE_A_PASSWORD,
       role: 'EMPLOYEE',
     });
+    await verifyPassword('Employee UAT A', process.env.UAT_EMPLOYEE_A_PASSWORD, employeeAUser.password);
     const employeeA = await ensureEmployee(tx, {
       userId: employeeAUser.id,
       email: normEmail(process.env.UAT_EMPLOYEE_A_EMAIL),
@@ -266,6 +274,7 @@ try {
       password: process.env.UAT_EMPLOYEE_B_PASSWORD,
       role: 'EMPLOYEE',
     });
+    await verifyPassword('Employee UAT B', process.env.UAT_EMPLOYEE_B_PASSWORD, employeeBUser.password);
     const employeeB = await ensureEmployee(tx, {
       userId: employeeBUser.id,
       email: normEmail(process.env.UAT_EMPLOYEE_B_EMAIL),
@@ -277,10 +286,11 @@ try {
     });
     await ensureEmployeeAssignment(tx, { employeeId: employeeB.id, teamId: team.id, actorUserId: null });
 
-    return { team: team.id, location: location.id, shift: shift.id, leader: leaderUser.email, employeeA: employeeAUser.email, employeeB: employeeBUser.email };
+    return { team: team.id, location: location.id, shift: shift.id, leader: leaderUser.email, employeeA: employeeAUser.email, employeeB: employeeBUser.email, passwordHashesRefreshed: true };
   });
 
-  console.log('UAT Leader flow setup complete. Passwords were not printed.');
+  console.log('UAT Leader flow setup complete. Secret values were not printed.');
+  console.log('Password hashes refreshed for UAT login readiness.');
   console.log(JSON.stringify(result, null, 2));
 } finally {
   await sql.end();

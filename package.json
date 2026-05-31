@@ -49,6 +49,7 @@
     "seed:leader-teams": "node scripts/seed-leader-teams.mjs",
     "setup:uat-leader-flow": "node scripts/setup-uat-leader-flow.mjs",
     "verify:uat-leader-flow": "node scripts/verify-uat-leader-flow.mjs",
+    "verify:uat-auth": "node scripts/verify-uat-leader-flow.mjs",
     "sync:leave-balance-period": "node scripts/sync-leave-balance-period.mjs"
   },
   "keywords": [
