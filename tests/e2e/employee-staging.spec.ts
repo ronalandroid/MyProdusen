@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { authCookieHeader } from './auth-helpers';
 
 const employeeEmail = process.env.E2E_EMPLOYEE_EMAIL;
 const employeePassword = process.env.E2E_EMPLOYEE_PASSWORD;
@@ -40,7 +41,7 @@ test.describe('Employee staging gate', () => {
   test('employee can read own leader-input KPI and cannot mutate KPI', async ({ page }) => {
     await loginEmployee(page);
 
-    const ownKpi = await page.request.get('/api/kpi/production/me');
+    const ownKpi = await page.request.get('/api/kpi/production/me', { headers: { Cookie: await authCookieHeader(page) } });
     expect(ownKpi.status(), 'Employee own production KPI endpoint must be available').toBe(200);
     const ownKpiJson = await ownKpi.json();
     expect(ownKpiJson.success).toBe(true);
@@ -50,6 +51,7 @@ test.describe('Employee staging gate', () => {
     }
 
     const mutateKpi = await page.request.post('/api/leader/kpi-production', {
+      headers: { Cookie: await authCookieHeader(page) },
       data: { employeeId: 'any', teamId: 'any', date: new Date().toISOString().slice(0, 10), metricType: 'production_count', quantity: 1, unit: 'pcs' },
     });
     expect([401, 403], `Employee must not mutate KPI, got ${mutateKpi.status()}`).toContain(mutateKpi.status());

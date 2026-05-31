@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { authCookieHeader } from './auth-helpers';
 
 const superadminEmail = process.env.E2E_SUPERADMIN_EMAIL;
 const superadminPassword = process.env.E2E_SUPERADMIN_PASSWORD;
@@ -35,7 +36,7 @@ test.describe('MyProdusen staging smoke', () => {
     test.skip(testInfo.project.name !== 'desktop-1440', 'Run credential login once to avoid live rate limit.');
     await loginSuperadmin(page);
     await page.goto('/dashboard/users', { waitUntil: 'domcontentloaded', timeout: 45_000 });
-    await expect(page.getByRole('heading', { name: 'Manajemen User & Aktivasi' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Manajemen User & Aktivasi|Pengguna/i })).toBeVisible();
     await expect(page.locator('body')).not.toContainText(/forbidden|unauthorized/i);
   });
 
@@ -43,7 +44,7 @@ test.describe('MyProdusen staging smoke', () => {
     test.skip(testInfo.project.name !== 'desktop-1440', 'Run credential UAT gate once to avoid live rate limit.');
     await loginSuperadmin(page);
 
-    const teamsResponse = await page.request.get('/api/teams');
+    const teamsResponse = await page.request.get('/api/teams', { headers: { Cookie: await authCookieHeader(page) } });
     expect(teamsResponse.status(), 'Superadmin must access teams API').toBe(200);
     const teamsPayload = await teamsResponse.json();
     expect(teamsPayload.success).toBe(true);

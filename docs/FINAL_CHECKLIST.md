@@ -362,3 +362,30 @@ GO requires core MyProdusen modules visible and working, non-core modules hidden
 - All submit/update/override actions require audit log: `CULTURE_SCORE_SUBMITTED`, `CULTURE_SCORE_UPDATED`, `CULTURE_SCORE_OVERRIDDEN`.
 - Employee sees transparent score breakdown with Perilaku Kerja explanation.
 - Preferred API: `/api/performance/culture-score`; legacy `/api/leader/performance/leader-score` remains alias.
+
+## QA Automation Checkpoint — Live/Public + Culture Build
+- Local quality gates passed: `npm run lint`, `npm run test`, `npm run build`, `npm run release:check`.
+- Live route verification passed for `/api/health`, `/api/version`, and unauthenticated PDF protection.
+- CDN cache verification passed: static assets cacheable; API/dashboard/PDF/attendance/payroll responses no-store/private or non-cacheable.
+- Playwright public live smoke found horizontal overflow on `/login` mobile-360. Root cause: auth decorative/background layout could extend document width on deployed build.
+- Fix applied locally: `.auth-page` now uses `max-width: 100vw`, `overflow-x: clip`, and `box-sizing: border-box`; regression test added in `tests/ui/auth-overflow-source.test.ts`.
+- Authenticated E2E is BLOCKED because `E2E_SUPERADMIN_EMAIL`, `E2E_LEADER_EMAIL`, and `E2E_EMPLOYEE_EMAIL` are missing. Password env values without matching emails are insufficient.
+- TestSprite API key is present, but no TestSprite MCP/CLI runner is available in this repo session; TestSprite frontend/backend runs are BLOCKED pending runner/tool access.
+- Real-device GPS+selfie UAT is BLOCKED / NOT RUN. See `docs/manual-real-device-uat.md`.
+- GO/NO-GO: NO-GO for production signoff. Public live smoke must pass after redeploy, authenticated E2E credentials must be supplied, TestSprite must run, and real-device UAT must complete.
+
+## Final QA Hotfix Checkpoint — Parallel Readiness
+- Parallel QA agents verified local Playwright public E2E, backend release/RBAC gates, and TestSprite runner availability.
+- Local public Playwright passed: `npm run e2e:public` => 20 passed.
+- Authenticated E2E environment is partial: Superadmin/Employee credentials present in `.env`, Leader credentials missing (`E2E_LEADER_EMAIL`, `E2E_LEADER_PASSWORD`). Authenticated production signoff remains BLOCKED until all three roles are available and pass.
+- Authenticated Playwright helpers now forward auth cookies on API-context requests so browser login state and API checks stay aligned.
+- Superadmin users-page assertion accepts current UI label `Pengguna` plus legacy `Manajemen User & Aktivasi`.
+- TestSprite remains BLOCKED: local MCP/CLI runner not installed; `@testsprite/testsprite-runner` and `@testsprite/testsprite-cli` are not available from npm; existing cloud execution previously blocked by billing/credits.
+- No destructive DB commands were run. Migration/static release checks passed.
+- GO/NO-GO: READY FOR REDEPLOY only after commit/push; NOT production signoff until redeploy live public, authenticated roles, TestSprite/owner acceptance, real-device GPS+selfie, prod db deploy, and backup/restore are done.
+
+## Authenticated E2E Credential Verification — Live
+- Sourced local `.env` for authenticated Playwright probe without printing secrets.
+- Superadmin and Employee credential variables exist, but live `/api/auth/login` returned `401`; credentials are invalid or not provisioned on production.
+- Leader credential variables are missing: `E2E_LEADER_EMAIL`, `E2E_LEADER_PASSWORD`.
+- Authenticated E2E remains BLOCKED. Do not mark production signoff until valid production Superadmin/Leader/Employee E2E credentials are supplied and all role suites pass.
