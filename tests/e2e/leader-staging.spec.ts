@@ -1,7 +1,7 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 
-const leaderEmail = process.env.E2E_LEADER_EMAIL;
-const leaderPassword = process.env.E2E_LEADER_PASSWORD;
+const leaderEmail = process.env.E2E_LEADER_EMAIL || process.env.UAT_LEADER_EMAIL;
+const leaderPassword = process.env.E2E_LEADER_PASSWORD || process.env.UAT_LEADER_PASSWORD;
 const today = new Date().toISOString().slice(0, 10);
 
 async function loginLeader(page: Page) {
@@ -59,10 +59,10 @@ test.describe('Leader staging gate', () => {
     expect(memberA, 'Employee A must exist in Leader team').toBeTruthy();
     expect(memberB, 'Employee B must exist in Leader team').toBeTruthy();
     const kpi = await page.request.post('/api/leader/kpi-production', {
-      data: [
+      data: { entries: [
         { employeeId: memberA.id, teamId: memberA.teamId, date: today, metricType: 'production_count', quantity: 10, unit: 'pcs' },
         { employeeId: memberB.id, teamId: memberB.teamId, date: today, metricType: 'production_count', quantity: 20, unit: 'pcs' },
-      ],
+      ] },
     });
     expect([200, 201], `Leader must input KPI for assigned employee, got ${kpi.status()}`).toContain(kpi.status());
     const kpiJson = await kpi.json();

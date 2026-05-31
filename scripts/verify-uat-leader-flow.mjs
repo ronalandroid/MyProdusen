@@ -37,7 +37,7 @@ try {
       select id from "Team" where lower(name) = lower('Cetak') and active = true limit 1
     ),
     official_location as (
-      select id from "WorkLocation" where name = 'Produsen Dimsum Medan | TBM GRUP' and latitude = 3.6009125 and longitude = 98.6964954 and radius = 100 and "isActive" = true limit 1
+      select id from "WorkLocation" where id = 'loc_produsen_dimsum_medan_tbm_grup' and "isActive" = true limit 1
     ),
     leader_ready as (
       select u.id user_id, u.password, e.id employee_id

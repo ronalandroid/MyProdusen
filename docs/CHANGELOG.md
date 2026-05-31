@@ -543,3 +543,10 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - `verify:uat-leader-flow` / `verify:uat-auth` now checks `leader_login_ready`, `employee_a_login_ready`, and `employee_b_login_ready` via bcrypt compare, still without printing passwords.
 - RBAC unchanged: Leader remains team-scoped; Employee remains own-scope; no payroll/private data exposure changed.
 - If live login returns 429, wait cooldown before authenticated Playwright; 401 means rerun setup and verify auth readiness in target env.
+
+## Leader KPI Authenticated E2E Scope Fix
+- Root cause: authenticated Leader E2E posts KPI rows as a direct JSON array, but `/api/leader/kpi-production` only treated `body.entries` as batch; direct array became one invalid row and failed scope validation with 403 before assigned employee rows were processed.
+- Fix type: backend payload normalization only. Route now accepts both direct arrays and `{ entries: [...] }`, then still validates `requireLeaderTeam` and `EmployeeTeamAssignment` for every row.
+- RBAC unchanged: Leader can input KPI only for active employees assigned to the Leader team; outside-team input remains 403/404/422.
+- Permanent official location verify fix: `verify:uat-leader-flow` now checks stable WorkLocation id `loc_produsen_dimsum_medan_tbm_grup` plus `isActive=true`; no brittle exact coordinate/radius match.
+- Safe local relation debug printed only ids/booleans and no passwords/secrets; local env had no matching UAT row, production verify remains target-container task.

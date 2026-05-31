@@ -1,8 +1,8 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { authCookieHeader } from './auth-helpers';
 
-const employeeEmail = process.env.E2E_EMPLOYEE_EMAIL;
-const employeePassword = process.env.E2E_EMPLOYEE_PASSWORD;
+const employeeEmail = process.env.E2E_EMPLOYEE_EMAIL || process.env.UAT_EMPLOYEE_A_EMAIL || process.env.UAT_EMPLOYEE_EMAIL;
+const employeePassword = process.env.E2E_EMPLOYEE_PASSWORD || process.env.UAT_EMPLOYEE_A_PASSWORD || process.env.UAT_EMPLOYEE_PASSWORD;
 
 async function loginEmployee(page: Page) {
   test.skip(!employeeEmail || !employeePassword, 'Set E2E_EMPLOYEE_EMAIL and E2E_EMPLOYEE_PASSWORD.');

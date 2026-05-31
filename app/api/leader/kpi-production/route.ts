@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const user = await requireAuth(request);
     if (user.role !== 'LEADER') return forbiddenResponse('Anda tidak memiliki akses Leader');
     const body = await request.json();
-    const rows = Array.isArray(body.entries) ? body.entries : [body];
+    const rows = Array.isArray(body) ? body : Array.isArray(body.entries) ? body.entries : [body];
     const results = [];
     for (const row of rows) {
       results.push(await leaderService.createOrUpdateProductionEntry(user.userId, row));
