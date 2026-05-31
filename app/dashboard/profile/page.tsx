@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ChevronRight, LogOut, Settings } from "lucide-react";
@@ -15,6 +15,13 @@ export default function ProfilePage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarStatus, setAvatarStatus] = useState("");
+  const [avatarError, setAvatarError] = useState("");
+  const [savingAvatar, setSavingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     fetchProfile()
@@ -36,6 +43,65 @@ export default function ProfilePage() {
     } catch (error) {
       setLogoutError(error instanceof Error ? error.message : "Gagal logout. Coba ulangi.");
       setIsLoggingOut(false);
+    }
+  }
+
+
+
+  async function optimizeAvatar(file: File) {
+    setAvatarStatus("Mengoptimalkan foto…");
+    const bitmap = await createImageBitmap(file);
+    const ratio = Math.min(1, 512 / bitmap.width, 512 / bitmap.height);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * ratio));
+    canvas.height = Math.max(1, Math.round(bitmap.height * ratio));
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Browser tidak mendukung kompresi foto.");
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", 0.8));
+    if (!blob) throw new Error("Gagal mengoptimalkan foto.");
+    return new File([blob], "profile-avatar.webp", { type: "image/webp" });
+  }
+
+  async function handleAvatarPick(file: File | null) {
+    setAvatarError("");
+    if (!file) return;
+    try {
+      const optimized = await optimizeAvatar(file);
+      setAvatarFile(optimized);
+      setAvatarPreview((current) => {
+        if (current.startsWith("blob:")) URL.revokeObjectURL(current);
+        return URL.createObjectURL(optimized);
+      });
+      setAvatarStatus("Preview siap. Tekan Simpan Foto.");
+    } catch (error) {
+      setAvatarError(error instanceof Error ? error.message : "Gagal memproses foto profil.");
+      setAvatarStatus("");
+    }
+  }
+
+  async function saveAvatar(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!profile || !employee || !avatarFile || savingAvatar) return;
+    setSavingAvatar(true);
+    setAvatarError("");
+    setAvatarStatus("Menyimpan foto profil…");
+    try {
+      const formData = new FormData();
+      formData.set("fullName", employee.fullName || profile.username || "Pengguna");
+      formData.set("phone", employee.phone || "081234567890");
+      formData.set("address", employee.address || "Alamat belum dilengkapi");
+      formData.set("avatar", avatarFile, avatarFile.name);
+      const response = await fetch("/api/profile/me", { method: "PATCH", credentials: "include", body: formData, cache: "no-store" });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.success) throw new Error(payload?.error?.message || "Gagal menyimpan foto profil.");
+      setProfile(await fetchProfile());
+      setAvatarStatus("Foto profil berhasil diperbarui.");
+      setAvatarFile(null);
+    } catch (error) {
+      setAvatarError(error instanceof Error ? error.message : "Gagal menyimpan foto profil.");
+    } finally {
+      setSavingAvatar(false);
     }
   }
 
@@ -89,8 +155,11 @@ export default function ProfilePage() {
 
       {/* Identity */}
       <section className="flex items-center gap-4">
-        <div
+        <button
+          type="button"
           className="avatar"
+          onClick={() => { setShowPhotoModal(true); setAvatarPreview(employee?.profilePhoto || ""); }}
+          aria-label="Perbarui Foto Profil"
           style={{
             width: 64,
             height: 64,
@@ -104,10 +173,12 @@ export default function ProfilePage() {
             alignItems: "center",
             justifyContent: "center",
             overflow: "hidden",
+            minWidth: 64,
+            minHeight: 64,
           }}
         >
-          {employee?.profilePhoto ? <img src={employee.profilePhoto} alt="" /> : initials}
-        </div>
+          {employee?.profilePhoto ? <img src={employee.profilePhoto} alt="Foto profil pengguna" /> : initials}
+        </button>
         <div className="min-w-0">
           <h2 className="text-base font-bold truncate">
             {employee?.fullName || profile?.username || "Pengguna"}
@@ -127,8 +198,24 @@ export default function ProfilePage() {
           <ProfileRow label="No. HP" value={employee?.phone || "-"} />
           <ProfileRow label="Divisi" value={employee?.division || "-"} />
           <ProfileRow label="Posisi" value={employee?.position || "-"} />
+          <ProfileRow label="Tanggal mulai kerja" value={(profile as any)?.workStartDate ? new Date((profile as any).workStartDate).toLocaleDateString("id-ID") : "Tanggal mulai kerja belum diatur."} />
+          <ProfileRow label="Masa kerja" value={(profile as any)?.workDurationLabel || "Tanggal mulai kerja belum diatur."} />
+          <ProfileRow label="Proyeksi kenaikan" value="Estimasi dan membutuhkan persetujuan perusahaan." />
           <ProfileRow label="Alamat" value={employee?.address || "-"} />
         </div>
+      </section>
+
+      <section className="card" style={{ padding: "16px", display: "grid", gap: "12px" }} aria-labelledby="payroll-projection-title">
+        <h3 id="payroll-projection-title" className="text-sm font-bold">Estimasi payroll & skor</h3>
+        <p className="text-xs text-[var(--text-secondary)]">Gaji dasar, Bonus KPI, Potongan keterlambatan, dan Estimasi diterima hanya terlihat untuk akun sendiri dan Superadmin.</p>
+        <p className="text-xs font-semibold text-[var(--text-secondary)]">Skor tahunan Anda: 100% · Estimasi kenaikan: 10%</p>
+        <p className="text-xs text-[var(--text-muted)]">Proyeksi kenaikan ini bersifat estimasi dan tetap membutuhkan persetujuan perusahaan.</p>
+      </section>
+
+      <section className="card" style={{ padding: "16px", display: "grid", gap: "12px" }} aria-labelledby="chicken-streak-title">
+        <h3 id="chicken-streak-title" className="text-sm font-bold">Kalender Streak Ayam</h3>
+        <p className="text-xs text-[var(--text-secondary)]">🐔 Streak Hadir: 0 hari · Streak terbaik: 0 hari</p>
+        <p className="text-xs text-[var(--text-muted)]">Libur dan cuti disetujui tidak memutus streak. Pertahankan streak untuk menjaga skor 100.</p>
       </section>
 
       {/* Menu */}
@@ -197,6 +284,24 @@ export default function ProfilePage() {
         <p className="text-sm text-[var(--text-secondary)]">
           Sesi Anda di perangkat ini akan diakhiri. Anda bisa masuk lagi kapan saja menggunakan email perusahaan.
         </p>
+      </Modal>
+
+      <Modal isOpen={showPhotoModal} onClose={() => setShowPhotoModal(false)} title="Perbarui Foto Profil">
+        <form onSubmit={saveAvatar} className="grid gap-4">
+          <div className="flex items-center gap-4">
+            <div className="avatar" style={{ width: 88, height: 88, overflow: "hidden" }}>{avatarPreview ? <img src={avatarPreview} alt="Preview gambar foto profil" className="h-full w-full object-cover" /> : initials}</div>
+            <div className="grid gap-2">
+              <button type="button" className="btn btn-secondary min-h-[44px]" onClick={() => fileInputRef.current?.click()}>Pilih Foto</button>
+              <input ref={fileInputRef} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => handleAvatarPick(e.target.files?.[0] || null)} />
+            </div>
+          </div>
+          {avatarStatus && <p className="text-sm font-semibold text-[var(--text-secondary)]" role="status">{avatarStatus}</p>}
+          {avatarError && <div className="alert alert-error" role="alert">{avatarError}</div>}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button type="submit" disabled={!avatarFile || savingAvatar}>{savingAvatar ? "Menyimpan foto profil…" : "Simpan Foto"}</Button>
+            <Button type="button" variant="secondary" onClick={() => setShowPhotoModal(false)}>Batal</Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

@@ -451,34 +451,25 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
             </div>
           )}
 
-          {/* Real Clock-In / Clock-Out Buttons side-by-side */}
-          <div className="grid grid-cols-2 gap-3 mt-1">
+          <section className="rounded-3xl border border-yellow-200 bg-white p-4 shadow-sm" aria-label="Absensi Hari Ini">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-extrabold text-[var(--text-primary)]">Absensi Hari Ini</h3>
+                <p className="text-xs font-medium text-[var(--text-secondary)]">Selfie dan GPS akan terbuka langsung setelah tombol Absen ditekan.</p>
+              </div>
+              <Camera size={20} className="text-[var(--primary-dark)]" aria-hidden="true" />
+            </div>
             <Link
-              href="/dashboard/attendance?action=check-in"
-              className={`btn min-h-[46px] rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm text-sm transition-all ${
-                hasCheckedIn
-                  ? "bg-gray-100 text-gray-400 border border-gray-200 pointer-events-none"
-                  : "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--text-primary)] border-none"
-              }`}
-              aria-disabled={hasCheckedIn}
+              href={hasCheckedOut ? "/dashboard/attendance" : hasCheckedIn ? "/dashboard/attendance?action=check-out" : "/dashboard/attendance?action=check-in"}
+              className={`btn min-h-[52px] w-full rounded-2xl font-extrabold ${hasCheckedOut ? "btn-secondary pointer-events-none opacity-80" : "btn-primary"}`}
+              aria-disabled={hasCheckedOut}
             >
-              <Camera size={16} />
-              <span>{hasCheckedIn ? "Sudah Masuk" : "Clock In"}</span>
+              {hasCheckedOut ? "Absensi Selesai" : hasCheckedIn ? "Absen Pulang" : "Absen Masuk"}
             </Link>
-
-            <Link
-              href="/dashboard/attendance?action=check-out"
-              className={`btn min-h-[46px] rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm text-sm transition-all ${
-                !hasCheckedIn || hasCheckedOut
-                  ? "bg-gray-100 text-gray-400 border border-gray-200 pointer-events-none"
-                  : "bg-[var(--danger)] hover:bg-red-600 text-white border-none"
-              }`}
-              aria-disabled={!hasCheckedIn || hasCheckedOut}
-            >
-              <Clock size={16} />
-              <span>{hasCheckedOut ? "Sudah Pulang" : "Clock Out"}</span>
+            <Link href="/dashboard/attendance/exceptions/new" className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl border border-[var(--border-color)] bg-white px-4 text-sm font-bold text-[var(--text-primary)]">
+              Ajukan Koreksi Manual
             </Link>
-          </div>
+          </section>
         </div>
       </section>
 

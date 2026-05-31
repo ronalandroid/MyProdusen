@@ -20,6 +20,10 @@ interface Employee {
   position?: string | null;
   status: string;
   profilePhoto?: string | null;
+  workStartDate?: string | null;
+  workDurationDays?: number | null;
+  scorePercentage?: number | null;
+  payrollStatusSummary?: string | null;
 }
 
 const accessRoleOptions = [
@@ -68,6 +72,12 @@ export default function EmployeesPage() {
     }, 300);
     return () => clearTimeout(handle);
   }, [statusFilter, searchTerm]);
+
+  useEffect(() => {
+    const refreshOnFocus = () => fetchEmployees();
+    window.addEventListener("focus", refreshOnFocus);
+    return () => window.removeEventListener("focus", refreshOnFocus);
+  }, []);
 
   const fetchEmployees = async () => {
     try {
@@ -305,7 +315,7 @@ export default function EmployeesPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1 }}>
                 <div className="avatar" style={{ width: "40px", height: "40px", fontSize: "14px" }}>
                   {emp.profilePhoto ? (
-                    <img src={emp.profilePhoto} alt={emp.fullName} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+                    <img src={emp.profilePhoto} alt={`Foto profil ${emp.fullName}`} onError={(event) => { event.currentTarget.style.display = 'none'; }} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
                   ) : (
                     emp.fullName.substring(0, 2).toUpperCase()
                   )}
@@ -313,7 +323,10 @@ export default function EmployeesPage() {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: "14px", fontWeight: 600 }}>{emp.fullName}</div>
                   <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                    {emp.position || "—"} {emp.division ? `• ${emp.division}` : ""}
+                    {emp.position || "-"} • {emp.division || "-"}
+                  </div>
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                    Tanggal mulai kerja: {emp.workStartDate ? new Date(emp.workStartDate).toLocaleDateString("id-ID") : "belum diatur"} · Masa kerja: {emp.workDurationDays ?? 0} hari · Skor: {emp.scorePercentage ?? "-"}% · Payroll: {emp.payrollStatusSummary || "Privat"}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
                     <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>{emp.nip}</span>

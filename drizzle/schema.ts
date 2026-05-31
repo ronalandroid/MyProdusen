@@ -41,6 +41,7 @@ export const employees = pgTable('Employee', {
   phone: text('phone'),
   address: text('address'),
   joinDate: timestamp('joinDate', { mode: 'date' }).defaultNow().notNull(),
+
   division: text('division'),
   position: text('position'),
   supervisorId: text('supervisorId'),

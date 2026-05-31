@@ -17,7 +17,7 @@ type RealtimeSelfieCameraProps = {
 };
 
 const CAMERA_NOT_SUPPORTED = "Browser tidak mendukung akses kamera realtime.";
-const CAMERA_PERMISSION_ERROR = "Kamera tidak dapat diakses. Izinkan akses kamera untuk absensi.";
+const CAMERA_PERMISSION_ERROR = "Kamera tidak dapat diakses. Izinkan kamera di browser Anda.";
 const CAMERA_NOT_FOUND = "Perangkat tidak memiliki kamera yang tersedia.";
 const CAPTURE_FAILED = "Gagal mengambil selfie. Silakan coba lagi.";
 const SELFIE_TOO_LARGE_HARD = "Ukuran selfie masih terlalu besar. Coba ambil ulang dengan pencahayaan lebih baik.";

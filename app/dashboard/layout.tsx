@@ -12,6 +12,7 @@ import type { ClientUserProfile } from "@/lib/auth-client";
 
 type ProfileMe = {
   role: UserRole;
+  fullName: string;
   phone: string;
   address: string;
   profilePhoto: string;
@@ -92,7 +93,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {profileMe && profile.role !== "SUPERADMIN" && <AssignmentStatusCards profileMe={profileMe} />}
           {children}
         </main>
-        {profileMe && !profileMe.profileCompleted && <ProfileCompletionModal initialPhone={profileMe.phone} initialAddress={profileMe.address} initialProfilePhoto={profileMe.profilePhoto} onSaved={() => loadProfileState(true)} />}
+        {profileMe && !profileMe.profileCompleted && <ProfileCompletionModal initialFullName={profileMe.fullName} initialPhone={profileMe.phone} initialAddress={profileMe.address} initialProfilePhoto={profileMe.profilePhoto} onSaved={() => loadProfileState(true)} />}
       </div>
     </ToastProvider>
   );
@@ -125,7 +126,8 @@ async function compressAvatarImage(file: File) {
   return new File([blob], "profile-avatar.webp", { type: blob.type || "image/webp" });
 }
 
-function ProfileCompletionModal({ initialPhone, initialAddress, initialProfilePhoto, onSaved }: { initialPhone: string; initialAddress: string; initialProfilePhoto: string; onSaved: () => Promise<unknown> }) {
+function ProfileCompletionModal({ initialFullName, initialPhone, initialAddress, initialProfilePhoto, onSaved }: { initialFullName: string; initialPhone: string; initialAddress: string; initialProfilePhoto: string; onSaved: () => Promise<unknown> }) {
+  const [fullName, setFullName] = useState(initialFullName || "");
   const [phone, setPhone] = useState(initialPhone || "");
   const [address, setAddress] = useState(initialAddress || "");
   const avatarRef = useRef<File | null>(null);
@@ -154,7 +156,9 @@ function ProfileCompletionModal({ initialPhone, initialAddress, initialProfilePh
     event.preventDefault(); setError(""); setSuccess(""); setSaving(true);
     try {
       if (!initialProfilePhoto && !avatarRef.current) throw new Error("Foto profil wajib diunggah.");
+      if (fullName.trim().length < 3) throw new Error("Nama lengkap minimal 3 karakter.");
       const formData = new FormData();
+      formData.set("fullName", fullName.trim());
       formData.set("phone", phone);
       formData.set("address", address);
       if (avatarRef.current) formData.set("avatar", avatarRef.current, avatarRef.current.name);
@@ -172,12 +176,13 @@ function ProfileCompletionModal({ initialPhone, initialAddress, initialProfilePh
     <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="profile-onboarding-title">
       <div className="w-full max-w-lg rounded-3xl bg-white p-5 shadow-xl sm:p-6">
         <h2 id="profile-onboarding-title" className="text-xl font-extrabold text-[var(--text-primary)]">Lengkapi Data Pribadi</h2>
-        <p className="mt-2 text-sm text-[var(--text-secondary)]">Isi foto profil, nomor HP, dan alamat agar data karyawan Anda lengkap. Divisi, posisi, lokasi kerja, dan shift akan ditetapkan oleh Superadmin.</p>
+        <p className="mt-2 text-sm text-[var(--text-secondary)]">Isi foto profil, nama lengkap, nomor HP, dan alamat agar data karyawan Anda lengkap. Divisi, posisi, lokasi kerja, dan shift akan ditetapkan oleh Superadmin.</p>
         <form onSubmit={handleSubmit} className="mt-5 grid gap-4">
           <label className="text-sm font-bold text-[var(--text-primary)]">Foto profil / avatar
             <input className="input mt-2 min-h-[44px]" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => handleAvatarChange(e.target.files?.[0] || null)} required={!initialProfilePhoto} />
           </label>
           {avatarPreview && <img src={avatarPreview} alt="Preview avatar" className="h-20 w-20 rounded-full object-cover ring-2 ring-[var(--primary)]" />}
+          <label className="text-sm font-bold text-[var(--text-primary)]">Nama Lengkap<input className="input mt-2 min-h-[44px]" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Nama lengkap sesuai identitas" autoComplete="name" minLength={3} required /></label>
           <label className="text-sm font-bold text-[var(--text-primary)]">Nomor HP<input className="input mt-2 min-h-[44px]" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xxxxxxxxxx" autoComplete="tel" required /></label>
           <label className="text-sm font-bold text-[var(--text-primary)]">Alamat lengkap<textarea className="input mt-2 min-h-[116px] resize-y" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Alamat lengkap tempat tinggal" required /></label>
           {error && <div className="alert alert-error" role="alert">{error}</div>}

@@ -92,7 +92,7 @@ function getCleanAttendanceError(error: unknown, fallback = "Terjadi kendala saa
   }
 
   if (/permission|denied|izin|lokasi/i.test(message)) {
-    return "Lokasi tidak dapat diakses. Izinkan lokasi dan pastikan sinyal stabil.";
+    return "Lokasi tidak dapat diakses. Izinkan lokasi agar absensi bisa divalidasi.";
   }
 
   if (/timeout|timed out|position unavailable/i.test(message)) {
@@ -105,7 +105,7 @@ function getCleanAttendanceError(error: unknown, fallback = "Terjadi kendala saa
 function getBrowserPosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      reject(new Error("Browser tidak mendukung GPS"));
+      reject(new Error("Lokasi tidak dapat diakses. Izinkan lokasi agar absensi bisa divalidasi."));
       return;
     }
 
@@ -395,7 +395,7 @@ export default function AttendancePage() {
           <ClipboardList size={20} aria-hidden="true" />
         </div>
         <div>
-          <h3 style={{ fontSize: "14px", fontWeight: 700, color: statusContent.color, marginBottom: "4px" }}>{isLoading ? "Memuat..." : statusContent.title}</h3>
+          <h3 style={{ fontSize: "14px", fontWeight: 700, color: statusContent.color, marginBottom: "4px" }}>Absensi Hari Ini · {isLoading ? "Memuat..." : statusContent.title}</h3>
           <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{statusContent.description}</p>
         </div>
       </div>
@@ -512,7 +512,7 @@ export default function AttendancePage() {
           disabled={checkInDisabled}
           onClick={() => submitAttendance("check-in")}
         >
-          {isSubmitting ? "Memproses..." : "Check-In"}
+          {isSubmitting ? "Memproses..." : "Kirim Absen Masuk"}
         </button>
         <button
           className="btn btn-danger-outline"
@@ -520,7 +520,7 @@ export default function AttendancePage() {
           disabled={checkOutDisabled}
           onClick={() => submitAttendance("check-out")}
         >
-          {isSubmitting ? "Memproses..." : "Check-Out"}
+          {isSubmitting ? "Memproses..." : "Kirim Absen Pulang"}
         </button>
       </div>
 

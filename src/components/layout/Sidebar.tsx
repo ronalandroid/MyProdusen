@@ -63,13 +63,13 @@ export default function Sidebar({ role }: SidebarProps) {
         <div className="flex flex-col items-center gap-3 px-5 py-6 text-center">
           <img src="/logo.png" alt="MyProdusen Logo" className="w-24 h-24 object-contain drop-shadow-sm" />
           <div className="flex flex-col min-w-0">
-            <span className="text-2xl font-bold text-[var(--text-primary)] leading-tight">
-              My<span className="text-[var(--primary)]">Produsen</span>
+            <span className="text-2xl font-black leading-tight text-[#1f2937] drop-shadow-sm">
+              My<span className="text-[#6b3f00]">Produsen</span>
             </span>
-            <span className="text-xs font-semibold text-[var(--text-secondary)]">Produsen Dimsum Medan</span>
+            <span className="text-xs font-bold text-[#374151]">Produsen Dimsum Medan</span>
           </div>
           {isSuperadmin && (
-            <span className="inline-flex items-center rounded-xl bg-[var(--text-primary)] px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-[var(--primary)] shadow-sm">
+            <span className="inline-flex items-center rounded-xl border border-[#8a5a00]/30 bg-[#fffdf2] px-4 py-2 text-[11px] font-black uppercase tracking-wide text-[#3f2a00] shadow-sm">
               Super Admin
             </span>
           )}

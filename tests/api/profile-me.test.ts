@@ -7,8 +7,9 @@ import { eq } from 'drizzle-orm';
 
 const TINY_PNG_BYTES = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137, 0, 0, 0, 13, 73, 68, 65, 84, 120, 218, 99, 248, 207, 80, 15, 0, 3, 134, 1, 128, 90, 52, 125, 107, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130]);
 
-function createProfilePatchRequest(token: string, input: { phone: string; address: string; avatar?: File }) {
+function createProfilePatchRequest(token: string, input: { fullName?: string; phone: string; address: string; avatar?: File }) {
   const formData = new FormData();
+  formData.set('fullName', input.fullName || 'Budi Santoso');
   formData.set('phone', input.phone);
   formData.set('address', input.address);
   if (input.avatar) formData.set('avatar', input.avatar, input.avatar.name);
@@ -45,7 +46,18 @@ describe('/api/profile/me', () => {
     expect(data.data.assignmentStatus.hasDivision).toBe(true);
   });
 
-  it('saves avatar, phone, and address and marks profile complete', async () => {
+  it('requires full name before profile completion', async () => {
+    const user = await createTestUser('EMPLOYEE');
+    userIds.push(user.id);
+
+    const response = await PATCH(createProfilePatchRequest(user.token, { fullName: 'Bo', phone: '081234567890', address: 'Jl. Test Medan Nomor 10', avatar: createAvatarFile() }));
+    const data = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(data.error.code).toBe('PROFILE_FULL_NAME_REQUIRED');
+  });
+
+  it('saves full name, avatar, phone, and address and marks profile complete', async () => {
     const user = await createTestUser('EMPLOYEE');
     userIds.push(user.id);
 
@@ -54,8 +66,10 @@ describe('/api/profile/me', () => {
     expect(response.status).toBe(200);
     expect(data.success).toBe(true);
     expect(data.data.profileCompleted).toBe(true);
+    expect(data.data.fullName).toBe('Budi Santoso');
 
     const [employee] = await db.select().from(employees).where(eq(employees.userId, user.id)).limit(1);
+    expect(employee.fullName).toBe('Budi Santoso');
     expect(employee.phone).toBe('081234567890');
     expect(employee.address).toBe('Jl. Test Medan Nomor 10');
     expect(employee.profilePhoto).toContain('/api/profile/avatar/profile-avatars/');
@@ -67,7 +81,7 @@ describe('/api/profile/me', () => {
     const user = await createTestUser('EMPLOYEE');
     userIds.push(user.id);
 
-    const response = await PATCH(createMockRequest('PATCH', 'http://localhost:3000/api/profile/me', { token: user.token, body: { phone: '081234567890', address: 'Jl. Test Medan Nomor 10' } }) as any);
+    const response = await PATCH(createMockRequest('PATCH', 'http://localhost:3000/api/profile/me', { token: user.token, body: { fullName: 'Budi Santoso', phone: '081234567890', address: 'Jl. Test Medan Nomor 10' } }) as any);
     const data = await response.json();
 
     expect(response.status).toBe(422);
@@ -78,7 +92,7 @@ describe('/api/profile/me', () => {
     const user = await createTestUser('EMPLOYEE');
     userIds.push(user.id);
 
-    const response = await PATCH(createMockRequest('PATCH', 'http://localhost:3000/api/profile/me', { token: user.token, body: { phone: '081234567890', address: 'Jl. Test Medan Nomor 10', role: 'LEADER', division: 'Produksi', position: 'Leader Produksi', locationId: 'loc_1', shiftId: 'shift_1' } }) as any);
+    const response = await PATCH(createMockRequest('PATCH', 'http://localhost:3000/api/profile/me', { token: user.token, body: { fullName: 'Budi Santoso', phone: '081234567890', address: 'Jl. Test Medan Nomor 10', role: 'LEADER', division: 'Produksi', position: 'Leader Produksi', locationId: 'loc_1', shiftId: 'shift_1' } }) as any);
     const data = await response.json();
     expect(response.status).toBe(403);
     expect(data.success).toBe(false);

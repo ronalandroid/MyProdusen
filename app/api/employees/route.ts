@@ -9,6 +9,7 @@ import { logAudit } from '@/lib/audit';
 import { parsePagination } from '@/lib/api/pagination';
 import { AppError } from '@/lib/core/app-error';
 import { parseJsonBody, withApiHandler } from '@/lib/core/route-handler';
+import { calculateWorkDurationDays } from '@/src/services/employees/work-duration.service';
 
 export const GET = withApiHandler(async (request: NextRequest) => {
   const user = await requireAuth(request);
@@ -27,7 +28,12 @@ export const GET = withApiHandler(async (request: NextRequest) => {
 
   const pagination = parsePagination(searchParams);
   const employees = await employeeService.getEmployeesPaginated(filters, pagination);
-  const response = successResponse(employees.items);
+  const response = successResponse(employees.items.map((employee: any) => ({
+    ...employee,
+    workDurationDays: calculateWorkDurationDays(employee.workStartDate || employee.joinDate || null),
+    scorePercentage: employee.scorePercentage ?? null,
+    payrollStatusSummary: user.role === 'SUPERADMIN' ? 'Estimasi privat' : undefined,
+  })));
   response.headers.set('X-Pagination', JSON.stringify(employees.pagination));
 
   return response;
