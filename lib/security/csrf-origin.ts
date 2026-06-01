@@ -23,7 +23,7 @@ export function isTrustedMutationOrigin(input: OriginCheckInput) {
     return true;
   }
 
-  if (process.env.TESTSPRITE_DISABLE_CSRF_ORIGIN === 'true' || process.env.E2E_DISABLE_CSRF_ORIGIN === 'true') {
+  if (process.env.NODE_ENV !== 'production' && (process.env.TESTSPRITE_DISABLE_CSRF_ORIGIN === 'true' || process.env.E2E_DISABLE_CSRF_ORIGIN === 'true')) {
     return true;
   }
 

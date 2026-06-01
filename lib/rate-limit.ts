@@ -24,6 +24,10 @@ export interface RateLimitResult {
 }
 
 function isRateLimitBypassEnabled(): boolean {
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+
   return (
     process.env.NODE_ENV === 'test' ||
     process.env.TESTSPRITE_DISABLE_RATE_LIMITS === 'true' ||

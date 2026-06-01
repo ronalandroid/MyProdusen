@@ -29,8 +29,8 @@ describe('rateLimit', () => {
     expect(result.limited).toBe(true);
   });
 
-  it('bypasses login limit when TestSprite disables rate limits explicitly', async () => {
-    vi.stubEnv('NODE_ENV', 'production');
+  it('bypasses login limit only outside production when TestSprite disables rate limits explicitly', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
     vi.stubEnv('TESTSPRITE_DISABLE_RATE_LIMITS', 'true');
 
     const request = makeRequest();
@@ -42,5 +42,19 @@ describe('rateLimit', () => {
 
     expect(result.limited).toBe(false);
     expect(result.remaining).toBe(999);
+  });
+
+  it('does not allow TestSprite rate-limit bypass in production', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('TESTSPRITE_DISABLE_RATE_LIMITS', 'true');
+
+    const request = makeRequest();
+    let result = await rateLimit(request, RATE_LIMITS.LOGIN, 'login:testsprite-prod-blocked');
+
+    for (let attempt = 0; attempt < RATE_LIMITS.LOGIN.maxRequests; attempt++) {
+      result = await rateLimit(request, RATE_LIMITS.LOGIN, 'login:testsprite-prod-blocked');
+    }
+
+    expect(result.limited).toBe(true);
   });
 });

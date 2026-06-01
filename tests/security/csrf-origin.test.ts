@@ -44,6 +44,7 @@ describe('CSRF mutation origin guard', () => {
   });
 
   it('allows explicit local TestSprite origin bypass only when configured', () => {
+    vi.stubEnv('NODE_ENV', 'development');
     vi.stubEnv('TESTSPRITE_DISABLE_CSRF_ORIGIN', 'true');
 
     expect(isTrustedMutationOrigin({
@@ -51,5 +52,16 @@ describe('CSRF mutation origin guard', () => {
       requestUrl: 'http://localhost:3000/api/employees',
       origin: 'https://testsprite-tunnel.example',
     })).toBe(true);
+  });
+
+  it('does not allow TestSprite CSRF origin bypass in production', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('TESTSPRITE_DISABLE_CSRF_ORIGIN', 'true');
+
+    expect(isTrustedMutationOrigin({
+      method: 'POST',
+      requestUrl: 'https://myprodusen.online/api/employees',
+      origin: 'https://testsprite-tunnel.example',
+    })).toBe(false);
   });
 });

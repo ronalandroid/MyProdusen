@@ -12,10 +12,10 @@ describe('setAuthCookieOnResponse', () => {
     expect(response.headers.get('set-cookie')).toContain('Secure');
   });
 
-  it('allows local TestSprite HTTP clients to send auth cookie when explicitly configured', () => {
+  it('does not allow TestSprite to disable secure auth cookie in production', () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('TESTSPRITE_DISABLE_SECURE_COOKIES', 'true');
     const response = setAuthCookieOnResponse(NextResponse.json({ ok: true }), 'token');
-    expect(response.headers.get('set-cookie')).not.toContain('Secure');
+    expect(response.headers.get('set-cookie')).toContain('Secure');
   });
 });

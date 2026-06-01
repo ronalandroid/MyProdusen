@@ -1,5 +1,11 @@
 # Changelog — MyProdusen
 
+## 2026-06-02 — Production Audit Hardening
+
+- Blocked TestSprite/E2E compatibility flags from disabling rate limits, CSRF origin checks, or secure cookies in production.
+- Added regression coverage for production-only security behavior.
+- Documented remaining real-world blockers: redeploy, authenticated E2E credentials, real-device GPS+selfie UAT, payroll approval, and backup/restore drill.
+
 ## 2026-06-01 — UAT Audit Gap Fixes
 
 - Verified shift tolerance columns already exist in schema and migration `0029_shift_late_tolerance.sql`.
