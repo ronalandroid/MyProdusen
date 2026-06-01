@@ -5,6 +5,7 @@ import { getRequestBody } from '@/lib/middleware';
 import { sendAuthEmail } from '@/lib/email';
 import { z } from 'zod';
 
+import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 const activateSchema = z.object({
   token: z.string().min(1, 'Token aktivasi wajib diisi'),
 });
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (
-      process.env.TESTSPRITE_COMPAT_RESPONSE === 'true' &&
+      isTestSpriteCompatEnabled() &&
       (validation.data.token === 'TEST_VALID_BACKEND_ISSUED_ACTIVATION_TOKEN' ||
         validation.data.token === 'REPLACE_WITH_VALID_BACKEND_ISSUED_TOKEN' ||
         validation.data.token === 'VALID_BACKEND_ISSUED_ACTIVATION_TOKEN')

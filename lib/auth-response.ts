@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { isTestSpriteCompatEnabled } from './testsprite';
 export const TOKEN_COOKIE_NAME = 'myprodusen_token';
 const TESTSPRITE_TOKEN_COOKIE_NAME = 'token';
 const TESTSPRITE_AUTH_COOKIE_NAME = 'auth';
@@ -21,7 +22,7 @@ export function setAuthCookieOnResponse(response: NextResponse, token: string): 
 
   response.cookies.set(TOKEN_COOKIE_NAME, token, options);
 
-  if (process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
+  if (isTestSpriteCompatEnabled()) {
     response.cookies.set(TESTSPRITE_TOKEN_COOKIE_NAME, token, options);
     response.cookies.set(TESTSPRITE_AUTH_COOKIE_NAME, token, options);
     response.cookies.set(TESTSPRITE_JWT_COOKIE_NAME, token, options);
@@ -42,7 +43,7 @@ export function clearAuthCookieOnResponse(response: NextResponse): NextResponse 
 
   response.cookies.set(TOKEN_COOKIE_NAME, '', options);
 
-  if (process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
+  if (isTestSpriteCompatEnabled()) {
     response.cookies.set(TESTSPRITE_TOKEN_COOKIE_NAME, '', options);
     response.cookies.set(TESTSPRITE_AUTH_COOKIE_NAME, '', options);
     response.cookies.set(TESTSPRITE_JWT_COOKIE_NAME, '', options);

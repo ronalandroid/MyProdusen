@@ -11,6 +11,7 @@ import { db, users } from '@/lib/db';
 import { hashPassword, verifyPassword } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
 
+import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 async function ensureTestSpriteCredential(email: string, password: string) {
   // CRITICAL SECURITY GUARD: Never run in production
   if (process.env.NODE_ENV === 'production') {
@@ -120,7 +121,7 @@ export const POST = withApiHandler(async (request: NextRequest) => {
 
   const result = await authService.login(normalizedEmail, password);
 
-  const testspriteCompatResponse = process.env.NODE_ENV !== 'production' && process.env.TESTSPRITE_COMPAT_RESPONSE === 'true';
+  const testspriteCompatResponse = isTestSpriteCompatEnabled();
   const response = testspriteCompatResponse
     ? NextResponse.json({
       success: true,

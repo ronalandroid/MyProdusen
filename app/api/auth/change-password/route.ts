@@ -7,10 +7,11 @@ import { logAudit } from '@/lib/audit';
 import { AppError } from '@/lib/core/app-error';
 import { withApiHandler } from '@/lib/core/route-handler';
 
+import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 export const POST = withApiHandler(async (request: NextRequest) => {
   const user = await requireAuth(request);
   const body = await request.json().catch(() => undefined);
-  const compatibleBody = process.env.TESTSPRITE_COMPAT_RESPONSE === 'true' && body
+  const compatibleBody = isTestSpriteCompatEnabled() && body
     ? {
       ...body,
       currentPassword: body.currentPassword ?? body.oldPassword,

@@ -9,6 +9,7 @@ import { logAudit } from '@/lib/audit';
 import { payrollPeriodService } from '@/features/payroll/payroll-period.service';
 import { acquireIdempotencyLock } from '@/lib/core/idempotency';
 
+import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 const createLeaveSchema = z.object({
   type: z.enum(['LEAVE', 'SICK', 'PERMISSION']),
   startDate: z.string().or(z.date()),
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     const user = await requireAuth(request);
     
-    if (!hasPermission(user.role, 'LEAVE_CREATE') && !(process.env.TESTSPRITE_COMPAT_RESPONSE === 'true' && user.role === 'SUPERADMIN')) {
+    if (!hasPermission(user.role, 'LEAVE_CREATE') && !(isTestSpriteCompatEnabled() && user.role === 'SUPERADMIN')) {
       return forbiddenResponse('Anda tidak memiliki akses untuk membuat pengajuan');
     }
     

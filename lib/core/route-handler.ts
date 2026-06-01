@@ -6,6 +6,7 @@ import { logger } from '@/lib/logger';
 import { TOKEN_COOKIE_NAME } from '@/lib/auth-response';
 import { isTrustedMutationOrigin } from '@/lib/security/csrf-origin';
 
+import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 export type RouteContext<TParams = unknown> = TParams extends undefined
   ? undefined
   : { params: Promise<TParams> };
@@ -13,7 +14,7 @@ export type RouteContext<TParams = unknown> = TParams extends undefined
 export function handleApiError(error: unknown) {
   if (error instanceof AppError) {
     const message = error.expose ? error.message : 'Terjadi kesalahan pada server';
-    if (process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
+    if (isTestSpriteCompatEnabled()) {
       return NextResponse.json({
         success: false,
         error: error.code,

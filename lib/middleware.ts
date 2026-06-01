@@ -3,6 +3,7 @@ import { verifyToken, JwtPayload, getAuthCookie } from './auth';
 import { db, users } from './db';
 import { eq } from 'drizzle-orm';
 
+import { isTestSpriteCompatEnabled } from './testsprite';
 export interface AuthenticatedRequest extends NextRequest {
   user?: JwtPayload;
 }
@@ -24,7 +25,7 @@ export async function authenticate(request: NextRequest): Promise<JwtPayload | n
     token = request.cookies?.get('myprodusen_token')?.value || null;
   }
 
-  if (!token && process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
+  if (!token && isTestSpriteCompatEnabled()) {
     token = request.cookies?.get('token')?.value || request.cookies?.get('auth')?.value || request.cookies?.get('jwt')?.value || null;
   }
   

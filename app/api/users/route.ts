@@ -14,6 +14,7 @@ import { eq } from 'drizzle-orm';
 import type { UserRole } from '@/lib/permissions';
 import { z } from 'zod';
 
+import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 const updateUserSchema = z.object({
   userId: z.string().min(1, 'User wajib dipilih'),
   role: z.enum(['SUPERADMIN', 'LEADER', 'EMPLOYEE']).optional(),
@@ -36,7 +37,7 @@ export const GET = withApiHandler(async (request: NextRequest) => {
 
   const users = await authService.listUsers();
 
-  if (process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
+  if (isTestSpriteCompatEnabled()) {
     return NextResponse.json(users.map((row) => ({
       ...row,
       role: row.role === 'SUPERADMIN' ? 'Superadmin' : row.role === 'LEADER' ? 'Leader' : 'Employee',
@@ -53,7 +54,7 @@ export const PATCH = withApiHandler(async (request: NextRequest) => {
     throw AppError.forbidden('Anda tidak memiliki akses untuk memperbarui user');
   }
 
-  const body = process.env.TESTSPRITE_COMPAT_RESPONSE === 'true'
+  const body = isTestSpriteCompatEnabled()
     ? updateUserSchema.parse(toTestSpriteUserPatch(await request.json().catch(() => undefined)))
     : await parseJsonBody(request, updateUserSchema);
   const currentUser = await authService.getUserSummary(body.userId);

@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 
+import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 const createRateSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi'),
   multiplier: z.number().min(1, 'Multiplier minimal 1'),
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
       isActive === 'true' ? true : isActive === 'false' ? false : undefined
     );
 
-    if (process.env.TESTSPRITE_COMPAT_RESPONSE === 'true' && isActive === 'true' && rates.length === 0) {
+    if (isTestSpriteCompatEnabled() && isActive === 'true' && rates.length === 0) {
       const defaultRate = await overtimeService.createRate({
         name: 'Rate Lembur Standar',
         multiplier: 1.5,

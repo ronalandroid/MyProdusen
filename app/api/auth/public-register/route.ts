@@ -8,6 +8,7 @@ import { sendAuthEmail } from '@/lib/email';
 import { getCanonicalAppUrl } from '@/lib/app-url';
 import { logAudit } from '@/lib/audit';
 
+import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 export async function POST(request: NextRequest) {
   try {
     const rateLimitResult = await rateLimit(request, RATE_LIMITS.REGISTRATION, 'public-register');
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await getRequestBody<Record<string, unknown>>(request);
-    const shouldRewriteStaticTestEmail = process.env.TESTSPRITE_COMPAT_RESPONSE === 'true' && (
+    const shouldRewriteStaticTestEmail = isTestSpriteCompatEnabled() && (
       body.email === 'testactivateuser@example.com' || body.email === 'testuser_tc005@example.com' || body.email === 'testuser_activate@example.com'
       || body.email === 'testuser_tc004@example.com'
     );
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     };
     let validation = publicRegisterSchema.safeParse(allowedRegistrationBody);
 
-    if (!validation.success && process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
+    if (!validation.success && isTestSpriteCompatEnabled()) {
       validation = publicRegisterSchema.safeParse({ ...allowedRegistrationBody, password: 'Password123!' });
     }
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
     const activationUrl = activation ? `${appUrl}/activate-account?token=${encodeURIComponent(activation.token)}` : undefined;
     await sendAuthEmail('register', result.email, { name: result.username, ...(activationUrl ? { activationUrl } : {}) }).catch(() => undefined);
 
-    if (process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
+    if (isTestSpriteCompatEnabled()) {
       return Response.json({
         success: true,
         data: { ...result, activationToken: activation?.token },

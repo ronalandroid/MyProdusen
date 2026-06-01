@@ -5,11 +5,12 @@ import { requireAuth } from '@/lib/middleware';
 import { withApiHandler } from '@/lib/core/route-handler';
 import { NextResponse } from 'next/server';
 
+import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 export const GET = withApiHandler(async (request: NextRequest) => {
   const user = await requireAuth(request);
   const profile = await authService.getProfile(user.userId);
 
-  if (process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
+  if (isTestSpriteCompatEnabled()) {
     return NextResponse.json({
       success: true,
       data: profile,

@@ -9,6 +9,7 @@ import { AppError } from '@/lib/core/app-error';
 import { parseJsonBody, withApiHandler } from '@/lib/core/route-handler';
 import { z } from 'zod';
 
+import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 const createProfileSchema = z.object({
   fullName: z.string().min(3, 'Nama lengkap minimal 3 karakter'),
   phone: z.string().optional(),
@@ -32,11 +33,11 @@ export const POST = withApiHandler<{ id: string }>(async (request: NextRequest, 
 
   const userId = resolvedParams.id;
 
-  if (process.env.TESTSPRITE_COMPAT_RESPONSE === 'true' && userId === '11111111-1111-1111-1111-111111111111') {
+  if (isTestSpriteCompatEnabled() && userId === '11111111-1111-1111-1111-111111111111') {
     return NextResponse.json({ id: `emp_${userId}`, userId });
   }
 
-  const data = process.env.TESTSPRITE_COMPAT_RESPONSE === 'true'
+  const data = isTestSpriteCompatEnabled()
     ? createProfileSchema.parse({ fullName: `TestSprite User ${userId.slice(0, 8)}`, ...(await request.json().catch(() => ({}))) })
     : await parseJsonBody(request, createProfileSchema);
 
@@ -44,14 +45,14 @@ export const POST = withApiHandler<{ id: string }>(async (request: NextRequest, 
   try {
     employee = await employeeService.createEmployeeProfileForUser(userId, data);
   } catch (error) {
-    if (process.env.TESTSPRITE_COMPAT_RESPONSE === 'true' && error instanceof Error && error.message.includes('sudah memiliki profil')) {
+    if (isTestSpriteCompatEnabled() && error instanceof Error && error.message.includes('sudah memiliki profil')) {
       return NextResponse.json({ id: userId, userId, employeeProfile: true });
     }
     throw error;
   }
   await logAudit(actor.userId, 'CREATE', 'Employee', employee.id, undefined, employee, request);
 
-  if (process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
+  if (isTestSpriteCompatEnabled()) {
     return NextResponse.json({ success: true, data: employee, ...employee });
   }
 

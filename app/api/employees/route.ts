@@ -11,6 +11,7 @@ import { AppError } from '@/lib/core/app-error';
 import { parseJsonBody, withApiHandler } from '@/lib/core/route-handler';
 import { calculateWorkDurationDays } from '@/src/services/employees/work-duration.service';
 
+import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 export const GET = withApiHandler(async (request: NextRequest) => {
   const user = await requireAuth(request);
 
@@ -46,7 +47,7 @@ export const POST = withApiHandler(async (request: NextRequest) => {
     throw AppError.forbidden('Anda tidak memiliki akses untuk membuat karyawan');
   }
 
-  const data = process.env.TESTSPRITE_COMPAT_RESPONSE === 'true'
+  const data = isTestSpriteCompatEnabled()
     ? createEmployeeSchema.parse(toTestSpriteEmployeePayload(await request.json().catch(() => undefined)))
     : await parseJsonBody(request, createEmployeeSchema);
   const assignedRole = data.role ?? 'EMPLOYEE';
@@ -58,7 +59,7 @@ export const POST = withApiHandler(async (request: NextRequest) => {
   const employee = await employeeService.createEmployee({ ...data, role: assignedRole });
   await logAudit(user.userId, 'CREATE', 'Employee', employee.id, undefined, employee, request);
 
-  if (process.env.TESTSPRITE_COMPAT_RESPONSE === 'true') {
+  if (isTestSpriteCompatEnabled()) {
     return NextResponse.json({ success: true, data: employee, ...employee, user: { id: employee.userId } });
   }
 
