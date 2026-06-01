@@ -29,7 +29,8 @@ describe('gamification UX source contract', () => {
     expect(employeeDashboard).toContain('OFF');
     expect(employeeDashboard).toContain('ABSENT');
     expect(employeeDashboard).toContain('7 hari hadir');
-    expect(employeeDashboard).toContain('Skor 100 dipertahankan');
+    expect(employeeDashboard).toContain('KPI target tercapai');
+    expect(employeeDashboard).not.toContain('["Skor 100 dipertahankan"');
     expect(leaderDashboard).not.toMatch(/salary|gaji|payrollAmount/i);
   });
 

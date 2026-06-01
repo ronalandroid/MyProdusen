@@ -777,7 +777,6 @@ export default function EmployeeBeranda({ profile }: Props) {
                   ["30 hari konsisten", currentStreak >= 30],
                   ["Tepat waktu 7 hari", onTimeDays >= 7],
                   ["KPI target tercapai", (perfScore?.kpiScore ?? 0) >= 90],
-                  ["Skor 100 dipertahankan", currentScore >= 100],
                 ].map(([label, unlocked]) => (
                   <div key={String(label)} className={`badge-unlock-shimmer rounded-2xl border p-3 text-xs font-extrabold ${unlocked ? "border-yellow-200 bg-[#FFF8E1] text-[var(--text-primary)]" : "border-gray-200 bg-gray-50 text-[var(--text-muted)] opacity-75"}`}>
                     <span aria-hidden="true">{unlocked ? "🏅" : "🔒"}</span> {label}

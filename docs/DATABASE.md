@@ -404,3 +404,19 @@ Non-core Talenta-style modules are hidden by feature flags, not removed from the
 - `verify:uat-leader-flow` / `verify:uat-auth` now checks `leader_login_ready`, `employee_a_login_ready`, and `employee_b_login_ready` via bcrypt compare, still without printing passwords.
 - RBAC unchanged: Leader remains team-scoped; Employee remains own-scope; no payroll/private data exposure changed.
 - If live login returns 429, wait cooldown before authenticated Playwright; 401 means rerun setup and verify auth readiness in target env.
+
+## Professional Gamification Data Sources
+
+Gamification is an aggregation layer, not a source of fake records.
+
+Primary sources:
+
+- Attendance records: check-in/out time, status, geofence metadata, shift context, and daily attendance evidence.
+- Attendance daily summaries or heatmap API: monthly streak state and present/late/leave/off/absent mapping.
+- KPI production records and KPI results: production performance contribution.
+- Behavior/culture score records: discipline, cleanliness, neatness, SOP compliance, teamwork, and responsibility where recorded.
+- Employee performance score summaries/snapshots: current score, historical score trend, tier, projected raise percent, and badges.
+
+Current schema-backed gamification/performance tables include the migration-backed performance score summary, score snapshot, leader score entry/anomaly, score period, badge, and gamification settings structures introduced by `0025_gamification_performance_theme.sql`, `0026_gamification_constraints_settings.sql`, `0027_culture_discipline_score_alias.sql`, and `0028_work_duration_payroll_streak_projection.sql`.
+
+Raise projection is privacy-sensitive. Employee may see own projected raise estimate. Leader must not see team salary/payroll amount. Superadmin may see company-level performance and review/override behavior scores according to RBAC and audit rules.

@@ -633,3 +633,22 @@ Run source/unit gates plus Playwright. Headless Playwright cannot prove real cam
 
 ## Map-First Attendance QA
 Verify map-first sequence: Beranda -> Clock In/Clock Out -> Validasi Lokasi -> Lanjutkan -> Selfie -> Ambil Foto -> Kirim. Headless tests cannot prove real browser GPS/camera permission; Android Chrome and iPhone Safari UAT remain required.
+
+## Professional Gamification QA Checklist
+
+- [ ] Employee score renders authenticated employee's own data only.
+- [ ] Score formula 30/50/20 is visible in docs or UI source.
+- [ ] Employee streak calendar renders a monthly view.
+- [ ] Chicken marker appears only as subtle attended-day marker.
+- [ ] Today has a visible highlight ring.
+- [ ] Leave/off/absent/future day states render differently.
+- [ ] Raise projection disclaimer is visible and says approval is required.
+- [ ] Badges are limited to 3–5 visible items.
+- [ ] Reduced-motion CSS disables gamification animation.
+- [ ] Calendar fits 320px mobile width with no horizontal overflow.
+- [ ] Leader team gamification excludes payroll/salary amounts.
+- [ ] Employee cannot fetch another employee's gamification data.
+- [ ] Leader cannot fetch unrelated team gamification data.
+- [ ] Superadmin company score summary works.
+- [ ] No fake/mock score, mock attendance, or fake KPI runs in production.
+- [ ] RBAC tests pass.

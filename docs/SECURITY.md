@@ -462,3 +462,13 @@ Feature flags may hide navigation and entry points, but backend RBAC remains man
 - `verify:uat-leader-flow` / `verify:uat-auth` now checks `leader_login_ready`, `employee_a_login_ready`, and `employee_b_login_ready` via bcrypt compare, still without printing passwords.
 - RBAC unchanged: Leader remains team-scoped; Employee remains own-scope; no payroll/private data exposure changed.
 - If live login returns 429, wait cooldown before authenticated Playwright; 401 means rerun setup and verify auth readiness in target env.
+
+## Professional Gamification RBAC
+
+- Employee may read own score, own streak, own badges, own score history, and own raise projection only.
+- Leader may read own score/streak and assigned-team attendance/KPI/performance summary only.
+- Leader cannot read team salary, payroll amount, payslip, or private payroll export through gamification UI/API.
+- Superadmin may read company-wide gamification/performance summaries and review behavior score changes.
+- Sensitive gamification endpoints must be authenticated and use `Cache-Control: no-store, private`.
+- Behavior/culture score creation, override, anomaly review, and Superadmin adjustment must be audited.
+- Gamification must use real attendance, KPI, and behavior data. Production must not use fake/mock score data.

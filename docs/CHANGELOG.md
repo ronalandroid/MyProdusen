@@ -596,3 +596,11 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 
 - Improved employee gamification UX with premium score card copy, attendance streak calendar, achievement badge states, and reduced-motion-safe microinteractions.
 - Added source tests for gamification UX, leader payroll privacy, and Superadmin dashboard guardrails.
+
+## 2026-06-02 — Professional Gamification Documentation Alignment
+
+- Defined professional gamification scope: one score, one streak calendar, one raise projection, 3–5 badges, and simple motivational copy.
+- Documented attendance streak calendar states and subtle chicken marker direction.
+- Synchronized PRD, UI/UX guide, database, security, testing, final checklist, and gamification docs.
+- Confirmed Leader team gamification must not expose payroll/salary amounts.
+- No production signoff claimed.

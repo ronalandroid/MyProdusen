@@ -782,3 +782,7 @@ The total employee/leader performance score utilizes the official weighted break
 ## 2026-06-02 — Gamification UX Source Contracts
 
 Added source-level UI contracts for employee gamification: score breakdown, attendance streak calendar, chicken marker, today highlight, reduced-motion support, leader payroll privacy, and Superadmin no-clock CTA.
+
+## 2026-06-02 — Professional Gamification Docs/Test Alignment
+
+Added professional gamification source checks: 30/50/20 formula, streak calendar, chicken marker, approval disclaimer, 3–5 badge limit, reduced motion, leader payroll privacy, and Superadmin no-clock CTA.

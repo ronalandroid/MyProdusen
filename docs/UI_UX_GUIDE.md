@@ -758,3 +758,69 @@ Main navigation follows MyProdusen core scope instead of showing every Talenta-l
 - Motivation copy must be warm, professional, and not childish.
 - Leader team gamification must avoid payroll/salary amounts.
 - Superadmin analytics must not show normal Clock In/Clock Out CTA.
+
+## Gamification UI/UX Standard
+
+MyProdusen gamification must be professional HRIS first and fun motivation second. It should help factory employees understand attendance, KPI, behavior score, streak, and annual raise estimate without making the dashboard feel like a childish game.
+
+### Visual Rules
+
+- Preserve MyProdusen yellow/cream tone, white rounded cards, dark readable text, and clean HRIS layout.
+- Use chicken markers subtly for streak days only; avoid cartoon overload.
+- Keep dashboard clean and uncrowded.
+- Use limited status colors. Red appears only for meaningful risk.
+- Avoid yellow text on yellow background and all low-contrast combinations.
+- Avoid generic AI-dashboard clutter, excessive icons, and decorative noise.
+- Achievement badges must be limited to 3–5 visible items.
+
+### Employee Layout
+
+Recommended order:
+
+1. Greeting.
+2. Attendance action card.
+3. Score card.
+4. Streak calendar.
+5. Raise projection.
+6. Achievement badges.
+7. KPI/attendance summary.
+
+### Leader Layout
+
+Recommended order:
+
+1. Own attendance.
+2. Own score.
+3. Team KPI/attendance summary.
+4. Assigned team list.
+
+Leader team cards may show attendance status, KPI completion, score indicator, and attention flags. They must not show salary or payroll amounts.
+
+### Superadmin Layout
+
+Recommended order:
+
+1. Company overview.
+2. Attendance/KPI summary.
+3. Score distribution.
+4. Top performers.
+5. At-risk employees.
+6. Filters by division/team/month where available.
+
+Superadmin dashboard must not show normal employee Clock In/Clock Out CTA.
+
+### Mobile and Accessibility Rules
+
+- Minimum tap target: 44px.
+- Streak calendar must fit 320px mobile width without horizontal overflow.
+- Bottom navigation must not cover gamification cards; content needs safe-area bottom padding.
+- Use semantic labels for score, status, calendar days, and buttons.
+- Do not rely on color alone for attendance states.
+
+### Animation Rules
+
+- Subtle pop-in for attended day is allowed.
+- Count-up score is allowed when it does not cause layout shift.
+- Soft shimmer for unlocked badge is allowed.
+- No excessive bounce, looping distraction, or heavy animation dependency.
+- Always respect `prefers-reduced-motion: reduce`.
