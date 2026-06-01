@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation';
 
-export default function PengajuanRootPage() {
-  redirect("/dashboard/leave");
+export default function PengajuanRedirectPage() {
+  redirect('/dashboard/leave');
 }

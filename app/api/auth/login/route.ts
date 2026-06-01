@@ -120,7 +120,8 @@ export const POST = withApiHandler(async (request: NextRequest) => {
 
   const result = await authService.login(normalizedEmail, password);
 
-  const response = process.env.TESTSPRITE_COMPAT_RESPONSE === 'true'
+  const testspriteCompatResponse = process.env.NODE_ENV !== 'production' && process.env.TESTSPRITE_COMPAT_RESPONSE === 'true';
+  const response = testspriteCompatResponse
     ? NextResponse.json({
       success: true,
       data: { user: result.user },

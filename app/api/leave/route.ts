@@ -124,6 +124,9 @@ export async function POST(request: NextRequest) {
     if (error.message === 'Unauthorized') {
       return unauthorizedResponse();
     }
+    if (error.code === 'LEAVE_BALANCE_INSUFFICIENT') {
+      return errorResponse(error.message || 'Saldo cuti tidak cukup', 400);
+    }
     return errorResponse(error.message || 'Gagal membuat pengajuan');
   }
 }

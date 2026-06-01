@@ -1,5 +1,12 @@
 # Changelog — MyProdusen
 
+## 2026-06-01 — UAT Audit Gap Fixes
+
+- Verified shift tolerance columns already exist in schema and migration `0029_shift_late_tolerance.sql`.
+- Hardened TestSprite compatibility response so it cannot run in production response shaping.
+- Added source-enforced leave-balance insufficient guard in active leave service path.
+- Added legacy `/pengajuan` redirect to `/dashboard/leave` to avoid direct-route 404.
+
 ## 2026-06-01 — Realtime Admin Assignment Sync
 
 - Hardened Superadmin Pengguna data loading against stale older responses after assignment changes.

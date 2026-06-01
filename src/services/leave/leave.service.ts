@@ -4,6 +4,7 @@ import { cacheManager } from '@/lib/cache/cache-manager';
 import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
 import { CacheStrategy } from '@/lib/cache/cache-strategies';
 import { notifyUser } from '@/lib/notifications/dispatch';
+import { calculateLeaveDays } from '@/lib/leave/balance-ledger';
 import { leaveBalanceService } from '@/features/leave/leave-balance.service';
 
 export type LeaveType = 'LEAVE' | 'SICK' | 'PERMISSION';
@@ -46,6 +47,16 @@ export class LeaveService {
 
     if (overlap) {
       throw new Error('Pengajuan cuti overlap dengan pengajuan aktif yang sudah ada');
+    }
+
+    if (data.type === 'LEAVE') {
+      const requestedDays = calculateLeaveDays(data.startDate, data.endDate);
+      const balance = await leaveBalanceService.getBalance(data.employeeId, data.startDate.getFullYear());
+      if (balance.available < requestedDays) {
+        const error = new Error(`Saldo cuti tidak cukup. Tersedia ${balance.available} hari, diajukan ${requestedDays} hari.`);
+        (error as any).code = 'LEAVE_BALANCE_INSUFFICIENT';
+        throw error;
+      }
     }
 
     const leaveId = `leave_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
