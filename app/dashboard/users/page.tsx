@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle, RefreshCw, ShieldCheck, UserCog } from "lucide-react";
 
 type UserRole = "SUPERADMIN" | "LEADER" | "EMPLOYEE";
@@ -43,6 +43,7 @@ export default function UsersPage() {
   const [error, setError] = useState("");
   const [profileModalUser, setProfileModalUser] = useState<UserRow | null>(null);
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
+  const loadSeq = useRef(0);
 
   const pendingUsers = useMemo(() => users.filter((user) => !user.isActive), [users]);
 
@@ -54,18 +55,21 @@ export default function UsersPage() {
   }
 
   async function loadAll() {
+    const seq = ++loadSeq.current;
     setLoading(true); setError("");
     try {
       const [userRows, teamRows, locationRows, shiftRows] = await Promise.all([
         fetchJson("/api/users"), fetchJson("/api/teams"), fetchJson("/api/work-locations?isActive=true"), fetchJson("/api/shifts?isActive=true"),
       ]);
+      if (seq !== loadSeq.current) return;
       setUsers(userRows.map((row: any) => ({ ...row, role: normalizeRole(row.role) })));
       setTeams(teamRows.filter((team: Team) => team.active !== false));
       setLocations(locationRows.filter((location: WorkLocation) => location.isActive !== false));
       setShifts(shiftRows.filter((shift: Shift) => shift.isActive !== false));
     } catch (err) {
+      if (seq !== loadSeq.current) return;
       setError(err instanceof Error ? err.message : "Gagal mengambil data user");
-    } finally { setLoading(false); }
+    } finally { if (seq === loadSeq.current) setLoading(false); }
   }
 
   useEffect(() => { loadAll(); }, []);

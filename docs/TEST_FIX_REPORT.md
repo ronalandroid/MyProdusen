@@ -1,5 +1,14 @@
 # Test Fix Report — Live Smoke 2026-05-20
 
+## Realtime Admin Assignment Sync — 2026-06-01
+
+- Fixed stale `/dashboard/users` refresh races by ignoring older in-flight responses.
+- Dashboard layout now detects fresh profile/work-data changes and rechecks route access after role changes.
+- Added `tests/ui/admin-realtime-sync-source.test.ts` regression coverage.
+- Verified targeted tests and full `npm run release:check` passed locally.
+- Remaining blockers: full custom division master-table migration and assignment email automation are larger additive work items, not completed in this safe patch.
+
+
 ## Scope
 
 - Target: `https://myprodusen.online`

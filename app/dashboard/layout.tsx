@@ -44,12 +44,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ]);
     const mePayload = await meResponse.json().catch(() => null);
     if (!meResponse.ok || !mePayload?.success) throw new Error(mePayload?.error?.message || "Sesi tidak valid");
+    const nextProfileMe = mePayload.data as ProfileMe;
     setProfile((current) => {
       if (showSyncNotice && current && current.role !== sessionProfile.role) setSyncNotice("Data pekerjaan Anda telah diperbarui.");
       return sessionProfile;
     });
-    setProfileMe(mePayload.data);
-    return { sessionProfile, profileMe: mePayload.data as ProfileMe };
+    setProfileMe((current) => {
+      if (showSyncNotice && current && JSON.stringify(current) !== JSON.stringify(nextProfileMe)) setSyncNotice("Data pekerjaan Anda telah diperbarui.");
+      return nextProfileMe;
+    });
+    return { sessionProfile, profileMe: nextProfileMe };
   }
 
   useEffect(() => {
@@ -69,11 +73,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [pathname, router]);
 
   useEffect(() => {
-    const refresh = () => loadProfileState(true).catch(() => undefined);
+    const refresh = () => loadProfileState(true).then(({ sessionProfile }) => {
+      if (!canAccessNavigationPath(sessionProfile.role as UserRole, pathname)) router.replace("/dashboard");
+    }).catch(() => undefined);
     window.addEventListener("focus", refresh);
     const interval = window.setInterval(refresh, 60_000);
     return () => { window.removeEventListener("focus", refresh); window.clearInterval(interval); };
-  }, []);
+  }, [pathname, router]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 });

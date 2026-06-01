@@ -1,5 +1,11 @@
 # Changelog — MyProdusen
 
+## 2026-06-01 — Realtime Admin Assignment Sync
+
+- Hardened Superadmin Pengguna data loading against stale older responses after assignment changes.
+- Dashboard session/profile refresh now detects work-data changes and rechecks role-based route access on focus/interval.
+- Added source regression coverage for admin realtime sync and role navigation refresh behavior.
+
 ## 2026-06-01 — HRIS UX Finalization Pass
 
 - Added `docs/PRODUCT_GAP_ANALYSIS.md` as the research-informed productization guide covering current capability, benchmark gaps, keep/add/postpone/remove decisions, role UX, release gates, and rollback plan.
