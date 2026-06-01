@@ -17,8 +17,11 @@ ENV npm_config_fund=false
 RUN apk add --no-cache libc6-compat
 
 COPY package*.json ./
+# Install full dependency graph for the builder stage. Next/Tailwind/TypeScript
+# build tooling lives in devDependencies, while the final runner still copies
+# only the standalone output plus explicit runtime packages.
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev --prefer-offline --no-audit --fund=false
+    npm ci --prefer-offline --no-audit --fund=false
 
 # ---------- Stage 2: Build standalone Next.js ----------------
 FROM node:22-alpine AS builder
@@ -36,13 +39,13 @@ ENV NEXT_BUILD_CPUS=2
 
 RUN apk add --no-cache libc6-compat
 
-# Dummy DATABASE_URL keeps build-time imports safe.
-# The real value is injected at runtime via Coolify env vars.
-ENV DATABASE_URL="postgresql://build@localhost:5432/build"
-ENV JWT_SECRET="build-only-jwt-secret-0000000000000000000000000000000000000000"
-ENV NEXTAUTH_SECRET="build-only-nextauth-secret-0000000000000000000000000000000000"
-ENV APP_URL="http://localhost:3000"
-ENV NEXT_PUBLIC_APP_URL="http://localhost:3000"
+# Dummy build-time env keeps imports safe.
+# Real values are injected at runtime via Coolify env vars.
+ENV DATABASE_URL "postgresql://build@localhost:5432/build"
+ENV JWT_SECRET "build-only-jwt-secret-0000000000000000000000000000000000000000"
+ENV NEXTAUTH_SECRET "build-only-nextauth-secret-0000000000000000000000000000000000"
+ENV APP_URL "http://localhost:3000"
+ENV NEXT_PUBLIC_APP_URL "http://localhost:3000"
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
