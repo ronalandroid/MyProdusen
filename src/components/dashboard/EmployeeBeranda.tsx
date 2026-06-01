@@ -381,7 +381,7 @@ export default function EmployeeBeranda({ profile }: Props) {
               <Clock size={12} strokeWidth={2.5} />
               {shiftTimeText}
             </span>
-            <h2 id="attendance-card-title" className="text-base sm:text-lg font-extrabold text-[var(--text-primary)] mt-3">
+            <h2 id="attendance-card-title" data-ux-note="Validasi lokasi dulu, lalu ambil selfie realtime." className="text-base sm:text-lg font-extrabold text-[var(--text-primary)] mt-3">
               {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
             </h2>
             <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] mt-1.5 font-medium">
@@ -445,7 +445,7 @@ export default function EmployeeBeranda({ profile }: Props) {
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-extrabold text-[var(--text-primary)]">Absensi Hari Ini</h3>
-                <p className="text-xs font-medium text-[var(--text-secondary)]">Jangan lupa absen hari ini! Selfie dan GPS akan terbuka langsung setelah tombol Clock In atau Clock Out ditekan.</p>
+                <p className="text-xs font-medium text-[var(--text-secondary)]">Jangan lupa absen hari ini! Validasi lokasi dulu, lalu ambil selfie realtime setelah tombol Clock In atau Clock Out ditekan.</p>
               </div>
               <Camera size={20} className="text-[var(--primary-dark)]" aria-hidden="true" />
             </div>

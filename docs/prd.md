@@ -283,3 +283,20 @@ All old PRD fragments, duplicate folder READMEs, temporary rewrite summaries, an
 - Production code changes require tests first unless user explicitly exempts docs/config.
 - Attendance map/location step must appear before selfie.
 - Backend remains final authority for RBAC, GPS, geofence, selfie, and reports.
+---
+
+## 9. Talenta-style professional HRIS UX principles
+
+Benchmark direction uses public HRIS/SaaS patterns only; do not copy proprietary Mekari Talenta assets. MyProdusen keeps yellow/cream brand, mascot, rounded cards, and mobile-first tone.
+
+Principles:
+- Today-first dashboard: show attendance status, shift, approvals, leave balance, payroll cycle, KPI progress, and exceptions before secondary content.
+- Role-specific navigation: Superadmin gets operational control, Leader gets team/action inbox, Employee gets self-service.
+- Admin flows as checklist: payroll, KPI review, leave approval, and attendance correction show step, status, validation, and next action.
+- Tables on desktop, cards on mobile.
+- Use status chips consistently for present, late, pending, approved, rejected, paid, unpaid, reviewed, and critical states.
+- Use approval timeline for leave, correction, payroll, and KPI review history.
+- Surface policy before failure: leave balance, geofence radius, payroll lock, KPI deadline, required attachment.
+- payroll checklist must show period, input validation, preview, approval, publish, and payslip visibility.
+- Use professional Bahasa Indonesia microcopy: clear action verbs, no raw backend terms, no confusing historical roles.
+- Empty/error/loading states must explain next step.

@@ -455,7 +455,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-extrabold text-[var(--text-primary)]">Absensi Hari Ini</h3>
-                <p className="text-xs font-medium text-[var(--text-secondary)]">Jangan lupa absen hari ini! Selfie dan GPS akan terbuka langsung setelah tombol Clock In atau Clock Out ditekan.</p>
+                <p className="text-xs font-medium text-[var(--text-secondary)]">Jangan lupa absen hari ini! Validasi lokasi dulu, lalu ambil selfie realtime. Validasi lokasi dulu, lalu ambil selfie realtime setelah tombol Clock In atau Clock Out ditekan.</p>
               </div>
               <Camera size={20} className="text-[var(--primary-dark)]" aria-hidden="true" />
             </div>
