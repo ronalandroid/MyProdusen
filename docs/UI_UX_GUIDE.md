@@ -743,3 +743,9 @@ Main navigation follows MyProdusen core scope instead of showing every Talenta-l
 - Capture screen opens camera after user gesture, shows face guide overlay, GPS validation, optional note, and sticky submit.
 - Outside radius shows manual correction entry; Superadmin approval and audit trail required.
 - Real Android/iPhone GPS + selfie UAT required after redeploy.
+
+## Attendance Map-First Clocking Flow
+- New reference-video correction: dashboard Clock In / Clock Out opens `/dashboard/attendance/clock?type=...`.
+- Step 1 `Validasi Lokasi` appears before selfie, with map-style UI showing current location, office location, radius circle, distance, GPS accuracy, and status chip.
+- Google Maps can replace the fallback if key/component is available; fallback map-style UI remains production-safe.
+- Step 2 opens selfie camera only after `Lanjutkan`; face guide, `Ambil Foto`, preview/retake, optional note, and sticky submit follow.

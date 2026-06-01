@@ -28,10 +28,10 @@ describe('Attendance and Payroll Policy UI UX contract safeguards', () => {
   });
 
   it('wires Clock In and Clock Out buttons to launch selfie camera flows directly', () => {
-    expect(employeeBerandaSource).toContain('/dashboard/attendance/capture?type=clock-in');
-    expect(employeeBerandaSource).toContain('/dashboard/attendance/capture?type=clock-out');
-    expect(leaderBerandaSource).toContain('/dashboard/attendance/capture?type=clock-in');
-    expect(leaderBerandaSource).toContain('/dashboard/attendance/capture?type=clock-out');
+    expect(employeeBerandaSource).toContain('/dashboard/attendance/clock?type=clock-in');
+    expect(employeeBerandaSource).toContain('/dashboard/attendance/clock?type=clock-out');
+    expect(leaderBerandaSource).toContain('/dashboard/attendance/clock?type=clock-in');
+    expect(leaderBerandaSource).toContain('/dashboard/attendance/clock?type=clock-out');
   });
 
   it('supports camera auto-start properties', () => {

@@ -460,7 +460,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
               <Camera size={20} className="text-[var(--primary-dark)]" aria-hidden="true" />
             </div>
             <Link
-              href={hasCheckedOut ? "/dashboard/attendance" : hasCheckedIn ? "/dashboard/attendance/capture?type=clock-out" : "/dashboard/attendance/capture?type=clock-in"}
+              href={hasCheckedOut ? "/dashboard/attendance" : hasCheckedIn ? "/dashboard/attendance/clock?type=clock-out" : "/dashboard/attendance/clock?type=clock-in"}
               className={`btn min-h-[52px] w-full rounded-2xl font-extrabold ${hasCheckedOut ? "btn-secondary pointer-events-none opacity-80" : "btn-primary"}`}
               aria-disabled={hasCheckedOut}
             >

@@ -555,3 +555,7 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Added reference-video inspired attendance card and dedicated Clock In / Clock Out selfie capture page.
 - Added face guide overlay, GPS validation, optional note, manual correction copy, and source tests.
 - Preserved strict backend RBAC and protected selfie handling.
+
+## Attendance map-first flow correction
+- Changed attendance clocking to map/location validation first, selfie second.
+- Added fallback map-style UI with current location, office location, radius, distance, GPS accuracy, manual correction CTA, and GPS watcher cleanup.

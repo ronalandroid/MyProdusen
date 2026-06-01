@@ -14,6 +14,8 @@ type RealtimeSelfieCameraProps = {
   onCapture: (selfie: { blob: Blob; previewUrl: string; meta: CompressedSelfie }) => void;
   onClear: () => void;
   autoStart?: boolean;
+  captureLabel?: string;
+  retakeLabel?: string;
 };
 
 const CAMERA_NOT_SUPPORTED = "Browser tidak mendukung akses kamera realtime.";
@@ -32,6 +34,8 @@ export function RealtimeSelfieCamera({
   onCapture,
   onClear,
   autoStart,
+  captureLabel = "Ambil Selfie",
+  retakeLabel = "Ambil Ulang Selfie",
 }: RealtimeSelfieCameraProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -250,7 +254,7 @@ export function RealtimeSelfieCamera({
               disabled={disabled || isCapturing}
               style={{ flex: 1 }}
             >
-              {isCapturing ? "Memproses..." : "Ambil Selfie"}
+              {isCapturing ? "Memproses..." : captureLabel}
             </button>
             <button
               type="button"
@@ -271,7 +275,7 @@ export function RealtimeSelfieCamera({
             disabled={disabled}
             style={{ flex: 1 }}
           >
-            <RefreshCcw size={16} /> Ambil Ulang Selfie
+            <RefreshCcw size={16} /> {retakeLabel}
           </button>
         )}
       </div>

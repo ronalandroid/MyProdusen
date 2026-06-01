@@ -53,3 +53,11 @@ Reason: no physical Android/iPhone device execution evidence in this automation 
 4. Confirm GPS permission, accuracy, distance, radius, and inside/outside status render.
 5. Submit and verify dashboard history updates and Superadmin attendance report shows selfie status, GPS distance, inside/outside radius, and correction request if manual.
 6. Superadmin must not see normal Clock In / Clock Out.
+
+## Map-First Attendance Real Device UAT
+1. Login Employee/Leader, tap Clock In/Clock Out from Beranda.
+2. Confirm first screen is `Validasi Lokasi`, not selfie.
+3. Confirm map/fallback shows user pin, office pin, radius, distance, accuracy, and `Lanjutkan`.
+4. Confirm outside-radius normal continue blocked and `Ajukan Koreksi Manual` appears.
+5. Tap `Lanjutkan`, confirm selfie opens, face guide visible, `Ambil Foto`, preview, optional catatan, and submit work.
+6. Confirm Superadmin report/history updates with GPS/selfie indicators.

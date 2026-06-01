@@ -628,3 +628,6 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 
 ## Attendance Selfie QA
 Run source/unit gates plus Playwright. Headless Playwright cannot prove real camera/GPS permission; real Android/iPhone UAT remains mandatory. Verify 320x568, 360x800, 390x844, 430x932, 768x1024, 1024x768, 1440x900 for no overflow, centered guide, sticky submit safe-area padding, and 44px tap targets.
+
+## Map-First Attendance QA
+Verify map-first sequence: Beranda -> Clock In/Clock Out -> Validasi Lokasi -> Lanjutkan -> Selfie -> Ambil Foto -> Kirim. Headless tests cannot prove real browser GPS/camera permission; Android Chrome and iPhone Safari UAT remain required.

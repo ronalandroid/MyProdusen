@@ -3,7 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 
 const employeeDashboard = readFileSync('src/components/dashboard/EmployeeBeranda.tsx', 'utf8');
 const leaderDashboard = readFileSync('src/components/dashboard/LeaderBeranda.tsx', 'utf8');
-const capturePagePath = 'app/dashboard/attendance/capture/page.tsx';
+const capturePagePath = 'app/dashboard/attendance/clock/page.tsx';
 const capturePage = existsSync(capturePagePath) ? readFileSync(capturePagePath, 'utf8') : '';
 const camera = readFileSync('src/components/attendance/RealtimeSelfieCamera.tsx', 'utf8');
 const checkInRoute = readFileSync('app/api/attendance/check-in/route.ts', 'utf8');
@@ -16,8 +16,8 @@ describe('mobile attendance clocking UX source contract', () => {
       expect(source).toContain('Jangan lupa absen hari ini!');
       expect(source).toContain('Clock In');
       expect(source).toContain('Clock Out');
-      expect(source).toContain('/dashboard/attendance/capture?type=clock-in');
-      expect(source).toContain('/dashboard/attendance/capture?type=clock-out');
+      expect(source).toContain('/dashboard/attendance/clock?type=clock-in');
+      expect(source).toContain('/dashboard/attendance/clock?type=clock-out');
       expect(source).toContain('Belum Absen');
       expect(source).toContain('Sudah Clock In');
       expect(source).toContain('Sudah Clock Out');

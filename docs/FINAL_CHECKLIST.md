@@ -434,3 +434,11 @@ GO requires core MyProdusen modules visible and working, non-core modules hidden
 - [ ] Submit disabled without selfie and GPS.
 - [ ] Superadmin reports sync after action/refocus.
 - [ ] Real Android/iPhone UAT completed.
+
+## Attendance Map-First Checklist
+- [ ] Beranda card routes Clock In/Clock Out to `/dashboard/attendance/clock`.
+- [ ] Step 1 Validasi Lokasi shows map/fallback, user pin, office pin, radius, distance, accuracy, and `Lanjutkan`.
+- [ ] Outside radius blocks normal continue and shows manual correction.
+- [ ] Step 2 Selfie opens after Lanjutkan, not before.
+- [ ] Superadmin report/history reflects attendance after submit.
+- [ ] Real Android/iPhone GPS+selfie UAT completed.

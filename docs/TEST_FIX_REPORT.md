@@ -765,3 +765,7 @@ The total employee/leader performance score utilizes the official weighted break
 - Added mobile-first Clock In / Clock Out capture route.
 - Added face guide overlay, GPS/radius/distance validation labels, optional catatan, manual correction copy, and attendance history source contract test.
 - Backend RBAC remains strict: Employee/Leader only, selfie and GPS required, Superadmin normal clocking forbidden.
+
+## Attendance Map-First Flow Fix
+- Fixed gap: selfie no longer opens first. Clock In/Clock Out now starts with realtime location validation.
+- Added `/dashboard/attendance/clock` map-first flow and source tests for location step, fallback map UI, GPS watcher cleanup, selfie step, note, and submit labels.
