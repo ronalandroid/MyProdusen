@@ -38,7 +38,9 @@ export class LeaveService {
       const balance = await leaveBalanceService.getBalance(data.employeeId, data.startDate.getFullYear());
 
       if (balance.available < requestedDays) {
-        throw new Error(`Saldo cuti tidak cukup. Tersedia ${balance.available} hari, diajukan ${requestedDays} hari.`);
+        const error = new Error(`Saldo cuti tidak cukup. Tersedia ${balance.available} hari, diajukan ${requestedDays} hari.`);
+        (error as any).code = 'LEAVE_BALANCE_INSUFFICIENT';
+        throw error;
       }
     }
 

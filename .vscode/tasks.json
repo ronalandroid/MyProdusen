@@ -1,12 +1,19 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"type": "npm",
-			"script": "bootstrap:superadmin",
-			"problemMatcher": [],
-			"label": "npm: bootstrap:superadmin",
-			"detail": "node scripts/bootstrap-superadmin.mjs"
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start MyProdusen Dev Server",
+      "type": "shell",
+      "command": "npm run dev",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Open MyProdusen Localhost",
+      "type": "shell",
+      "command": "open http://localhost:3000",
+      "problemMatcher": []
+    }
+  ]
 }

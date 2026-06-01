@@ -19,19 +19,16 @@
 
 ## Roles & access
 
-| Role        | Access |
-| ----------- | ------ |
-| Superadmin  | Full access. Role management, audit log read, system settings. |
-| Employee    | Own data only. Submit attendance / leave / corrections. |
+| Role | Access |
+| --- | --- |
+| `SUPERADMIN` | Full access. Role management, audit log read, system settings, reports, payroll, approvals, employee/team/location/shift management. |
+| `LEADER` | Employee self-service plus assigned-team KPI/team scope only. No team payroll access, no global reports, no Superadmin APIs. |
+| `EMPLOYEE` | Own data only. Submit attendance / leave / corrections, view own KPI/payroll/notifications/profile. |
 
 Inactive users cannot log in. Disabled accounts lose access on the next auth
 revalidation.
 
-System `role` controls access only. Operational labels such as HR, Admin,
-Leader, Expedition, Driver, or Staff belong in employee `division` and
-`position`, not in the RBAC role list. Superadmin may assign any role when
-creating a new employee account. Superadmin manages all production accounts
-only; attempts to create or promote Superadmin are blocked server-side.
+System `role` controls access only. Operational labels such as HR, Expedition, Driver, or Staff belong in employee `division`, `team`, and `position`, not in new RBAC roles. `LEADER` is the only production team-lead access role. Public registration always creates inactive `EMPLOYEE`; only existing authorized Superadmin flows may assign `LEADER` or `SUPERADMIN`, with last-Superadmin safety checks.
 
 ## Auth email delivery
 
@@ -160,7 +157,7 @@ which posts the token to `/api/auth/activate`; the backend verifies JWT purpose
 
 Superadmin can review registered users at `/dashboard/users`, see active vs
 pending accounts, manually activate/deactivate accounts, and assign access role
-(`Employee`, `Superadmin`). Employee placement details
+(`Employee`, `Leader`, `Superadmin`). Employee placement details
 such as division, position, supervisor, shift, and location remain managed in the
 employee module.
 

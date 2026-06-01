@@ -1,6 +1,14 @@
+const os = require('node:os');
+
+const localDevOrigins = Object.values(os.networkInterfaces())
+  .flat()
+  .filter((iface) => iface && iface.family === 'IPv4' && !iface.internal)
+  .map((iface) => `${iface.address}:3000`);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  allowedDevOrigins: localDevOrigins,
   async headers() {
     return [
       {

@@ -71,8 +71,9 @@ export default function AttendanceClockPage() {
   const allowedRadius = location?.radius || 150;
   const gpsDistance = gpsPosition && location ? distanceMeters(gpsPosition.coords.latitude, gpsPosition.coords.longitude, location.latitude, location.longitude) : null;
   const insideRadius = gpsDistance !== null ? gpsDistance <= allowedRadius : null;
-  const canContinue = Boolean(gpsPosition && insideRadius);
-  const canSubmit = Boolean(selfieBlob && gpsPosition && insideRadius !== false && !isSubmitting);
+  const hasValidGps = Boolean(gpsPosition && !gpsError);
+  const canContinue = Boolean(hasValidGps && insideRadius);
+  const canSubmit = Boolean(selfieBlob && hasValidGps && insideRadius !== false && !isSubmitting);
 
   const title = isClockIn ? "Clock In" : "Clock Out";
   const selfieTitle = isClockIn ? "Ambil Selfie Clock In" : "Ambil Selfie Clock Out";
@@ -198,12 +199,12 @@ export default function AttendanceClockPage() {
       {step === "location" && (
         <>
           <section className="card overflow-hidden border border-[#FFECB3] bg-white" aria-label="Map lokasi absensi">
-            <div className="relative h-[280px] min-h-[260px] bg-[#F8FAFC]" style={{ backgroundImage: "linear-gradient(90deg, rgba(148,163,184,.18) 1px, transparent 1px), linear-gradient(rgba(148,163,184,.18) 1px, transparent 1px)", backgroundSize: "34px 34px" }}>
+            <div className="relative h-[clamp(260px,55vh,420px)] min-h-[260px] bg-[#F8FAFC]" style={{ backgroundImage: "linear-gradient(90deg, rgba(148,163,184,.18) 1px, transparent 1px), linear-gradient(rgba(148,163,184,.18) 1px, transparent 1px)", backgroundSize: "34px 34px" }}>
               <div className="absolute inset-6 rounded-[48%] border-4 border-dashed border-[rgba(253,199,4,.65)] bg-[rgba(253,199,4,.08)]" aria-label="radius circle" />
               <div className="absolute left-[20%] top-[58%] flex flex-col items-center gap-1 text-xs font-bold text-[var(--info)]"><Navigation size={28} />Lokasi Anda</div>
               <div className="absolute right-[18%] top-[30%] flex flex-col items-center gap-1 text-xs font-bold text-[var(--danger)]"><MapPin size={30} />Lokasi kerja</div>
               <div className="absolute left-[34%] right-[32%] top-[49%] border-t-2 border-dashed border-[var(--text-muted)]" />
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 rounded-full bg-white px-3 py-1 text-xs font-extrabold shadow">{gpsDistance === null ? "Mengambil lokasi Anda…" : `Jarak ke kantor ${Math.round(gpsDistance)} m`}</div>
+              <div className="absolute left-1/2 top-1/2 max-w-[calc(100%-24px)] -translate-x-1/2 rounded-full bg-white px-3 py-1 text-center text-xs font-extrabold shadow">{gpsDistance === null ? "Mengambil lokasi Anda…" : `Jarak ke kantor ${Math.round(gpsDistance)} m`}</div>
             </div>
           </section>
 
@@ -245,7 +246,7 @@ export default function AttendanceClockPage() {
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border-color)] bg-white/95 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] backdrop-blur">
         <div className="mx-auto flex max-w-[520px] flex-col gap-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)]"><ShieldCheck size={14} />{isSubmitting ? statusText : step === "location" ? (gpsPosition ? "Memvalidasi lokasi…" : "Mengambil lokasi Anda…") : canSubmit ? "Siap dikirim" : "Ambil foto untuk melanjutkan"}</div>
+          <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)]" role="status" aria-live="polite"><ShieldCheck size={14} />{isSubmitting ? statusText : step === "location" ? (gpsError || (gpsPosition ? "Memvalidasi lokasi…" : "Mengambil lokasi Anda…")) : canSubmit ? "Siap dikirim" : "Ambil foto untuk melanjutkan"}</div>
           {step === "location" ? <button type="button" className="btn btn-primary min-h-[52px] w-full rounded-2xl font-extrabold" disabled={!canContinue} onClick={() => setStep("selfie")}>Lanjutkan</button> : <button type="button" className="btn btn-primary min-h-[52px] w-full rounded-2xl font-extrabold" disabled={!canSubmit} onClick={submitAttendance}>{isSubmitting ? statusText : submitLabel}</button>}
         </div>
       </div>

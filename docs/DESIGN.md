@@ -23,20 +23,19 @@ arsitektur dan modul, sehingga setiap engineer/agent dapat:
 - Mengubah satu modul tanpa merusak modul lain.
 - Menambahkan fitur baru tanpa melanggar RBAC, brand, atau keamanan.
 - Menyambungkan implementasi nyata (`app/`, `lib/`, `src/`, `drizzle/`)
-  dengan kontrak produk di `/docs/prd/README.md`.
+  dengan kontrak produk di `/docs/prd.md`.
 
 Dokumen ini tidak menggantikan dokumen lain. Hubungannya:
 
 | Dokumen | Fokus |
 | ------- | ----- |
-| `docs/prd/README.md` | Apa yang dibangun, untuk siapa, alur bisnis. |
-| `docs/architecture/README.md` | Stack pilihan, request flow ringkas, batasan stack. |
-| `docs/security/README.md` | RBAC, audit, file selfie, JWT, hardening. |
-| `docs/database/README.md` | Skema tabel, indeks, migrasi. |
-| `docs/deployment/README.md` | Docker, Coolify, env, runbook deploy. |
-| `docs/operations/README.md` | SOP harian, runbook, backup/restore. |
-| `docs/testing-qa/README.md` | Strategi pengujian dan release gate. |
-| `docs/ui-ux-guide/README.md` | Token brand, layout, copy. |
+| `docs/prd.md` | Apa yang dibangun, untuk siapa, alur bisnis. |
+| `docs/DESIGN.md` | Stack pilihan, request flow ringkas, batasan desain. |
+| `docs/SECURITY.md` | RBAC, audit, file selfie, JWT, hardening. |
+| `docs/DATABASE.md` | Skema tabel, indeks, migrasi. |
+| `docs/GO_LIVE_STEPS.md` | Docker, Coolify, env, runbook deploy, backup/restore. |
+| `docs/TESTING_QA.md` | Strategi pengujian dan release gate. |
+| `docs/UI_UX_GUIDE.md` | Token brand, layout, copy. |
 | `docs/references/*` | Kontrak visual: screenshots dan email guide. |
 | **`docs/DESIGN.md` (file ini)** | Bagaimana semua bagian itu dirakit menjadi sistem. |
 
@@ -501,7 +500,7 @@ Antarmuka publik → Aturan bisnis kritis → Risiko & mitigasi**.
   `app/api/audit/*`, `app/dashboard/audit/page.tsx`.
 - **Field.** `actorUserId`, `action`, `targetType`, `targetId`,
   `oldValueJson`, `newValueJson`, `ipAddress`, `userAgent`, `createdAt`.
-- **Aksi tercatat.** Lihat `docs/security/README.md` untuk daftar
+- **Aksi tercatat.** Lihat `docs/SECURITY.md` untuk daftar
   lengkap (login, check-in, leave approve, role change, export, dll).
 - **Aturan.**
   - Audit log read-only untuk non-Superadmin.
@@ -560,7 +559,7 @@ Antarmuka publik → Aturan bisnis kritis → Risiko & mitigasi**.
 ## 7. Model data
 
 Sumber kebenaran skema adalah `drizzle/schema/*` dan
-`docs/database/README.md`. Ringkasan domain inti:
+`docs/DATABASE.md`. Ringkasan domain inti:
 
 ```mermaid
 erDiagram
@@ -579,7 +578,7 @@ erDiagram
     KpiItem ||--o{ KpiResult : "scored"
 ```
 
-Indeks kritis (lihat `docs/database/README.md` untuk detail):
+Indeks kritis (lihat `docs/DATABASE.md` untuk detail):
 
 - `Employee(nip)` unik, `Employee(divisionId, status)`.
 - `Attendance(employeeId, attendanceDate)` unik per hari, `Attendance(status)`.
@@ -634,7 +633,7 @@ Aturan migrasi:
 }
 ```
 
-Daftar `code` baku ada di `docs/prd/README.md` §5.6 (mis.
+Daftar `code` baku ada di `docs/prd.md` §5.6 (mis.
 `AUTH_INVALID_CREDENTIALS`, `ATTENDANCE_OUTSIDE_GEOFENCE`,
 `KPI_RESULT_ALREADY_APPROVED`).
 
@@ -734,7 +733,7 @@ Strategi:
 
 - **Container.** Next.js standalone via Dockerfile di repo. Build masuk
   layer terpisah (deps → build → runner).
-- **Env wajib.** Lihat `docs/deployment/README.md` dan
+- **Env wajib.** Lihat `docs/GO_LIVE_STEPS.md` dan
   `scripts/check-production-env.mjs`. Termasuk: `DATABASE_URL`,
   `JWT_SECRET`, `APP_URL`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`,
   `STORAGE_DRIVER`, `UPLOAD_DIR`, `MAX_UPLOAD_SIZE`,
@@ -743,7 +742,7 @@ Strategi:
   optional bootstrap Superadmin → jalankan server → healthcheck.
 - **Volume.** `/app/uploads` dipasang persistent.
 - **Backup.** Jadwal pg_dump + arsip volume; lihat
-  `docs/operations/README.md`.
+  `docs/GO_LIVE_STEPS.md`.
 
 ## 16. Strategi pengujian
 

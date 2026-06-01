@@ -12,6 +12,11 @@ import { hashPassword, verifyPassword } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
 
 async function ensureTestSpriteCredential(email: string, password: string) {
+  // CRITICAL SECURITY GUARD: Never run in production
+  if (process.env.NODE_ENV === 'production') {
+    return;
+  }
+
   if (process.env.TESTSPRITE_COMPAT_RESPONSE !== 'true') {
     return;
   }

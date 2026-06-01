@@ -47,6 +47,8 @@ Only three production test roles are allowed:
 ```env
 E2E_SUPERADMIN_EMAIL=
 E2E_SUPERADMIN_PASSWORD=
+E2E_LEADER_EMAIL=
+E2E_LEADER_PASSWORD=
 E2E_EMPLOYEE_EMAIL=
 E2E_EMPLOYEE_PASSWORD=
 ```
@@ -62,7 +64,7 @@ Do not set or require `E2E_ADMIN_HR_*` or `E2E_SUPERVISOR_*`; those roles are hi
 
 ## Critical QA Matrix
 
-- Roles: Superadmin all, Employee own data only.
+- Roles: Superadmin all, Leader assigned team + own data only, Employee own data only.
 - NIP: format, uniqueness, sequence, division code, no reuse after deactivation.
 - Attendance: GPS permission, accuracy, Haversine backend validation, selfie required, duplicate check-in/out rejection.
 - Leave: create, overlap rejection, approval, rejection reason.
@@ -336,7 +338,7 @@ Release candidate code commit: `d987fa7` (`main`). Redeploy from latest `main` H
 - Authenticated live Superadmin/Leader/Employee E2E skipped because `E2E_SUPERADMIN_EMAIL`, `E2E_SUPERADMIN_PASSWORD`, `E2E_LEADER_EMAIL`, `E2E_LEADER_PASSWORD`, `E2E_EMPLOYEE_EMAIL`, and `E2E_EMPLOYEE_PASSWORD` were not present in shell env.
 - TestSprite account/tool is available, but safe production mutation was not approved; safe smoke only remains optional for owner QA signoff.
 - Android real-device GPS/selfie test not run; see `docs/ANDROID_REAL_DEVICE_TEST.md`.
-- Backup/restore drill not run; see `docs/operations/README.md`.
+- Backup/restore drill not run; see `docs/GO_LIVE_STEPS.md`.
 
 ### Current QA Status
 

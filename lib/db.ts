@@ -12,9 +12,13 @@ function normalizeDatabaseUrl(databaseUrl: string) {
   return url.toString();
 }
 
-// Create postgres connection
+// Create postgres connection with pooling optimization
 const connectionString = normalizeDatabaseUrl(process.env.DATABASE_URL);
-const client = postgres(connectionString);
+const client = postgres(connectionString, {
+  max: process.env.DB_MAX_CONNECTIONS ? parseInt(process.env.DB_MAX_CONNECTIONS) : 10,
+  idle_timeout: 20,
+  connect_timeout: 10,
+});
 
 // Create drizzle instance
 export const db = drizzle(client, { schema });

@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { isLoginSubmitDisabled } from "@/lib/forms/login-form-state";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -317,7 +315,7 @@ export default function LoginPage() {
                     disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
                     focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--primary-light)]
                   "
-                  disabled={isLoginSubmitDisabled(isSubmitting)}
+                  disabled={isLoginSubmitDisabled(isSubmitting, identifier, password)}
                   aria-busy={isSubmitting}
                 >
                   {isSubmitting ? (
@@ -341,9 +339,6 @@ export default function LoginPage() {
                   <Link href="/register" className="inline-flex min-h-11 items-center rounded-xl px-2 font-bold text-[var(--text-primary)] hover:text-[var(--primary-dark)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]">
                     Daftar di sini
                   </Link>
-                  <button type="button" className="ml-2 inline-flex min-h-11 items-center rounded-xl px-3 font-bold text-[var(--text-primary)] underline" onClick={() => router.push('/register')}>
-                    Buka Registrasi
-                  </button>
                 </p>
                 <p className="mt-2 text-xs text-[var(--text-muted)]">Akun baru perlu aktivasi Superadmin atau HRD.</p>
               </div>

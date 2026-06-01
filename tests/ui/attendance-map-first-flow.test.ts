@@ -32,6 +32,9 @@ describe('map-first attendance clocking flow source contract', () => {
     expect(clockPage).toContain('Ajukan Koreksi Manual');
     expect(clockPage).toContain('watchPosition');
     expect(clockPage).toContain('clearWatch');
+    expect(clockPage).toContain('hasValidGps');
+    expect(clockPage).toContain('h-[clamp(260px,55vh,420px)]');
+    expect(clockPage).toContain('aria-live="polite"');
   });
 
   it('selfie step opens after Lanjutkan with photo wording, note, and submit labels', () => {
@@ -44,6 +47,14 @@ describe('map-first attendance clocking flow source contract', () => {
     expect(clockPage).toContain('Kirim Clock Out');
     expect(clockPage).toContain('Daftar Absensi');
     expect(camera).toContain('Posisikan wajah di dalam frame');
+    expect(camera).toContain('aria-live="assertive"');
+    expect(camera).toContain('min(60vh, 320px)');
+    expect(camera).toContain('touch-manipulation');
+  });
+
+  it('dashboard attendance card remains mobile-safe', () => {
+    expect(employeeDashboard).toContain('touch-manipulation');
+    expect(employeeDashboard).toContain('className="truncate"');
   });
 
   it('backend route protections remain strict', () => {

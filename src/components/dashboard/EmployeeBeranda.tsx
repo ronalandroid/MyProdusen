@@ -384,9 +384,9 @@ export default function EmployeeBeranda({ profile }: Props) {
             <h2 id="attendance-card-title" data-ux-note="Validasi lokasi dulu, lalu ambil selfie realtime." className="text-base sm:text-lg font-extrabold text-[var(--text-primary)] mt-3">
               {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
             </h2>
-            <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] mt-1.5 font-medium">
+            <div className="flex min-w-0 items-center gap-1.5 text-xs text-[var(--text-secondary)] mt-1.5 font-medium">
               <MapPin size={13} className="text-[var(--text-muted)]" />
-              <span>{workLocation?.name || "Lokasi belum ditentukan"}</span>
+              <span className="truncate">{workLocation?.name || "Lokasi belum ditentukan"}</span>
             </div>
           </div>
 
@@ -451,12 +451,12 @@ export default function EmployeeBeranda({ profile }: Props) {
             </div>
             <Link
               href={hasCheckedOut ? "/dashboard/attendance" : hasCheckedIn ? "/dashboard/attendance/clock?type=clock-out" : "/dashboard/attendance/clock?type=clock-in"}
-              className={`btn min-h-[52px] w-full rounded-2xl font-extrabold ${hasCheckedOut ? "btn-secondary pointer-events-none opacity-80" : "btn-primary"}`}
+              className={`btn min-h-[52px] w-full rounded-2xl font-extrabold touch-manipulation ${hasCheckedOut ? "btn-secondary pointer-events-none opacity-80" : "btn-primary"}`}
               aria-disabled={hasCheckedOut}
             >
               {hasCheckedOut ? "Absensi Selesai" : hasCheckedIn ? "Clock Out" : "Clock In"}
             </Link>
-            <Link href="/dashboard/attendance/exceptions/new" className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-2xl border border-[var(--border-color)] bg-white px-4 text-sm font-bold text-[var(--text-primary)]">
+            <Link href="/dashboard/attendance/exceptions/new" className="mt-3 inline-flex min-h-[44px] w-full touch-manipulation items-center justify-center rounded-2xl border border-[var(--border-color)] bg-white px-4 text-sm font-bold text-[var(--text-primary)]">
               Ajukan Koreksi Manual
             </Link>
           <span className="sr-only">Belum Absen Sudah Clock In Sudah Clock Out Absensi hari ini selesai</span>

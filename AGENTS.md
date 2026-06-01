@@ -1,6 +1,6 @@
 # AGENTS.md — MyProdusen AI Agent Operating Manual
 
-> Source of truth: `/docs/prd/README.md` defines product scope and final decisions. Current production roles are exactly `SUPERADMIN`, `LEADER`, and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` may exist only as historical database values and must not be exposed in production UI, seed accounts, tests, or new route access.
+> Source of truth: `docs/prd.md` defines product scope and final decisions. Current production roles are exactly `SUPERADMIN`, `LEADER`, and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` may exist only as historical database values and must not be exposed in production UI, seed accounts, tests, or new route access.
 
 ## 0. Mission
 
@@ -15,25 +15,25 @@ Read documentation before changing anything.
 Required first reads:
 
 ```txt
-/docs/prd/README.md
-/docs/database/README.md            if exists
-/docs/ui-ux-guide/README.md         if exists
-/docs/security/README.md            if exists
-/docs/final-checklist/README.md     if exists
+docs/prd.md
+docs/DATABASE.md
+docs/UI_UX_GUIDE.md
+docs/SECURITY.md
+docs/FINAL_CHECKLIST.md
 ```
 
 Decision hierarchy:
 
-1. `/docs/prd/README.md` — product scope, roles, business rules, acceptance criteria.
-2. `/docs/database/README.md` — database model, migrations, Drizzle rules.
-3. `/docs/ui-ux-guide/README.md` — approved UI/UX patterns, brand lock, responsive rules.
-4. `/docs/security/README.md` — auth, RBAC, upload, logging, production hardening.
-5. `/docs/architecture/README.md` — system architecture and execution order.
-6. `/docs/final-checklist/README.md` — release readiness.
-7. `/docs/operations/README.md` — runbook, backup, restore, rollback.
+1. `docs/prd.md` — product scope, roles, business rules, acceptance criteria.
+2. `docs/DATABASE.md` — database model, migrations, Drizzle rules.
+3. `docs/UI_UX_GUIDE.md` — approved UI/UX patterns, brand lock, responsive rules.
+4. `docs/SECURITY.md` — auth, RBAC, upload, logging, production hardening.
+5. `docs/DESIGN.md` — design principles.
+6. `docs/FINAL_CHECKLIST.md` — release readiness.
+7. `docs/GO_LIVE_STEPS.md` — go-live, deploy, rollback notes.
 8. Existing code patterns — implementation style when docs are silent.
 
-If docs conflict, stop and report conflict unless user gives clear instruction to resolve it. Do not silently override `/docs/prd/README.md`.
+If docs conflict, stop and report conflict unless user gives clear instruction to resolve it. Do not silently override `docs/prd.md`.
 
 ## 2. Documentation Discipline
 
@@ -49,12 +49,11 @@ All other project docs must live in `/docs`.
 Update docs when scope changes:
 
 - Code behavior changes → update relevant `/docs` file.
-- Database changes → update `/docs/database/README.md`.
-- UI changes → update `/docs/ui-ux-guide/README.md`.
-- Security changes → update `/docs/security/README.md`.
-- Deploy changes → update `/docs/deployment/README.md`.
-- Operations, backup, restore, rollback changes → update `/docs/operations/README.md`.
-- Tests, fixes, investigations → update `/docs/testing-qa/README.md` and `/docs/changelog/README.md`.
+- Database changes → update `docs/DATABASE.md`.
+- UI changes → update `docs/UI_UX_GUIDE.md`.
+- Security changes → update `docs/SECURITY.md`.
+- Deploy/go-live changes → update `docs/GO_LIVE_STEPS.md`.
+- Tests, fixes, investigations → update `docs/TESTING_QA.md`, `docs/TEST_FIX_REPORT.md`, and `docs/CHANGELOG.md` as relevant.
 
 Do not create random planning, status, audit, or report markdown outside `/docs`.
 
@@ -302,8 +301,8 @@ If a command does not exist, state that clearly. If only docs changed, run a foc
 A task is **DONE** only when all applicable items are true:
 
 - Required docs checked first.
-- Scope clear and aligned with `/docs/prd/README.md`.
-- UI follows `/docs/ui-ux-guide/README.md` when UI changes.
+- Scope clear and aligned with `docs/prd.md`.
+- UI follows `docs/UI_UX_GUIDE.md` when UI changes.
 - Frontend action wired to backend.
 - Backend validates input.
 - Backend checks auth/RBAC.

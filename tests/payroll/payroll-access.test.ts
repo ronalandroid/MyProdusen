@@ -27,12 +27,13 @@ describe('payroll access policy', () => {
     expect(canAccessPayroll('EMPLOYEE', 'export')).toBe(false);
   });
 
-  it('blocks supervisor by default', () => {
+  it('allows leader own payroll only', () => {
     process.env.PAYROLL_MODULE_ENABLED = 'true';
     process.env.PAYROLL_MUTATION_ENABLED = 'true';
 
-    expect(canAccessPayroll('SUPERVISOR', 'read')).toBe(false);
-    expect(canAccessPayroll('SUPERVISOR', 'readOwn')).toBe(false);
+    expect(canAccessPayroll('LEADER', 'readOwn')).toBe(true);
+    expect(canAccessPayroll('LEADER', 'read')).toBe(false);
+    expect(canAccessPayroll('LEADER', 'export')).toBe(false);
   });
 
   it('allows superadmin full payroll mutations only when mutation flag is enabled', () => {

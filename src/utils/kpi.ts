@@ -41,3 +41,15 @@ export function calculateWeightedKpiScore(
   const weightedSum = scores.reduce((sum, item) => sum + item.score * item.weight, 0);
   return totalWeight > 0 ? weightedSum / totalWeight : 0;
 }
+
+export function calculateIntegratedKpiScore(input: {
+  attendanceScore: number;
+  productionScore: number;
+  disciplineScore: number;
+}): number {
+  return (
+    input.attendanceScore * 0.3 +
+    input.productionScore * 0.5 +
+    input.disciplineScore * 0.2
+  );
+}

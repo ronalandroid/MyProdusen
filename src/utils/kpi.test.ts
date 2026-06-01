@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateKpiScore, calculateWeightedKpiScore } from './kpi';
+import { calculateIntegratedKpiScore, calculateKpiScore, calculateWeightedKpiScore } from './kpi';
 
 describe('KPI Utilities', () => {
   describe('calculateKpiScore', () => {
@@ -30,6 +30,12 @@ describe('KPI Utilities', () => {
         { score: 90, weight: 0.3 },
       ];
       expect(calculateWeightedKpiScore(scores)).toBe(91);
+    });
+  });
+
+  describe('calculateIntegratedKpiScore', () => {
+    it('uses attendance/production/discipline weights 30/50/20', () => {
+      expect(calculateIntegratedKpiScore({ attendanceScore: 80, productionScore: 100, disciplineScore: 50 })).toBe(84);
     });
   });
 });

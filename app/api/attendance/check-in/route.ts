@@ -9,6 +9,7 @@ import { parseCheckInRealtimeForm } from '@/lib/attendance/realtime-selfie-form'
 import { logAudit } from '@/lib/audit';
 import { UploadError } from '@/lib/upload';
 import { recordGeoOutcome } from '@/lib/attendance/geo-review-flow';
+import { acquireIdempotencyLock } from '@/lib/core/idempotency';
 
 function getFailureAuditAction(error: unknown, type: 'CHECK_IN' | 'CHECK_OUT') {
   const message = error instanceof Error ? error.message : String(error || '');
@@ -23,6 +24,11 @@ export async function POST(request: NextRequest) {
   let user: Awaited<ReturnType<typeof requireAuth>> | null = null;
   let employee: Awaited<ReturnType<typeof employeeService.getEmployeeByUserId>> | null = null;
   try {
+    const isNewRequest = await acquireIdempotencyLock(request);
+    if (!isNewRequest) {
+      return errorResponse('Permintaan sedang diproses', 409);
+    }
+
     user = await requireAuth(request);
     if (user.role !== 'EMPLOYEE' && user.role !== 'LEADER') {
       return forbiddenResponse('Absensi mandiri hanya untuk Karyawan dan Leader');

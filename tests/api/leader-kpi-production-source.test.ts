@@ -2,12 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 const route = readFileSync('app/api/leader/kpi-production/route.ts', 'utf8');
+const leaderService = readFileSync('src/services/leader/leader.service.ts', 'utf8');
 const verify = readFileSync('scripts/verify-uat-leader-flow.mjs', 'utf8');
 
 describe('leader KPI production route source', () => {
   it('accepts direct array payload used by authenticated Leader E2E', () => {
     expect(route).toContain('Array.isArray(body) ? body');
     expect(route).toContain('Array.isArray(body.entries) ? body.entries');
+  });
+
+  it('leader production listing remains scoped by assigned team and employee', () => {
+    expect(leaderService).toContain('const teamIds = Array.from(new Set(teamEmployees.map((employee) => employee.teamId)))');
+    expect(leaderService).toContain('inArray(kpiProductionEntries.employeeId, employeeIds)');
+    expect(leaderService).toContain('inArray(kpiProductionEntries.teamId, teamIds)');
   });
 
   it('UAT verify uses stable official location id instead of brittle coordinate/radius exact match', () => {

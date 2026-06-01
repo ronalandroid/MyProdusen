@@ -136,6 +136,12 @@ function ProfileCompletionModal({ initialFullName, initialPhone, initialAddress,
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    return () => {
+      if (avatarPreview?.startsWith("blob:")) URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
+
   async function handleAvatarChange(file: File | null) {
     setError("");
     if (!file) return;
@@ -157,10 +163,12 @@ function ProfileCompletionModal({ initialFullName, initialPhone, initialAddress,
     try {
       if (!initialProfilePhoto && !avatarRef.current) throw new Error("Foto profil wajib diunggah.");
       if (fullName.trim().length < 3) throw new Error("Nama lengkap minimal 3 karakter.");
+      if (phone.replace(/\D/g, "").length < 10) throw new Error("Nomor HP minimal 10 digit.");
+      if (address.trim().length < 10) throw new Error("Alamat lengkap minimal 10 karakter.");
       const formData = new FormData();
       formData.set("fullName", fullName.trim());
-      formData.set("phone", phone);
-      formData.set("address", address);
+      formData.set("phone", phone.trim());
+      formData.set("address", address.trim());
       if (avatarRef.current) formData.set("avatar", avatarRef.current, avatarRef.current.name);
       const response = await fetch("/api/profile/me", { method: "PATCH", credentials: "include", body: formData });
       const payload = await response.json().catch(() => null);
@@ -174,7 +182,7 @@ function ProfileCompletionModal({ initialFullName, initialPhone, initialAddress,
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="profile-onboarding-title">
-      <div className="w-full max-w-lg rounded-3xl bg-white p-5 shadow-xl sm:p-6">
+      <div className="max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-5 shadow-xl sm:p-6">
         <h2 id="profile-onboarding-title" className="text-xl font-extrabold text-[var(--text-primary)]">Lengkapi Data Pribadi</h2>
         <p className="mt-2 text-sm text-[var(--text-secondary)]">Isi foto profil, nama lengkap, nomor HP, dan alamat agar data karyawan Anda lengkap. Divisi, posisi, lokasi kerja, dan shift akan ditetapkan oleh Superadmin.</p>
         <form onSubmit={handleSubmit} className="mt-5 grid gap-4">

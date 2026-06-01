@@ -6,16 +6,16 @@
 
 - [ ] `README.md` doc map current.
 - [ ] `AGENTS.md` concise and enforceable.
-- [ ] `docs/prd/README.md` matches final role, ORM, DB, payroll, UI, API error decisions.
-- [ ] `docs/database/README.md`, `docs/security/README.md`, `docs/ui-ux-guide/README.md` updated for touched areas.
-- [ ] `docs/testing-qa/README.md`, `docs/deployment/README.md`, `docs/operations/README.md`, `docs/changelog/README.md` current.
+- [ ] `docs/prd.md` matches final role, ORM, DB, payroll, UI, API error decisions.
+- [ ] `docs/DATABASE.md`, `docs/SECURITY.md`, `docs/UI_UX_GUIDE.md` updated for touched areas.
+- [ ] `docs/TESTING_QA.md`, `docs/GO_LIVE_STEPS.md`, `docs/CHANGELOG.md`, `docs/TEST_FIX_REPORT.md` current.
 
 ## Code And Data
 
 - [ ] Drizzle ORM only; no Prisma config/import/schema.
 - [ ] PostgreSQL migrations additive and non-destructive.
 - [ ] `npm run db:deploy` / migration coverage verified.
-- [ ] RBAC uses two production roles: `SUPERADMIN`, `EMPLOYEE`.
+- [ ] RBAC uses three production roles: `SUPERADMIN`, `LEADER`, `EMPLOYEE`.
 - [ ] Backend enforces RBAC; frontend only hides navigation.
 - [ ] Employee own-data isolation verified.
 - [ ] Payroll RBAC verified when payroll module enabled.
@@ -67,6 +67,33 @@
 - [ ] Owner/HR/technical PIC signoff.
 - [ ] Production smoke passed.
 - [ ] Release is `READY`.
+
+## QA/Release Audit — 2026-06-01
+
+### Local gates run
+
+- [x] Package scripts inspected in `package.json`.
+- [x] `npm run lint && npm run test && npm run release:migrations && npm run release:references && npm run release:gates` passed locally.
+- [x] `npm run lint && npm run build` passed locally.
+
+### Local gate evidence
+
+- `npm run test`: `Test Files  98 passed (98)`, `Tests  477 passed (477)`.
+- `npm run release:migrations`: `Migration coverage check passed (30 migration(s) on disk).`
+- `npm run release:references`: `Reference contract check passed (4 screen(s) on disk).`
+- `npm run release:gates`: `Release gate check passed.`
+- `npm run build`: `✓ Compiled successfully in 8.0s`, `✓ Generating static pages using 1 worker (93/93) in 140ms`.
+
+### Not run / blockers
+
+- [ ] `npm run release:check:full` not run locally because `release:env` requires production-like secrets/env.
+- [ ] `npm run release:runtime` not run because target Coolify/container shell and production env are unavailable here.
+- [ ] Authenticated live E2E not run because `E2E_SUPERADMIN_EMAIL`, `E2E_SUPERADMIN_PASSWORD`, `E2E_LEADER_EMAIL`, `E2E_LEADER_PASSWORD`, `E2E_EMPLOYEE_EMAIL`, and `E2E_EMPLOYEE_PASSWORD` are not provided.
+- [ ] Live/TestSprite smoke not run because no TestSprite API access/tooling was available in this session.
+- [ ] Android real-device GPS+selfie attendance not run because physical Android device, HTTPS session, GPS/camera permissions, and approved test account were unavailable here.
+- [ ] Protected selfie authorization live check not run because authenticated fixture data and live credentials were unavailable here.
+
+**Audit status:** LOCAL STATIC/UNIT/BUILD GATES PASSED. NOT READY for production signoff until live env, authenticated E2E, TestSprite, real-device GPS+selfie, and protected selfie authorization gates pass.
 
 ## Final Release Candidate Status — 2026-05-22
 

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Clock, Users, Calendar, User, UserCog, MapPin, Clock3, BarChart3, FileText, Shield, Bell, BriefcaseBusiness, CheckCircle, Settings } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { getNavigationForRole } from "@/lib/navigation/role-navigation";
 import type { UserRole } from "@/lib/permissions";
 
@@ -11,41 +12,43 @@ type SidebarProps = {
   role: UserRole;
 };
 
+const iconMap: Record<string, LucideIcon> = {
+  '/dashboard': Home,
+  '/dashboard/self-service': BriefcaseBusiness,
+  '/dashboard/attendance': Clock,
+  '/dashboard/attendance/exceptions': CheckCircle,
+  '/dashboard/users': UserCog,
+  '/dashboard/employees': Users,
+  '/dashboard/locations': MapPin,
+  '/dashboard/shifts': Clock3,
+  '/dashboard/leave': Calendar,
+  '/dashboard/kpi': BarChart3,
+  '/dashboard/leader/kpi-input': BarChart3,
+  '/dashboard/leader/team': Users,
+  '/dashboard/leader/reports': FileText,
+  '/dashboard/reports': FileText,
+  '/dashboard/reports/attendance': FileText,
+  '/dashboard/payroll': FileText,
+  '/dashboard/overtime': Clock3,
+  '/dashboard/documents': FileText,
+  '/dashboard/notifications': Bell,
+  '/dashboard/audit': Shield,
+  '/dashboard/settings': Settings,
+  '/dashboard/profile': User,
+};
+
 export default function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
 
-  const iconMap: Record<string, any> = {
-    '/dashboard': Home,
-    '/dashboard/self-service': BriefcaseBusiness,
-    '/dashboard/attendance': Clock,
-    '/dashboard/attendance/exceptions': CheckCircle,
-    '/dashboard/users': UserCog,
-    '/dashboard/employees': Users,
-    '/dashboard/locations': MapPin,
-    '/dashboard/shifts': Clock3,
-    '/dashboard/leave': Calendar,
-    '/dashboard/kpi': BarChart3,
-    '/dashboard/leader/kpi-input': BarChart3,
-    '/dashboard/leader/team': Users,
-    '/dashboard/leader/reports': FileText,
-    '/dashboard/reports': FileText,
-    '/dashboard/reports/attendance': FileText,
-    '/dashboard/payroll': FileText,
-    '/dashboard/overtime': Clock3,
-    '/dashboard/documents': FileText,
-    '/dashboard/notifications': Bell,
-    '/dashboard/audit': Shield,
-    '/dashboard/settings': Settings,
-    '/dashboard/profile': User,
-  };
-
-  const allowedNav = getNavigationForRole(role);
-  const navItems = allowedNav.map((item) => ({
-    name: item.name,
-    icon: iconMap[item.path] || Home,
-    path: item.path,
-    primary: item.primary,
-  }));
+  const navItems = useMemo(() => {
+    const allowedNav = getNavigationForRole(role);
+    return allowedNav.map((item) => ({
+      name: item.name,
+      icon: iconMap[item.path] || Home,
+      path: item.path,
+      primary: item.primary,
+    }));
+  }, [role]);
 
   // Longest-prefix-wins so /dashboard/attendance/exceptions doesn't also light
   // the /dashboard/attendance tab. Compute once per pathname change.
@@ -80,7 +83,7 @@ export default function Sidebar({ role }: SidebarProps) {
             key={item.path}
             href={item.path}
             prefetch
-            className={`nav-item ${item.primary ? "" : "nav-item-desktop"} ${isActive ? "active" : ""}`}
+            className={`nav-item ${item.primary ? "nav-item-primary" : "nav-item-secondary"} ${isActive ? "active" : ""}`}
             aria-current={isActive ? "page" : undefined}
           >
             <Icon

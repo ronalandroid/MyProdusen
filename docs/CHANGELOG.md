@@ -1,5 +1,14 @@
 # Changelog — MyProdusen
 
+## 2026-06-01 — HRIS UX Finalization Pass
+
+- Added `npm run dev:ready` for one-command local readiness: port cleanup, migrations, seed credentials, optional Android sync, and dev server start.
+- Auto-detected local LAN dev origins in `next.config.js` so mobile previews like `192.168.x.x:3000` avoid Next.js dev-origin blocking.
+- Improved login UX: disabled submit until email/password are present, removed duplicate registration CTA, and kept duplicate-submit protection.
+- Improved mobile navigation reachability: all role-permitted dashboard routes now remain available on mobile through a horizontally scrollable bottom navigation.
+- Hardened first-run profile onboarding: mobile-safe scrollable modal, stronger phone/address validation, trimmed submissions, and blob URL cleanup for avatar previews.
+- Verified locally with `npm run lint`, `npm run test`, and `npm run build`.
+
 ## 2026-05-31 — Gamification & Theme UI UAT Pass
 
 - **Employee Gamification UI**: Implemented interactive cumulative Score Card (0-100), active tier badges, dynamic Kehadiran/KPI/Perilaku Kerja score breakdowns, earned badge showcase grid, recent change reason notes, and responsive inline SVG 7-day trend chart. Added raise projection estimate banner (+X%) with Platinum projection disclaimer.
@@ -32,7 +41,7 @@
 - Added env-based patched backend TestSprite scripts and local `requests` shim so generated API checks can run without hard-coded secrets or extra dependencies.
 - Reran backend TestSprite after stricter credential/response-shape instructions; cloud backend result improved from 2/10 to 5/10 passed.
 
-## 2026-05-20 — Two-Role Final Sync
+## 2026-05-20 — Three-Role Final Sync
 
 - Locked all project documentation to the final three-role production model: `SUPERADMIN`, `LEADER`, and `EMPLOYEE`.
 - Clarified local seed login emails while keeping passwords environment-only.
@@ -41,14 +50,14 @@
 
 ## 2026-05-20 — Documentation Consolidation And Role Alignment
 
-- Consolidated documentation into canonical docs: PRD, Architecture, Database, Security, UI/UX, Deployment, Testing QA, Operations, Final Checklist, Changelog.
-- Re-aligned PRD and AGENTS to two production roles: `SUPERADMIN`, `EMPLOYEE`.
+- Consolidated documentation into canonical docs: PRD, Design, Database, Security, UI/UX, Go-Live Steps, Testing QA, Final Checklist, Test Fix Report, Changelog.
+- Re-aligned PRD and AGENTS to three production roles: `SUPERADMIN`, `LEADER`, `EMPLOYEE`.
 - Restored Admin HR/Supervisor historical-only rule for production UI and access.
 - Confirmed Drizzle ORM + PostgreSQL + Drizzle SQL migrations + `npm run db:deploy` as final database stack.
 - Removed Prisma references from active AGENTS and canonical database guidance.
 - Clarified payroll as active when implementation is already enabled/documented; payroll data remains RBAC-protected.
 - Added UI quality gate, API error standard, Definition of Done, and frontend/backend/database wiring rule.
-- Merged testing reports into `TESTING_QA.md` and operations/deploy runbooks into `DEPLOYMENT.md` / `OPERATIONS.md`.
+- Merged testing reports into `TESTING_QA.md` / `TEST_FIX_REPORT.md` and deployment runbooks into `GO_LIVE_STEPS.md`.
 - Synced code role helpers, validation schemas, navigation policy, payroll access, dashboard role experience, and RBAC tests to three-role model.
 
 ## 2026-05-20 — WCAG UI/UX Hardening

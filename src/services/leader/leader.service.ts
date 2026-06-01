@@ -109,8 +109,9 @@ export class LeaderService {
     assertIsoDate(date);
     const teamEmployees = await this.getTeamEmployeesForLeader(leaderUserId, teamId);
     const employeeIds = teamEmployees.map((employee) => employee.id);
-    if (employeeIds.length === 0) return [];
-    return db.select({ id: kpiProductionEntries.id, employeeId: kpiProductionEntries.employeeId, teamId: kpiProductionEntries.teamId, date: kpiProductionEntries.date, metricType: kpiProductionEntries.metricType, quantity: kpiProductionEntries.quantity, unit: kpiProductionEntries.unit, note: kpiProductionEntries.note, employeeName: employees.fullName, employeeNip: employees.nip }).from(kpiProductionEntries).innerJoin(employees, eq(employees.id, kpiProductionEntries.employeeId)).where(and(inArray(kpiProductionEntries.employeeId, employeeIds), eq(kpiProductionEntries.date, date))).orderBy(asc(employees.fullName));
+    const teamIds = Array.from(new Set(teamEmployees.map((employee) => employee.teamId)));
+    if (employeeIds.length === 0 || teamIds.length === 0) return [];
+    return db.select({ id: kpiProductionEntries.id, employeeId: kpiProductionEntries.employeeId, teamId: kpiProductionEntries.teamId, date: kpiProductionEntries.date, metricType: kpiProductionEntries.metricType, quantity: kpiProductionEntries.quantity, unit: kpiProductionEntries.unit, note: kpiProductionEntries.note, employeeName: employees.fullName, employeeNip: employees.nip }).from(kpiProductionEntries).innerJoin(employees, eq(employees.id, kpiProductionEntries.employeeId)).where(and(inArray(kpiProductionEntries.employeeId, employeeIds), inArray(kpiProductionEntries.teamId, teamIds), eq(kpiProductionEntries.date, date))).orderBy(asc(employees.fullName));
   }
 
   async getOwnProductionEntries(userId: string) {

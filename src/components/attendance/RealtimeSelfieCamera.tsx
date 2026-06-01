@@ -161,7 +161,7 @@ export function RealtimeSelfieCamera({
       </div>
 
       {cameraError && (
-        <div role="alert" style={{ color: "var(--danger-text)", fontSize: "12px", fontWeight: 600 }}>
+        <div role="alert" aria-live="assertive" style={{ color: "var(--danger-text)", fontSize: "12px", fontWeight: 600 }}>
           {cameraError}
         </div>
       )}
@@ -173,7 +173,7 @@ export function RealtimeSelfieCamera({
           overflow: "hidden",
           border: "1px solid var(--border-color)",
           background: "var(--bg-secondary)",
-          minHeight: "220px",
+          minHeight: "min(60vh, 320px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -237,7 +237,7 @@ export function RealtimeSelfieCamera({
         {!capturedPreviewUrl && !isCameraOpen && (
           <button
             type="button"
-            className="btn btn-primary"
+            className="btn btn-primary min-h-[52px] touch-manipulation"
             onClick={openCamera}
             disabled={disabled || isStarting}
             style={{ flex: 1 }}
@@ -249,7 +249,7 @@ export function RealtimeSelfieCamera({
           <>
             <button
               type="button"
-              className="btn btn-primary"
+              className="btn btn-primary min-h-[52px] touch-manipulation"
               onClick={captureSelfie}
               disabled={disabled || isCapturing}
               style={{ flex: 1 }}
@@ -258,7 +258,7 @@ export function RealtimeSelfieCamera({
             </button>
             <button
               type="button"
-              className="btn btn-secondary"
+              className="btn btn-secondary min-h-[52px] touch-manipulation"
               onClick={stopCamera}
               disabled={disabled || isCapturing}
               style={{ flex: 1 }}
@@ -270,7 +270,7 @@ export function RealtimeSelfieCamera({
         {capturedPreviewUrl && (
           <button
             type="button"
-            className="btn btn-secondary"
+            className="btn btn-secondary min-h-[52px] touch-manipulation"
             onClick={retakeSelfie}
             disabled={disabled}
             style={{ flex: 1 }}

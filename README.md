@@ -42,16 +42,16 @@ BASE_URL=https://myprodusen.online npm run verify:live-routes
 
 ## Documentation Map
 
-- Product: [`docs/prd/README.md`](docs/prd/README.md)
-- Architecture: [`docs/architecture/README.md`](docs/architecture/README.md)
-- Database: [`docs/database/README.md`](docs/database/README.md)
-- Security: [`docs/security/README.md`](docs/security/README.md)
-- UI/UX: [`docs/ui-ux-guide/README.md`](docs/ui-ux-guide/README.md)
-- Deployment: [`docs/deployment/README.md`](docs/deployment/README.md)
-- Testing: [`docs/testing-qa/README.md`](docs/testing-qa/README.md)
-- Operations: [`docs/operations/README.md`](docs/operations/README.md)
-- Release: [`docs/final-checklist/README.md`](docs/final-checklist/README.md)
-- History: [`docs/changelog/README.md`](docs/changelog/README.md)
+- Product: [`docs/prd.md`](docs/prd.md)
+- Design: [`docs/DESIGN.md`](docs/DESIGN.md)
+- Database: [`docs/DATABASE.md`](docs/DATABASE.md)
+- Security: [`docs/SECURITY.md`](docs/SECURITY.md)
+- UI/UX: [`docs/UI_UX_GUIDE.md`](docs/UI_UX_GUIDE.md)
+- Go-live: [`docs/GO_LIVE_STEPS.md`](docs/GO_LIVE_STEPS.md)
+- Testing: [`docs/TESTING_QA.md`](docs/TESTING_QA.md)
+- Release: [`docs/FINAL_CHECKLIST.md`](docs/FINAL_CHECKLIST.md)
+- Test fixes: [`docs/TEST_FIX_REPORT.md`](docs/TEST_FIX_REPORT.md)
+- History: [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
 - Design references: [`docs/references/README.md`](docs/references/README.md)
 
 Root markdown is limited to `README.md` and `AGENTS.md`. Other docs live in `/docs`.

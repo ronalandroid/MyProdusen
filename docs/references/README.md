@@ -1,6 +1,6 @@
 # Design References
 
-> **AI agent role source of truth:** MyProdusen production uses exactly two roles: `SUPERADMIN` and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` are historical database values only and must not be exposed in production UI or route access.
+> **AI agent role source of truth:** MyProdusen production uses exactly three roles: `SUPERADMIN`, `LEADER`, and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` are historical database values only and must not be exposed in production UI or route access.
 
 
 This folder is the **canonical visual contract** for MyProdusen. Every UI
@@ -21,6 +21,16 @@ docs/references/
     ├── super-admin-full-ui-ux-mobile.png    ← Super Admin mobile shell
     └── full-ui-ux-emailing-system.png       ← Email templates
 ```
+
+## External HRIS reference patterns
+
+Use these as product references, not brand-copy sources:
+
+- Mekari Talenta: role-based HR dashboard, employee self-service, attendance, leave, payroll, reports.
+- Talenta mobile: task-first employee home with attendance, request shortcuts, payslip, profile.
+- HRIS best-practice pattern: status chips, approval inbox, payroll period locks, audit trail, filtered tables, mobile 44px targets.
+
+Do not copy protected assets or marketing copy. Adapt patterns into MyProdusen visual language only.
 
 ## Rules of engagement
 

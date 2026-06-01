@@ -45,13 +45,7 @@ export class AttendanceExceptionService {
       conditions.push(eq(attendanceExceptions.employeeId, filters.viewerEmployeeId));
     }
 
-    if (filters.viewerRole === 'SUPERVISOR' && filters.viewerEmployeeId) {
-      const team = await db
-        .select({ id: employees.id })
-        .from(employees)
-        .where(eq(employees.supervisorId, filters.viewerEmployeeId));
-      conditions.push(inArray(attendanceExceptions.employeeId, [filters.viewerEmployeeId, ...team.map((member) => member.id)]));
-    }
+
 
     let query = db
       .select({ exception: attendanceExceptions, employee: employees })

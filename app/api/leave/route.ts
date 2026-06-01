@@ -7,6 +7,7 @@ import { employeeService } from '@/services/employees/employee.service';
 import { z } from 'zod';
 import { logAudit } from '@/lib/audit';
 import { payrollPeriodService } from '@/features/payroll/payroll-period.service';
+import { acquireIdempotencyLock } from '@/lib/core/idempotency';
 
 const createLeaveSchema = z.object({
   type: z.enum(['LEAVE', 'SICK', 'PERMISSION']),
@@ -54,6 +55,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const isNewRequest = await acquireIdempotencyLock(request);
+    if (!isNewRequest) {
+      return errorResponse('Permintaan sedang diproses', 409);
+    }
+
     const user = await requireAuth(request);
     
     if (!hasPermission(user.role, 'LEAVE_CREATE') && !(process.env.TESTSPRITE_COMPAT_RESPONSE === 'true' && user.role === 'SUPERADMIN')) {

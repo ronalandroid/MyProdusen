@@ -95,7 +95,7 @@ Note: first sandboxed `npm run release:check` attempt failed with `EPERM 127.0.0
 ## Scope
 
 - Target: local TestSprite app server for MyProdusen, redeploy target `https://myprodusen.online` after verification.
-- Source of truth: `/docs/prd/README.md`; production user-facing roles remain `SUPERADMIN` and `EMPLOYEE` only.
+- Source of truth: `docs/prd.md`; production user-facing roles remain `SUPERADMIN`, `LEADER`, and `EMPLOYEE` only.
 - Fix mode: failed/blocked TestSprite cases only; no DB reset, no production mutation, no secret commit.
 
 ## 7 Failed + 4 Blocked Cases

@@ -394,13 +394,12 @@ Documented rollback procedure:
 
 - [ ] `README.md` — doc map current, setup instructions clear
 - [ ] `AGENTS.md` — concise, enforceable, matches current state
-- [ ] `docs/prd/README.md` — matches implemented features
-- [ ] `docs/database/README.md` — matches current schema
-- [ ] `docs/security/README.md` — matches current hardening
-- [ ] `docs/deployment/README.md` — matches Coolify setup
-- [ ] `docs/operations/README.md` — backup/restore/rollback current
-- [ ] `docs/testing-qa/README.md` — test results documented
-- [ ] `docs/ui-ux-guide/README.md` — matches current UI
+- [ ] `docs/prd.md` — matches implemented features
+- [ ] `docs/DATABASE.md` — matches current schema
+- [ ] `docs/SECURITY.md` — matches current hardening
+- [ ] `docs/GO_LIVE_STEPS.md` — matches Coolify setup, backup, restore, and rollback
+- [ ] `docs/TESTING_QA.md` — test results documented
+- [ ] `docs/UI_UX_GUIDE.md` — matches current UI
 
 ### Step 21: Stakeholder Signoff
 

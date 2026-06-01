@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { itemId } = await params;
     const data = await payrollService.getOrCreatePayslip(itemId);
 
-    if (user.role === 'EMPLOYEE') {
+    if (user.role === 'EMPLOYEE' || user.role === 'LEADER') {
       assertPayrollAccess(user.role, 'readOwn');
       if (user.userId !== data.employee.userId) return forbiddenResponse('Anda hanya dapat melihat payslip sendiri');
     } else {
