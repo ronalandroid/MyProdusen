@@ -4,7 +4,8 @@
 
 - Blocked TestSprite/E2E compatibility flags from disabling rate limits, CSRF origin checks, or secure cookies in production.
 - Added regression coverage for production-only security behavior.
-- Documented remaining real-world blockers: redeploy, authenticated E2E credentials, real-device GPS+selfie UAT, payroll approval, and backup/restore drill.
+- Added `docs/PRODUCTION_BLOCKER_RUNBOOK.md` with evidence requirements for redeploy, authenticated E2E, real-device GPS+selfie UAT, payroll approval, and backup/restore drill.
+- Added guarded `npm run backup:drill` helper; restore requires explicit staging target confirmation and refuses production-looking targets.
 
 ## 2026-06-01 — UAT Audit Gap Fixes
 

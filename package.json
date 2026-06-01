@@ -51,6 +51,7 @@
     "setup:uat-leader-flow": "node scripts/setup-uat-leader-flow.mjs",
     "verify:uat-leader-flow": "node scripts/verify-uat-leader-flow.mjs",
     "verify:uat-auth": "node scripts/verify-uat-leader-flow.mjs",
+    "backup:drill": "bash scripts/backup-restore-drill.sh",
     "sync:leave-balance-period": "node scripts/sync-leave-balance-period.mjs",
     "dev:open": "sh -c 'sleep 2 && open http://localhost:3000 &' && npm run dev",
     "prepare": "husky"
