@@ -67,6 +67,10 @@ describe('Role Navigation Policy', () => {
     expect(canAccessNavigationPath('ADMIN_HR', '/dashboard/payroll')).toBe(false);
     expect(canAccessNavigationPath('SUPERVISOR', '/dashboard/employees')).toBe(false);
     expect(canAccessNavigationPath('SUPERADMIN', '/dashboard/audit')).toBe(true);
+    expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/accounts')).toBe(false);
+    expect(canAccessNavigationPath('LEADER', '/dashboard/reports/pdf')).toBe(false);
+    expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/kpi/templates')).toBe(false);
+    expect(canAccessNavigationPath('EMPLOYEE', '/dashboard/unknown')).toBe(false);
   });
 
   it('Each production role exposes bounded primary tabs', () => {

@@ -5,6 +5,8 @@
 - Hardened Superadmin Pengguna data loading against stale older responses after assignment changes.
 - Dashboard session/profile refresh now detects work-data changes and rechecks role-based route access on focus/interval.
 - Added source regression coverage for admin realtime sync and role navigation refresh behavior.
+- Tightened navigation RBAC so unknown dashboard child routes no longer inherit `/dashboard` access.
+- Added assignment audit source checks and master-data/policy/shift production audit documentation.
 
 ## 2026-06-01 — HRIS UX Finalization Pass
 

@@ -85,6 +85,6 @@ export function getPrimaryNavigationForRole(role: UserRole | string): readonly N
 
 export function canAccessNavigationPath(role: UserRole | string, path: string): boolean {
   const policies = [...navigationPolicy, ...sensitiveRoutePolicy].sort((left, right) => right.path.length - left.path.length);
-  const matchedPolicy = policies.find((item) => path === item.path || path.startsWith(`${item.path}/`));
+  const matchedPolicy = policies.find((item) => path === item.path || (item.path !== '/dashboard' && path.startsWith(`${item.path}/`)));
   return Boolean(matchedPolicy?.allowedRoles.includes(role as UserRole));
 }

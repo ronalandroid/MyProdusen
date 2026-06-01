@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { db, employees, employeeTeamAssignments, kpiProductionEntries, leaderAssignments, teams, users } from '@/lib/db';
 import { AppError } from '@/lib/core/app-error';
+import { logAudit } from '@/lib/audit';
 
 function id(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -45,9 +46,11 @@ export class LeaderService {
     const [existing] = await db.select().from(leaderAssignments).where(and(eq(leaderAssignments.leaderUserId, leaderUserId), eq(leaderAssignments.teamId, teamId))).limit(1);
     if (existing) {
       const [assignment] = await db.update(leaderAssignments).set({ active: true, updatedAt: new Date(), createdBy: actorUserId }).where(eq(leaderAssignments.id, existing.id)).returning();
+      await logAudit(actorUserId, 'LEADER_ASSIGNMENT_UPDATE', 'LeaderAssignment', assignment.id, existing, assignment);
       return assignment;
     }
     const [assignment] = await db.insert(leaderAssignments).values({ id: id('leader_assignment'), leaderUserId, teamId, createdBy: actorUserId }).returning();
+    await logAudit(actorUserId, 'LEADER_ASSIGNMENT_CREATE', 'LeaderAssignment', assignment.id, undefined, assignment);
     return assignment;
   }
 
@@ -58,9 +61,11 @@ export class LeaderService {
     const [existing] = await db.select().from(employeeTeamAssignments).where(and(eq(employeeTeamAssignments.employeeId, employeeId), eq(employeeTeamAssignments.teamId, teamId))).limit(1);
     if (existing) {
       const [assignment] = await db.update(employeeTeamAssignments).set({ active: true, updatedAt: new Date(), assignedBy: actorUserId, positionId: positionId || null }).where(eq(employeeTeamAssignments.id, existing.id)).returning();
+      await logAudit(actorUserId, 'EMPLOYEE_TEAM_ASSIGNMENT_UPDATE', 'EmployeeTeamAssignment', assignment.id, existing, assignment);
       return assignment;
     }
     const [assignment] = await db.insert(employeeTeamAssignments).values({ id: id('employee_team'), employeeId, teamId, positionId: positionId || null, assignedBy: actorUserId }).returning();
+    await logAudit(actorUserId, 'EMPLOYEE_TEAM_ASSIGNMENT_CREATE', 'EmployeeTeamAssignment', assignment.id, undefined, assignment);
     return assignment;
   }
 
