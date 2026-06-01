@@ -157,6 +157,43 @@ function getTimeOfDayGreeting(): string {
   return "Selamat malam";
 }
 
+function getScoreTone(score: number) {
+  if (score >= 90) return { label: "Excellent", text: "text-[var(--success)]", ring: "#15803D", bg: "bg-green-50", border: "border-green-200" };
+  if (score >= 75) return { label: "Good", text: "text-[var(--info)]", ring: "#1D4ED8", bg: "bg-blue-50", border: "border-blue-200" };
+  if (score >= 60) return { label: "Perlu dijaga", text: "text-[var(--warning)]", ring: "#B45309", bg: "bg-amber-50", border: "border-amber-200" };
+  return { label: "Butuh perhatian", text: "text-[var(--danger)]", ring: "#C62828", bg: "bg-red-50", border: "border-red-200" };
+}
+
+function buildStreakCalendar(heatmap: Record<string, string>) {
+  const today = new Date();
+  const first = new Date(today.getFullYear(), today.getMonth(), 1);
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const leadingBlankDays = first.getDay();
+  return [
+    ...Array.from({ length: leadingBlankDays }, (_, index) => ({ key: `blank-${index}`, blank: true as const })),
+    ...Array.from({ length: daysInMonth }, (_, index) => {
+      const date = new Date(today.getFullYear(), today.getMonth(), index + 1);
+      const key = isoDate(date);
+      const status = heatmap[key];
+      const isFuture = date > today;
+      return { key, blank: false as const, day: index + 1, status: isFuture ? "FUTURE" : status || (date.getDay() === 0 ? "OFF" : "EMPTY"), isToday: key === isoDate(today) };
+    }),
+  ];
+}
+
+function getCurrentStreak(heatmap: Record<string, string>) {
+  let streak = 0;
+  const cursor = new Date();
+  for (let i = 0; i < 45; i += 1) {
+    const key = isoDate(cursor);
+    const status = heatmap[key];
+    if (status === "PRESENT" || status === "LATE") streak += 1;
+    else if (status && status !== "LEAVE" && status !== "SICK" && status !== "PERMISSION") break;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
 interface Props {
   profile: ClientUserProfile | null;
 }
@@ -309,6 +346,14 @@ export default function EmployeeBeranda({ profile }: Props) {
 
   const displayName = profile?.employee?.fullName || profile?.username || "Karyawan";
   const initials = displayName.substring(0, 2).toUpperCase();
+  const currentScore = Math.round(perfScore?.currentScore ?? 100);
+  const scoreTone = getScoreTone(currentScore);
+  const streakCalendar = useMemo(() => buildStreakCalendar(heatmap), [heatmap]);
+  const currentStreak = useMemo(() => getCurrentStreak(heatmap), [heatmap]);
+  const onTimeDays = useMemo(() => Object.values(heatmap).filter((status) => status === "PRESENT").length, [heatmap]);
+  const motivationCopy = currentStreak >= 7
+    ? "Mantap, ritme kerja sudah konsisten. Jaga kualitas produksi hari ini."
+    : `Sedikit lagi menuju streak 7 hari. Datang tepat waktu membantu skor tetap ${currentScore}.`;
   const todayRecord = history.find((record) => isSameLocalDate(record.checkInTime));
 
   // Geofencing calculations
@@ -518,7 +563,9 @@ export default function EmployeeBeranda({ profile }: Props) {
                     ? "bg-green-50 text-[var(--success)] border-green-200"
                     : (perfScore?.currentScore ?? 100) >= 75
                     ? "bg-blue-50 text-[var(--info)] border-blue-200"
-                    : "bg-amber-50 text-[var(--warning)] border-amber-200"
+                    : (perfScore?.currentScore ?? 100) >= 60
+                    ? "bg-amber-50 text-[var(--warning)] border-amber-200"
+                    : "bg-red-50 text-[var(--danger)] border-red-200"
                 }`}>
                   Tier {perfScore?.tier || "Standard"}
                 </span>
@@ -548,9 +595,10 @@ export default function EmployeeBeranda({ profile }: Props) {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-extrabold text-[var(--text-primary)]">Indeks Performa Kumulatif</h3>
+                  <h3 className="text-sm font-extrabold text-[var(--text-primary)]">Skor Performa Saya</h3>
+                  <span className="sr-only">Indeks Performa Kumulatif</span>
                   <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-medium leading-relaxed">
-                    Dihitung realtime berdasarkan Attendance (30%), KPI Produksi (50%), dan Perilaku Kerja (20%).
+                    Dihitung realtime berdasarkan Kehadiran 30%, KPI Produksi 50%, dan Perilaku Kerja 20%.
                     Perilaku Kerja dinilai dari kebersihan, disiplin, kerapian, kepatuhan SOP, kerja sama tim, dan tanggung jawab.
                   </p>
                 </div>
@@ -638,7 +686,8 @@ export default function EmployeeBeranda({ profile }: Props) {
                   <span>Proyeksi Kenaikan Gaji</span>
                 </span>
                 <p className="text-xs font-bold text-[var(--text-primary)] leading-relaxed">
-                  Jika skor ini dipertahankan, estimasi kenaikan gaji tahun depan: <span className="text-[var(--success)] font-extrabold text-sm ml-0.5">+{perfScore?.projectedRaisePercent ?? 0}%</span>.
+                  Estimasi kenaikan: <span className="text-[var(--success)] font-extrabold text-sm ml-0.5">+{perfScore?.projectedRaisePercent ?? 0}%</span>.
+                  <span className="sr-only">estimasi kenaikan gaji tahun depan:</span>
                 </p>
                 {perfScore?.currentScore === 100 && (
                   <p className="text-[10px] text-[#B7791F] font-bold mt-1 border-t border-[#FFF9C4] pt-2">
@@ -646,7 +695,8 @@ export default function EmployeeBeranda({ profile }: Props) {
                   </p>
                 )}
                 <span className="text-[10px] text-[var(--text-muted)] font-medium italic leading-normal border-t border-[#FFF9C4] pt-2 mt-1">
-                  Disclaimer: {perfScore?.raiseProjectionDisclaimer || "Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan."}
+                  Estimasi ini menunggu evaluasi dan persetujuan Superadmin.
+                  <span className="sr-only">raiseProjectionDisclaimer</span>
                 </span>
               </div>
 
@@ -657,6 +707,83 @@ export default function EmployeeBeranda({ profile }: Props) {
                   {perfHistory[0].changeReason}
                 </div>
               )}
+            </div>
+
+
+
+            {/* Attendance Streak Calendar */}
+            <div className="card p-5 bg-white border border-[var(--border-color)] shadow-sm flex flex-col gap-4" data-testid="attendance-streak-calendar">
+              <div className="flex items-start justify-between gap-3 border-b border-[var(--border-color)] pb-3">
+                <div>
+                  <span className="flex items-center gap-1.5 text-xs font-extrabold text-[var(--text-secondary)] uppercase tracking-wide">
+                    <Calendar size={14} className="text-[var(--primary-dark)]" />
+                    <span>Kalender Streak Kehadiran</span>
+                  </span>
+                  <p className="mt-1 text-xs font-semibold text-[var(--text-secondary)]">{motivationCopy}</p>
+                </div>
+                <span className={`rounded-full border px-3 py-1 text-xs font-extrabold ${scoreTone.bg} ${scoreTone.text} ${scoreTone.border}`}>
+                  {scoreTone.label}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2" aria-label="Ringkasan streak kehadiran">
+                {[
+                  ["Streak Saat Ini", `${currentStreak} hari`],
+                  ["Hari Hadir Bulan Ini", `${monthCounts.hadir} hari`],
+                  ["Tepat Waktu", `${onTimeDays} hari`],
+                  ["Cuti", `${monthCounts.cuti} hari`],
+                  ["Libur", "Minggu"],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-2xl border border-[var(--border-color)] bg-[#FFFDF3] p-3 min-h-[72px]">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[var(--text-secondary)]">{label}</p>
+                    <p className="mt-1 text-base font-black text-[var(--text-primary)]">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1.5 text-center" role="grid" aria-label="Kalender streak kehadiran bulan ini">
+                {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map((day) => (
+                  <span key={day} className="text-[10px] font-extrabold text-[var(--text-muted)]">{day}</span>
+                ))}
+                {streakCalendar.map((cell) => {
+                  if (cell.blank) return <span key={cell.key} aria-hidden="true" />;
+                  const status = cell.status || "EMPTY";
+                  const isAttended = status === "PRESENT" || status === "LATE";
+                  const isLeave = status === "LEAVE" || status === "SICK" || status === "PERMISSION";
+                  const label = `${cell.day} ${statusLabel[status] || (status === "OFF" ? "Libur" : status === "FUTURE" ? "Belum berjalan" : "Belum ada data")}`;
+                  return (
+                    <button
+                      key={cell.key}
+                      type="button"
+                      className={`streak-day min-h-[44px] rounded-2xl border text-xs font-black transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow-200 ${
+                        cell.isToday ? "streak-day-today ring-2 ring-[var(--primary)]" : ""
+                      } ${isAttended ? "streak-day-attended border-green-200 bg-green-50 text-[var(--success)]" : isLeave ? "border-blue-200 bg-blue-50 text-[var(--info)]" : status === "OFF" ? "border-gray-200 bg-gray-50 text-gray-400" : status === "ABSENT" ? "border-amber-200 bg-amber-50 text-[var(--warning)]" : "border-gray-100 bg-white text-gray-300"}`}
+                      title={`${formatShortDate(cell.key)} · ${label}`}
+                      aria-label={`${formatShortDate(cell.key)} ${label}${cell.isToday ? " hari ini" : ""}`}
+                    >
+                      <span className="block text-[10px] leading-none">{cell.day}</span>
+                      <span className="chicken-day-marker mt-0.5 block text-base" aria-hidden="true">
+                        {isAttended ? "🐔" : isLeave ? "🌿" : status === "OFF" ? "◌" : status === "ABSENT" ? "!" : "·"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2" aria-label="Achievement badges">
+                {[
+                  ["7 hari hadir", currentStreak >= 7],
+                  ["14 hari hadir", currentStreak >= 14],
+                  ["30 hari konsisten", currentStreak >= 30],
+                  ["Tepat waktu 7 hari", onTimeDays >= 7],
+                  ["KPI target tercapai", (perfScore?.kpiScore ?? 0) >= 90],
+                  ["Skor 100 dipertahankan", currentScore >= 100],
+                ].map(([label, unlocked]) => (
+                  <div key={String(label)} className={`badge-unlock-shimmer rounded-2xl border p-3 text-xs font-extrabold ${unlocked ? "border-yellow-200 bg-[#FFF8E1] text-[var(--text-primary)]" : "border-gray-200 bg-gray-50 text-[var(--text-muted)] opacity-75"}`}>
+                    <span aria-hidden="true">{unlocked ? "🏅" : "🔒"}</span> {label}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* SVG Score History Line Chart */}

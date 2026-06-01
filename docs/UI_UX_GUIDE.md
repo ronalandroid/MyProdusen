@@ -749,3 +749,12 @@ Main navigation follows MyProdusen core scope instead of showing every Talenta-l
 - Step 1 `Validasi Lokasi` appears before selfie, with map-style UI showing current location, office location, radius circle, distance, GPS accuracy, and status chip.
 - Google Maps can replace the fallback if key/component is available; fallback map-style UI remains production-safe.
 - Step 2 opens selfie camera only after `Lanjutkan`; face guide, `Ambil Foto`, preview/retake, optional note, and sticky submit follow.
+
+## Gamification UX Standard — 2026-06-02
+
+- Employee dashboard must present `Skor Performa Saya` with real score, 30/50/20 breakdown, and Superadmin approval disclaimer for raise projection.
+- Attendance streak calendar uses monthly mobile-first grid, chicken marker for attended days, ring for today, soft blue/neutral leave state, grey off-day state, and muted warning for absence.
+- Gamification animation must be tasteful and respect `prefers-reduced-motion: reduce`.
+- Motivation copy must be warm, professional, and not childish.
+- Leader team gamification must avoid payroll/salary amounts.
+- Superadmin analytics must not show normal Clock In/Clock Out CTA.

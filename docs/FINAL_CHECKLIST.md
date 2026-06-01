@@ -469,3 +469,10 @@ GO requires core MyProdusen modules visible and working, non-core modules hidden
 - [ ] Step 2 Selfie opens after Lanjutkan, not before.
 - [ ] Superadmin report/history reflects attendance after submit.
 - [ ] Real Android/iPhone GPS+selfie UAT completed.
+
+## Gamification UX Release Gate
+
+- Verify employee streak calendar on 320/390/430px mobile widths.
+- Verify chicken attendance markers, today ring, leave/off/absence states, and reduced-motion behavior.
+- Verify leader team gamification contains no payroll amounts.
+- Verify Superadmin performance monitoring has no Clock In/Clock Out CTA.

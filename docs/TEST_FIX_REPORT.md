@@ -778,3 +778,7 @@ The total employee/leader performance score utilizes the official weighted break
 ## Attendance Map-First Flow Fix
 - Fixed gap: selfie no longer opens first. Clock In/Clock Out now starts with realtime location validation.
 - Added `/dashboard/attendance/clock` map-first flow and source tests for location step, fallback map UI, GPS watcher cleanup, selfie step, note, and submit labels.
+
+## 2026-06-02 — Gamification UX Source Contracts
+
+Added source-level UI contracts for employee gamification: score breakdown, attendance streak calendar, chicken marker, today highlight, reduced-motion support, leader payroll privacy, and Superadmin no-clock CTA.

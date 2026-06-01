@@ -3902,3 +3902,49 @@ a:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
+
+
+.streak-day-attended {
+  animation: streak-pop 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.streak-day-today .chicken-day-marker {
+  animation: today-chicken-bounce 1.8s ease-in-out infinite;
+}
+
+.badge-unlock-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.badge-unlock-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent);
+  animation: badge-shimmer 2.8s ease-in-out infinite;
+}
+
+@keyframes streak-pop {
+  from { transform: scale(0.92); opacity: 0.72; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes today-chicken-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.06); }
+}
+
+@keyframes badge-shimmer {
+  0%, 55% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streak-day-attended,
+  .streak-day-today .chicken-day-marker,
+  .badge-unlock-shimmer::after {
+    animation: none !important;
+  }
+}

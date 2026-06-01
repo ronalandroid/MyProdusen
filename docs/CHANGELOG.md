@@ -591,3 +591,8 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 ## Attendance map-first flow correction
 - Changed attendance clocking to map/location validation first, selfie second.
 - Added fallback map-style UI with current location, office location, radius, distance, GPS accuracy, manual correction CTA, and GPS watcher cleanup.
+
+## 2026-06-02
+
+- Improved employee gamification UX with premium score card copy, attendance streak calendar, achievement badge states, and reduced-motion-safe microinteractions.
+- Added source tests for gamification UX, leader payroll privacy, and Superadmin dashboard guardrails.
