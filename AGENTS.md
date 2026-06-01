@@ -16,6 +16,7 @@ Required first reads:
 
 ```txt
 docs/prd.md
+docs/PRODUCT_GAP_ANALYSIS.md
 docs/DATABASE.md
 docs/UI_UX_GUIDE.md
 docs/SECURITY.md
@@ -25,13 +26,14 @@ docs/FINAL_CHECKLIST.md
 Decision hierarchy:
 
 1. `docs/prd.md` — product scope, roles, business rules, acceptance criteria.
-2. `docs/DATABASE.md` — database model, migrations, Drizzle rules.
-3. `docs/UI_UX_GUIDE.md` — approved UI/UX patterns, brand lock, responsive rules.
-4. `docs/SECURITY.md` — auth, RBAC, upload, logging, production hardening.
-5. `docs/DESIGN.md` — design principles.
-6. `docs/FINAL_CHECKLIST.md` — release readiness.
-7. `docs/GO_LIVE_STEPS.md` — go-live, deploy, rollback notes.
-8. Existing code patterns — implementation style when docs are silent.
+2. `docs/PRODUCT_GAP_ANALYSIS.md` — research-informed keep/add/postpone/remove decisions.
+3. `docs/DATABASE.md` — database model, migrations, Drizzle rules.
+4. `docs/UI_UX_GUIDE.md` — approved UI/UX patterns, brand lock, responsive rules.
+5. `docs/SECURITY.md` — auth, RBAC, upload, logging, production hardening.
+6. `docs/DESIGN.md` — design principles.
+7. `docs/FINAL_CHECKLIST.md` — release readiness.
+8. `docs/GO_LIVE_STEPS.md` — go-live, deploy, rollback notes.
+9. Existing code patterns — implementation style when docs are silent.
 
 If docs conflict, stop and report conflict unless user gives clear instruction to resolve it. Do not silently override `docs/prd.md`.
 

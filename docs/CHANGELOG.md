@@ -2,6 +2,7 @@
 
 ## 2026-06-01 — HRIS UX Finalization Pass
 
+- Added `docs/PRODUCT_GAP_ANALYSIS.md` as the research-informed productization guide covering current capability, benchmark gaps, keep/add/postpone/remove decisions, role UX, release gates, and rollback plan.
 - Added `npm run dev:ready` for one-command local readiness: port cleanup, migrations, seed credentials, optional Android sync, and dev server start.
 - Auto-detected local LAN dev origins in `next.config.js` so mobile previews like `192.168.x.x:3000` avoid Next.js dev-origin blocking.
 - Improved login UX: disabled submit until email/password are present, removed duplicate registration CTA, and kept duplicate-submit protection.

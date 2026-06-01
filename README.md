@@ -43,6 +43,7 @@ BASE_URL=https://myprodusen.online npm run verify:live-routes
 ## Documentation Map
 
 - Product: [`docs/prd.md`](docs/prd.md)
+- Product gap analysis: [`docs/PRODUCT_GAP_ANALYSIS.md`](docs/PRODUCT_GAP_ANALYSIS.md)
 - Design: [`docs/DESIGN.md`](docs/DESIGN.md)
 - Database: [`docs/DATABASE.md`](docs/DATABASE.md)
 - Security: [`docs/SECURITY.md`](docs/SECURITY.md)
