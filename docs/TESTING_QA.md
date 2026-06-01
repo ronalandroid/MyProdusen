@@ -101,7 +101,7 @@ Do not set or require `E2E_ADMIN_HR_*` or `E2E_SUPERVISOR_*`; those roles are hi
 - Follow-up fix: login rate limiting now supports explicit local TestSprite/E2E bypass and uses normalized login email as the limiter identifier instead of a shared IP-only login bucket.
 - Follow-up fix: local TestSprite mode explicitly disables cookie CSRF origin checks because tests run through a tunnel origin; production CSRF checks stay enabled by default.
 - Latest rerun improved to 14 passed, 8 failed, 8 blocked. Remaining blockers are fixture/data/token/employee-device prerequisites, not the original rate-limit blocker.
-- Main data prerequisite: deterministic `SUPERADMIN` and `EMPLOYEE` test accounts plus seeded shifts, locations, employees, attendance, leave, KPI, payroll, notifications, and announcements.
+- Main data prerequisite: deterministic `SUPERADMIN`, `LEADER`, and `EMPLOYEE` test accounts plus seeded shifts, locations, teams, employees, attendance, leave, KPI, payroll, notifications, and announcements.
 - Token flows need backend-issued activation/reset tokens; arbitrary generated tokens should not pass.
 
 ### TestSprite Backend Run — 2026-05-20

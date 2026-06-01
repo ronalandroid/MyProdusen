@@ -5,7 +5,7 @@ Internal HRIS web app for Produsen Dimsum Medan. Mobile-first attendance, employ
 ## Current Decisions
 
 - Stack: Next.js App Router, TypeScript, Tailwind CSS, Drizzle ORM, PostgreSQL.
-- Roles: `SUPERADMIN`, `EMPLOYEE`.
+- Roles: `SUPERADMIN`, `LEADER`, `EMPLOYEE`.
 - Deployment: VPS + Coolify + Docker + persistent `/app/uploads` volume.
 - Database: Drizzle SQL migrations via `npm run db:deploy`.
 - Payroll: active when implementation is enabled and documented; employee sees own data only, Superadmin manages payroll.

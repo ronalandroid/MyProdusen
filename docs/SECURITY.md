@@ -103,7 +103,7 @@ entity, entityId, serialised payload, IP, and user-agent. Current actions:
 - `ROLE_CHANGE`, `USER_ACTIVATE`, `USER_DEACTIVATE`.
 
 Audit logs are read-only for non-superadmins. Retention follows the policy
-documented in `DEPLOYMENT.md`.
+documented in `docs/GO_LIVE_STEPS.md`.
 
 ## Notifications
 
@@ -151,7 +151,7 @@ Triggered by:
 ## Account self-activation
 
 Public registration creates an inactive employee-role user and emails a 24-hour
-activation link through Resend. The link opens `/activate-account?token=...`,
+activation link through Resend. The link opens `/activate-account?[activation-token]`,
 which posts the token to `/api/auth/activate`; the backend verifies JWT purpose
 `account-activation` before flipping `User.isActive` to `true`.
 

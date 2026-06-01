@@ -87,12 +87,12 @@ export async function GET(
       return notFoundResponse('Selfie tidak ditemukan');
     }
 
-    if (user.role === 'EMPLOYEE' && attendance.employee.userId !== user.userId) {
+    if ((user.role === 'EMPLOYEE' || user.role === 'LEADER') && attendance.employee.userId !== user.userId) {
       return forbiddenResponse('Anda tidak memiliki akses melihat selfie absensi ini');
     }
 
 
-    const allowedRoles = ['SUPERADMIN', 'EMPLOYEE'];
+    const allowedRoles = ['SUPERADMIN', 'EMPLOYEE', 'LEADER'];
     if (!allowedRoles.includes(user.role) && !hasPermission(user.role, 'ATTENDANCE_READ')) {
       return forbiddenResponse('Anda tidak memiliki akses melihat selfie absensi');
     }

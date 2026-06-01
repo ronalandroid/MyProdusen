@@ -6,15 +6,15 @@ Status: PENDING — not run in this session.
 
 ## Scope
 
-Run on real Android Chrome over HTTPS (). Headless browser tests cannot prove camera, GPS sensor, device permission prompts, or selfie capture behavior.
+Run on real Android Chrome over HTTPS (`https://myprodusen.online`). Headless browser tests cannot prove camera, GPS sensor, device permission prompts, or selfie capture behavior.
 
 ## Preconditions
 
-- Latest  redeployed on Coolify.
+- Latest `main` redeployed on Coolify.
 - Employee test account active and mapped to an active Employee row.
 - Employee has active shift and active work location.
--  mounted and writable.
--  configured.
+- `/app/uploads` mounted and writable.
+- `DATABASE_URL`, `JWT_SECRET`, `APP_URL`, `UPLOAD_DIR`, and GPS env configured.
 
 ## Checklist
 
@@ -27,7 +27,7 @@ Run on real Android Chrome over HTTPS (). Headless browser tests cannot prove ca
 - [ ] Check-in succeeds inside allowed geofence.
 - [ ] Check-out succeeds after check-in.
 - [ ] Backend DB record exists for check-in and check-out.
-- [ ] Selfie file stored under .
+- [ ] Selfie file stored under `/app/uploads/attendance-selfies/...`.
 - [ ] Protected selfie endpoint opens for owner/Superadmin.
 - [ ] Unauthorized user cannot access another employee selfie.
 - [ ] Audit log exists for check-in/check-out and protected selfie access where applicable.
@@ -46,4 +46,4 @@ Run on real Android Chrome over HTTPS (). Headless browser tests cannot prove ca
 ## Current GO/NO-GO Impact
 
 - Android real-device attendance flow is required for final production signoff.
-- Until this checklist passes, status remains , not full .
+- Until this checklist passes, status remains `PENDING`, not full `READY FOR PRODUCTION`.

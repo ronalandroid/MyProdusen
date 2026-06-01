@@ -5,6 +5,7 @@ import { isAllowedDocumentMimeType } from './document-policy';
 
 const DOCUMENT_STORAGE_FOLDER = 'employee-documents';
 const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
+const SAFE_STORAGE_SEGMENT = /^[A-Za-z0-9_-]+$/;
 
 function getUploadRoot(): string {
   return path.resolve(process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads'));
@@ -30,7 +31,14 @@ export function buildProtectedDocumentUrl(employeeId: string, storedName: string
   return `/api/documents/file/${encodeURIComponent(employeeId)}/${encodeURIComponent(storedName)}`;
 }
 
+function assertSafeStorageSegment(value: string, label: string) {
+  if (!SAFE_STORAGE_SEGMENT.test(value)) {
+    throw new Error(`${label} tidak valid`);
+  }
+}
+
 export async function readEmployeeDocumentFile(employeeId: string, storedName: string) {
+  assertSafeStorageSegment(employeeId, 'ID karyawan');
   const safeStoredName = sanitizeOriginalFilename(storedName);
   if (safeStoredName !== storedName) {
     throw new Error('Nama file dokumen tidak valid');
@@ -48,6 +56,7 @@ export async function readEmployeeDocumentFile(employeeId: string, storedName: s
 }
 
 export async function saveEmployeeDocumentFile(employeeId: string, file: File) {
+  assertSafeStorageSegment(employeeId, 'ID karyawan');
   if (!isAllowedDocumentMimeType(file.type)) {
     throw new Error('Tipe dokumen tidak diizinkan');
   }

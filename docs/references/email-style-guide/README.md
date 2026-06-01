@@ -1,6 +1,6 @@
 # MyProdusen Email UI — Style, Tone & Theme Guide
 
-> **AI agent role source of truth:** MyProdusen production uses exactly two roles: `SUPERADMIN` and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` are historical database values only and must not be exposed in production UI or route access.
+> **AI agent role source of truth:** MyProdusen production uses exactly three roles: `SUPERADMIN`, `LEADER`, and `EMPLOYEE`. `ADMIN_HR` and `SUPERVISOR` are historical database values only and must not be exposed in production UI or route access.
 
 
 Dokumen ini adalah panduan resmi untuk menjaga konsistensi desain email MyProdusen saat AI agent / developer membuat template email seperti register, verifikasi email, lupa password, ubah password, notifikasi cuti, payroll, approval, pengumuman, dan email sistem lainnya.
@@ -825,7 +825,7 @@ Demi keamanan, tautan ini hanya berlaku untuk waktu terbatas.
 Environment variables:
 
 ```env
-RESEND_API_KEY=
+RESEND_API_KEY: <real-key>
 RESEND_FROM_EMAIL=
 APP_URL=
 ```

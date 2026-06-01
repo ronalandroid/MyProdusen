@@ -52,9 +52,12 @@ describe('map-first attendance clocking flow source contract', () => {
     expect(camera).toContain('touch-manipulation');
   });
 
-  it('dashboard attendance card remains mobile-safe', () => {
+  it('dashboard attendance card remains mobile-safe and uses today-specific status', () => {
     expect(employeeDashboard).toContain('touch-manipulation');
     expect(employeeDashboard).toContain('className="truncate"');
+    expect(employeeDashboard).toContain('isSameLocalDate(record.checkInTime)');
+    expect(employeeDashboard).toContain('workLocation?.latitude != null');
+    expect(employeeDashboard).toContain('workLocation?.radius != null');
   });
 
   it('backend route protections remain strict', () => {

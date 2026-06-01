@@ -1,7 +1,7 @@
 # DESIGN — MyProdusen Web App
 
-> **Role lock.** MyProdusen production uses exactly two account roles:
-> `SUPERADMIN` dan `EMPLOYEE`. `ADMIN_HR` dan `SUPERVISOR` adalah nilai
+> **Role lock.** MyProdusen production uses exactly three account roles:
+> `SUPERADMIN`, `LEADER`, dan `EMPLOYEE`. `ADMIN_HR` dan `SUPERVISOR` adalah nilai
 > enum database historis dan tidak boleh diberi akses route, navigasi,
 > atau seed produksi baru.
 
@@ -765,7 +765,7 @@ Strategi:
 | Drizzle ORM | TypeScript-first, migrasi SQL nyata | Tidak ada studio kaya seperti Prisma; dikompensasi dengan skrip migrasi sendiri. |
 | Selfie disimpan lokal di volume | Sederhana, sesuai VPS | Backup volume wajib; rencanakan migrasi ke object storage saat skala bertumbuh. |
 | Bottom nav 5 tab maksimum | Mobile-first, sesuai reference | Modul lain (payroll, audit, dokumen, dll) hanya muncul di sidebar desktop atau dari halaman induk. |
-| Role produksi dibatasi 2 (`SUPERADMIN`, `EMPLOYEE`) | Operasional sederhana | Role legacy `ADMIN_HR`/`SUPERVISOR` tetap di skema untuk migrasi data lama tetapi dikunci dari UI/route. |
+| Role produksi dibatasi 3 (`SUPERADMIN`, `LEADER`, `EMPLOYEE`) | Operasional sederhana dengan scope tim untuk Leader | Role legacy `ADMIN_HR`/`SUPERVISOR` tetap di skema untuk migrasi data lama tetapi dikunci dari UI/route. |
 | Email via Resend | Andal, mudah dikonfigurasi di Coolify | Vendor lock minor; abstraksi `sendEmail()` mempermudah ganti penyedia. |
 | Cache role-aware per user | Mencegah kebocoran data lintas role | Cache key sedikit lebih panjang; TTL dijaga pendek. |
 | Tidak menggunakan modal `confirm()` browser | Memenuhi kontrak referensi | Setiap aksi destruktif memerlukan komponen `<Modal>` ringan. |
@@ -819,7 +819,7 @@ readiness.**
 # Bagian II — UI/UX & Fitur per Role
 
 > Bagian ini memetakan perbedaan **visual, navigasi, layar,
-> komponen, dan aturan akses** antara `SUPERADMIN` dan `EMPLOYEE`,
+> komponen, dan aturan akses** antara `SUPERADMIN`, `LEADER`, dan `EMPLOYEE`,
 > mengacu pada screenshot kanonik di `docs/references/screens/*` dan
 > kontrak di `docs/references/design-checklist/README.md`. Backend tetap
 > menjadi penentu akhir; bagian ini menjelaskan apa yang **dirender**

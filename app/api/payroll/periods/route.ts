@@ -4,7 +4,7 @@ import { payrollPeriodService } from '@/features/payroll/payroll-period.service'
 import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
-import { hasPermission } from '@/lib/permissions';
+import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
 
 const createPeriodSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
@@ -16,15 +16,15 @@ export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     
-    if (!hasPermission(user.role, 'PAYROLL_READ')) {
-      return forbiddenResponse('Anda tidak memiliki akses payroll');
-    }
+    assertPayrollAccess(user.role, 'read');
 
     const periods = await payrollPeriodService.getPeriods();
 
     return successResponse(periods);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
+    const accessMessage = payrollAccessErrorMessage(error);
+    if (accessMessage) return forbiddenResponse(accessMessage);
     return errorResponse(error.message || 'Failed to fetch payroll periods');
   }
 }
@@ -33,9 +33,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     
-    if (!hasPermission(user.role, 'PAYROLL_READ')) {
-      return forbiddenResponse('Anda tidak memiliki akses payroll');
-    }
+    assertPayrollAccess(user.role, 'mutate');
 
     const body = await getRequestBody(request);
     const validation = createPeriodSchema.safeParse(body);
@@ -54,6 +52,8 @@ export async function POST(request: NextRequest) {
     return successResponse(period, 'Payroll period created successfully');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
+    const accessMessage = payrollAccessErrorMessage(error);
+    if (accessMessage) return forbiddenResponse(accessMessage);
     return errorResponse(error.message || 'Failed to create payroll period');
   }
 }

@@ -52,6 +52,8 @@ export interface GpsValidationOptions {
   maxTimestampAgeSeconds?: number;
   /** When true (default), outside-radius rejects. When false, the call is queued for review. */
   rejectOutsideGeofence?: boolean;
+  /** Default 30 seconds. Rejects client GPS timestamps too far in the future. */
+  maxFutureTimestampSkewSeconds?: number;
 }
 
 export interface SuccessfulValidation {
@@ -99,6 +101,7 @@ export interface GpsValidationMetadata {
 
 const DEFAULT_MAX_ACCURACY = 100;
 const DEFAULT_TIMESTAMP_MAX_AGE = 120;
+const DEFAULT_FUTURE_TIMESTAMP_SKEW = 30;
 
 export function getGpsMaxAccuracyMeters(): number {
   const raw = Number(process.env.GPS_MAX_ACCURACY_METERS || '');
@@ -142,12 +145,14 @@ export function validateGpsAttendance(
 ): GpsValidationResult {
   const maxAccuracyMeters = options.maxAccuracyMeters ?? getGpsMaxAccuracyMeters();
   const maxTimestampAgeSeconds = options.maxTimestampAgeSeconds ?? getGpsTimestampMaxAgeSeconds();
+  const maxFutureTimestampSkewSeconds = options.maxFutureTimestampSkewSeconds ?? DEFAULT_FUTURE_TIMESTAMP_SKEW;
   const rejectOutsideGeofence = options.rejectOutsideGeofence ?? getRejectOutsideGeofence();
   const capturedAtDate = toDate(gps.capturedAt);
   const validatedAt = new Date();
-  const timestampAgeSeconds = capturedAtDate
-    ? Math.max(0, Math.round((validatedAt.getTime() - capturedAtDate.getTime()) / 1000))
+  const rawTimestampAgeSeconds = capturedAtDate
+    ? Math.round((validatedAt.getTime() - capturedAtDate.getTime()) / 1000)
     : null;
+  const timestampAgeSeconds = rawTimestampAgeSeconds === null ? null : Math.max(0, rawTimestampAgeSeconds);
 
   const baseMetadata: GpsValidationMetadata = {
     validatedAt: validatedAt.toISOString(),
@@ -195,6 +200,18 @@ export function validateGpsAttendance(
       withinRadius: false,
       reason: `Akurasi GPS ${Math.round(gps.accuracy)}m melebihi batas ${maxAccuracyMeters}m.`,
       errorCode: 'GPS_ACCURACY_TOO_LOW',
+      metadata: baseMetadata,
+    };
+  }
+
+  if (capturedAtDate && rawTimestampAgeSeconds !== null && rawTimestampAgeSeconds < -maxFutureTimestampSkewSeconds) {
+    return {
+      decision: 'reject',
+      geoStatus: 'GPS_UNAVAILABLE',
+      distanceMeters: null,
+      withinRadius: false,
+      reason: 'Waktu GPS tidak valid. Sinkronkan jam perangkat lalu coba lagi.',
+      errorCode: 'ATTENDANCE_GPS_REQUIRED',
       metadata: baseMetadata,
     };
   }

@@ -122,6 +122,15 @@ function formatTime(value?: string | null): string {
   return new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
 }
 
+function isSameLocalDate(value: string, date = new Date()): boolean {
+  const parsed = new Date(value);
+  return (
+    parsed.getFullYear() === date.getFullYear() &&
+    parsed.getMonth() === date.getMonth() &&
+    parsed.getDate() === date.getDate()
+  );
+}
+
 function calculateDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
   const earthRadiusMeters = 6371e3;
   const phi1 = (lat1 * Math.PI) / 180;
@@ -300,10 +309,10 @@ export default function EmployeeBeranda({ profile }: Props) {
 
   const displayName = profile?.employee?.fullName || profile?.username || "Karyawan";
   const initials = displayName.substring(0, 2).toUpperCase();
-  const todayRecord = history[0];
+  const todayRecord = history.find((record) => isSameLocalDate(record.checkInTime));
 
   // Geofencing calculations
-  const gpsDistanceMeters = gpsPosition && workLocation?.latitude && workLocation?.longitude
+  const gpsDistanceMeters = gpsPosition && workLocation?.latitude != null && workLocation?.longitude != null
     ? calculateDistanceMeters(
         gpsPosition.coords.latitude,
         gpsPosition.coords.longitude,
@@ -312,7 +321,7 @@ export default function EmployeeBeranda({ profile }: Props) {
       )
     : null;
 
-  const isInsideRadius = gpsDistanceMeters !== null && workLocation?.radius
+  const isInsideRadius = gpsDistanceMeters !== null && workLocation?.radius != null
     ? gpsDistanceMeters <= Number(workLocation.radius)
     : null;
 

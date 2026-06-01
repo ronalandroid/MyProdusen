@@ -179,9 +179,9 @@ Test di viewport manapun yang paling nyaman:
 
 **Wajib:**
 ```env
-DATABASE_URL=postgresql://...
-JWT_SECRET=<random-64-char>
-NEXTAUTH_SECRET=<random-64-char>
+DATABASE_URL: <postgres-url>
+JWT_SECRET: <random-64-char>
+NEXTAUTH_SECRET: <random-64-char>
 APP_URL=https://myprodusen.online
 NEXT_PUBLIC_APP_URL=https://myprodusen.online
 NODE_ENV=production
@@ -195,7 +195,7 @@ REJECT_OUTSIDE_GEOFENCE=true
 GPS_TIMESTAMP_MAX_AGE_SECONDS=120
 ATTENDANCE_EXPORT_MAX_ROWS=5000
 SESSION_TIMEOUT_HOURS=8
-RESEND_API_KEY=<real-key>
+RESEND_API_KEY: <real-key>
 RESEND_FROM_EMAIL="MyProdusen <noreply@myprodusen.online>"
 PAYROLL_MODULE_ENABLED=true
 PAYROLL_MUTATION_ENABLED=true
@@ -411,7 +411,7 @@ Documented rollback procedure:
 
 ### Step 22: Final Status Update
 
-Setelah semua step di atas selesai, update `docs/final-checklist/README.md`:
+Setelah semua step di atas selesai, update `docs/FINAL_CHECKLIST.md`:
 
 ```bash
 # Ganti semua [ ] menjadi [x] yang sudah verified
