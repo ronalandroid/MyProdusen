@@ -48,6 +48,7 @@
     "verify:cdn": "node scripts/verify-cdn-cache.mjs",
     "seed:work-location": "node scripts/seed-work-location.mjs",
     "seed:leader-teams": "node scripts/seed-leader-teams.mjs",
+    "seed:tbm-payroll": "node scripts/seed-tbm-payroll-defaults.mjs",
     "setup:uat-leader-flow": "node scripts/setup-uat-leader-flow.mjs",
     "verify:uat-leader-flow": "node scripts/verify-uat-leader-flow.mjs",
     "verify:uat-auth": "node scripts/verify-uat-leader-flow.mjs",

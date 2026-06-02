@@ -163,8 +163,16 @@ export default function PayrollStructuresPage() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Struktur Gaji</h1>
-            <p className="text-gray-600 mt-1">Kelola template struktur gaji karyawan</p>
+            <h1 className="text-3xl font-bold text-gray-900">Struktur Divisi & Gaji</h1>
+            <p className="text-gray-600 mt-1">Kelola Divisi, Jabatan, Aturan Gaji, dan Penempatan Karyawan TBM</p>
+            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+              {['Divisi', 'Jabatan', 'Aturan Gaji', 'Penempatan Karyawan'].map((label) => (
+                <div key={label} className="min-h-11 rounded-lg border border-gray-200 bg-white px-4 py-3 text-center text-sm font-semibold text-gray-700 shadow-sm">
+                  {label}
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-sm text-gray-500">Belum ada aturan gaji untuk divisi ini.</p>
           </div>
           <button
             onClick={() => {

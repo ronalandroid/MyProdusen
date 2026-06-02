@@ -9,20 +9,19 @@ function routeExists(path: string) {
 }
 
 describe('master data policy shift production audit', () => {
-  it('documents remaining division normalization blocker before production signoff', () => {
+  it('documents division normalization resolved through TBM payroll master data', () => {
     expect(schema).toContain("division: text('division')");
     expect(schema).toContain("divisionId: text('divisionId')");
-    expect(schema).not.toContain("pgTable('Division'");
-    expect(routeExists('app/api/divisions/route.ts')).toBe(false);
-    expect(audit).toContain('Division master data is not normalized.');
-    expect(audit).toContain('No `/api/divisions` master-data workflow found.');
+    expect(schema).toContain("pgTable('Division'");
+    expect(routeExists('app/api/payroll/tbm/divisions/route.ts')).toBe(true);
+    expect(audit).toContain('Division master data is normalized through TBM payroll settings.');
   });
 
-  it('documents position workflow gap without changing schema', () => {
+  it('documents position workflow resolved through TBM payroll master data', () => {
     expect(schema).toContain("export const positions = pgTable('Position'");
     expect(schema).toContain("positionId: text('positionId')");
-    expect(routeExists('app/api/positions/route.ts')).toBe(false);
-    expect(audit).toContain('Position workflow is schema-only.');
+    expect(routeExists('app/api/payroll/tbm/positions/route.ts')).toBe(true);
+    expect(audit).toContain('Position workflow is available through TBM payroll settings.');
   });
 
   it('keeps existing team, shift, policy, calendar, and payroll workflow surface visible', () => {

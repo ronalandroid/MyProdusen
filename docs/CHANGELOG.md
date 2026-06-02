@@ -612,3 +612,18 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Documented MVP acceptance criteria, RBAC boundaries, payroll privacy, TestSprite/real-device limitations, and no-fake-pass rule.
 - Added source tests for MVP docs/code contract across attendance, payroll, KPI, leave, role UX, privacy, and non-MVP exclusions.
 - No production signoff claimed.
+
+
+## TBM Division & Payroll Master Data
+
+MyProdusen supports configurable TBM master data for `Administrasi`, `Produksi`, `Packing`, and `BEGE`. Superadmin manages divisions, positions, payroll rules, and employee payroll placement from “Struktur Divisi & Gaji”. Defaults are editable seed data, not locked business constants.
+
+Default payroll rules seed:
+- Admin Training: Administrasi/Admin monthly training Rp2.000.000 and full Rp2.300.000.
+- Produksi Harian: Produksi daily Rp60.000/day.
+- Packing Harian: Packing daily Rp60.000/day.
+- Produksi Cetak Perempuan: Produksi/Produksi Cetak daily Rp50.000/day.
+- Adon Helper Laki-laki: Produksi/Adon Helper daily Rp60.000/day.
+- BEGE Default: configurable daily default with custom amount.
+
+Salary privacy: Superadmin can manage and report all salary rules. Employees can read only their own salary rule and payslip. Leaders can see attendance, KPI, score, and production progress only; leaders must not see team salary amounts. Employee-specific custom overrides beat division/position defaults. Training status resolves training salary until training ends, then full salary.

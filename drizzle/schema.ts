@@ -44,6 +44,10 @@ export const employees = pgTable('Employee', {
 
   division: text('division'),
   position: text('position'),
+  divisionId: text('divisionId'),
+  positionId: text('positionId'),
+  trainingStatus: text('trainingStatus').default('FULL_TIME').notNull(),
+  trainingEndDate: timestamp('trainingEndDate', { mode: 'date' }),
   supervisorId: text('supervisorId'),
   status: employeeStatusEnum('status').default('ACTIVE').notNull(),
   profilePhoto: text('profilePhoto'),
@@ -510,6 +514,19 @@ export const payrollPeriods = pgTable('PayrollPeriod', {
 }));
 
 
+export const divisions = pgTable('Division', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  code: text('code').notNull().unique(),
+  description: text('description'),
+  isActive: boolean('isActive').default(true).notNull(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  isActiveIdx: index('Division_isActive_idx').on(table.isActive),
+  codeIdx: index('Division_code_idx').on(table.code),
+}));
+
 // Payroll Structure (Salary Templates)
 export const payrollStructures = pgTable('PayrollStructure', {
   id: text('id').primaryKey(),
@@ -544,7 +561,12 @@ export const employeePayrolls = pgTable('EmployeePayroll', {
   id: text('id').primaryKey(),
   employeeId: text('employeeId').notNull(),
   structureId: text('structureId').notNull(),
+  payrollRuleId: text('payrollRuleId'),
   baseSalary: real('baseSalary').notNull(),
+  trainingStatus: text('trainingStatus').default('FULL_TIME').notNull(),
+  trainingEndDate: timestamp('trainingEndDate', { mode: 'date' }),
+  customAmount: real('customAmount'),
+  active: boolean('active').default(true).notNull(),
   effectiveDate: timestamp('effectiveDate', { mode: 'date' }).notNull(),
   endDate: timestamp('endDate', { mode: 'date' }),
   bankName: text('bankName'),
@@ -702,15 +724,21 @@ export const employeeTeamAssignments = pgTable('EmployeeTeamAssignment', {
 export const positions = pgTable('Position', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
+  code: text('code'),
+  divisionId: text('divisionId'),
   teamId: text('teamId'),
   roleType: text('roleType'),
+  type: text('type'),
   active: boolean('active').default(true).notNull(),
+  isActive: boolean('isActive').default(true).notNull(),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
   nameIdx: index('Position_name_idx').on(table.name),
   teamIdx: index('Position_teamId_idx').on(table.teamId),
+  divisionIdIdx: index('Position_divisionId_idx').on(table.divisionId),
   activeIdx: index('Position_active_idx').on(table.active),
+  isActiveIdx: index('Position_isActive_idx').on(table.isActive),
 }));
 
 export const kpiProductionEntries = pgTable('KpiProductionEntry', {
@@ -1242,11 +1270,18 @@ export const kpiTargets = pgTable('KpiTarget', {
 
 export const payrollRules = pgTable('PayrollRule', {
   id: text('id').primaryKey(),
+  name: text('name'),
   employeeId: text('employeeId'),
   teamId: text('teamId'),
   divisionId: text('divisionId'),
+  positionId: text('positionId'),
   periodType: text('periodType').notNull(), // WEEKLY / MONTHLY
+  salaryType: text('salaryType'),
   baseSalary: real('baseSalary').notNull(),
+  baseAmount: real('baseAmount'),
+  trainingAmount: real('trainingAmount'),
+  fullAmount: real('fullAmount'),
+  trainingDurationDays: integer('trainingDurationDays'),
   targetMetricId: text('targetMetricId'),
   targetQuantity: real('targetQuantity'),
   bonusType: text('bonusType').default('PER_EXTRA_UNIT').notNull(), // PER_EXTRA_UNIT / FIXED / PERCENTAGE
@@ -1255,6 +1290,7 @@ export const payrollRules = pgTable('PayrollRule', {
   holidayMultiplierEnabled: boolean('holidayMultiplierEnabled').default(true).notNull(),
   realtimeCalculationEnabled: boolean('realtimeCalculationEnabled').default(true).notNull(),
   active: boolean('active').default(true).notNull(),
+  isActive: boolean('isActive').default(true).notNull(),
   effectiveFrom: timestamp('effectiveFrom', { mode: 'date' }),
   effectiveTo: timestamp('effectiveTo', { mode: 'date' }),
   createdBy: text('createdBy'),

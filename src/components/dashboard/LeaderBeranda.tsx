@@ -318,7 +318,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
     { name: "Tim Saya", path: "/dashboard/leader/team", icon: Users, bg: "rgba(59,130,246,0.1)", text: "var(--info)" },
     { name: "KPI Saya", path: "/dashboard/kpi", icon: BarChart3, bg: "rgba(245,158,11,0.1)", text: "var(--warning)" },
     { name: "Laporan Tim", path: "/dashboard/leader/reports", icon: FileText, bg: "rgba(229,57,53,0.1)", text: "var(--danger)" },
-    { name: "Payroll Saya", path: "/dashboard/payroll", icon: Banknote, bg: "rgba(107,114,128,0.1)", text: "#6B7280" },
+    { name: "Payroll Saya", path: "/dashboard/payroll/me", icon: Banknote, bg: "rgba(107,114,128,0.1)", text: "#6B7280" },
     { name: "Notifikasi", path: "/dashboard/notifications", icon: Bell, bg: "rgba(124,58,237,0.1)", text: "#7C3AED" },
     { name: "Akun", path: "/dashboard/profile", icon: User, bg: "rgba(251,191,36,0.15)", text: "#D97706" },
   ];
