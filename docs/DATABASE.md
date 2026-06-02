@@ -420,3 +420,35 @@ Primary sources:
 Current schema-backed gamification/performance tables include the migration-backed performance score summary, score snapshot, leader score entry/anomaly, score period, badge, and gamification settings structures introduced by `0025_gamification_performance_theme.sql`, `0026_gamification_constraints_settings.sql`, `0027_culture_discipline_score_alias.sql`, and `0028_work_duration_payroll_streak_projection.sql`.
 
 Raise projection is privacy-sensitive. Employee may see own projected raise estimate. Leader must not see team salary/payroll amount. Superadmin may see company-level performance and review/override behavior scores according to RBAC and audit rules.
+
+## MyProdusen MVP Finalization Scope — Produsen Dimsum Medan
+
+MVP scope is intentionally limited to operational HRIS flows needed for daily use:
+
+1. Absensi selfie + geotag/geofence.
+2. Payroll/gajian sederhana.
+3. KPI produksi sync.
+4. Pengajuan cuti + saldo cuti.
+5. Role-based dashboard for `SUPERADMIN`, `LEADER`, and `EMPLOYEE` only.
+
+Postponed/non-MVP: recruitment, complex BPJS/tax automation, bank disbursement, 360 review, reimbursement, multi-company, enterprise workflow builder, and extra roles such as `ADMIN_HR` or `SUPERVISOR`.
+
+### Attendance MVP
+
+Employee/Leader dashboard flow: Clock In/Clock Out → GPS/map validation → distance/radius status → selfie capture → optional note → submit → attendance history refresh. Backend must require authenticated employee profile, assigned active shift, assigned active work location, GPS evidence, selfie evidence, geofence validation, protected selfie storage, and audit-sensitive action logging. Superadmin does not use normal attendance CTA.
+
+### Payroll/Gajian MVP
+
+Superadmin owns payroll setup, calculation review, period/status control, payslip/report access, and approval/payment state. Employee and Leader can see own payroll/payslip only. Leader cannot see assigned-team salary, payroll amount, payslip, or payroll export. Payroll breakdown should remain simple: base salary, KPI bonus if configured, attendance deduction, holiday multiplier if supported, and final amount.
+
+### KPI Production MVP
+
+Leader inputs production KPI only for assigned team members. Leader outside-team input is blocked. Leader self-KPI input stays blocked unless an explicit env/policy allows it. Employee sees own KPI read-only. Superadmin can see all KPI, configure target/rules where available, and filter by division/team/month where available.
+
+### Leave/Cuti MVP
+
+Employee and Leader can submit leave request with reason/date/duration, see status, and consume balance only through approved flow. Server blocks overlap and insufficient balance with `LEAVE_BALANCE_INSUFFICIENT`. Leave balance changes are append-only ledger events. Superadmin approves/rejects and may adjust balance through ledgered workflow.
+
+### MVP Release Rule
+
+No fake GPS, fake selfie, fake KPI, fake payroll, or fake leave balance may be marked pass. Real-device attendance and authenticated UAT remain required before production signoff.

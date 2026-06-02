@@ -604,3 +604,11 @@ Additive Drizzle migration `0020_leader_role_teams_kpi_production.sql` adds enum
 - Synchronized PRD, UI/UX guide, database, security, testing, final checklist, and gamification docs.
 - Confirmed Leader team gamification must not expose payroll/salary amounts.
 - No production signoff claimed.
+
+## 2026-06-02 — MyProdusen MVP Finalization Alignment
+
+- Locked MVP scope to attendance selfie/geotag, simple payroll, production KPI sync, leave/balance, and three role dashboards.
+- Documented non-MVP postponements: recruitment, complex tax/BPJS automation, bank disbursement, 360 review, reimbursement, multi-company, enterprise workflow builder, and stale roles.
+- Documented MVP acceptance criteria, RBAC boundaries, payroll privacy, TestSprite/real-device limitations, and no-fake-pass rule.
+- Added source tests for MVP docs/code contract across attendance, payroll, KPI, leave, role UX, privacy, and non-MVP exclusions.
+- No production signoff claimed.
