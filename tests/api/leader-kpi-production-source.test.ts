@@ -24,6 +24,9 @@ describe('leader KPI production RBAC source contract', () => {
     expect(service).toContain('EMPLOYEE_NOT_IN_LEADER_TEAM');
     expect(service).toContain("process.env.ALLOW_LEADER_SELF_KPI_INPUT !== 'true'");
     expect(service).toContain('Leader tidak dapat menginput KPI sendiri');
+    expect(service).toContain('getLeaderEmployeeId');
+    expect(service).toContain("process.env.ALLOW_LEADER_SELF_KPI_INPUT === 'true' ? null : await this.getLeaderEmployeeId(leaderUserId)");
+    expect(service).toContain('sql`${employees.id} <> ${leaderEmployeeId}`');
   });
 
   it('supports packs alias while preserving quantity validation', () => {

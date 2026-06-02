@@ -82,12 +82,20 @@ export class LeaderService {
     if (!assignment) throw new AppError('TEAM_NOT_ASSIGNED', 'Anda belum ditetapkan ke tim ini. Hubungi Superadmin.', 403);
   }
 
+  async getLeaderEmployeeId(leaderUserId: string) {
+    const [leaderEmployee] = await db.select({ id: employees.id }).from(employees).where(eq(employees.userId, leaderUserId)).limit(1);
+    return leaderEmployee?.id || null;
+  }
+
   async getTeamEmployeesForLeader(leaderUserId: string, teamId?: string) {
     const leaderTeams = await this.getLeaderTeams(leaderUserId);
     if (leaderTeams.length === 0) throw new AppError('TEAM_NOT_ASSIGNED', 'Anda belum ditetapkan ke tim. Hubungi Superadmin.', 403);
     const teamIds = teamId ? [teamId] : leaderTeams.map((team) => team.id);
     if (teamId) await this.requireLeaderTeam(leaderUserId, teamId);
-    return db.select({ id: employees.id, nip: employees.nip, fullName: employees.fullName, division: employees.division, position: employees.position, status: employees.status, teamId: employeeTeamAssignments.teamId, teamName: teams.name }).from(employeeTeamAssignments).innerJoin(employees, eq(employees.id, employeeTeamAssignments.employeeId)).innerJoin(teams, eq(teams.id, employeeTeamAssignments.teamId)).where(and(inArray(employeeTeamAssignments.teamId, teamIds), eq(employeeTeamAssignments.active, true), eq(employees.status, 'ACTIVE'))).orderBy(asc(employees.fullName));
+    const leaderEmployeeId = process.env.ALLOW_LEADER_SELF_KPI_INPUT === 'true' ? null : await this.getLeaderEmployeeId(leaderUserId);
+    const filters = [inArray(employeeTeamAssignments.teamId, teamIds), eq(employeeTeamAssignments.active, true), eq(employees.status, 'ACTIVE')];
+    if (leaderEmployeeId) filters.push(sql`${employees.id} <> ${leaderEmployeeId}`);
+    return db.select({ id: employees.id, nip: employees.nip, fullName: employees.fullName, division: employees.division, position: employees.position, status: employees.status, teamId: employeeTeamAssignments.teamId, teamName: teams.name }).from(employeeTeamAssignments).innerJoin(employees, eq(employees.id, employeeTeamAssignments.employeeId)).innerJoin(teams, eq(teams.id, employeeTeamAssignments.teamId)).where(and(...filters)).orderBy(asc(employees.fullName));
   }
 
   async createOrUpdateProductionEntry(leaderUserId: string, data: { employeeId: string; teamId?: string | null; date?: string; metricType?: string; quantity?: number; packs?: number; unit?: string; note?: string }) {
