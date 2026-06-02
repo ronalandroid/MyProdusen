@@ -16,7 +16,7 @@ function amount(value: unknown, fallback = 0) {
   return parsed;
 }
 
-export class TbmPayrollService {
+class TbmPayrollService {
   async listDivisions() {
     return db.select({ id: divisions.id, name: divisions.name, code: divisions.code, description: divisions.description, isActive: divisions.isActive, employeeCount: sql<number>`count(${employees.id})::int` })
       .from(divisions)
@@ -74,21 +74,27 @@ export class TbmPayrollService {
   }
 
   async assignEmployeePayroll(data: { employeeId: string; divisionId?: string | null; positionId?: string | null; payrollRuleId?: string | null; trainingStatus?: string; trainingEndDate?: string | null; customAmount?: number | null; effectiveFrom?: string }) {
-    const [employee] = await db.select().from(employees).where(eq(employees.id, data.employeeId)).limit(1);
+    const [[employee], [rule]] = await Promise.all([
+      db.select().from(employees).where(eq(employees.id, data.employeeId)).limit(1),
+      data.payrollRuleId ? db.select().from(payrollRules).where(eq(payrollRules.id, data.payrollRuleId)).limit(1) : Promise.resolve([null]),
+    ]);
     if (!employee) throw new AppError('EMPLOYEE_NOT_FOUND', 'Karyawan tidak ditemukan', 404);
-    const [rule] = data.payrollRuleId ? await db.select().from(payrollRules).where(eq(payrollRules.id, data.payrollRuleId)).limit(1) : [null];
     const resolvedAmount = data.customAmount != null ? amount(data.customAmount) : amount(rule?.baseAmount ?? rule?.baseSalary ?? 0);
-    await db.update(employees).set({ divisionId: data.divisionId ?? employee.divisionId, positionId: data.positionId ?? employee.positionId, division: data.divisionId ?? employee.division, position: data.positionId ?? employee.position, trainingStatus: data.trainingStatus || employee.trainingStatus || 'FULL_TIME', trainingEndDate: data.trainingEndDate ? new Date(data.trainingEndDate) : employee.trainingEndDate, updatedAt: new Date() }).where(eq(employees.id, data.employeeId));
     await db.update(employeePayrolls).set({ endDate: new Date(), active: false, updatedAt: new Date() }).where(and(eq(employeePayrolls.employeeId, data.employeeId), isNull(employeePayrolls.endDate)));
-    const [assignment] = await db.insert(employeePayrolls).values({ id: id('employee_payroll'), employeeId: data.employeeId, structureId: 'tbm-configurable', payrollRuleId: data.payrollRuleId ?? null, baseSalary: resolvedAmount, trainingStatus: data.trainingStatus || 'FULL_TIME', trainingEndDate: data.trainingEndDate ? new Date(data.trainingEndDate) : null, customAmount: data.customAmount ?? null, active: true, effectiveDate: data.effectiveFrom ? new Date(data.effectiveFrom) : new Date() }).returning();
+    const [, [assignment]] = await Promise.all([
+      db.update(employees).set({ divisionId: data.divisionId ?? employee.divisionId, positionId: data.positionId ?? employee.positionId, division: data.divisionId ?? employee.division, position: data.positionId ?? employee.position, trainingStatus: data.trainingStatus || employee.trainingStatus || 'FULL_TIME', trainingEndDate: data.trainingEndDate ? new Date(data.trainingEndDate) : employee.trainingEndDate, updatedAt: new Date() }).where(eq(employees.id, data.employeeId)),
+      db.insert(employeePayrolls).values({ id: id('employee_payroll'), employeeId: data.employeeId, structureId: 'tbm-configurable', payrollRuleId: data.payrollRuleId ?? null, baseSalary: resolvedAmount, trainingStatus: data.trainingStatus || 'FULL_TIME', trainingEndDate: data.trainingEndDate ? new Date(data.trainingEndDate) : null, customAmount: data.customAmount ?? null, active: true, effectiveDate: data.effectiveFrom ? new Date(data.effectiveFrom) : new Date() }).returning(),
+    ]);
     return assignment;
   }
 
   async getEmployeeOwnSalary(userId: string) {
     const [employee] = await db.select({ id: employees.id, divisionId: employees.divisionId, positionId: employees.positionId, trainingStatus: employees.trainingStatus }).from(employees).where(eq(employees.userId, userId)).limit(1);
     if (!employee) throw new AppError('EMPLOYEE_NOT_FOUND', 'Data karyawan tidak ditemukan', 404);
-    const [assignment] = await db.select().from(employeePayrolls).where(and(eq(employeePayrolls.employeeId, employee.id), isNull(employeePayrolls.endDate))).limit(1);
-    const [runItem] = await db.select({ period: payrollRuns.period, netPay: payrollItems.netPay, status: payrollRuns.status }).from(payrollItems).innerJoin(payrollRuns, eq(payrollRuns.id, payrollItems.runId)).where(eq(payrollItems.employeeId, employee.id)).orderBy(sql`${payrollRuns.period} desc`).limit(1);
+    const [[assignment], [runItem]] = await Promise.all([
+      db.select().from(employeePayrolls).where(and(eq(employeePayrolls.employeeId, employee.id), isNull(employeePayrolls.endDate))).limit(1),
+      db.select({ period: payrollRuns.period, netPay: payrollItems.netPay, status: payrollRuns.status }).from(payrollItems).innerJoin(payrollRuns, eq(payrollRuns.id, payrollItems.runId)).where(eq(payrollItems.employeeId, employee.id)).orderBy(sql`${payrollRuns.period} desc`).limit(1),
+    ]);
     return { employeeId: employee.id, divisionId: employee.divisionId, positionId: employee.positionId, trainingStatus: employee.trainingStatus, salaryType: assignment?.payrollRuleId ? 'configurable' : 'structure', currentSalary: assignment?.customAmount ?? assignment?.baseSalary ?? null, payrollPeriod: runItem?.period ?? null, payslip: runItem ?? null };
   }
 }

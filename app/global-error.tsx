@@ -15,7 +15,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html>
+    <html lang="id">
       <body className="bg-gray-50 flex items-center justify-center min-h-screen font-sans">
         <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border-t-4 border-red-500">
           <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-6">
@@ -28,7 +28,8 @@ export default function GlobalError({
             Sistem kami mendeteksi kesalahan yang tidak terduga. Tim teknis telah diberitahu mengenai masalah ini.
           </p>
           <button
-            onClick={() => reset()}
+            type="button"
+            onClick={reset}
             className="w-full bg-[#FFC107] text-[#111111] font-bold py-3 px-4 rounded-xl hover:bg-yellow-400 transition-colors"
           >
             Coba Lagi

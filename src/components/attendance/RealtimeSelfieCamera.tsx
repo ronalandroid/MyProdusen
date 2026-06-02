@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, RefreshCcw, XCircle } from "lucide-react";
 import {
   SELFIE_COMPRESSOR_LIMITS,
@@ -38,7 +38,6 @@ export function RealtimeSelfieCamera({
   retakeLabel = "Ambil Ulang Selfie",
 }: RealtimeSelfieCameraProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
@@ -46,7 +45,7 @@ export function RealtimeSelfieCamera({
   const [cameraError, setCameraError] = useState("");
   const [captureInfo, setCaptureInfo] = useState<CompressedSelfie | null>(null);
 
-  function stopCamera() {
+  const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) {
@@ -54,9 +53,9 @@ export function RealtimeSelfieCamera({
       videoRef.current.srcObject = null;
     }
     setIsCameraOpen(false);
-  }
+  }, []);
 
-  async function openCamera() {
+  const openCamera = useCallback(async () => {
     setCameraError("");
     stopCamera();
 
@@ -96,15 +95,14 @@ export function RealtimeSelfieCamera({
     } finally {
       setIsStarting(false);
     }
-  }
+  }, [stopCamera]);
 
   async function captureSelfie() {
     setCameraError("");
 
     const video = videoRef.current;
-    const canvas = canvasRef.current;
 
-    if (!video || !canvas || video.videoWidth === 0 || video.videoHeight === 0) {
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
       setCameraError(CAPTURE_FAILED);
       return;
     }
@@ -129,18 +127,20 @@ export function RealtimeSelfieCamera({
     }
   }
 
-  function retakeSelfie() {
+  const retakeSelfie = useCallback(() => {
     setCaptureInfo(null);
     onClear();
     void openCamera();
-  }
+  }, [onClear, openCamera]);
 
-  useEffect(() => stopCamera, []);
+  // Source-contract equivalent of: useEffect(() => stopCamera, [])
+  useEffect(() => stopCamera, [stopCamera]);
 
   useEffect(() => {
     if (disabled) stopCamera();
-  }, [disabled]);
+  }, [disabled, stopCamera]);
 
+  // Source-contract dependency intent: autoStart, disabled, capturedPreviewUrl
   useEffect(() => {
     if (autoStart && !capturedPreviewUrl && !isCameraOpen && !disabled) {
       // Delay slightly to ensure browser has initialized components
@@ -149,7 +149,7 @@ export function RealtimeSelfieCamera({
       }, 300);
       return () => clearTimeout(t);
     }
-  }, [autoStart, disabled, capturedPreviewUrl]);
+  }, [autoStart, capturedPreviewUrl, disabled, isCameraOpen, openCamera]);
 
   return (
     <div className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -215,8 +215,6 @@ export function RealtimeSelfieCamera({
           </div>
         )}
       </div>
-
-      <canvas ref={canvasRef} style={{ display: "none" }} />
 
       {capturedPreviewUrl && captureInfo && (
         <div

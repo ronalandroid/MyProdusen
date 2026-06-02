@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { ArrowLeft, ChevronRight, LocateFixed, MapPin, Navigation, ShieldCheck } from "lucide-react";
 import { fetchProfile, getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
 
@@ -16,13 +16,45 @@ type ApiResponse<T> = { success: boolean; data?: T; error?: string; message?: st
 type ClockType = "clock-in" | "clock-out";
 type Step = "location" | "selfie" | "send";
 
+const fullDateFormatter = new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+const shortTimeFormatter = new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" });
+const stepItems: Array<{ id: Step; label: string }> = [
+  { id: "location", label: "Lokasi" },
+  { id: "selfie", label: "Selfie" },
+  { id: "send", label: "Kirim" },
+];
+
+type UiState = {
+  step: Step;
+  note: string;
+  manualReason: string;
+  isSubmitting: boolean;
+  statusText: string;
+  message: string;
+  error: string;
+};
+
+const initialUiState: UiState = {
+  step: "location",
+  note: "",
+  manualReason: "",
+  isSubmitting: false,
+  statusText: "Mengambil lokasi Anda…",
+  message: "",
+  error: "",
+};
+
+function uiReducer(state: UiState, updates: Partial<UiState>) {
+  return { ...state, ...updates };
+}
+
 function formatDate(value = new Date()) {
-  return new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(value);
+  return fullDateFormatter.format(value);
 }
 
 function formatTime(value?: string | null) {
   if (!value) return "-";
-  return new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+  return shortTimeFormatter.format(new Date(value));
 }
 
 function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -45,25 +77,28 @@ function cleanError(error: unknown) {
 }
 
 export default function AttendanceClockPage() {
+  return (
+    <Suspense fallback={<div className="phone-screen attendance-screen p-4 text-sm text-[var(--text-secondary)]">Memuat absensi…</div>}>
+      <AttendanceClockContent />
+    </Suspense>
+  );
+}
+
+function AttendanceClockContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const type = (searchParams.get("type") === "clock-out" ? "clock-out" : "clock-in") as ClockType;
   const isClockIn = type === "clock-in";
-  const [step, setStep] = useState<Step>("location");
+  const [ui, setUi] = useReducer(uiReducer, initialUiState);
   const [profile, setProfile] = useState<ClientUserProfile | null>(null);
-  const [todayAttendance, setTodayAttendance] = useState<AttendanceRecord | null>(null);
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
   const [gpsPosition, setGpsPosition] = useState<GeolocationPosition | null>(null);
-  const [gpsError, setGpsError] = useState("");
+  const [gpsError, setGpsError] = useState(() => (typeof navigator !== "undefined" && !navigator.geolocation ? "Lokasi tidak dapat diakses. Izinkan lokasi di browser Anda." : ""));
   const [selfieBlob, setSelfieBlob] = useState<Blob | null>(null);
   const [selfiePreviewUrl, setSelfiePreviewUrl] = useState("");
-  const [selfieFilename, setSelfieFilename] = useState("attendance-selfie.webp");
-  const [note, setNote] = useState("");
-  const [manualReason, setManualReason] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [statusText, setStatusText] = useState("Mengambil lokasi Anda…");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const selfieFilenameRef = useRef("attendance-selfie.webp");
+  const todayAttendanceRef = useRef<AttendanceRecord | null>(null);
+  const { step, note, manualReason, isSubmitting, statusText, message, error } = ui;
 
   const employee = profile?.employee;
   const location = employee?.defaultLocation;
@@ -75,20 +110,19 @@ export default function AttendanceClockPage() {
   const canContinue = Boolean(hasValidGps && insideRadius);
   const canSubmit = Boolean(selfieBlob && hasValidGps && insideRadius !== false && !isSubmitting);
 
-  const title = isClockIn ? "Clock In" : "Clock Out";
   const selfieTitle = isClockIn ? "Ambil Selfie Clock In" : "Ambil Selfie Clock Out";
   const submitLabel = isClockIn ? "Kirim Clock In" : "Kirim Clock Out";
-  const shiftLabel = useMemo(() => shift ? `${shift.name} (${shift.startTime.slice(0, 5)} - ${shift.endTime.slice(0, 5)})` : "Shift belum tersedia", [shift]);
+  const shiftLabel = shift ? `${shift.name} (${shift.startTime.slice(0, 5)} - ${shift.endTime.slice(0, 5)})` : "Shift belum tersedia";
 
-  function clearSelfie() {
+  const clearSelfie = useCallback(() => {
     setSelfieBlob(null);
     setSelfiePreviewUrl((current) => {
       if (current) URL.revokeObjectURL(current);
       return "";
     });
-  }
+  }, []);
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     const current = await fetchProfile();
     if (current.role === "SUPERADMIN") {
       router.replace("/dashboard/attendance");
@@ -101,23 +135,21 @@ export default function AttendanceClockPage() {
     ]);
     const today = (await todayRes.json()) as ApiResponse<AttendanceRecord | null>;
     const list = (await historyRes.json()) as ApiResponse<AttendanceRecord[]>;
-    if (today.success) setTodayAttendance(today.data || null);
+    if (today.success) todayAttendanceRef.current = today.data || null;
     if (list.success) setHistory((list.data || []).slice(0, 6));
-  }
+  }, [router]);
 
   useEffect(() => {
     let watchId: number | null = null;
-    void loadData().catch((err) => setError(cleanError(err)));
-    setStatusText("Mengambil lokasi Anda…");
+    void loadData().catch((err) => setUi({ error: cleanError(err) }));
     if (!navigator.geolocation) {
-      setGpsError("Lokasi tidak dapat diakses. Izinkan lokasi di browser Anda.");
       return;
     }
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
         setGpsPosition(pos);
         setGpsError(pos.coords.accuracy > 100 ? "Akurasi GPS belum cukup baik. Coba pindah ke area terbuka." : "");
-        setStatusText("Memvalidasi lokasi…");
+        setUi({ statusText: "Memvalidasi lokasi…" });
       },
       (err) => {
         setGpsPosition(null);
@@ -129,16 +161,13 @@ export default function AttendanceClockPage() {
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       clearSelfie();
     };
-  }, []);
+  }, [clearSelfie, loadData]);
 
   async function submitAttendance() {
     if (!canSubmit || !employee?.defaultLocation?.id) return;
-    setStep("send");
-    setIsSubmitting(true);
-    setError("");
-    setMessage("");
+    setUi({ step: "send", isSubmitting: true, error: "", message: "" });
     try {
-      setStatusText("Mengoptimalkan foto…");
+      setUi({ statusText: "Mengoptimalkan foto…" });
       const formData = new FormData();
       formData.set("latitude", String(gpsPosition!.coords.latitude));
       formData.set("longitude", String(gpsPosition!.coords.longitude));
@@ -147,42 +176,33 @@ export default function AttendanceClockPage() {
       formData.set("distance", String(Math.round(gpsDistance || 0)));
       formData.set("type", type);
       formData.set("deviceInfo", navigator.userAgent);
-      formData.set("selfie", selfieBlob!, selfieFilename);
+      formData.set("selfie", selfieBlob!, selfieFilenameRef.current);
       if (note.trim()) formData.set("note", note.trim());
       if (isClockIn) {
         formData.set("workLocationId", employee.defaultLocation.id);
         if (employee.defaultShift?.id) formData.set("shiftId", employee.defaultShift.id);
-      } else if (todayAttendance?.id) {
-        formData.set("attendanceId", todayAttendance.id);
+      } else if (todayAttendanceRef.current?.id) {
+        formData.set("attendanceId", todayAttendanceRef.current.id);
       }
-      setStatusText("Memvalidasi lokasi…");
-      setStatusText("Mengirim absensi…");
+      setUi({ statusText: "Mengirim absensi…" });
       const response = await fetch(`/api/attendance/${isClockIn ? "check-in" : "check-out"}`, { method: "POST", headers: getAuthHeaders(), body: formData });
       const result = (await response.json()) as ApiResponse<AttendanceRecord>;
       if (!response.ok || !result.success) throw new Error(result.error || result.message || "Gagal menyimpan absensi");
-      setStatusText("Menyimpan riwayat…");
-      setMessage(isClockIn ? "Clock In berhasil." : "Clock Out berhasil.");
+      setUi({ statusText: "Menyimpan riwayat…", message: isClockIn ? "Clock In berhasil." : "Clock Out berhasil." });
       clearSelfie();
       await loadData();
       setTimeout(() => router.push("/dashboard/attendance"), 700);
     } catch (err) {
-      setStep("selfie");
-      setError(cleanError(err));
+      setUi({ step: "selfie", error: cleanError(err) });
     } finally {
-      setIsSubmitting(false);
+      setUi({ isSubmitting: false });
     }
   }
-
-  const stepItems: Array<{ id: Step; label: string }> = [
-    { id: "location", label: "Lokasi" },
-    { id: "selfie", label: "Selfie" },
-    { id: "send", label: "Kirim" },
-  ];
 
   return (
     <div className="phone-screen attendance-screen pb-[calc(96px+env(safe-area-inset-bottom))]" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <header className="flex items-center gap-3">
-        <button type="button" className="btn btn-secondary btn-icon min-h-[44px]" onClick={() => (step === "location" ? router.back() : setStep("location"))} aria-label="Kembali"><ArrowLeft size={20} /></button>
+        <button type="button" className="btn btn-secondary btn-icon min-h-[44px]" onClick={() => (step === "location" ? router.back() : setUi({ step: "location" }))} aria-label="Kembali"><ArrowLeft size={20} /></button>
         <div>
           <h1 className="text-xl font-extrabold text-[var(--text-primary)]">{step === "location" ? "Validasi Lokasi" : step === "selfie" ? selfieTitle : submitLabel}</h1>
           <p className="text-xs font-semibold text-[var(--text-secondary)]">{step === "location" ? "Pastikan Anda berada di area kerja sebelum melanjutkan." : `${formatDate()} · ${shiftLabel}`}</p>
@@ -223,7 +243,7 @@ export default function AttendanceClockPage() {
             {insideRadius === false && (
               <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3">
                 <label className="text-sm font-extrabold" htmlFor="manual-reason">Ajukan Koreksi Manual</label>
-                <textarea id="manual-reason" className="mt-2 w-full rounded-2xl border border-amber-200 p-3 text-sm" rows={3} value={manualReason} onChange={(event) => setManualReason(event.target.value)} minLength={10} placeholder="Alasan koreksi minimal 10 karakter dan wajib approval Superadmin." />
+                <textarea id="manual-reason" className="mt-2 w-full rounded-2xl border border-amber-200 p-3 text-sm" rows={3} value={manualReason} onChange={(event) => setUi({ manualReason: event.target.value })} minLength={10} placeholder="Alasan koreksi minimal 10 karakter dan wajib approval Superadmin." />
                 <p className="mt-2 text-xs font-semibold text-amber-800">Audit log dibuat dan koreksi tidak bypass Superadmin approval.</p>
               </div>
             )}
@@ -234,8 +254,8 @@ export default function AttendanceClockPage() {
       {step === "selfie" && (
         <>
           <section className="card border border-[#FFECB3] bg-gradient-to-br from-[#FFFDEB] to-white p-4"><h2 className="text-base font-extrabold">{selfieTitle}</h2><p className="text-xs font-semibold text-[var(--text-secondary)]">Kamera terbuka setelah Lanjutkan. Posisi GPS tetap dikirim bersama selfie.</p></section>
-          <RealtimeSelfieCamera capturedPreviewUrl={selfiePreviewUrl} disabled={isSubmitting} autoStart captureLabel="Ambil Foto" retakeLabel="Ulangi Foto" onCapture={({ blob, previewUrl, meta }) => { if (selfiePreviewUrl) URL.revokeObjectURL(selfiePreviewUrl); setSelfieBlob(blob); setSelfiePreviewUrl(previewUrl); const ext = meta.mimeType.split("/")[1] || "webp"; setSelfieFilename(`attendance-selfie.${ext === "jpeg" ? "jpg" : ext}`); }} onClear={clearSelfie} />
-          <section className="card p-4"><label className="text-sm font-extrabold" htmlFor="attendance-note">Catatan (opsional)</label><textarea id="attendance-note" className="mt-2 w-full rounded-2xl border border-[var(--border-color)] p-3 text-sm" rows={3} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Contoh: GPS lemah, shift khusus, atau catatan lain." /></section>
+          <RealtimeSelfieCamera capturedPreviewUrl={selfiePreviewUrl} disabled={isSubmitting} autoStart captureLabel="Ambil Foto" retakeLabel="Ulangi Foto" onCapture={({ blob, previewUrl, meta }) => { if (selfiePreviewUrl) URL.revokeObjectURL(selfiePreviewUrl); setSelfieBlob(blob); setSelfiePreviewUrl(previewUrl); const ext = meta.mimeType.split("/")[1] || "webp"; selfieFilenameRef.current = `attendance-selfie.${ext === "jpeg" ? "jpg" : ext}`; }} onClear={clearSelfie} />
+          <section className="card p-4"><label className="text-sm font-extrabold" htmlFor="attendance-note">Catatan (opsional)</label><textarea id="attendance-note" className="mt-2 w-full rounded-2xl border border-[var(--border-color)] p-3 text-sm" rows={3} value={note} onChange={(event) => setUi({ note: event.target.value })} placeholder="Contoh: GPS lemah, shift khusus, atau catatan lain." /></section>
         </>
       )}
 
@@ -246,8 +266,8 @@ export default function AttendanceClockPage() {
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border-color)] bg-white/95 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] backdrop-blur">
         <div className="mx-auto flex max-w-[520px] flex-col gap-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)]" role="status" aria-live="polite"><ShieldCheck size={14} />{isSubmitting ? statusText : step === "location" ? (gpsError || (gpsPosition ? "Memvalidasi lokasi…" : "Mengambil lokasi Anda…")) : canSubmit ? "Siap dikirim" : "Ambil foto untuk melanjutkan"}</div>
-          {step === "location" ? <button type="button" className="btn btn-primary min-h-[52px] w-full rounded-2xl font-extrabold" disabled={!canContinue} onClick={() => setStep("selfie")}>Lanjutkan</button> : <button type="button" className="btn btn-primary min-h-[52px] w-full rounded-2xl font-extrabold" disabled={!canSubmit} onClick={submitAttendance}>{isSubmitting ? statusText : submitLabel}</button>}
+          <output className="flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)]" aria-live="polite"><ShieldCheck size={14} />{isSubmitting ? statusText : step === "location" ? (gpsError || (gpsPosition ? "Memvalidasi lokasi…" : "Mengambil lokasi Anda…")) : canSubmit ? "Siap dikirim" : "Ambil foto untuk melanjutkan"}</output>
+          {step === "location" ? <button type="button" className="btn btn-primary min-h-[52px] w-full rounded-2xl font-extrabold" disabled={!canContinue} onClick={() => setUi({ step: "selfie" })}>Lanjutkan</button> : <button type="button" className="btn btn-primary min-h-[52px] w-full rounded-2xl font-extrabold" disabled={!canSubmit} onClick={submitAttendance}>{isSubmitting ? statusText : submitLabel}</button>}
         </div>
       </div>
     </div>

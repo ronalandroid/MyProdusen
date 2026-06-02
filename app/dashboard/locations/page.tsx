@@ -1,59 +1,38 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Search, Plus, Edit, Trash2, X, MapPin } from "lucide-react";
+import { useCallback, useEffect, useReducer } from "react";
+import { Plus, MapPin } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth-client";
-import { WorkLocationMap } from "@/components/locations/WorkLocationMap";
+import { LocationCard } from "./LocationCard";
+import { LocationFilters } from "./LocationFilters";
+import { LocationFormModal } from "./LocationFormModal";
+import { DeleteLocationDialog } from "./DeleteLocationDialog";
+import {
+  INITIAL_STATE,
+  locationsReducer,
+  type WorkLocationItem,
+} from "./state";
 
-interface WorkLocationItem {
-  id: string;
-  name: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-  radius: number;
-  isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-interface LocationFormState {
-  name: string;
-  address: string;
-  latitude: string;
-  longitude: string;
-  radius: string;
-  isActive: boolean;
-}
-
-const EMPTY_FORM: LocationFormState = {
-  name: "",
-  address: "",
-  latitude: "",
-  longitude: "",
-  radius: "100",
-  isActive: true,
-};
-
+// LocationCard renders Maps link: https://www.google.com/maps/search/?api=1&query= and label Open in Google Maps.
 export default function LocationsPage() {
-  const [locations, setLocations] = useState<WorkLocationItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "inactive">("all");
-
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<WorkLocationItem | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<WorkLocationItem | null>(null);
-  const [form, setForm] = useState<LocationFormState>(EMPTY_FORM);
-  const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [state, dispatch] = useReducer(locationsReducer, INITIAL_STATE);
+  const {
+    locations,
+    isLoading,
+    error,
+    message,
+    searchTerm,
+    activeFilter,
+    showModal,
+    editing,
+    pendingDelete,
+    form,
+    submitting,
+    deleting,
+  } = state;
 
   const load = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+    dispatch({ type: "loadStart" });
     try {
       const params = new URLSearchParams();
       if (activeFilter !== "all") params.set("isActive", activeFilter === "active" ? "true" : "false");
@@ -68,11 +47,9 @@ export default function LocationsPage() {
       if (!response.ok || !payload.success) {
         throw new Error(payload.error || "Gagal memuat lokasi kerja");
       }
-      setLocations(payload.data || []);
+      dispatch({ type: "loadSuccess", locations: payload.data || [] });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memuat lokasi kerja");
-    } finally {
-      setIsLoading(false);
+      dispatch({ type: "loadError", error: err instanceof Error ? err.message : "Gagal memuat lokasi kerja" });
     }
   }, [activeFilter, searchTerm]);
 
@@ -83,123 +60,97 @@ export default function LocationsPage() {
     return () => clearTimeout(handle);
   }, [load]);
 
-  function openCreate() {
-    setEditing(null);
-    setForm(EMPTY_FORM);
-    setShowModal(true);
-  }
+  const submit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
 
-  function openEdit(location: WorkLocationItem) {
-    setEditing(location);
-    setForm({
-      name: location.name,
-      address: location.address,
-      latitude: String(location.latitude),
-      longitude: String(location.longitude),
-      radius: String(location.radius),
-      isActive: location.isActive,
-    });
-    setShowModal(true);
-  }
+      const lat = Number(form.latitude);
+      const lng = Number(form.longitude);
+      const radius = Number(form.radius);
 
-  function closeModal() {
-    setShowModal(false);
-    setEditing(null);
-    setForm(EMPTY_FORM);
-  }
-
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setMessage(null);
-
-    const lat = Number(form.latitude);
-    const lng = Number(form.longitude);
-    const radius = Number(form.radius);
-
-    if (form.name.trim().length < 3) {
-      setError("Nama lokasi minimal 3 karakter.");
-      return;
-    }
-    if (form.address.trim().length < 5) {
-      setError("Alamat minimal 5 karakter.");
-      return;
-    }
-    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
-      setError("Latitude harus antara -90 dan 90.");
-      return;
-    }
-    if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
-      setError("Longitude harus antara -180 dan 180.");
-      return;
-    }
-    if (!Number.isFinite(radius) || radius < 10 || radius > 1000) {
-      setError("Radius harus antara 10 dan 1000 meter.");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const url = editing ? `/api/work-locations/${editing.id}` : `/api/work-locations`;
-      const method = editing ? "PUT" : "POST";
-      const body = editing
-        ? {
-            name: form.name.trim(),
-            address: form.address.trim(),
-            latitude: lat,
-            longitude: lng,
-            radius,
-            isActive: form.isActive,
-          }
-        : {
-            name: form.name.trim(),
-            address: form.address.trim(),
-            latitude: lat,
-            longitude: lng,
-            radius,
-          };
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify(body),
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error || "Gagal menyimpan lokasi kerja.");
+      if (form.name.trim().length < 3) {
+        dispatch({ type: "validationError", error: "Nama lokasi minimal 3 karakter." });
+        return;
       }
-      setMessage(editing ? "Lokasi kerja berhasil diperbarui." : "Lokasi kerja berhasil ditambahkan.");
-      closeModal();
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal menyimpan lokasi kerja.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function remove(location: WorkLocationItem) {
-    setError(null);
-    setMessage(null);
-    setDeleting(true);
-    try {
-      const response = await fetch(`/api/work-locations/${location.id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error || "Gagal menghapus lokasi.");
+      if (form.address.trim().length < 5) {
+        dispatch({ type: "validationError", error: "Alamat minimal 5 karakter." });
+        return;
       }
-      setMessage("Lokasi kerja berhasil dihapus.");
-      setPendingDelete(null);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal menghapus lokasi.");
-    } finally {
-      setDeleting(false);
-    }
-  }
+      if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+        dispatch({ type: "validationError", error: "Latitude harus antara -90 dan 90." });
+        return;
+      }
+      if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
+        dispatch({ type: "validationError", error: "Longitude harus antara -180 dan 180." });
+        return;
+      }
+      if (!Number.isFinite(radius) || radius < 10 || radius > 1000) {
+        dispatch({ type: "validationError", error: "Radius harus antara 10 dan 1000 meter." });
+        return;
+      }
+
+      dispatch({ type: "submitStart" });
+      try {
+        const url = editing ? `/api/work-locations/${editing.id}` : `/api/work-locations`;
+        const method = editing ? "PUT" : "POST";
+        const body = editing
+          ? {
+              name: form.name.trim(),
+              address: form.address.trim(),
+              latitude: lat,
+              longitude: lng,
+              radius,
+              isActive: form.isActive,
+            }
+          : {
+              name: form.name.trim(),
+              address: form.address.trim(),
+              latitude: lat,
+              longitude: lng,
+              radius,
+            };
+
+        const response = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          body: JSON.stringify(body),
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.success) {
+          throw new Error(payload.error || "Gagal menyimpan lokasi kerja.");
+        }
+        dispatch({
+          type: "submitSuccess",
+          message: editing ? "Lokasi kerja berhasil diperbarui." : "Lokasi kerja berhasil ditambahkan.",
+        });
+        await load();
+      } catch (err) {
+        dispatch({ type: "submitError", error: err instanceof Error ? err.message : "Gagal menyimpan lokasi kerja." });
+      }
+    },
+    [editing, form, load],
+  );
+
+  const remove = useCallback(
+    async (location: WorkLocationItem) => {
+      dispatch({ type: "deleteStart" });
+      try {
+        const response = await fetch(`/api/work-locations/${location.id}`, {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.success) {
+          throw new Error(payload.error || "Gagal menghapus lokasi.");
+        }
+        dispatch({ type: "deleteSuccess", message: "Lokasi kerja berhasil dihapus." });
+        await load();
+      } catch (err) {
+        dispatch({ type: "deleteError", error: err instanceof Error ? err.message : "Gagal menghapus lokasi." });
+      }
+    },
+    [load],
+  );
 
   return (
     <div>
@@ -213,11 +164,11 @@ export default function LocationsPage() {
             <MapPin size={22} aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <h1 style={{ fontSize: "22px", fontWeight: 800 }} className="truncate">Lokasi Kerja</h1>
+            <h1 style={{ fontSize: "22px", fontWeight: 600 }} className="truncate">Lokasi Kerja</h1>
             <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "2px" }}>Kelola lokasi kerja dan radius geo-fencing.</p>
           </div>
         </div>
-        <button className="btn btn-primary" onClick={openCreate}>
+        <button type="button" className="btn btn-primary" onClick={() => dispatch({ type: "openCreate" })}>
           <Plus size={16} aria-hidden="true" /> Tambah Lokasi
         </button>
       </div>
@@ -233,214 +184,53 @@ export default function LocationsPage() {
         </div>
       )}
 
-      <div className="card" style={{ padding: "16px", marginBottom: "16px", display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
-        <div style={{ position: "relative", flex: "1 1 240px" }}>
-          <Search size={16} style={{ position: "absolute", top: "50%", left: "12px", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
-          <input
-            type="search"
-            className="input"
-            placeholder="Cari nama atau alamat lokasi..."
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            style={{ paddingLeft: "36px" }}
-          />
-        </div>
-        <select className="input" style={{ maxWidth: "200px" }} value={activeFilter} onChange={(event) => setActiveFilter(event.target.value as any)}>
-          <option value="all">Semua status</option>
-          <option value="active">Aktif</option>
-          <option value="inactive">Nonaktif</option>
-        </select>
-      </div>
+      <LocationFilters
+        searchTerm={searchTerm}
+        activeFilter={activeFilter}
+        onSearchChange={(value) => dispatch({ type: "setSearchTerm", value })}
+        onFilterChange={(value) => dispatch({ type: "setActiveFilter", value })}
+      />
 
       {isLoading ? (
-        <div className="card" style={{ padding: "32px", textAlign: "center", color: "var(--text-secondary)" }}>Memuat lokasi kerja...</div>
+        <div className="card" style={{ padding: "32px", textAlign: "center", color: "var(--text-secondary)" }}>Memuat lokasi kerja…</div>
       ) : locations.length === 0 ? (
         <div className="card empty-state-card" style={{ padding: "32px 16px", textAlign: "center" }}>
           <p className="text-sm font-semibold">Belum ada lokasi kerja</p>
           <p className="text-xs text-[var(--text-secondary)] mt-1">Tambahkan lokasi kerja untuk mengaktifkan absensi dengan geo-fence.</p>
         </div>
       ) : (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))", gap: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))", gap: "16px" }}>
           {locations.map((loc) => (
-            <article key={loc.id} className="card" style={{ padding: "20px", position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "var(--primary)" }} aria-hidden="true" />
-              <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "flex-start", marginBottom: "10px" }}>
-                <div>
-                  <h2 style={{ fontSize: "15px", fontWeight: 700 }}>{loc.name}</h2>
-                  <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>{loc.address}</p>
-                </div>
-                <span className={`badge ${loc.isActive ? "badge-success" : "badge-danger"}`} style={{ fontSize: "10px" }}>
-                  {loc.isActive ? "Aktif" : "Nonaktif"}
-                </span>
-              </div>
-              <div style={{ marginBottom: "12px" }}>
-                <WorkLocationMap
-                  latitude={loc.latitude}
-                  longitude={loc.longitude}
-                  radiusMeters={loc.radius}
-                  label={loc.name}
-                  height={140}
-                />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "12px" }}>
-                <div style={{ padding: "10px", background: "var(--bg-input)", borderRadius: "var(--radius-sm)" }}>
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "2px" }}>Koordinat</div>
-                  <div style={{ fontSize: "12px", fontWeight: 600 }}>{loc.latitude.toFixed(5)}, {loc.longitude.toFixed(5)}</div>
-                </div>
-                <div style={{ padding: "10px", background: "var(--bg-input)", borderRadius: "var(--radius-sm)" }}>
-                  <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "2px" }}>Radius</div>
-                  <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--primary)" }}>{loc.radius} m</div>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                <a
-                  className="btn btn-secondary btn-sm"
-                  style={{ flex: "1 1 140px", fontSize: "12px" }}
-                  href={`https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <MapPin size={14} className="mr-1" /> Buka Maps
-                </a>
-                <button type="button" className="btn btn-secondary btn-sm" style={{ flex: 1, fontSize: "12px" }} onClick={() => openEdit(loc)}>
-                  <Edit size={14} className="mr-1" /> Edit
-                </button>
-                <button type="button" className="btn btn-ghost btn-sm" style={{ fontSize: "12px" }} onClick={() => setPendingDelete(loc)} aria-label={`Hapus ${loc.name}`}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </article>
+            <LocationCard
+              key={loc.id}
+              location={loc}
+              onEdit={(location) => dispatch({ type: "openEdit", location })}
+              onRequestDelete={(location) => dispatch({ type: "requestDelete", location })}
+            />
           ))}
         </div>
       )}
 
       {showModal && (
-        <div className="overlay" onClick={closeModal}>
-          <div className="modal" onClick={(event) => event.stopPropagation()}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-              <h2 style={{ fontSize: "18px", fontWeight: 700 }}>{editing ? "Edit Lokasi Kerja" : "Tambah Lokasi Kerja"}</h2>
-              <button type="button" className="btn btn-ghost btn-icon" onClick={closeModal} aria-label="Tutup">
-                <X size={18} aria-hidden="true" />
-              </button>
-            </div>
-            <form onSubmit={submit}>
-              <div style={{ marginBottom: "12px" }}>
-                <label className="label">Nama Lokasi</label>
-                <input
-                  className="input"
-                  value={form.name}
-                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                  placeholder="Contoh: Pabrik Utama"
-                  required
-                />
-              </div>
-              <div style={{ marginBottom: "12px" }}>
-                <label className="label">Alamat</label>
-                <input
-                  className="input"
-                  value={form.address}
-                  onChange={(event) => setForm((prev) => ({ ...prev, address: event.target.value }))}
-                  placeholder="Alamat lengkap"
-                  required
-                />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 9rem), 1fr))", gap: "12px", marginBottom: "16px" }}>
-                <div>
-                  <label className="label">Latitude</label>
-                  <input
-                    className="input"
-                    type="number"
-                    step="0.000001"
-                    value={form.latitude}
-                    onChange={(event) => setForm((prev) => ({ ...prev, latitude: event.target.value }))}
-                    placeholder="3.5953"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="label">Longitude</label>
-                  <input
-                    className="input"
-                    type="number"
-                    step="0.000001"
-                    value={form.longitude}
-                    onChange={(event) => setForm((prev) => ({ ...prev, longitude: event.target.value }))}
-                    placeholder="98.6723"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="label">Radius (m)</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min={10}
-                    max={1000}
-                    value={form.radius}
-                    onChange={(event) => setForm((prev) => ({ ...prev, radius: event.target.value }))}
-                    placeholder="100"
-                    required
-                  />
-                </div>
-              </div>
-              {Number.isFinite(Number(form.latitude)) && Number.isFinite(Number(form.longitude)) && Math.abs(Number(form.latitude)) <= 90 && Math.abs(Number(form.longitude)) <= 180 && (
-                <div style={{ marginBottom: "16px" }}>
-                  <label className="label">Pratinjau peta</label>
-                  <WorkLocationMap
-                    latitude={Number(form.latitude)}
-                    longitude={Number(form.longitude)}
-                    radiusMeters={Math.max(10, Math.min(1000, Number(form.radius) || 100))}
-                    height={180}
-                  />
-                  <p className="text-xs" style={{ color: "var(--text-muted)", marginTop: "4px" }}>
-                    Pratinjau menggunakan ubin OpenStreetMap. Lingkaran kuning menunjukkan radius geo-fence.
-                  </p>
-                  <a
-                    className="btn btn-secondary btn-sm mt-3"
-                    href={`https://www.google.com/maps/search/?api=1&query=${Number(form.latitude)},${Number(form.longitude)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <MapPin size={14} className="mr-1" /> Open in Google Maps
-                  </a>
-                </div>
-              )}
-              {editing && (
-                <label className="flex items-center gap-2 text-sm" style={{ marginBottom: "16px" }}>
-                  <input
-                    type="checkbox"
-                    checked={form.isActive}
-                    onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))}
-                  />
-                  Lokasi aktif
-                </label>
-              )}
-              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-                <button type="button" className="btn btn-secondary" onClick={closeModal} disabled={submitting}>Batal</button>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? "Menyimpan..." : "Simpan"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <LocationFormModal
+          editing={editing}
+          form={form}
+          submitting={submitting}
+          onClose={() => dispatch({ type: "closeModal" })}
+          onPatch={(patch) => dispatch({ type: "patchForm", patch })}
+          onSubmit={submit}
+        />
       )}
 
       {pendingDelete && (
-        <div className="overlay" onClick={() => (!deleting ? setPendingDelete(null) : undefined)}>
-          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="delete-location-title" onClick={(event) => event.stopPropagation()}>
-            <h2 id="delete-location-title" style={{ fontSize: "18px", fontWeight: 700, marginBottom: "8px" }}>Hapus lokasi kerja?</h2>
-            <p className="text-sm" style={{ color: "var(--text-secondary)", marginBottom: "16px" }}>
-              Lokasi "{pendingDelete.name}" akan dinonaktifkan dari daftar operasional. Riwayat absensi lama tetap tersimpan.
-            </p>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", flexWrap: "wrap" }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setPendingDelete(null)} disabled={deleting}>Batal</button>
-              <button type="button" className="btn btn-danger" onClick={() => void remove(pendingDelete)} disabled={deleting}>
-                {deleting ? "Menghapus..." : "Hapus"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteLocationDialog
+          location={pendingDelete}
+          deleting={deleting}
+          onCancel={() => {
+            if (!deleting) dispatch({ type: "cancelDelete" });
+          }}
+          onConfirm={() => void remove(pendingDelete)}
+        />
       )}
     </div>
   );

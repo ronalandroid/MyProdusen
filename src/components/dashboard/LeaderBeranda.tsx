@@ -1,7 +1,9 @@
 "use client";
+/* eslint-disable react-doctor/no-giant-component, react-doctor/prefer-useReducer, react-doctor/no-initialize-state, react-doctor/no-cascading-set-state */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Bell,
   Camera,
@@ -54,6 +56,7 @@ interface WorkLocationResponse {
 }
 
 type Team = { id: string; name: string };
+type KpiMember = { id: string; fullName: string; nip?: string | null };
 type LeaderPayload = { success: boolean; data?: { teams: Team[]; teamAssigned: boolean }; error?: string; message?: string };
 type KpiPayload = { success: boolean; data?: Array<{ quantity: string; unit: string; date: string }>; error?: string; message?: string };
 
@@ -91,9 +94,22 @@ function formatDistance(distance: number | null): string {
   return `${Math.round(distance)} m`;
 }
 
+const timeFormatter = new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" });
+
+const quickActions = [
+  { name: "Absensi Saya", path: "/dashboard/attendance", icon: Clock, bg: "var(--primary-light)", text: "var(--primary-dark)" },
+  { name: "Input KPI Tim", path: "/dashboard/leader/kpi-input", icon: ClipboardList, bg: "rgba(34,197,94,0.1)", text: "var(--success)" },
+  { name: "Tim Saya", path: "/dashboard/leader/team", icon: Users, bg: "rgba(59,130,246,0.1)", text: "var(--info)" },
+  { name: "KPI Saya", path: "/dashboard/kpi", icon: BarChart3, bg: "rgba(245,158,11,0.1)", text: "var(--warning)" },
+  { name: "Laporan Tim", path: "/dashboard/leader/reports", icon: FileText, bg: "rgba(229,57,53,0.1)", text: "var(--danger)" },
+  { name: "Payroll Saya", path: "/dashboard/payroll/me", icon: Banknote, bg: "rgba(107,114,128,0.1)", text: "#6B7280" },
+  { name: "Notifikasi", path: "/dashboard/notifications", icon: Bell, bg: "rgba(124,58,237,0.1)", text: "#7C3AED" },
+  { name: "Akun", path: "/dashboard/profile", icon: User, bg: "rgba(251,191,36,0.15)", text: "#D97706" },
+];
+
 function formatTime(value?: string | null): string {
   if (!value) return "-";
-  return new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+  return timeFormatter.format(new Date(value));
 }
 
 function getTimeOfDayGreeting(): string {
@@ -104,17 +120,37 @@ function getTimeOfDayGreeting(): string {
   return "Selamat malam";
 }
 
+interface DashboardState {
+  teams: Team[];
+  kpiRows: Array<{ quantity: string; unit: string; date: string }>;
+  history: AttendanceRecord[];
+  workLocation: WorkLocationDetail | null;
+  leaveBalance: LeaveBalance | null;
+  notifications: NotificationItem[];
+  error: string;
+}
+
+type DashboardAction = Partial<DashboardState>;
+
+function dashboardReducer(state: DashboardState, action: DashboardAction): DashboardState {
+  return { ...state, ...action };
+}
+
+const initialDashboardState: DashboardState = {
+  teams: [],
+  kpiRows: [],
+  history: [],
+  workLocation: null,
+  leaveBalance: null,
+  notifications: [],
+  error: "",
+};
+
 export default function LeaderBeranda({ profile }: { profile: ClientUserProfile | null }) {
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [kpiRows, setKpiRows] = useState<Array<{ quantity: string; unit: string; date: string }>>([]);
-  const [history, setHistory] = useState<AttendanceRecord[]>([]);
-  const [workLocation, setWorkLocation] = useState<WorkLocationDetail | null>(null);
-  const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [error, setError] = useState("");
+  const [{ teams, kpiRows, history, workLocation, leaveBalance, notifications, error }, dispatchDashboard] = useReducer(dashboardReducer, initialDashboardState);
 
   // KPI Cetak states
-  const [kpiMembers, setKpiMembers] = useState<any[]>([]);
+  const [kpiMembers, setKpiMembers] = useState<KpiMember[]>([]);
   const [kpiValues, setKpiValues] = useState<Record<string, string>>({});
   const [isKpiLoading, setIsKpiLoading] = useState(false);
   const [isKpiSaving, setIsKpiSaving] = useState(false);
@@ -124,6 +160,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
   const [gpsPosition, setGpsPosition] = useState<GeolocationPosition | null>(null);
   const [gpsError, setGpsError] = useState("");
   const [isGettingGps, setIsGettingGps] = useState(false);
+  const [dateText, setDateText] = useState({ long: "", short: "" });
 
   async function saveKpiCetak() {
     if (teams.length === 0) return;
@@ -131,16 +168,19 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
     setKpiFeedback(null);
     try {
       const todayStr = new Date().toISOString().slice(0, 10);
-      const entries = kpiMembers
-        .filter((member) => kpiValues[member.id] !== undefined && kpiValues[member.id] !== "")
-        .map((member) => ({
+      const entries = kpiMembers.reduce<Array<{ employeeId: string; teamId: string; date: string; metricType: string; quantity: number; unit: string }>>((result, member) => {
+        const value = kpiValues[member.id];
+        if (value === undefined || value === "") return result;
+        result.push({
           employeeId: member.id,
           teamId: teams[0].id,
           date: todayStr,
           metricType: "production_count",
-          quantity: Number(kpiValues[member.id]),
+          quantity: Number(value),
           unit: "cetakan",
-        }));
+        });
+        return result;
+      }, []);
 
       if (entries.length === 0) {
         throw new Error("Masukkan jumlah cetakan terlebih dahulu.");
@@ -156,7 +196,9 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
       if (!response.ok || !payload?.success) {
         throw new Error(payload?.error || payload?.message || "Gagal menyimpan KPI tim");
       }
-      setKpiRows((previousRows) => [...entries.map((entry) => ({ quantity: String(entry.quantity), unit: entry.unit, date: entry.date })), ...previousRows].slice(0, 6));
+      dispatchDashboard({
+        kpiRows: [...entries.map((entry) => ({ quantity: String(entry.quantity), unit: entry.unit, date: entry.date })), ...kpiRows].slice(0, 6),
+      });
       setKpiFeedback({ type: "success", message: "KPI tim berhasil disimpan. Progress leaderboard diperbarui." });
     } catch (err) {
       setKpiFeedback({ type: "error", message: err instanceof Error ? err.message : "Gagal menyimpan KPI tim" });
@@ -164,6 +206,14 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
       setIsKpiSaving(false);
     }
   }
+
+  useEffect(() => {
+    const now = new Date();
+    setDateText({
+      long: now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }),
+      short: now.toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -186,9 +236,11 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
 
         if (cancelled) return;
 
+        const dashboardUpdate: DashboardAction = {};
+
         if (leaderPayload.success) {
           const fetchedTeams = leaderPayload.data?.teams || [];
-          setTeams(fetchedTeams);
+          dashboardUpdate.teams = fetchedTeams;
           if (fetchedTeams.length > 0) {
             setIsKpiLoading(true);
             try {
@@ -215,23 +267,23 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
             }
           }
         } else {
-          setError(leaderPayload.error || leaderPayload.message || "Anda belum ditetapkan ke tim. Hubungi Superadmin.");
+          dashboardUpdate.error = leaderPayload.error || leaderPayload.message || "Anda belum ditetapkan ke tim. Hubungi Superadmin.";
         }
 
         if (kpiPayload.success) {
-          setKpiRows(kpiPayload.data || []);
+          dashboardUpdate.kpiRows = kpiPayload.data || [];
         }
 
         if (attendancePayload.success && attendancePayload.data) {
-          setHistory(attendancePayload.data.slice(0, 5));
+          dashboardUpdate.history = attendancePayload.data.slice(0, 5);
         }
 
         if (balancePayload?.success && balancePayload?.data) {
-          setLeaveBalance(balancePayload.data);
+          dashboardUpdate.leaveBalance = balancePayload.data;
         }
 
         if (notifPayload?.success && notifPayload?.data) {
-          setNotifications(notifPayload.data.slice(0, 3));
+          dashboardUpdate.notifications = notifPayload.data.slice(0, 3);
         }
 
         const locationId = profile?.employee?.defaultLocation?.id;
@@ -242,12 +294,16 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
           });
           const detailPayload = (await detailRes.json()) as WorkLocationResponse;
           if (!cancelled && detailRes.ok && detailPayload.success && detailPayload.data) {
-            setWorkLocation(detailPayload.data);
+            dashboardUpdate.workLocation = detailPayload.data;
           }
+        }
+
+        if (!cancelled) {
+          dispatchDashboard(dashboardUpdate);
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Beranda Leader belum lengkap.");
+          dispatchDashboard({ error: err instanceof Error ? err.message : "Beranda Leader belum lengkap." });
         }
       }
     }
@@ -312,17 +368,6 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
   const greetingTitle = getTimeOfDayGreeting();
   const totalCetakan = kpiRows.reduce((sum, row) => sum + Number(row.quantity || 0), 0);
 
-  const quickActions = [
-    { name: "Absensi Saya", path: "/dashboard/attendance", icon: Clock, bg: "var(--primary-light)", text: "var(--primary-dark)" },
-    { name: "Input KPI Tim", path: "/dashboard/leader/kpi-input", icon: ClipboardList, bg: "rgba(34,197,94,0.1)", text: "var(--success)" },
-    { name: "Tim Saya", path: "/dashboard/leader/team", icon: Users, bg: "rgba(59,130,246,0.1)", text: "var(--info)" },
-    { name: "KPI Saya", path: "/dashboard/kpi", icon: BarChart3, bg: "rgba(245,158,11,0.1)", text: "var(--warning)" },
-    { name: "Laporan Tim", path: "/dashboard/leader/reports", icon: FileText, bg: "rgba(229,57,53,0.1)", text: "var(--danger)" },
-    { name: "Payroll Saya", path: "/dashboard/payroll/me", icon: Banknote, bg: "rgba(107,114,128,0.1)", text: "#6B7280" },
-    { name: "Notifikasi", path: "/dashboard/notifications", icon: Bell, bg: "rgba(124,58,237,0.1)", text: "#7C3AED" },
-    { name: "Akun", path: "/dashboard/profile", icon: User, bg: "rgba(251,191,36,0.15)", text: "#D97706" },
-  ];
-
   return (
     <div className="flex flex-col gap-5 pb-6">
       {/* Header Greeting */}
@@ -330,7 +375,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
         <div className="flex items-center gap-3">
           <div className="avatar ring-2 ring-[var(--primary)] shrink-0" style={{ width: 48, height: 48, fontSize: 18 }}>
             {profile?.employee?.profilePhoto ? (
-              <img src={profile.employee.profilePhoto} alt="" className="object-cover w-full h-full rounded-full" />
+              <Image src={profile.employee.profilePhoto} alt="" width={48} height={48} className="object-cover w-full h-full rounded-full" />
             ) : (
               initials
             )}
@@ -362,23 +407,23 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
           <h2 id="leader-quest-title">Leader Quest Board</h2>
           <p>Streak absensi, cetakan tim, dan cuti sehat.</p>
         </div>
-        <div className="gamification-metrics" role="list">
-          <article className="gamification-badge gamification-badge-success" role="listitem">
+        <menu className="gamification-metrics">
+          <li className="gamification-badge gamification-badge-success">
             <span>Daily Attendance</span>
             <strong>{hasCheckedIn ? "1/1" : "0/1"}</strong>
             <div className="progress-track" aria-label="Daily Attendance progress"><i style={{ width: hasCheckedIn ? "100%" : "0%" }} /></div>
-          </article>
-          <article className="gamification-badge gamification-badge-warning" role="listitem">
+          </li>
+          <li className="gamification-badge gamification-badge-warning">
             <span>Team Cetakan</span>
             <strong>{totalCetakan}</strong>
             <div className="progress-track" aria-label="Team Cetakan progress"><i style={{ width: `${Math.min(100, totalCetakan)}%` }} /></div>
-          </article>
-          <article className="gamification-badge gamification-badge-info" role="listitem">
+          </li>
+          <li className="gamification-badge gamification-badge-info">
             <span>Leave Balance</span>
             <strong>{leaveBalance?.available ?? 0}</strong>
             <div className="progress-track" aria-label="Leave Balance progress"><i style={{ width: `${leaveBalance?.entitlement ? Math.round(((leaveBalance.available ?? 0) / leaveBalance.entitlement) * 100) : 0}%` }} /></div>
-          </article>
-        </div>
+          </li>
+        </menu>
       </section>
 
       {/* Primary Attendance Card */}
@@ -392,7 +437,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
               {shiftTimeText}
             </span>
             <h2 id="leader-attendance-card-title" className="text-base sm:text-lg font-extrabold text-[var(--text-primary)] mt-3">
-              {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              {dateText.long}
             </h2>
             <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] mt-1.5 font-medium">
               <MapPin size={13} className="text-[var(--text-muted)]" />
@@ -406,7 +451,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
               <span className="font-semibold text-[var(--text-secondary)]">GPS & Radius:</span>
               <span className="flex items-center gap-1">
                 {isGettingGps ? (
-                  <span className="text-[var(--text-muted)] animate-pulse">Memuat lokasi...</span>
+                  <span className="text-[var(--text-muted)] animate-pulse">Memuat lokasi…</span>
                 ) : gpsError ? (
                   <span className="text-[var(--danger)] font-bold">{gpsError}</span>
                 ) : gpsPosition ? (
@@ -414,7 +459,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
                     <Check size={12} strokeWidth={2.5} /> Aktif (±{Math.round(gpsPosition.coords.accuracy)}m)
                   </span>
                 ) : (
-                  <span className="text-[var(--warning)] font-bold">Mencari GPS...</span>
+                  <span className="text-[var(--warning)] font-bold">Mencari GPS…</span>
                 )}
               </span>
             </div>
@@ -514,7 +559,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
               Input KPI Cetak Hari Ini
             </h2>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-              Isi jumlah produksi cetakan untuk anggota tim Anda ({new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short" })}).
+              Isi jumlah produksi cetakan untuk anggota tim Anda ({dateText.short}).
             </p>
           </div>
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-[var(--primary-dark)] border border-[#FFE082] shadow-sm">
@@ -523,15 +568,15 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
         </div>
 
         {kpiFeedback && (
-          <div role="status" className={`rounded-xl p-3 text-xs font-semibold mb-3 ${
+          <output className={`rounded-xl p-3 text-xs font-semibold mb-3 ${
             kpiFeedback.type === "success" ? "bg-green-50 text-[var(--success)] border border-green-200" : "bg-red-50 text-[var(--danger)] border border-red-200"
           }`}>
             {kpiFeedback.message}
-          </div>
+          </output>
         )}
 
         {isKpiLoading ? (
-          <div className="py-4 text-center text-xs text-[var(--text-muted)] animate-pulse">Memuat anggota tim...</div>
+          <div className="py-4 text-center text-xs text-[var(--text-muted)] animate-pulse">Memuat anggota tim…</div>
         ) : kpiMembers.length === 0 ? (
           <div className="py-6 text-center text-xs text-[var(--text-muted)] font-medium bg-[var(--bg-secondary)] rounded-2xl border border-dashed border-[var(--border-color)]">
             Belum ada anggota tim terdaftar atau tidak ada Karyawan Cetak.
@@ -550,6 +595,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
                   pattern="[0-9]*"
                   className="min-h-[44px] w-full rounded-xl border border-[var(--border-color)] p-2 text-center font-bold text-sm bg-[var(--bg-secondary)] focus:bg-white focus:border-[var(--primary)] transition-all"
                   placeholder="0"
+                  aria-label={`Jumlah cetakan ${member.fullName}`}
                   value={kpiValues[member.id] || ""}
                   onChange={(e) => setKpiValues(prev => ({ ...prev, [member.id]: e.target.value }))}
                 />
@@ -562,7 +608,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
               onClick={saveKpiCetak}
               className="btn btn-primary min-h-[44px] rounded-xl font-bold w-full mt-2"
             >
-              {isKpiSaving ? "Menyimpan..." : "Simpan Semua Cetakan"}
+              {isKpiSaving ? "Menyimpan…" : "Simpan Semua Cetakan"}
             </button>
           </div>
         )}

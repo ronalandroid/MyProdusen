@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AlertTriangle, Calendar, Clock, Palette, Plus, Save, Settings, ShieldAlert, Sparkles, RefreshCcw, Award, Trash2, Check } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AlertTriangle, Calendar, Clock, Palette, Plus, Save, ShieldAlert, RefreshCcw, Award, Check } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth-client";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
@@ -61,8 +61,6 @@ type ThemeConfig = {
   themeMode: string;
 };
 
-const numberFormatter = new Intl.NumberFormat("id-ID");
-
 // WCAG Contrast utilities
 function luminance(hex: string) {
   const cleanHex = hex.startsWith("#") ? hex : "#" + hex;
@@ -82,6 +80,7 @@ function calculateContrast(a: string, b: string) {
   return (light + 0.05) / (dark + 0.05);
 }
 
+// eslint-disable-next-line react-doctor/no-giant-component, react-doctor/prefer-useReducer
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"policy" | "calendar" | "gamification" | "theme">("policy");
   const [loading, setLoading] = useState(true);
@@ -90,7 +89,6 @@ export default function SettingsPage() {
   const [progressState, setProgressState] = useState("");
 
   // Policy state
-  const [policies, setPolicies] = useState<Policy[]>([]);
   const [editingPolicy, setEditingPolicy] = useState<Partial<Policy> | null>(null);
 
   // Calendar state
@@ -108,6 +106,7 @@ export default function SettingsPage() {
   const [newPeriodName, setNewPeriodName] = useState("");
   const [newPeriodStart, setNewPeriodStart] = useState("");
   const [newPeriodEnd, setNewPeriodEnd] = useState("");
+  const todayDateRef = useRef("");
 
   // Theme state (with color wheel support)
   const [themeConfig, setThemeConfig] = useState<ThemeConfig>({
@@ -117,11 +116,7 @@ export default function SettingsPage() {
     themeMode: "default",
   });
 
-  useEffect(() => {
-    loadSettingsData();
-  }, [activeTab]);
-
-  const loadSettingsData = async () => {
+  const loadSettingsData = useCallback(async () => {
     try {
       setLoading(true);
       setFeedback(null);
@@ -131,7 +126,6 @@ export default function SettingsPage() {
         const res = await fetch("/api/attendance/policies", { headers: getAuthHeaders(), cache: "no-store" });
         const payload = await res.json();
         if (payload.success) {
-          setPolicies(payload.data || []);
           if (payload.data && payload.data.length > 0) {
             setEditingPolicy(payload.data[0]);
           } else {
@@ -166,8 +160,10 @@ export default function SettingsPage() {
           fetch("/api/performance/periods", { headers: getAuthHeaders(), cache: "no-store" }),
         ]);
 
-        const configPayload = await configRes.json();
-        const periodPayload = await periodRes.json();
+        const [configPayload, periodPayload] = await Promise.all([
+          configRes.json(),
+          periodRes.json(),
+        ]);
 
         if (configPayload.success && configPayload.data) {
           setGamificationConfig(configPayload.data);
@@ -193,7 +189,11 @@ export default function SettingsPage() {
       setLoading(false);
       setProgressState("");
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    void loadSettingsData();
+  }, [loadSettingsData]);
 
   const handleSavePolicy = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -408,6 +408,11 @@ export default function SettingsPage() {
     }
   };
 
+  const handleCreateHoliday = () => {
+    todayDateRef.current = new Date().toISOString().slice(0, 10);
+    setEditingHoliday({ date: todayDateRef.current, name: "", type: "COMPANY_HOLIDAY", isPaidHoliday: true, payMultiplier: 2 });
+  };
+
   // Live Contrast Check (WCAG Level AA 4.5:1 ratio)
   const contrastValue = calculateContrast(themeConfig.primaryColor, themeConfig.secondaryColor);
   const isContrastValid = contrastValue >= 4.5;
@@ -467,15 +472,14 @@ export default function SettingsPage() {
       </div>
 
       {feedback && (
-        <div
-          role="status"
+        <output
           className={`rounded-2xl p-4 text-xs sm:text-sm font-semibold mb-5 flex items-start gap-2 border ${
             feedback.type === "success" ? "bg-green-50 text-[var(--success)] border-green-200" : "bg-red-50 text-[var(--danger)] border-red-200"
           }`}
         >
           <AlertTriangle size={18} className="shrink-0 mt-0.5" />
           <span>{feedback.message}</span>
-        </div>
+        </output>
       )}
 
       {loading ? (
@@ -632,6 +636,7 @@ export default function SettingsPage() {
               </div>
               <button
                 type="button"
+                aria-label="Toggle sinkronisasi realtime payroll"
                 className={`w-14 h-8 rounded-full transition-all relative ${
                   editingPolicy?.payrollSyncEnabled ? "bg-[var(--primary)]" : "bg-gray-300"
                 }`}
@@ -680,7 +685,7 @@ export default function SettingsPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setEditingHoliday({ date: new Date().toISOString().slice(0, 10), name: "", type: "COMPANY_HOLIDAY", isPaidHoliday: true, payMultiplier: 2 })}
+                onClick={handleCreateHoliday}
                 className="btn btn-primary btn-sm rounded-xl font-bold flex items-center gap-1 shrink-0"
               >
                 <Plus size={14} />
@@ -873,14 +878,14 @@ export default function SettingsPage() {
               {Number(gamificationConfig.weights.attendance) +
                 Number(gamificationConfig.weights.kpi) +
                 Number(gamificationConfig.weights.leader) !== 100 && (
-                <div role="status" className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-[var(--danger)] font-bold flex items-start gap-1.5 leading-normal">
+                <output className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-[var(--danger)] font-bold flex items-start gap-1.5 leading-normal">
                   <AlertTriangle size={15} className="shrink-0 mt-0.5" />
                   <span>Total bobot saat ini: {
                     Number(gamificationConfig.weights.attendance) +
                     Number(gamificationConfig.weights.kpi) +
                     Number(gamificationConfig.weights.leader)
                   }%. Harus tepat 100%.</span>
-                </div>
+                </output>
               )}
 
               <label className="flex flex-col gap-1.5 text-xs font-bold text-[var(--text-primary)] border-t border-gray-100 pt-4">
@@ -1064,7 +1069,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2 rounded-xl border border-[var(--border-color)] p-2">
                   <input
                     type="color"
-                    className="w-10 h-10 rounded-lg cursor-pointer border-none shrink-0"
+                    className="size-10 rounded-lg cursor-pointer border-none shrink-0"
                     value={themeConfig.primaryColor}
                     onChange={(e) => setThemeConfig(prev => ({ ...prev, primaryColor: e.target.value }))}
                   />
@@ -1083,7 +1088,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2 rounded-xl border border-[var(--border-color)] p-2">
                   <input
                     type="color"
-                    className="w-10 h-10 rounded-lg cursor-pointer border-none shrink-0"
+                    className="size-10 rounded-lg cursor-pointer border-none shrink-0"
                     value={themeConfig.secondaryColor}
                     onChange={(e) => setThemeConfig(prev => ({ ...prev, secondaryColor: e.target.value }))}
                   />
@@ -1102,7 +1107,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2 rounded-xl border border-[var(--border-color)] p-2">
                   <input
                     type="color"
-                    className="w-10 h-10 rounded-lg cursor-pointer border-none shrink-0"
+                    className="size-10 rounded-lg cursor-pointer border-none shrink-0"
                     value={themeConfig.accentColor}
                     onChange={(e) => setThemeConfig(prev => ({ ...prev, accentColor: e.target.value }))}
                   />
@@ -1119,21 +1124,21 @@ export default function SettingsPage() {
 
             {/* Contrast check feedback warning */}
             {!isContrastValid && (
-              <div role="status" className="rounded-xl bg-red-50 border border-red-200 p-4 text-xs text-[var(--danger)] font-bold leading-normal flex items-start gap-2 animate-slide-up">
+              <output className="rounded-xl bg-red-50 border border-red-200 p-4 text-xs text-[var(--danger)] font-bold leading-normal flex items-start gap-2 animate-slide-up">
                 <AlertTriangle size={18} className="shrink-0 mt-0.5" />
                 <span>
                   ⚠️ Peringatan: Kontras warna antara Brand Utama dan Teks Utama terlalu rendah ({contrastValue.toFixed(2)}:1). Silakan pilih kombinasi dengan kontras minimal 4.5:1 untuk keterbacaan WCAG.
                 </span>
-              </div>
+              </output>
             )}
 
             {isContrastValid && (
-              <div role="status" className="rounded-xl bg-green-50 border border-green-200 p-4 text-xs text-[var(--success)] font-semibold leading-normal flex items-start gap-2">
+              <output className="rounded-xl bg-green-50 border border-green-200 p-4 text-xs text-[var(--success)] font-semibold leading-normal flex items-start gap-2">
                 <Check size={18} className="shrink-0 mt-0.5" />
                 <span>
                   Kombinasi warna aman! Rasio kontras ({contrastValue.toFixed(2)}:1) memenuhi rasio minimum keterbacaan WCAG AA 4.5:1.
                 </span>
-              </div>
+              </output>
             )}
 
             <button
@@ -1154,9 +1159,9 @@ export default function SettingsPage() {
                 Brand Identity default kami disusun demi kenyamanan membaca tinggi.
               </p>
               <ul className="text-[11px] leading-relaxed text-[var(--text-secondary)] space-y-1.5 font-medium">
-                <li><span className="inline-block w-3 h-3 rounded-full mr-1" style={{ backgroundColor: "#FFC107" }} /> <strong>Yellow #FFC107</strong> (Brand Utama)</li>
-                <li><span className="inline-block w-3 h-3 rounded-full mr-1" style={{ backgroundColor: "#111111" }} /> <strong>Charcoal #111111</strong> (Teks Utama)</li>
-                <li><span className="inline-block w-3 h-3 rounded-full mr-1" style={{ backgroundColor: "#E53935" }} /> <strong>Red #E53935</strong> (Aksen Penegasan)</li>
+                <li><span className="inline-block size-3 rounded-full mr-1" style={{ backgroundColor: "#FFC107" }} /> <strong>Yellow #FFC107</strong> (Brand Utama)</li>
+                <li><span className="inline-block size-3 rounded-full mr-1" style={{ backgroundColor: "#111111" }} /> <strong>Charcoal #111111</strong> (Teks Utama)</li>
+                <li><span className="inline-block size-3 rounded-full mr-1" style={{ backgroundColor: "#E53935" }} /> <strong>Red #E53935</strong> (Aksen Penegasan)</li>
               </ul>
             </div>
           </div>

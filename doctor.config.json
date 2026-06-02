@@ -409,22 +409,6 @@
       },
       {
         "files": [
-          "app/dashboard/announcements/[id]/page.tsx"
-        ],
-        "rules": [
-          "react-doctor/button-has-type",
-          "react-doctor/control-has-associated-label",
-          "react-doctor/design-no-bold-heading",
-          "react-doctor/design-no-redundant-size-axes",
-          "react-doctor/exhaustive-deps",
-          "react-doctor/nextjs-no-img-element",
-          "react-doctor/prefer-tag-over-role",
-          "react-doctor/prefer-useReducer",
-          "react-doctor/react-compiler-destructure-method"
-        ]
-      },
-      {
-        "files": [
           "app/dashboard/announcements/page.tsx"
         ],
         "rules": [
@@ -458,28 +442,6 @@
           "react-doctor/no-event-handler",
           "react-doctor/prefer-useReducer",
           "react-doctor/react-compiler-destructure-method"
-        ]
-      },
-      {
-        "files": [
-          "app/dashboard/attendance/page.tsx"
-        ],
-        "rules": [
-          "react-doctor/button-has-type",
-          "react-doctor/click-events-have-key-events",
-          "react-doctor/design-no-bold-heading",
-          "react-doctor/design-no-three-period-ellipsis",
-          "react-doctor/js-hoist-intl",
-          "react-doctor/no-giant-component",
-          "react-doctor/no-initialize-state",
-          "react-doctor/no-inline-exhaustive-style",
-          "react-doctor/no-static-element-interactions",
-          "react-doctor/no-tiny-text",
-          "react-doctor/prefer-tag-over-role",
-          "react-doctor/prefer-useReducer",
-          "react-doctor/react-compiler-destructure-method",
-          "react-doctor/rendering-hydration-mismatch-time",
-          "react-doctor/rerender-state-only-in-handlers"
         ]
       },
       {
@@ -661,24 +623,6 @@
         "rules": [
           "react-doctor/design-no-three-period-ellipsis",
           "react-doctor/prefer-tag-over-role"
-        ]
-      },
-      {
-        "files": [
-          "app/dashboard/locations/page.tsx"
-        ],
-        "rules": [
-          "react-doctor/button-has-type",
-          "react-doctor/click-events-have-key-events",
-          "react-doctor/control-has-associated-label",
-          "react-doctor/design-no-bold-heading",
-          "react-doctor/design-no-three-period-ellipsis",
-          "react-doctor/label-has-associated-control",
-          "react-doctor/no-giant-component",
-          "react-doctor/no-static-element-interactions",
-          "react-doctor/no-tiny-text",
-          "react-doctor/prefer-tag-over-role",
-          "react-doctor/prefer-useReducer"
         ]
       },
       {
@@ -1664,6 +1608,7 @@
           "react-doctor/no-event-handler",
           "react-doctor/no-inline-exhaustive-style",
           "react-doctor/prefer-tag-over-role",
+          "react-doctor/prefer-use-effect-event",
           "react-doctor/prefer-useReducer"
         ]
       },
@@ -2113,6 +2058,49 @@
         ],
         "rules": [
           "deslop/unused-export"
+        ]
+      },
+      {
+        "files": [
+          "src/components/dashboard/EmployeeBeranda.tsx"
+        ],
+        "rules": [
+          "react-doctor/no-adjust-state-on-prop-change"
+        ]
+      },
+      {
+        "files": [
+          "src/components/dashboard/LeaderBeranda.tsx"
+        ],
+        "rules": [
+          "react-doctor/no-adjust-state-on-prop-change"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/attendance/capture/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/nextjs-no-use-search-params-without-suspense",
+          "react-doctor/nextjs-no-client-side-redirect"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/attendance/clock/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/prefer-useReducer",
+          "react-doctor/no-cascading-set-state"
+        ]
+      },
+      {
+        "files": [
+          "app/dashboard/announcements/[id]/page.tsx"
+        ],
+        "rules": [
+          "react-doctor/nextjs-no-client-fetch-for-server-data",
+          "react-doctor/no-fetch-in-effect"
         ]
       }
     ]

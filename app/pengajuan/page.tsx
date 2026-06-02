@@ -1,5 +1,11 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
+export const metadata: Metadata = {
+  title: 'Pengajuan | MyProdusen',
+  description: 'Redirect ke halaman pengajuan cuti MyProdusen.',
+};
+
 export default function PengajuanRedirectPage() {
-  redirect('/dashboard/leave');
+  return redirect('/dashboard/leave');
 }

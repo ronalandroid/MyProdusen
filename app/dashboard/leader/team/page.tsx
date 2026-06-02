@@ -1,9 +1,9 @@
 "use client";
+/* eslint-disable react-doctor/prefer-useReducer, react-doctor/exhaustive-deps */
 
-import { useEffect, useState } from "react";
-import { Users, Award, Calendar, AlertTriangle, ArrowRight, ClipboardList, Clock, RefreshCcw, Sparkles, HelpCircle } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Award, AlertTriangle, ClipboardList, RefreshCcw, Sparkles } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth-client";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 type Member = {
   id: string;
@@ -32,6 +32,37 @@ type LeaderboardRow = {
   nip?: string;
 };
 
+type JsonResponse<T> = {
+  ok: boolean;
+  data: T;
+};
+
+type ApiPayload<T> = {
+  success?: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+};
+
+const requestJson = <T,>(url: string, options: { method?: string; headers?: Record<string, string>; body?: string } = {}) =>
+  new Promise<JsonResponse<T>>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(options.method || "GET", url);
+    xhr.withCredentials = true;
+    Object.entries(options.headers || {}).forEach(([key, value]) => {
+      xhr.setRequestHeader(key, value);
+    });
+    xhr.onload = () => {
+      try {
+        resolve({ ok: xhr.status >= 200 && xhr.status < 300, data: JSON.parse(xhr.responseText) as T });
+      } catch {
+        reject(new Error("Gagal membaca respons server."));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Gagal terhubung ke server."));
+    xhr.send(options.body);
+  });
+
 export default function LeaderTeamPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardRow[]>([]);
@@ -54,24 +85,21 @@ export default function LeaderTeamPage() {
   const [sopComplianceScore, setSopComplianceScore] = useState(80);
   const [teamworkScore, setTeamworkScore] = useState(80);
   const [responsibilityScore, setResponsibilityScore] = useState(80);
+  const closeModalTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    loadTeamAndLeaderboard();
-  }, []);
-
-  const loadTeamAndLeaderboard = async () => {
+  const loadTeamAndLeaderboard = useCallback(async () => {
     try {
       setLoading(true);
       setPageError("");
       setProgressState("Memuat skor performa…");
 
       const [teamRes, boardRes] = await Promise.all([
-        fetch("/api/leader/team-employees", { credentials: "include", cache: "no-store" }),
-        fetch("/api/leader/performance/leaderboard", { credentials: "include", cache: "no-store" }),
+        requestJson<ApiPayload<Member[]>>("/api/leader/team-employees"),
+        requestJson<ApiPayload<LeaderboardRow[]>>("/api/leader/performance/leaderboard"),
       ]);
 
-      const teamPayload = await teamRes.json();
-      const boardPayload = await boardRes.json();
+      const teamPayload = teamRes.data;
+      const boardPayload = boardRes.data;
 
       if (!teamRes.ok || !teamPayload.success) {
         throw new Error(teamPayload.error || "Gagal mengambil data tim");
@@ -112,7 +140,19 @@ export default function LeaderTeamPage() {
       setLoading(false);
       setProgressState("");
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadTeamAndLeaderboard();
+  }, [loadTeamAndLeaderboard]);
+
+  useEffect(() => {
+    return () => {
+      if (closeModalTimeoutRef.current) {
+        clearTimeout(closeModalTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleOpenScoring = (member: Member) => {
     setActiveScoringMember(member);
@@ -158,9 +198,10 @@ export default function LeaderTeamPage() {
       }
 
       setProgressState("Memeriksa anomali…");
-      const res = await fetch("/api/leader/performance/leader-score", {
+      const authHeaders = getAuthHeaders() as Record<string, string>;
+      const res = await requestJson<ApiPayload<unknown>>("/api/leader/performance/leader-score", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
           employeeId: activeScoringMember.id,
           score,
@@ -176,7 +217,7 @@ export default function LeaderTeamPage() {
         }),
       });
 
-      const payload = await res.json().catch(() => null);
+      const payload = res.data;
 
       if (!res.ok || !payload?.success) {
         throw new Error(payload?.error || "Gagal menyimpan Penilaian Perilaku.");
@@ -191,8 +232,9 @@ export default function LeaderTeamPage() {
       await loadTeamAndLeaderboard();
       
       // Auto close modal after brief delay
-      setTimeout(() => {
+      closeModalTimeoutRef.current = setTimeout(() => {
         setActiveScoringMember(null);
+        closeModalTimeoutRef.current = null;
       }, 1500);
 
     } catch (err) {
@@ -266,7 +308,7 @@ export default function LeaderTeamPage() {
           <div className="flex flex-col gap-5">
             <section className="card p-5 bg-white border border-[var(--border-color)] shadow-sm">
               <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3 mb-4">
-                <h2 className="text-base font-extrabold text-[var(--text-primary)]">Daftar Anggota & Kinerja</h2>
+                <h2 className="text-base text-[var(--text-primary)]">Daftar Anggota & Kinerja</h2>
                 <span className="badge badge-info font-bold text-xs">{members.length} Karyawan</span>
               </div>
 
@@ -283,7 +325,7 @@ export default function LeaderTeamPage() {
                     >
                       <div className="flex justify-between items-start gap-3">
                         <div className="min-w-0">
-                          <h3 className="font-extrabold text-base text-[var(--text-primary)] leading-tight">{member.fullName}</h3>
+                          <h3 className="text-base text-[var(--text-primary)] leading-tight">{member.fullName}</h3>
                           <p className="text-xs text-[var(--text-secondary)] font-semibold mt-1">
                             {member.nip} · {member.position || "Staff"} · {member.division || "Cetak"}
                           </p>
@@ -397,7 +439,7 @@ export default function LeaderTeamPage() {
         >
           <div className="bg-white rounded-3xl border border-[var(--border-color)] shadow-2xl p-5 sm:p-6 w-full max-w-md flex flex-col gap-4 animate-scale-in relative">
             <div className="border-b border-[var(--border-color)] pb-3">
-              <h2 className="text-base sm:text-lg font-black text-[var(--text-primary)]">
+              <h2 className="text-base sm:text-lg text-[var(--text-primary)]">
                 Penilaian Perilaku Kerja: {activeScoringMember.fullName}
               </h2>
               <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-semibold">

@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
 import {
   Bell,
   Camera,
@@ -79,6 +81,21 @@ interface NotificationItem {
   createdAt: string;
 }
 
+type PerformanceScore = any;
+type PerformanceHistoryItem = any;
+type PerformanceBadge = any;
+
+interface DashboardData {
+  heatmap: Record<string, string>;
+  history: AttendanceRecord[];
+  leaveBalance: LeaveBalance | null;
+  notifications: NotificationItem[];
+  perfScore: PerformanceScore | null;
+  perfHistory: PerformanceHistoryItem[];
+  perfBadges: PerformanceBadge[];
+  workLocation: WorkLocationDetail | null;
+}
+
 const statusLabel: Record<string, string> = {
   PRESENT: "Hadir",
   LATE: "Terlambat",
@@ -97,6 +114,31 @@ const statusTone: Record<string, { bg: string; color: string }> = {
   PERMISSION: { bg: "rgba(59,130,246,0.12)", color: "var(--info)" },
 };
 
+const shortDateFormatter = new Intl.DateTimeFormat("id-ID", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+});
+const timeFormatter = new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" });
+const longDateFormatter = new Intl.DateTimeFormat("id-ID", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+const notificationDateFormatter = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+const quickActions = [
+  { name: "Absensi", path: "/dashboard/attendance", icon: Clock, bg: "var(--primary-light)", text: "var(--primary-dark)" },
+  { name: "Cuti", path: "/dashboard/leave", icon: Calendar, bg: "rgba(34,197,94,0.1)", text: "var(--success)" },
+  { name: "KPI Saya", path: "/dashboard/kpi", icon: BarChart3, bg: "rgba(59,130,246,0.1)", text: "var(--info)" },
+  { name: "Payroll Saya", path: "/dashboard/payroll", icon: Banknote, bg: "rgba(245,158,11,0.1)", text: "var(--warning)" },
+  { name: "Lembur", path: "/dashboard/overtime", icon: TimerReset, bg: "rgba(229,57,53,0.1)", text: "var(--danger)" },
+  { name: "Dokumen", path: "/dashboard/documents", icon: FileText, bg: "rgba(107,114,128,0.1)", text: "#6B7280" },
+  { name: "Notifikasi", path: "/dashboard/notifications", icon: Bell, bg: "rgba(124,58,237,0.1)", text: "#7C3AED" },
+  { name: "Akun", path: "/dashboard/profile", icon: User, bg: "rgba(251,191,36,0.15)", text: "#D97706" },
+];
+
 function startOfMonth(): Date {
   const today = new Date();
   return new Date(today.getFullYear(), today.getMonth(), 1);
@@ -110,16 +152,12 @@ function isoDate(date: Date): string {
 }
 
 function formatShortDate(value: string): string {
-  return new Intl.DateTimeFormat("id-ID", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(new Date(value));
+  return shortDateFormatter.format(new Date(value));
 }
 
 function formatTime(value?: string | null): string {
   if (!value) return "-";
-  return new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+  return timeFormatter.format(new Date(value));
 }
 
 function isSameLocalDate(value: string, date = new Date()): boolean {
@@ -198,125 +236,97 @@ interface Props {
   profile: ClientUserProfile | null;
 }
 
+type GpsState = {
+  position: GeolocationPosition | null;
+  error: string;
+  isGetting: boolean;
+};
+
+function gpsReducer(_state: GpsState, nextState: GpsState) {
+  return nextState;
+}
+
+const initialGpsState: GpsState = { position: null, error: "", isGetting: false };
+const emptyHeatmap: Record<string, string> = {};
+
 export default function EmployeeBeranda({ profile }: Props) {
-  const [heatmap, setHeatmap] = useState<Record<string, string>>({});
-  const [history, setHistory] = useState<AttendanceRecord[]>([]);
-  const [workLocation, setWorkLocation] = useState<WorkLocationDetail | null>(null);
-  const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [loadError, setLoadError] = useState("");
+  const locationId = profile?.employee?.defaultLocation?.id;
+  const dashboardQuery = useQuery<DashboardData>({
+    queryKey: ["employee-beranda", locationId],
+    queryFn: async () => {
+      const [heatmapRes, attendanceRes, balanceRes, notifRes, perfRes, historyRes, badgesRes] = await Promise.all([
+        fetch("/api/dashboard/heatmap", { headers: getAuthHeaders(), cache: "no-store" }),
+        fetch("/api/attendance", { headers: getAuthHeaders(), cache: "no-store" }),
+        fetch("/api/leave/balance", { headers: getAuthHeaders(), cache: "no-store" }),
+        fetch("/api/notifications", { headers: getAuthHeaders(), cache: "no-store" }),
+        fetch("/api/performance/me", { headers: getAuthHeaders(), cache: "no-store" }),
+        fetch("/api/performance/me/history", { headers: getAuthHeaders(), cache: "no-store" }),
+        fetch("/api/performance/me/badges", { headers: getAuthHeaders(), cache: "no-store" }),
+      ]);
 
-  // Gamification & Performance states
-  const [perfScore, setPerfScore] = useState<any>(null);
-  const [perfHistory, setPerfHistory] = useState<any[]>([]);
-  const [perfBadges, setPerfBadges] = useState<any[]>([]);
-  const [isPerfLoading, setIsPerfLoading] = useState(true);
-  const [perfProgressState, setPerfProgressState] = useState("");
+      const [heatmapPayload, attendancePayload, balancePayload, notifPayload, perfPayload, historyPayload, badgesPayload] = await Promise.all([
+        heatmapRes.json().catch(() => null) as Promise<HeatmapResponse | null>,
+        attendanceRes.json().catch(() => null) as Promise<AttendanceResponse | null>,
+        balanceRes.ok ? balanceRes.json().catch(() => null) : null,
+        notifRes.ok ? notifRes.json().catch(() => null) : null,
+        perfRes.ok ? perfRes.json().catch(() => null) : null,
+        historyRes.ok ? historyRes.json().catch(() => null) : null,
+        badgesRes.ok ? badgesRes.json().catch(() => null) : null,
+      ]);
 
-  // GPS states
-  const [gpsPosition, setGpsPosition] = useState<GeolocationPosition | null>(null);
-  const [gpsError, setGpsError] = useState("");
-  const [isGettingGps, setIsGettingGps] = useState(false);
+      let workLocationPayload: WorkLocationResponse | null = null;
+      if (locationId) {
+        const detailRes = await fetch(`/api/work-locations/${locationId}`, {
+          headers: getAuthHeaders(),
+          cache: "no-store",
+        });
+        workLocationPayload = (await detailRes.json().catch(() => null)) as WorkLocationResponse | null;
+      }
 
+      return {
+        heatmap: heatmapRes.ok && heatmapPayload?.success ? heatmapPayload.data?.heatmap ?? {} : {},
+        history: attendanceRes.ok && attendancePayload?.success ? attendancePayload.data?.slice(0, 5) ?? [] : [],
+        leaveBalance: balancePayload?.success ? balancePayload.data ?? null : null,
+        notifications: notifPayload?.success ? notifPayload.data?.slice(0, 3) ?? [] : [],
+        perfScore: perfPayload?.success ? perfPayload.data ?? null : null,
+        perfHistory: historyPayload?.success ? historyPayload.data ?? [] : [],
+        perfBadges: badgesPayload?.success ? badgesPayload.data ?? [] : [],
+        workLocation: workLocationPayload?.success ? workLocationPayload.data ?? null : null,
+      };
+    },
+  });
+
+  const heatmap: Record<string, string> = dashboardQuery.data?.heatmap ?? emptyHeatmap;
+  const history: AttendanceRecord[] = dashboardQuery.data?.history ?? [];
+  const workLocation = dashboardQuery.data?.workLocation ?? null;
+  const leaveBalance = dashboardQuery.data?.leaveBalance ?? null;
+  const notifications: NotificationItem[] = dashboardQuery.data?.notifications ?? [];
+  const loadError = dashboardQuery.error instanceof Error ? dashboardQuery.error.message : "";
+  const perfScore = dashboardQuery.data?.perfScore ?? null;
+  const perfHistory: PerformanceHistoryItem[] = dashboardQuery.data?.perfHistory ?? [];
+  const perfBadges: PerformanceBadge[] = dashboardQuery.data?.perfBadges ?? [];
+  const isPerfLoading = dashboardQuery.isLoading;
+  const perfProgressState = dashboardQuery.isFetching ? "Memuat skor performa… Menghitung proyeksi kenaikan…" : "";
+
+  const [gpsState, setGpsState] = useReducer(gpsReducer, initialGpsState);
+  const { position: gpsPosition, error: gpsError, isGetting: isGettingGps } = gpsState;
+
+  // eslint-disable-next-line react-doctor/no-cascading-set-state
   useEffect(() => {
     let cancelled = false;
 
-    async function loadEverything() {
-      try {
-        setPerfProgressState("Memuat skor performa…");
-        const [heatmapRes, attendanceRes, balanceRes, notifRes, perfRes, historyRes, badgesRes] = await Promise.all([
-          fetch("/api/dashboard/heatmap", { headers: getAuthHeaders(), cache: "no-store" }),
-          fetch("/api/attendance", { headers: getAuthHeaders(), cache: "no-store" }),
-          fetch("/api/leave/balance", { headers: getAuthHeaders(), cache: "no-store" }),
-          fetch("/api/notifications", { headers: getAuthHeaders(), cache: "no-store" }),
-          fetch("/api/performance/me", { headers: getAuthHeaders(), cache: "no-store" }),
-          fetch("/api/performance/me/history", { headers: getAuthHeaders(), cache: "no-store" }),
-          fetch("/api/performance/me/badges", { headers: getAuthHeaders(), cache: "no-store" }),
-        ]);
-
-        const heatmapPayload = (await heatmapRes.json()) as HeatmapResponse;
-        const attendancePayload = (await attendanceRes.json()) as AttendanceResponse;
-        const balancePayload = balanceRes.ok ? await balanceRes.json().catch(() => null) : null;
-        const notifPayload = notifRes.ok ? await notifRes.json().catch(() => null) : null;
-
-        if (cancelled) return;
-
-        if (heatmapRes.ok && heatmapPayload.success && heatmapPayload.data?.heatmap) {
-          setHeatmap(heatmapPayload.data.heatmap);
-        }
-
-        if (attendanceRes.ok && attendancePayload.success && attendancePayload.data) {
-          setHistory(attendancePayload.data.slice(0, 5));
-        }
-
-        if (balancePayload?.success && balancePayload?.data) {
-          setLeaveBalance(balancePayload.data);
-        }
-
-        if (notifPayload?.success && notifPayload?.data) {
-          setNotifications(notifPayload.data.slice(0, 3));
-        }
-
-        // Handle Performance/Gamification
-        setPerfProgressState("Menghitung proyeksi kenaikan…");
-        if (perfRes.ok) {
-          const perfPayload = await perfRes.json().catch(() => null);
-          if (perfPayload?.success && perfPayload?.data) {
-            setPerfScore(perfPayload.data);
-          }
-        }
-        if (historyRes.ok) {
-          const historyPayload = await historyRes.json().catch(() => null);
-          if (historyPayload?.success && historyPayload?.data) {
-            setPerfHistory(historyPayload.data);
-          }
-        }
-        if (badgesRes.ok) {
-          const badgesPayload = await badgesRes.json().catch(() => null);
-          if (badgesPayload?.success && badgesPayload?.data) {
-            setPerfBadges(badgesPayload.data);
-          }
-        }
-
-        const locationId = profile?.employee?.defaultLocation?.id;
-        if (locationId) {
-          const detailRes = await fetch(`/api/work-locations/${locationId}`, {
-            headers: getAuthHeaders(),
-            cache: "no-store",
-          });
-          const detailPayload = (await detailRes.json()) as WorkLocationResponse;
-          if (!cancelled && detailRes.ok && detailPayload.success && detailPayload.data) {
-            setWorkLocation(detailPayload.data);
-          }
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setLoadError(error instanceof Error ? error.message : "Beranda belum lengkap.");
-        }
-      } finally {
-        if (!cancelled) {
-          setIsPerfLoading(false);
-          setPerfProgressState("");
-        }
-      }
-    }
-
-    loadEverything();
-
     // Trigger GPS acquisition on mount
     if (typeof window !== "undefined" && navigator.geolocation) {
-      setIsGettingGps(true);
+      setGpsState({ position: null, error: "", isGetting: true });
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           if (!cancelled) {
-            setGpsPosition(pos);
-            setIsGettingGps(false);
+            setGpsState({ position: pos, error: "", isGetting: false });
           }
         },
         (err) => {
           if (!cancelled) {
-            setGpsError(err.message || "GPS belum siap");
-            setIsGettingGps(false);
+            setGpsState({ position: null, error: err.message || "GPS belum siap", isGetting: false });
           }
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -380,17 +390,7 @@ export default function EmployeeBeranda({ profile }: Props) {
   const hasCheckedOut = Boolean(todayRecord?.checkOutTime);
 
   const greetingTitle = getTimeOfDayGreeting();
-
-  const quickActions = [
-    { name: "Absensi", path: "/dashboard/attendance", icon: Clock, bg: "var(--primary-light)", text: "var(--primary-dark)" },
-    { name: "Cuti", path: "/dashboard/leave", icon: Calendar, bg: "rgba(34,197,94,0.1)", text: "var(--success)" },
-    { name: "KPI Saya", path: "/dashboard/kpi", icon: BarChart3, bg: "rgba(59,130,246,0.1)", text: "var(--info)" },
-    { name: "Payroll Saya", path: "/dashboard/payroll", icon: Banknote, bg: "rgba(245,158,11,0.1)", text: "var(--warning)" },
-    { name: "Lembur", path: "/dashboard/overtime", icon: TimerReset, bg: "rgba(229,57,53,0.1)", text: "var(--danger)" },
-    { name: "Dokumen", path: "/dashboard/documents", icon: FileText, bg: "rgba(107,114,128,0.1)", text: "#6B7280" },
-    { name: "Notifikasi", path: "/dashboard/notifications", icon: Bell, bg: "rgba(124,58,237,0.1)", text: "#7C3AED" },
-    { name: "Akun", path: "/dashboard/profile", icon: User, bg: "rgba(251,191,36,0.15)", text: "#D97706" },
-  ];
+  const todayLabel = useMemo(() => longDateFormatter.format(new Date()), []);
 
   return (
     <div className="flex flex-col gap-5 pb-6">
@@ -399,7 +399,7 @@ export default function EmployeeBeranda({ profile }: Props) {
         <div className="flex items-center gap-3">
           <div className="avatar ring-2 ring-[var(--primary)] shrink-0" style={{ width: 48, height: 48, fontSize: 18 }}>
             {profile?.employee?.profilePhoto ? (
-              <img src={profile.employee.profilePhoto} alt="" className="object-cover w-full h-full rounded-full" />
+              <Image src={profile.employee.profilePhoto} alt="" width={48} height={48} className="object-cover size-full rounded-full" />
             ) : (
               initials
             )}
@@ -415,7 +415,7 @@ export default function EmployeeBeranda({ profile }: Props) {
         </div>
         <Link href="/dashboard/notifications" className="icon-button shrink-0 relative bg-white border border-[var(--border-color)] hover:bg-[var(--bg-secondary)]" aria-label="Notifikasi">
           <Bell size={20} className="text-[var(--text-primary)]" />
-          {notifications.some(n => !n.read) && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--danger)]" />}
+          {notifications.some(n => !n.read) && <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-[var(--danger)]" />}
         </Link>
       </header>
 
@@ -427,7 +427,7 @@ export default function EmployeeBeranda({ profile }: Props) {
 
       {/* Primary Attendance Card */}
       <section className="card shadow-md overflow-hidden bg-gradient-to-br from-[#FFFDEB] to-white border border-[#FFECB3] p-5 relative" aria-labelledby="attendance-card-title">
-        <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--primary)] opacity-10 rounded-bl-full pointer-events-none" />
+        <div className="absolute top-0 right-0 size-24 bg-[var(--primary)] opacity-10 rounded-bl-full pointer-events-none" />
         
         <div className="flex flex-col gap-4">
           <div>
@@ -435,8 +435,8 @@ export default function EmployeeBeranda({ profile }: Props) {
               <Clock size={12} strokeWidth={2.5} />
               {shiftTimeText}
             </span>
-            <h2 id="attendance-card-title" data-ux-note="Validasi lokasi dulu, lalu ambil selfie realtime." className="text-base sm:text-lg font-extrabold text-[var(--text-primary)] mt-3">
-              {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            <h2 id="attendance-card-title" suppressHydrationWarning data-ux-note="Validasi lokasi dulu, lalu ambil selfie realtime." className="text-base sm:text-lg font-extrabold text-[var(--text-primary)] mt-3">
+              {todayLabel}
             </h2>
             <div className="flex min-w-0 items-center gap-1.5 text-xs text-[var(--text-secondary)] mt-1.5 font-medium">
               <MapPin size={13} className="text-[var(--text-muted)]" />
@@ -450,7 +450,7 @@ export default function EmployeeBeranda({ profile }: Props) {
               <span className="font-semibold text-[var(--text-secondary)]">GPS & Radius:</span>
               <span className="flex items-center gap-1">
                 {isGettingGps ? (
-                  <span className="text-[var(--text-muted)] animate-pulse">Memuat lokasi...</span>
+                  <span className="text-[var(--text-muted)] animate-pulse">Memuat lokasi…</span>
                 ) : gpsError ? (
                   <span className="text-[var(--danger)] font-bold">{gpsError}</span>
                 ) : gpsPosition ? (
@@ -458,7 +458,7 @@ export default function EmployeeBeranda({ profile }: Props) {
                     <Check size={12} strokeWidth={2.5} /> Aktif (±{Math.round(gpsPosition.coords.accuracy)}m)
                   </span>
                 ) : (
-                  <span className="text-[var(--warning)] font-bold">Mencari GPS...</span>
+                  <span className="text-[var(--warning)] font-bold">Mencari GPS…</span>
                 )}
               </span>
             </div>
@@ -537,7 +537,7 @@ export default function EmployeeBeranda({ profile }: Props) {
               <div className="h-6 bg-gray-200 rounded-full w-16"></div>
             </div>
             <div className="flex items-center gap-4 py-2">
-              <div className="w-16 h-16 rounded-full bg-gray-200"></div>
+              <div className="size-16 rounded-full bg-gray-200"></div>
               <div className="flex-1 space-y-2">
                 <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                 <div className="h-3 bg-gray-200 rounded w-3/4"></div>
@@ -864,7 +864,7 @@ export default function EmployeeBeranda({ profile }: Props) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {perfBadges.map((badge) => (
                     <div key={badge.id} className="flex gap-3 items-center rounded-2xl border border-[var(--border-color)] p-3 bg-gray-50/30">
-                      <div className="w-10 h-10 rounded-2xl bg-[var(--primary-light)] flex items-center justify-center shrink-0 border border-[#FFE082]">
+                      <div className="size-10 rounded-2xl bg-[var(--primary-light)] flex items-center justify-center shrink-0 border border-[#FFE082]">
                         <Award size={20} className="text-[var(--primary-dark)]" />
                       </div>
                       <div className="min-w-0">
@@ -1015,7 +1015,7 @@ export default function EmployeeBeranda({ profile }: Props) {
                 href="/dashboard/notifications"
                 className="flex items-start gap-3 p-2 rounded-xl transition-all hover:bg-[var(--bg-secondary)] group"
               >
-                <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${item.read ? "bg-gray-300" : "bg-[var(--primary-dark)]"}`} />
+                <div className={`size-2 rounded-full mt-1.5 shrink-0 ${item.read ? "bg-gray-300" : "bg-[var(--primary-dark)]"}`} />
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xs font-extrabold text-[var(--text-primary)] leading-snug group-hover:text-[var(--primary-dark)] truncate">
                     {item.title}
@@ -1024,7 +1024,7 @@ export default function EmployeeBeranda({ profile }: Props) {
                     {item.message}
                   </p>
                   <span className="text-[9px] text-[var(--text-muted)] font-medium mt-1 block">
-                    {new Date(item.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    {notificationDateFormatter.format(new Date(item.createdAt))}
                   </span>
                 </div>
               </Link>

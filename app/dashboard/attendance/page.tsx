@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Bell, ArrowLeft, ClipboardList, Info, MapPin, Navigation } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -13,9 +13,28 @@ const RealtimeSelfieCamera = dynamic(
   () => import("@/components/attendance/RealtimeSelfieCamera").then((mod) => mod.RealtimeSelfieCamera),
   {
     ssr: false,
-    loading: () => <div className="card" style={{ padding: "16px", fontSize: "13px", color: "var(--text-secondary)" }}>Menyiapkan kamera selfie...</div>,
+    loading: () => <div className="card" style={{ padding: "16px", fontSize: "13px", color: "var(--text-secondary)" }}>Menyiapkan kamera selfie…</div>,
   },
 );
+
+const fullDateFormatter = new Intl.DateTimeFormat("id-ID", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+const shortDateFormatter = new Intl.DateTimeFormat("id-ID", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
+const timeFormatter = new Intl.DateTimeFormat("id-ID", {
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 type AttendanceRecord = {
   id: string;
@@ -41,29 +60,16 @@ type ApiResponse<T> = {
 };
 
 function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("id-ID", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(date);
+  return fullDateFormatter.format(date);
 }
 
 function formatShortDate(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
+  return shortDateFormatter.format(new Date(value));
 }
 
 function formatTime(value?: string | null) {
   if (!value) return "-";
-  return new Intl.DateTimeFormat("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+  return timeFormatter.format(new Date(value));
 }
 
 function calculateDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -118,36 +124,243 @@ function getBrowserPosition(): Promise<GeolocationPosition> {
 }
 
 
-export default function AttendancePage() {
-  const router = useRouter();
-  const [profile, setProfile] = useState<ClientUserProfile | null>(null);
-  const [todayAttendance, setTodayAttendance] = useState<AttendanceRecord | null>(null);
-  const [history, setHistory] = useState<AttendanceRecord[]>([]);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selfieBlob, setSelfieBlob] = useState<Blob | null>(null);
-  const [selfiePreviewUrl, setSelfiePreviewUrl] = useState("");
-  const [selfieFilename, setSelfieFilename] = useState("attendance-selfie.webp");
-  const [gpsPosition, setGpsPosition] = useState<GeolocationPosition | null>(null);
-  const [gpsError, setGpsError] = useState("");
-  const [isGettingGps, setIsGettingGps] = useState(false);
-  const [autoStart, setAutoStart] = useState(false);
-  const [viewerState, setViewerState] = useState<{
+type AttendanceState = {
+  profile: ClientUserProfile | null;
+  todayAttendance: AttendanceRecord | null;
+  history: AttendanceRecord[];
+  message: string;
+  error: string;
+  isLoading: boolean;
+  isSubmitting: boolean;
+  selfieBlob: Blob | null;
+  selfiePreviewUrl: string;
+  gpsPosition: GeolocationPosition | null;
+  gpsError: string;
+  isGettingGps: boolean;
+  viewerState: {
     record: AttendanceRecord;
     kind: "check-in" | "check-out";
-  } | null>(null);
+  } | null;
+};
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const searchParams = new URLSearchParams(window.location.search);
-      const action = searchParams.get("action");
-      if (action === "check-in" || action === "check-out") {
-        setAutoStart(true);
-      }
-    }
-  }, []);
+type AttendanceAction =
+  | { type: "loadStart" }
+  | { type: "loadSuperadmin"; profile: ClientUserProfile }
+  | { type: "loadSuccess"; profile: ClientUserProfile; today: AttendanceRecord | null; history: AttendanceRecord[] }
+  | { type: "loadError"; error: string }
+  | { type: "submitStart" }
+  | { type: "submitError"; error: string }
+  | { type: "submitSettled" }
+  | { type: "submitSuccess"; message: string }
+  | { type: "setSelfie"; blob: Blob; previewUrl: string }
+  | { type: "clearSelfie" }
+  | { type: "gpsStart" }
+  | { type: "gpsSuccess"; position: GeolocationPosition }
+  | { type: "gpsError"; error: string }
+  | { type: "clearGps" }
+  | { type: "openViewer"; record: AttendanceRecord; kind: "check-in" | "check-out" }
+  | { type: "closeViewer" };
+
+const initialAttendanceState: AttendanceState = {
+  profile: null,
+  todayAttendance: null,
+  history: [],
+  message: "",
+  error: "",
+  isLoading: true,
+  isSubmitting: false,
+  selfieBlob: null,
+  selfiePreviewUrl: "",
+  gpsPosition: null,
+  gpsError: "",
+  isGettingGps: false,
+  viewerState: null,
+};
+
+function attendanceReducer(state: AttendanceState, action: AttendanceAction): AttendanceState {
+  switch (action.type) {
+    case "loadStart":
+      return { ...state, isLoading: true, error: "" };
+    case "loadSuperadmin":
+      return { ...state, profile: action.profile, todayAttendance: null, history: [], isLoading: false };
+    case "loadSuccess":
+      return {
+        ...state,
+        profile: action.profile,
+        todayAttendance: action.today,
+        history: action.history,
+        isLoading: false,
+      };
+    case "loadError":
+      return { ...state, error: action.error, isLoading: false };
+    case "submitStart":
+      return { ...state, error: "", message: "", isSubmitting: true };
+    case "submitError":
+      return { ...state, error: action.error, isSubmitting: false };
+    case "submitSettled":
+      return { ...state, isSubmitting: false };
+    case "submitSuccess":
+      return { ...state, message: action.message };
+    case "setSelfie":
+      return { ...state, selfieBlob: action.blob, selfiePreviewUrl: action.previewUrl };
+    case "clearSelfie":
+      return { ...state, selfieBlob: null, selfiePreviewUrl: "" };
+    case "gpsStart":
+      return { ...state, gpsError: "", isGettingGps: true };
+    case "gpsSuccess":
+      return { ...state, gpsPosition: action.position, isGettingGps: false };
+    case "gpsError":
+      return { ...state, gpsPosition: null, gpsError: action.error, isGettingGps: false };
+    case "clearGps":
+      return { ...state, gpsPosition: null };
+    case "openViewer":
+      return { ...state, viewerState: { record: action.record, kind: action.kind } };
+    case "closeViewer":
+      return { ...state, viewerState: null };
+    default:
+      return state;
+  }
+}
+
+function getInitialAutoStart() {
+  if (typeof window === "undefined") return false;
+  const action = new URLSearchParams(window.location.search).get("action");
+  return action === "check-in" || action === "check-out";
+}
+
+function AttendanceHeader({ onBack, avatarName }: { onBack: () => void; avatarName: string }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <button type="button" className="flex cursor-pointer items-center gap-3" onClick={onBack} aria-label="Kembali ke halaman sebelumnya">
+        <ArrowLeft size={24} />
+        <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Kehadiran</h1>
+      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <Bell size={24} color="var(--text-primary)" />
+        <div className="avatar flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--primary)] text-[13px] font-bold text-[var(--text-primary)]">
+          {avatarName.charAt(0).toUpperCase()}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TodayDateRow() {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div suppressHydrationWarning style={{ fontSize: "14px", fontWeight: 500 }}>{formatDate(new Date())}</div>
+      <Info size={18} color="var(--text-muted)" />
+    </div>
+  );
+}
+
+function AttendanceNotice({ message, error }: { message: string; error: string }) {
+  if (!message && !error) return null;
+
+  return (
+    <div role={error ? "alert" : "status"} style={{ fontSize: "12px", color: error ? "var(--danger)" : "var(--success)", fontWeight: 600 }} aria-live={error ? "assertive" : "polite"}>
+      {error || message}
+    </div>
+  );
+}
+
+function TodayStatusCard({ isLoading, statusContent }: { isLoading: boolean; statusContent: { title: string; description: string; color: string } }) {
+  return (
+    <div className="card flex items-start gap-3 border border-[rgba(253,199,4,0.35)] bg-[linear-gradient(135deg,#fff_0%,var(--primary-light)_100%)] p-4">
+      <div className="flex items-center justify-center rounded-[14px] bg-[var(--primary)] p-2.5 text-[var(--text-primary)] shadow-[0_10px_20px_rgba(253,199,4,0.25)]" aria-hidden="true">
+        <ClipboardList size={20} aria-hidden="true" />
+      </div>
+      <div>
+        <h3 style={{ fontSize: "14px", fontWeight: 700, color: statusContent.color, marginBottom: "4px" }}>Absensi Hari Ini · {isLoading ? "Memuat…" : statusContent.title}</h3>
+        <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{statusContent.description}</p>
+      </div>
+    </div>
+  );
+}
+
+function AttendanceActions({
+  isSubmitting,
+  checkInDisabled,
+  checkOutDisabled,
+  onCheckIn,
+  onCheckOut,
+}: {
+  isSubmitting: boolean;
+  checkInDisabled: boolean;
+  checkOutDisabled: boolean;
+  onCheckIn: () => void;
+  onCheckOut: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row">
+      <button type="button" className="btn btn-success" style={{ flex: 1, padding: "16px", opacity: checkInDisabled ? 0.6 : 1 }} disabled={checkInDisabled} onClick={onCheckIn}>
+        {isSubmitting ? "Memproses…" : "Kirim Absen Masuk"}
+      </button>
+      <button type="button" className="btn btn-danger-outline" style={{ flex: 1, padding: "16px", backgroundColor: "white", opacity: checkOutDisabled ? 0.6 : 1 }} disabled={checkOutDisabled} onClick={onCheckOut}>
+        {isSubmitting ? "Memproses…" : "Kirim Absen Pulang"}
+      </button>
+    </div>
+  );
+}
+
+function SuperadminAttendanceView({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="phone-screen attendance-screen" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <button type="button" className="btn btn-secondary btn-icon" onClick={onBack} aria-label="Kembali">
+          <ArrowLeft size={20} aria-hidden="true" />
+        </button>
+        <div>
+          <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Kehadiran</h1>
+          <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
+            Superadmin mengelola monitoring, approval, dan laporan. Absensi selfie mandiri hanya untuk Karyawan dan Leader.
+          </p>
+        </div>
+      </div>
+
+      <section className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }} aria-labelledby="admin-attendance-title">
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+          <div style={{ backgroundColor: "var(--primary)", padding: "10px", borderRadius: "14px", color: "var(--text-primary)", display: "flex", alignItems: "center", justifyContent: "center" }} aria-hidden="true">
+            <ClipboardList size={20} aria-hidden="true" />
+          </div>
+          <div>
+            <h2 id="admin-attendance-title" style={{ fontSize: "16px", fontWeight: 700, marginBottom: "4px" }}>Laporan Kehadiran</h2>
+            <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+              Gunakan halaman laporan dan approval untuk memantau absensi, geo-fence, dan bukti selfie terlindungi.
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link href="/dashboard/reports/attendance" className="btn btn-primary min-h-[44px]">Buka Laporan Kehadiran</Link>
+          <Link href="/dashboard/attendance/exceptions" className="btn btn-secondary min-h-[44px]">Approval Absensi</Link>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export default function AttendancePage() {
+  const router = useRouter();
+  const [state, dispatch] = useReducer(attendanceReducer, initialAttendanceState);
+  const {
+    profile,
+    todayAttendance,
+    history,
+    message,
+    error,
+    isLoading,
+    isSubmitting,
+    selfieBlob,
+    selfiePreviewUrl,
+    gpsPosition,
+    gpsError,
+    isGettingGps,
+    viewerState,
+  } = state;
+  const selfieFilenameRef = useRef("attendance-selfie.webp");
+  const selfiePreviewUrlRef = useRef("");
+  const [autoStart] = useState(getInitialAutoStart);
+
   const isSuperadminAttendanceViewer = profile?.role === "SUPERADMIN";
 
   const employee = profile?.employee;
@@ -189,16 +402,13 @@ export default function AttendancePage() {
   }, [todayAttendance]);
 
   async function loadAttendance() {
-    setIsLoading(true);
-    setError("");
+    dispatch({ type: "loadStart" });
 
     try {
       const currentProfile = await fetchProfile();
-      setProfile(currentProfile);
 
       if (currentProfile.role === "SUPERADMIN") {
-        setTodayAttendance(null);
-        setHistory([]);
+        dispatch({ type: "loadSuperadmin", profile: currentProfile });
         return;
       }
 
@@ -218,44 +428,38 @@ export default function AttendancePage() {
         throw new Error(historyPayload.error || "Gagal mengambil riwayat absensi");
       }
 
-      setTodayAttendance(todayPayload.data || null);
-      setHistory((historyPayload.data || []).slice(0, 5));
+      dispatch({
+        type: "loadSuccess",
+        profile: currentProfile,
+        today: todayPayload.data || null,
+        history: (historyPayload.data || []).slice(0, 5),
+      });
     } catch (err) {
-      setError(getCleanAttendanceError(err, "Data absensi belum tersedia."));
-    } finally {
-      setIsLoading(false);
+      dispatch({ type: "loadError", error: getCleanAttendanceError(err, "Data absensi belum tersedia.") });
     }
   }
 
 
   function clearSelfie() {
-    setSelfieBlob(null);
-    setSelfiePreviewUrl((current) => {
-      if (current) {
-        URL.revokeObjectURL(current);
-      }
-      return "";
-    });
+    if (selfiePreviewUrlRef.current) {
+      URL.revokeObjectURL(selfiePreviewUrlRef.current);
+      selfiePreviewUrlRef.current = "";
+    }
+    dispatch({ type: "clearSelfie" });
   }
 
   async function refreshGps() {
-    setGpsError("");
-    setIsGettingGps(true);
+    dispatch({ type: "gpsStart" });
     try {
       const position = await getBrowserPosition();
-      setGpsPosition(position);
+      dispatch({ type: "gpsSuccess", position });
     } catch (err) {
-      setGpsPosition(null);
-      setGpsError(getCleanAttendanceError(err, "GPS belum siap. Coba ambil ulang lokasi dari area terbuka."));
-    } finally {
-      setIsGettingGps(false);
+      dispatch({ type: "gpsError", error: getCleanAttendanceError(err, "GPS belum siap. Coba ambil ulang lokasi dari area terbuka.") });
     }
   }
 
   async function submitAttendance(type: "check-in" | "check-out") {
-    setError("");
-    setMessage("");
-    setIsSubmitting(true);
+    dispatch({ type: "submitStart" });
 
     try {
       if (!employee?.defaultLocation?.id) {
@@ -273,6 +477,7 @@ export default function AttendancePage() {
       formData.set("accuracy", String(position.coords.accuracy));
       formData.set("gpsTimestamp", new Date(position.timestamp || Date.now()).toISOString());
       formData.set("deviceInfo", navigator.userAgent);
+      const selfieFilename = selfieFilenameRef.current;
       formData.set("selfie", selfieBlob, selfieFilename);
 
       if (type === "check-in") {
@@ -300,14 +505,13 @@ export default function AttendancePage() {
         throw new Error(result.error || "Gagal menyimpan absensi");
       }
 
-      setMessage(type === "check-in" ? "Check-in berhasil disimpan" : "Check-out berhasil disimpan");
+      dispatch({ type: "submitSuccess", message: type === "check-in" ? "Check-in berhasil disimpan" : "Check-out berhasil disimpan" });
       clearSelfie();
-      setGpsPosition(null);
+      dispatch({ type: "clearGps" });
       await loadAttendance();
+      dispatch({ type: "submitSettled" });
     } catch (err) {
-      setError(getCleanAttendanceError(err, "Gagal menyimpan absensi. Silakan coba lagi."));
-    } finally {
-      setIsSubmitting(false);
+      dispatch({ type: "submitError", error: getCleanAttendanceError(err, "Gagal menyimpan absensi. Silakan coba lagi.") });
     }
   }
 
@@ -335,70 +539,19 @@ export default function AttendancePage() {
       : "Data siap. Server tetap memvalidasi GPS, selfie, dan geofence.";
 
   if (isSuperadminAttendanceViewer) {
-    return (
-      <div className="phone-screen attendance-screen" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <button type="button" className="btn btn-secondary btn-icon" onClick={() => router.back()} aria-label="Kembali">
-            <ArrowLeft size={20} aria-hidden="true" />
-          </button>
-          <div>
-            <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Kehadiran</h1>
-            <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
-              Superadmin mengelola monitoring, approval, dan laporan. Absensi selfie mandiri hanya untuk Karyawan dan Leader.
-            </p>
-          </div>
-        </div>
-
-        <section className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }} aria-labelledby="admin-attendance-title">
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-            <div style={{ backgroundColor: "var(--primary)", padding: "10px", borderRadius: "14px", color: "var(--text-primary)", display: "flex", alignItems: "center", justifyContent: "center" }} aria-hidden="true">
-              <ClipboardList size={20} aria-hidden="true" />
-            </div>
-            <div>
-              <h2 id="admin-attendance-title" style={{ fontSize: "16px", fontWeight: 700, marginBottom: "4px" }}>Laporan Kehadiran</h2>
-              <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                Gunakan halaman laporan dan approval untuk memantau absensi, geo-fence, dan bukti selfie terlindungi.
-              </p>
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Link href="/dashboard/reports/attendance" className="btn btn-primary min-h-[44px]">Buka Laporan Kehadiran</Link>
-            <Link href="/dashboard/attendance/exceptions" className="btn btn-secondary min-h-[44px]">Approval Absensi</Link>
-          </div>
-        </section>
-      </div>
-    );
+    return <SuperadminAttendanceView onBack={() => router.back()} />;
   }
 
   return (
     <div className="phone-screen attendance-screen" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={() => router.back()}>
-          <ArrowLeft size={24} />
-          <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Kehadiran</h1>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Bell size={24} color="var(--text-primary)" />
-          <div className="avatar" style={{ width: "32px", height: "32px", background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "var(--text-primary)", borderRadius: "50%", flexShrink: 0 }}>
-              {(employee?.fullName || profile?.username || "U").charAt(0).toUpperCase()}
-            </div>
-        </div>
-      </div>
+      <AttendanceHeader onBack={() => router.back()} avatarName={employee?.fullName || profile?.username || "U"} />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: "14px", fontWeight: 500 }}>{formatDate(new Date())}</div>
+        <div suppressHydrationWarning style={{ fontSize: "14px", fontWeight: 500 }}>{formatDate(new Date())}</div>
         <Info size={18} color="var(--text-muted)" />
       </div>
 
-      <div className="card" style={{ background: "linear-gradient(135deg, #fff 0%, var(--primary-light) 100%)", padding: "16px", display: "flex", gap: "12px", alignItems: "flex-start", border: "1px solid rgba(253, 199, 4, 0.35)" }}>
-        <div style={{ backgroundColor: "var(--primary)", padding: "10px", borderRadius: "14px", boxShadow: "0 10px 20px rgba(253,199,4,.25)", color: "var(--text-primary)", display: "flex", alignItems: "center", justifyContent: "center" }} aria-hidden="true">
-          <ClipboardList size={20} aria-hidden="true" />
-        </div>
-        <div>
-          <h3 style={{ fontSize: "14px", fontWeight: 700, color: statusContent.color, marginBottom: "4px" }}>Absensi Hari Ini · {isLoading ? "Memuat..." : statusContent.title}</h3>
-          <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{statusContent.description}</p>
-        </div>
-      </div>
+      <TodayStatusCard isLoading={isLoading} statusContent={statusContent} />
 
       {(message || error) && (
         <div role={error ? "alert" : "status"} style={{ fontSize: "12px", color: error ? "var(--danger)" : "var(--success)", fontWeight: 600 }} aria-live={error ? "assertive" : "polite"}>
@@ -442,13 +595,13 @@ export default function AttendancePage() {
         disabled={isSubmitting}
         autoStart={autoStart}
         onCapture={({ blob, previewUrl, meta }) => {
-          if (selfiePreviewUrl) {
-            URL.revokeObjectURL(selfiePreviewUrl);
+          if (selfiePreviewUrlRef.current) {
+            URL.revokeObjectURL(selfiePreviewUrlRef.current);
           }
-          setSelfieBlob(blob);
-          setSelfiePreviewUrl(previewUrl);
+          selfiePreviewUrlRef.current = previewUrl;
           const ext = meta.mimeType.split("/")[1] || "webp";
-          setSelfieFilename(`attendance-selfie.${ext === "jpeg" ? "jpg" : ext}`);
+          selfieFilenameRef.current = `attendance-selfie.${ext === "jpeg" ? "jpg" : ext}`;
+          dispatch({ type: "setSelfie", blob, previewUrl });
         }}
         onClear={clearSelfie}
       />
@@ -465,25 +618,24 @@ export default function AttendancePage() {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px" }}>
           <div className="hris-card-highlight" style={{ border: "1px solid var(--border-color)", borderRadius: "16px", padding: "12px" }}>
-            <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Status</span>
+            <span className="mb-1 block text-xs text-[var(--text-muted)]">Status</span>
             <strong style={{ fontSize: "13px", color: gpsPosition ? "var(--success)" : "var(--danger)" }}>{gpsPosition ? "GPS siap" : "GPS belum siap"}</strong>
           </div>
           <div className="hris-card-highlight" style={{ border: "1px solid var(--border-color)", borderRadius: "16px", padding: "12px" }}>
-            <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Akurasi</span>
+            <span className="mb-1 block text-xs text-[var(--text-muted)]">Akurasi</span>
             <strong style={{ fontSize: "13px" }}>{gpsPosition ? `${Math.round(gpsPosition.coords.accuracy)} meter` : "-"}</strong>
           </div>
           <div className="hris-card-highlight" style={{ border: "1px solid var(--border-color)", borderRadius: "16px", padding: "12px" }}>
-            <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Jarak ke lokasi</span>
+            <span className="mb-1 block text-xs text-[var(--text-muted)]">Jarak ke lokasi</span>
             <strong style={{ fontSize: "13px" }}>{gpsDistanceMeters !== null ? formatDistanceMeters(gpsDistanceMeters) : "-"}</strong>
           </div>
           <div className="hris-card-highlight" style={{ border: "1px solid var(--border-color)", borderRadius: "16px", padding: "12px" }}>
-            <span style={{ display: "block", fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>Radius resmi</span>
+            <span className="mb-1 block text-xs text-[var(--text-muted)]">Radius resmi</span>
             <strong style={{ fontSize: "13px" }}>{assignedLocation ? formatDistanceMeters(assignedLocation.radius) : "-"}</strong>
           </div>
         </div>
         {isInsideRadius !== null && (
-          <div
-            role="status"
+          <output
             style={{
               color: isInsideRadius ? "var(--success)" : "var(--danger)",
               background: isInsideRadius ? "rgba(34,197,94,0.10)" : "rgba(220,38,38,0.10)",
@@ -494,35 +646,24 @@ export default function AttendancePage() {
             }}
           >
             {`Jarak Anda: ${formatDistanceMeters(gpsDistanceMeters || 0)} dari lokasi resmi · Radius diizinkan: ${assignedLocation ? formatDistanceMeters(assignedLocation.radius) : "-"} · Status: ${isInsideRadius ? "Di dalam radius" : "Di luar radius"}`}
-          </div>
+          </output>
         )}
         {gpsError && <div role="alert" style={{ color: "var(--danger)", fontSize: "12px", fontWeight: 600 }}>{gpsError}</div>}
-        <div role="status" aria-live="polite" style={{ color: missingRequirements.length ? "var(--text-secondary)" : "var(--success)", fontSize: "12px", fontWeight: 600 }}>
+        <output aria-live="polite" style={{ color: missingRequirements.length ? "var(--text-secondary)" : "var(--success)", fontSize: "12px", fontWeight: 600 }}>
           {actionHint}
-        </div>
+        </output>
         <button type="button" className="btn btn-secondary" onClick={refreshGps} disabled={isGettingGps || isSubmitting}>
-          {isGettingGps ? "Mengambil GPS..." : "Ambil Ulang GPS"}
+          {isGettingGps ? "Mengambil GPS…" : "Ambil Ulang GPS"}
         </button>
       </section>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <button
-          className="btn btn-success"
-          style={{ flex: 1, padding: "16px", opacity: checkInDisabled ? 0.6 : 1 }}
-          disabled={checkInDisabled}
-          onClick={() => submitAttendance("check-in")}
-        >
-          {isSubmitting ? "Memproses..." : "Kirim Absen Masuk"}
-        </button>
-        <button
-          className="btn btn-danger-outline"
-          style={{ flex: 1, padding: "16px", backgroundColor: "white", opacity: checkOutDisabled ? 0.6 : 1 }}
-          disabled={checkOutDisabled}
-          onClick={() => submitAttendance("check-out")}
-        >
-          {isSubmitting ? "Memproses..." : "Kirim Absen Pulang"}
-        </button>
-      </div>
+      <AttendanceActions
+        isSubmitting={isSubmitting}
+        checkInDisabled={checkInDisabled}
+        checkOutDisabled={checkOutDisabled}
+        onCheckIn={() => submitAttendance("check-in")}
+        onCheckOut={() => submitAttendance("check-out")}
+      />
 
       <div>
         <h2 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "12px" }}>Lokasi Kerja</h2>
@@ -536,9 +677,9 @@ export default function AttendancePage() {
               </div>
             )}
           </div>
-          <div style={{ width: "80px", height: "80px", backgroundColor: "#EAEAEA", borderRadius: "8px", position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundImage: "radial-gradient(#ccc 1px, transparent 1px)", backgroundSize: "10px 10px", opacity: 0.5 }}></div>
-            <MapPin size={24} color="var(--danger)" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }} />
+          <div className="relative size-20 overflow-hidden rounded-lg bg-[#eaeaea]">
+            <div className="absolute inset-0 bg-[radial-gradient(#ccc_1px,transparent_1px)] bg-[length:10px_10px] opacity-50" />
+            <MapPin size={24} color="var(--danger)" className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
         </div>
       </div>
@@ -550,10 +691,10 @@ export default function AttendancePage() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {history.length === 0 ? (
-            <div className="card empty-state-card" role="status" style={{ padding: "32px 16px", textAlign: "center", fontSize: "12px", color: "var(--text-secondary)" }}>
+            <output className="card empty-state-card" style={{ padding: "32px 16px", textAlign: "center", fontSize: "12px", color: "var(--text-secondary)" }}>
               <Info size={32} className="mx-auto mb-2 text-[var(--text-muted)]" />
               Belum ada riwayat kehadiran.
-            </div>
+            </output>
           ) : (
             history.map((record) => (
               <div key={record.id} style={{ borderBottom: "1px solid var(--border-color)", paddingBottom: "16px" }}>
@@ -573,7 +714,7 @@ export default function AttendancePage() {
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm"
-                      onClick={() => setViewerState({ record, kind: "check-in" })}
+                      onClick={() => dispatch({ type: "openViewer", record, kind: "check-in" })}
                       style={{ fontSize: "12px" }}
                     >
                       Lihat Selfie Masuk
@@ -583,7 +724,7 @@ export default function AttendancePage() {
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm"
-                      onClick={() => setViewerState({ record, kind: "check-out" })}
+                      onClick={() => dispatch({ type: "openViewer", record, kind: "check-out" })}
                       style={{ fontSize: "12px" }}
                     >
                       Lihat Selfie Pulang
@@ -601,7 +742,7 @@ export default function AttendancePage() {
           attendanceId={viewerState.record.id}
           kind={viewerState.kind}
           open
-          onClose={() => setViewerState(null)}
+          onClose={() => dispatch({ type: "closeViewer" })}
           takenAt={
             viewerState.kind === "check-in"
               ? viewerState.record.checkInSelfieUploadedAt || viewerState.record.checkInTime
