@@ -90,23 +90,51 @@ export class LeaderService {
     return db.select({ id: employees.id, nip: employees.nip, fullName: employees.fullName, division: employees.division, position: employees.position, status: employees.status, teamId: employeeTeamAssignments.teamId, teamName: teams.name }).from(employeeTeamAssignments).innerJoin(employees, eq(employees.id, employeeTeamAssignments.employeeId)).innerJoin(teams, eq(teams.id, employeeTeamAssignments.teamId)).where(and(inArray(employeeTeamAssignments.teamId, teamIds), eq(employeeTeamAssignments.active, true), eq(employees.status, 'ACTIVE'))).orderBy(asc(employees.fullName));
   }
 
-  async createOrUpdateProductionEntry(leaderUserId: string, data: { employeeId: string; teamId: string; date?: string; metricType?: string; quantity: number; unit?: string; note?: string }) {
+  async createOrUpdateProductionEntry(leaderUserId: string, data: { employeeId: string; teamId?: string | null; date?: string; metricType?: string; quantity?: number; packs?: number; unit?: string; note?: string }) {
     const entryDate = data.date || todayIso();
     assertIsoDate(entryDate);
-    const quantity = Number(data.quantity);
+    const quantity = Number(data.quantity ?? data.packs);
     if (!Number.isFinite(quantity) || quantity < 0) throw new AppError('KPI_QUANTITY_INVALID', 'Jumlah KPI wajib berupa angka 0 atau lebih', 422);
-    await this.requireLeaderTeam(leaderUserId, data.teamId);
-    const allowedEmployees = await this.getTeamEmployeesForLeader(leaderUserId, data.teamId);
-    if (!allowedEmployees.some((employee) => employee.id === data.employeeId)) throw new AppError('EMPLOYEE_NOT_IN_LEADER_TEAM', 'Karyawan tidak berada dalam tim Anda', 403);
+
+    const [targetEmployee] = await db
+      .select({ id: employees.id, userId: employees.userId, status: employees.status })
+      .from(employees)
+      .where(sql`${employees.id} = ${data.employeeId} OR ${employees.userId} = ${data.employeeId}`)
+      .limit(1);
+    if (!targetEmployee || targetEmployee.status !== 'ACTIVE') throw new AppError('EMPLOYEE_NOT_IN_LEADER_TEAM', 'Karyawan tidak berada dalam tim Anda', 403);
+
     const [leaderEmployee] = await db.select({ id: employees.id }).from(employees).where(eq(employees.userId, leaderUserId)).limit(1);
-    if (process.env.ALLOW_LEADER_SELF_KPI_INPUT !== 'true' && leaderEmployee?.id === data.employeeId) throw new AppError('ACCESS_DENIED', 'Leader tidak dapat menginput KPI sendiri', 403);
+    if (process.env.ALLOW_LEADER_SELF_KPI_INPUT !== 'true' && leaderEmployee?.id === targetEmployee.id) throw new AppError('ACCESS_DENIED', 'Leader tidak dapat menginput KPI sendiri', 403);
+
+    const requestedTeamId = data.teamId?.trim() || null;
+    const assignedRows = await db
+      .select({ teamId: employeeTeamAssignments.teamId })
+      .from(employeeTeamAssignments)
+      .where(and(eq(employeeTeamAssignments.employeeId, targetEmployee.id), eq(employeeTeamAssignments.active, true)));
+    const candidateTeamIds = requestedTeamId ? [requestedTeamId] : assignedRows.map((row) => row.teamId);
+    if (candidateTeamIds.length === 0) throw new AppError('EMPLOYEE_NOT_IN_LEADER_TEAM', 'Karyawan tidak berada dalam tim Anda', 403);
+
+    let canonicalTeamId: string | null = null;
+    for (const teamId of candidateTeamIds) {
+      const isAssignedToTeam = assignedRows.some((row) => row.teamId === teamId);
+      if (!isAssignedToTeam) continue;
+      try {
+        await this.requireLeaderTeam(leaderUserId, teamId);
+        canonicalTeamId = teamId;
+        break;
+      } catch (error: any) {
+        if (error?.status !== 403) throw error;
+      }
+    }
+    if (!canonicalTeamId) throw new AppError('EMPLOYEE_NOT_IN_LEADER_TEAM', 'Karyawan tidak berada dalam tim Anda', 403);
+
     const metricType = data.metricType?.trim() || 'production_count';
-    const [existing] = await db.select().from(kpiProductionEntries).where(and(eq(kpiProductionEntries.employeeId, data.employeeId), eq(kpiProductionEntries.teamId, data.teamId), eq(kpiProductionEntries.date, entryDate), eq(kpiProductionEntries.metricType, metricType))).limit(1);
+    const [existing] = await db.select().from(kpiProductionEntries).where(and(eq(kpiProductionEntries.employeeId, targetEmployee.id), eq(kpiProductionEntries.teamId, canonicalTeamId), eq(kpiProductionEntries.date, entryDate), eq(kpiProductionEntries.metricType, metricType))).limit(1);
     if (existing) {
       const [entry] = await db.update(kpiProductionEntries).set({ quantity: quantity.toFixed(2), unit: data.unit?.trim() || 'pcs', note: data.note?.trim() || null, updatedBy: leaderUserId, updatedAt: new Date() }).where(eq(kpiProductionEntries.id, existing.id)).returning();
       return entry;
     }
-    const [entry] = await db.insert(kpiProductionEntries).values({ id: id('kpi_prod'), employeeId: data.employeeId, teamId: data.teamId, leaderUserId, date: entryDate, metricType, quantity: quantity.toFixed(2), unit: data.unit?.trim() || 'pcs', note: data.note?.trim() || null, createdBy: leaderUserId, updatedBy: leaderUserId }).returning();
+    const [entry] = await db.insert(kpiProductionEntries).values({ id: id('kpi_prod'), employeeId: targetEmployee.id, teamId: canonicalTeamId, leaderUserId, date: entryDate, metricType, quantity: quantity.toFixed(2), unit: data.unit?.trim() || 'pcs', note: data.note?.trim() || null, createdBy: leaderUserId, updatedBy: leaderUserId }).returning();
     return entry;
   }
 
