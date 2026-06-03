@@ -5,6 +5,10 @@ import { requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { employeeService } from '@/services/employees/employee.service';
 
+// Per-user attendance list — always dynamic, never statically cached.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);

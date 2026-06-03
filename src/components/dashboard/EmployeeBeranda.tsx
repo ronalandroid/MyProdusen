@@ -294,6 +294,13 @@ export default function EmployeeBeranda({ profile }: Props) {
         workLocation: workLocationPayload?.success ? workLocationPayload.data ?? null : null,
       };
     },
+    // Keep the beranda fresh in near-real-time: refetch the moment the user
+    // returns to the tab (e.g. straight after a clock-in) and poll on an
+    // interval so attendance/notification state never lags behind the DB.
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 30_000,
+    staleTime: 10_000,
   });
 
   const heatmap: Record<string, string> = dashboardQuery.data?.heatmap ?? emptyHeatmap;

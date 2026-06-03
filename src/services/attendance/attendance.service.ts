@@ -235,104 +235,122 @@ export class AttendanceService {
       type: 'check-in',
     });
 
-    // Create attendance record
-    const [attendance] = await db
-      .insert(attendances)
-      .values({
-        id: attendanceId,
-        employeeId: data.employeeId,
-        workLocationId: data.workLocationId,
-        shiftId: shiftId || null,
-        checkInTime,
-        checkInLatitude: data.latitude,
-        checkInLongitude: data.longitude,
-        checkInAccuracy: data.accuracy,
-        checkInDistance: distance,
-        checkInGeoStatus,
-        geoValidationMetadata: { checkIn: validation.metadata },
-        checkInSelfie: selfieUpload.path,
-        checkInSelfieUrl: selfieUpload.path,
-        checkInSelfiePath: selfieUpload.storageKey,
-        checkInSelfieUploadedAt: new Date(),
-        checkInSelfieSizeBytes: selfieUpload.size,
-        checkInSelfieMimeType: selfieUpload.mimeType,
-        checkInDeviceInfo: data.deviceInfo,
-        checkInIp: data.ipAddress,
-        checkInUserAgent: data.userAgent,
-        status,
-        lateMinutes,
-      })
-      .returning();
+    // Persist attendance + downstream rows atomically. A single transaction
+    // guarantees we never leave an attendance row without its daily-summary /
+    // payroll-impact / notification side effects (no partial/corrupt state).
+    let attendance;
+    try {
+      attendance = await db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(attendances)
+          .values({
+            id: attendanceId,
+            employeeId: data.employeeId,
+            workLocationId: data.workLocationId,
+            shiftId: shiftId || null,
+            checkInTime,
+            checkInLatitude: data.latitude,
+            checkInLongitude: data.longitude,
+            checkInAccuracy: data.accuracy,
+            checkInDistance: distance,
+            checkInGeoStatus,
+            geoValidationMetadata: { checkIn: validation.metadata },
+            checkInSelfie: selfieUpload.path,
+            checkInSelfieUrl: selfieUpload.path,
+            checkInSelfiePath: selfieUpload.storageKey,
+            checkInSelfieUploadedAt: new Date(),
+            checkInSelfieSizeBytes: selfieUpload.size,
+            checkInSelfieMimeType: selfieUpload.mimeType,
+            checkInDeviceInfo: data.deviceInfo,
+            checkInIp: data.ipAddress,
+            checkInUserAgent: data.userAgent,
+            status,
+            lateMinutes,
+          })
+          .returning();
 
-    await db.insert(attendanceDailySummaries).values({
-      id: nanoid(),
-      employeeId: data.employeeId,
-      attendanceId,
-      workDate,
-      shiftStartAt,
-      clockInAt: checkInTime,
-      lateMinutes: policyImpact.lateMinutes,
-      lateDeduction: policyImpact.lateDeduction,
-      isHalfDay: policyImpact.isHalfDay,
-      geofenceDistanceMeters: distance,
-      gpsAccuracyMeters: data.accuracy,
-      selfieRequired: true,
-      selfieVerified: true,
-      payrollImpactStatus: policyImpact.payrollImpactStatus,
-    }).onConflictDoUpdate({
-      target: [attendanceDailySummaries.employeeId, attendanceDailySummaries.workDate],
-      set: {
-        attendanceId,
-        shiftStartAt,
-        clockInAt: checkInTime,
-        lateMinutes: policyImpact.lateMinutes,
-        lateDeduction: policyImpact.lateDeduction,
-        isHalfDay: policyImpact.isHalfDay,
-        geofenceDistanceMeters: distance,
-        gpsAccuracyMeters: data.accuracy,
-        selfieVerified: true,
-        payrollImpactStatus: policyImpact.payrollImpactStatus,
-        updatedAt: new Date(),
-      },
-    });
+        await tx.insert(attendanceDailySummaries).values({
+          id: nanoid(),
+          employeeId: data.employeeId,
+          attendanceId,
+          workDate,
+          shiftStartAt,
+          clockInAt: checkInTime,
+          lateMinutes: policyImpact.lateMinutes,
+          lateDeduction: policyImpact.lateDeduction,
+          isHalfDay: policyImpact.isHalfDay,
+          geofenceDistanceMeters: distance,
+          gpsAccuracyMeters: data.accuracy,
+          selfieRequired: true,
+          selfieVerified: true,
+          payrollImpactStatus: policyImpact.payrollImpactStatus,
+        }).onConflictDoUpdate({
+          target: [attendanceDailySummaries.employeeId, attendanceDailySummaries.workDate],
+          set: {
+            attendanceId,
+            shiftStartAt,
+            clockInAt: checkInTime,
+            lateMinutes: policyImpact.lateMinutes,
+            lateDeduction: policyImpact.lateDeduction,
+            isHalfDay: policyImpact.isHalfDay,
+            geofenceDistanceMeters: distance,
+            gpsAccuracyMeters: data.accuracy,
+            selfieVerified: true,
+            payrollImpactStatus: policyImpact.payrollImpactStatus,
+            updatedAt: new Date(),
+          },
+        });
 
-    if (policyImpact.shouldCreatePayrollHistory) {
-      await db.insert(payrollCalculationHistory).values({
-        id: nanoid(),
-        employeeId: data.employeeId,
-        workDate,
-        sourceType: policyImpact.holidayMultiplier > 1 ? 'HOLIDAY' : 'ATTENDANCE',
-        sourceId: attendanceId,
-        description: policyImpact.holidayMultiplier > 1
-          ? 'Multiplier payroll hari libur'
-          : policyImpact.isHalfDay
-            ? 'Dampak payroll setengah hari karena terlambat'
-            : 'Potongan keterlambatan absensi',
-        amount: policyImpact.estimatedPayrollAmount,
-        calculationSnapshot: policyImpact.calculationSnapshot,
+        if (policyImpact.shouldCreatePayrollHistory) {
+          await tx.insert(payrollCalculationHistory).values({
+            id: nanoid(),
+            employeeId: data.employeeId,
+            workDate,
+            sourceType: policyImpact.holidayMultiplier > 1 ? 'HOLIDAY' : 'ATTENDANCE',
+            sourceId: attendanceId,
+            description: policyImpact.holidayMultiplier > 1
+              ? 'Multiplier payroll hari libur'
+              : policyImpact.isHalfDay
+                ? 'Dampak payroll setengah hari karena terlambat'
+                : 'Potongan keterlambatan absensi',
+            amount: policyImpact.estimatedPayrollAmount,
+            calculationSnapshot: policyImpact.calculationSnapshot,
+          });
+        }
+
+        if (policyImpact.lateDeduction > 0 || policyImpact.isHalfDay || policyImpact.holidayMultiplier > 1) {
+          await tx.insert(notifications).values({
+            id: nanoid(),
+            userId: employee.userId,
+            title: policyImpact.holidayMultiplier > 1
+              ? 'Multiplier hari libur tercatat'
+              : policyImpact.isHalfDay
+                ? 'Absensi dihitung setengah hari'
+                : 'Potongan keterlambatan tercatat',
+            message: policyImpact.holidayMultiplier > 1
+              ? `Kerja hari libur tercatat dengan multiplier ${policyImpact.holidayMultiplier}x sesuai kebijakan.`
+              : policyImpact.isHalfDay
+                ? 'Keterlambatan melewati batas kebijakan. Estimasi payroll akan mengikuti kebijakan perusahaan.'
+                : `Keterlambatan ${policyImpact.lateMinutes} menit tercatat dengan estimasi potongan Rp${policyImpact.lateDeduction.toLocaleString('id-ID')}.`,
+            type: policyImpact.holidayMultiplier > 1
+              ? 'payroll.holiday_multiplier'
+              : policyImpact.isHalfDay
+                ? 'attendance.half_day'
+                : 'attendance.late_deduction',
+          });
+        }
+
+        return created;
       });
-    }
-
-    if (policyImpact.lateDeduction > 0 || policyImpact.isHalfDay || policyImpact.holidayMultiplier > 1) {
-      await db.insert(notifications).values({
-        id: nanoid(),
-        userId: employee.userId,
-        title: policyImpact.holidayMultiplier > 1
-          ? 'Multiplier hari libur tercatat'
-          : policyImpact.isHalfDay
-            ? 'Absensi dihitung setengah hari'
-            : 'Potongan keterlambatan tercatat',
-        message: policyImpact.holidayMultiplier > 1
-          ? `Kerja hari libur tercatat dengan multiplier ${policyImpact.holidayMultiplier}x sesuai kebijakan.`
-          : policyImpact.isHalfDay
-            ? 'Keterlambatan melewati batas kebijakan. Estimasi payroll akan mengikuti kebijakan perusahaan.'
-            : `Keterlambatan ${policyImpact.lateMinutes} menit tercatat dengan estimasi potongan Rp${policyImpact.lateDeduction.toLocaleString('id-ID')}.`,
-        type: policyImpact.holidayMultiplier > 1
-          ? 'payroll.holiday_multiplier'
-          : policyImpact.isHalfDay
-            ? 'attendance.half_day'
-            : 'attendance.late_deduction',
-      });
+    } catch (txError) {
+      // Race: a concurrent request already created today's attendance (unique
+      // index on employee + work-date fires). Surface a clean, idempotent
+      // business error instead of a raw 500.
+      const message = txError instanceof Error ? txError.message : String(txError || '');
+      if (/duplicate key|unique constraint|attendance_employee_date/i.test(message)) {
+        throw new Error('Anda sudah melakukan check-in hari ini');
+      }
+      throw txError;
     }
 
     // Invalidate attendance caches
@@ -446,40 +464,51 @@ export class AttendanceService {
       type: 'check-out',
     });
 
-    // Update attendance record
-    const [updated] = await db
-      .update(attendances)
-      .set({
-        checkOutTime,
-        checkOutLatitude: data.latitude,
-        checkOutLongitude: data.longitude,
-        checkOutAccuracy: data.accuracy,
-        checkOutDistance: distance,
-        checkOutGeoStatus,
-        geoValidationMetadata: {
-          ...((attendance as any).geoValidationMetadata ?? {}),
-          checkOut: validation.metadata,
-        },
-        checkOutSelfie: selfieUpload.path,
-        checkOutSelfieUrl: selfieUpload.path,
-        checkOutSelfiePath: selfieUpload.storageKey,
-        checkOutSelfieUploadedAt: new Date(),
-        checkOutSelfieSizeBytes: selfieUpload.size,
-        checkOutSelfieMimeType: selfieUpload.mimeType,
-        checkOutDeviceInfo: data.deviceInfo,
-        checkOutIp: data.ipAddress,
-        checkOutUserAgent: data.userAgent,
-        earlyLeaveMinutes,
-        totalWorkMinutes,
-        updatedAt: new Date(),
-      })
-      .where(eq(attendances.id, attendance.id))
-      .returning();
+    // Update attendance + daily-summary atomically. The WHERE additionally
+    // guards on checkOutTime IS NULL so a concurrent double-submit can only
+    // win once (compare-and-set) — the loser updates 0 rows.
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(attendances)
+        .set({
+          checkOutTime,
+          checkOutLatitude: data.latitude,
+          checkOutLongitude: data.longitude,
+          checkOutAccuracy: data.accuracy,
+          checkOutDistance: distance,
+          checkOutGeoStatus,
+          geoValidationMetadata: {
+            ...((attendance as any).geoValidationMetadata ?? {}),
+            checkOut: validation.metadata,
+          },
+          checkOutSelfie: selfieUpload.path,
+          checkOutSelfieUrl: selfieUpload.path,
+          checkOutSelfiePath: selfieUpload.storageKey,
+          checkOutSelfieUploadedAt: new Date(),
+          checkOutSelfieSizeBytes: selfieUpload.size,
+          checkOutSelfieMimeType: selfieUpload.mimeType,
+          checkOutDeviceInfo: data.deviceInfo,
+          checkOutIp: data.ipAddress,
+          checkOutUserAgent: data.userAgent,
+          earlyLeaveMinutes,
+          totalWorkMinutes,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(attendances.id, attendance.id), isNull(attendances.checkOutTime)))
+        .returning();
 
-    await db.update(attendanceDailySummaries).set({
-      clockOutAt: checkOutTime,
-      updatedAt: new Date(),
-    }).where(eq(attendanceDailySummaries.attendanceId, attendance.id));
+      if (!row) {
+        // Lost the race — another request already checked out.
+        throw new Error('Anda sudah melakukan check-out hari ini');
+      }
+
+      await tx.update(attendanceDailySummaries).set({
+        clockOutAt: checkOutTime,
+        updatedAt: new Date(),
+      }).where(eq(attendanceDailySummaries.attendanceId, attendance.id));
+
+      return row;
+    });
 
     // Invalidate attendance caches
     await this.invalidateAttendanceCaches(data.employeeId);

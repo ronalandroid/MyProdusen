@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { ArrowLeft, CalendarClock, LocateFixed, ShieldCheck } from "lucide-react";
 import { fetchProfile, getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
+import { useQueryClient } from "@tanstack/react-query";
 import { AttendanceMap } from "@/components/attendance/AttendanceMap";
 
 const RealtimeSelfieCamera = dynamic(
@@ -89,6 +90,7 @@ export default function AttendanceClockPage() {
 
 function AttendanceClockContent() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const type = (searchParams.get("type") === "clock-out" ? "clock-out" : "clock-in") as ClockType;
   const isClockIn = type === "clock-in";
@@ -218,6 +220,9 @@ function AttendanceClockContent() {
       if (!response.ok || !result.success) throw new Error(result.error || result.message || "Gagal menyimpan absensi");
       setUi({ statusText: "Menyimpan riwayat…", message: isClockIn ? "Clock In berhasil." : "Clock Out berhasil." });
       clearSelfie();
+      // Invalidate the dashboard cache so beranda reflects this clock event
+      // the instant the user navigates back — no 30s poll wait, no stale card.
+      void queryClient.invalidateQueries({ queryKey: ["employee-beranda"] });
       const pending = result.data?.isPendingGeoReview || insideRadius === false ? "&pending=1" : "";
       router.push(`/dashboard/attendance/success?type=${type}${pending}`);
     } catch (err) {

@@ -5,6 +5,12 @@ import { employeeService } from '@/services/employees/employee.service';
 import { requireAuth } from '@/lib/middleware';
 import { errorResponse, successResponse, unauthorizedResponse } from '@/utils/response';
 
+// Attendance "today" must never be served from a cached/prerendered response —
+// it is per-user and changes the instant a clock event lands.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+
 const timeFormatter = new Intl.DateTimeFormat('id-ID', {
   hour: '2-digit',
   minute: '2-digit',
