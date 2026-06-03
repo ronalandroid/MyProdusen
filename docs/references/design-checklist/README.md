@@ -30,6 +30,14 @@ Conventions:
 
 ## EMPLOYEE APP SHELL — `screens/employee-full-ui-ux-mobile.png`
 
+## ATTENDANCE FLOW — `screens/absent-ui-ux.png`
+
+- Employee dashboard shows today's active shift, Clock In/Clock Out state, and clear empty state when no shift is assigned.
+- Attendance detail shows shift card, valid-location hint, selfie requirement, and today's attendance timeline.
+- Clock In/Clock Out uses two steps: GPS/geofence validation first, mirrored realtime selfie second.
+- Success screen confirms time, date, shift, location, selfie thumbnail, and today log.
+- Buttons remain mobile-first (minimum 44px), safe-area aware, and never hidden behind bottom navigation.
+
 ### Bottom navigation (5 tabs, mobile only)
 
 Required (left → right):

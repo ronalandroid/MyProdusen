@@ -1,0 +1,203 @@
+"use client";
+
+import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft, CheckCircle2, Clock, Home, LogIn, LogOut, MapPin, ShieldCheck } from "lucide-react";
+import { fetchProfile, getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
+
+type AttendanceRecord = {
+  id: string;
+  checkInTime: string;
+  checkOutTime?: string | null;
+  status?: string | null;
+  checkInGeoStatus?: string | null;
+  checkOutGeoStatus?: string | null;
+  checkInDistance?: number | null;
+  checkOutDistance?: number | null;
+  workLocation?: { name?: string | null; address?: string | null } | null;
+};
+type ApiResponse<T> = { success: boolean; data?: T; error?: string };
+type ClockType = "clock-in" | "clock-out";
+
+const fullDateFormatter = new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+const timeFormatter = new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" });
+
+function formatTime(value?: string | null) {
+  if (!value) return "-";
+  return timeFormatter.format(new Date(value));
+}
+
+function geoStatusBadge(status?: string | null) {
+  const normalized = String(status || "").toUpperCase();
+  if (normalized === "INSIDE_RADIUS" || normalized === "APPROVED_MANUAL") {
+    return { label: "Di dalam radius", bg: "rgba(34,197,94,0.12)", color: "var(--success)" };
+  }
+  if (normalized === "PENDING_REVIEW") {
+    return { label: "Menunggu review admin", bg: "rgba(245,158,11,0.16)", color: "var(--warning)" };
+  }
+  if (!normalized) {
+    return { label: "Tervalidasi", bg: "rgba(34,197,94,0.12)", color: "var(--success)" };
+  }
+  return { label: normalized.replace(/_/g, " "), bg: "rgba(220,38,38,0.12)", color: "var(--danger)" };
+}
+
+export default function AttendanceSuccessPage() {
+  return (
+    <Suspense fallback={<div className="phone-screen attendance-screen p-4 text-sm text-[var(--text-secondary)]">Memuat konfirmasi…</div>}>
+      <AttendanceSuccessContent />
+    </Suspense>
+  );
+}
+
+function AttendanceSuccessContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const type = (searchParams.get("type") === "clock-out" ? "clock-out" : "clock-in") as ClockType;
+  const isClockIn = type === "clock-in";
+  const pendingReview = searchParams.get("pending") === "1";
+
+  const [profile, setProfile] = useState<ClientUserProfile | null>(null);
+  const [record, setRecord] = useState<AttendanceRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const current = await fetchProfile();
+        if (cancelled) return;
+        setProfile(current);
+        const res = await fetch("/api/attendance/today", { headers: getAuthHeaders(), cache: "no-store" });
+        const payload = (await res.json()) as ApiResponse<AttendanceRecord | null | { attendance?: AttendanceRecord | null }>;
+        if (cancelled) return;
+        const data = payload.data as any;
+        setRecord((data?.attendance ?? data) || null);
+      } catch {
+        // konfirmasi tetap tampil walau ringkasan gagal dimuat
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const employee = profile?.employee;
+  const shift = employee?.defaultShift;
+  const shiftLabel = shift ? `${shift.name} (${shift.startTime.slice(0, 5)} - ${shift.endTime.slice(0, 5)})` : "Shift belum tersedia";
+  const locationName = record?.workLocation?.name || employee?.defaultLocation?.name || "Lokasi kerja";
+
+  const title = isClockIn ? "Clock In Berhasil" : "Clock Out Berhasil";
+  const stampedTime = isClockIn ? formatTime(record?.checkInTime) : formatTime(record?.checkOutTime);
+  const geo = geoStatusBadge(isClockIn ? record?.checkInGeoStatus : record?.checkOutGeoStatus);
+
+  const timeline: Array<{ id: string; icon: typeof LogIn; label: string; time: string; active: boolean; tone: string }> = [
+    {
+      id: "in",
+      icon: LogIn,
+      label: "Clock In",
+      time: formatTime(record?.checkInTime),
+      active: Boolean(record?.checkInTime),
+      tone: "var(--success)",
+    },
+    {
+      id: "out",
+      icon: LogOut,
+      label: "Clock Out",
+      time: formatTime(record?.checkOutTime),
+      active: Boolean(record?.checkOutTime),
+      tone: "var(--danger)",
+    },
+  ];
+
+  return (
+    <div className="phone-screen attendance-screen" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <header className="flex items-center gap-3">
+        <button type="button" className="btn btn-secondary btn-icon min-h-[44px]" onClick={() => router.push("/dashboard")} aria-label="Kembali ke beranda">
+          <ArrowLeft size={20} />
+        </button>
+        <div>
+          <h1 className="text-xl font-extrabold text-[var(--text-primary)]">Absensi Tersimpan</h1>
+          <p className="text-xs font-semibold text-[var(--text-secondary)]" suppressHydrationWarning>
+            {fullDateFormatter.format(new Date())}
+          </p>
+        </div>
+      </header>
+
+      {/* Hero confirmation */}
+      <section className="card flex flex-col items-center gap-3 border border-[#FFECB3] bg-gradient-to-br from-[#FFFDEB] to-white p-6 text-center">
+        <div className="flex size-20 items-center justify-center rounded-full bg-[rgba(34,197,94,0.12)]" aria-hidden="true">
+          <CheckCircle2 size={48} className="text-[var(--success)]" />
+        </div>
+        <div>
+          <h2 className="text-lg font-extrabold text-[var(--text-primary)]">{title}</h2>
+          <p className="mt-1 text-sm font-semibold text-[var(--text-secondary)]">
+            {loading ? "Menyimpan absensi…" : `${isClockIn ? "Tercatat masuk" : "Tercatat pulang"} pukul ${stampedTime}`}
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold" style={{ background: geo.bg, color: geo.color }}>
+          <ShieldCheck size={13} />
+          {pendingReview ? "Menunggu review admin (di luar radius)" : geo.label}
+        </span>
+      </section>
+
+      {/* Stamp detail */}
+      <section className="card p-4">
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="rounded-2xl border border-[var(--border-color)] p-3">
+            <span className="flex items-center gap-1 text-[var(--text-muted)]"><Clock size={12} /> Waktu</span>
+            <strong className="mt-1 block text-sm">{stampedTime}</strong>
+          </div>
+          <div className="rounded-2xl border border-[var(--border-color)] p-3">
+            <span className="flex items-center gap-1 text-[var(--text-muted)]"><Clock size={12} /> Shift</span>
+            <strong className="mt-1 block text-sm">{shiftLabel}</strong>
+          </div>
+          <div className="col-span-2 rounded-2xl border border-[var(--border-color)] p-3">
+            <span className="flex items-center gap-1 text-[var(--text-muted)]"><MapPin size={12} /> Lokasi kerja</span>
+            <strong className="mt-1 block text-sm">{locationName}</strong>
+          </div>
+        </div>
+      </section>
+
+      {/* Today log timeline */}
+      <section className="card p-4" aria-labelledby="today-log-title">
+        <h2 id="today-log-title" className="mb-4 text-base font-extrabold">Log Hari Ini</h2>
+        <ol className="relative flex flex-col gap-5 pl-2">
+          <span aria-hidden="true" className="absolute left-[19px] top-3 bottom-3 w-0.5 bg-[var(--border-color)]" />
+          {timeline.map((item) => {
+            const Icon = item.icon;
+            return (
+              <li key={item.id} className="relative flex items-center gap-4">
+                <span
+                  className="z-10 flex size-9 shrink-0 items-center justify-center rounded-full border-2 bg-white"
+                  style={{ borderColor: item.active ? item.tone : "var(--border-color)", color: item.active ? item.tone : "var(--text-muted)" }}
+                  aria-hidden="true"
+                >
+                  <Icon size={16} />
+                </span>
+                <div className="flex flex-1 items-center justify-between gap-3">
+                  <div>
+                    <strong className="block text-sm text-[var(--text-primary)]">{item.label}</strong>
+                    <span className="text-xs text-[var(--text-secondary)]">{item.active ? "Tercatat" : "Belum dilakukan"}</span>
+                  </div>
+                  <span className={`text-sm font-extrabold ${item.active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>{item.time}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Link href="/dashboard" className="btn btn-primary min-h-[52px] flex-1 rounded-2xl font-extrabold">
+          <Home size={18} /> Kembali ke Beranda
+        </Link>
+        <Link href="/dashboard/attendance" className="btn btn-secondary min-h-[52px] flex-1 rounded-2xl font-extrabold">
+          Lihat Detail Absen
+        </Link>
+      </div>
+    </div>
+  );
+}

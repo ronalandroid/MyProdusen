@@ -559,7 +559,11 @@ describe('Attendance API', () => {
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.data).toBeDefined();
-      expect(data.data.employeeId).toBe(employeeId);
+      expect(data.data.attendance).toBeDefined();
+      expect(data.data.attendance.employeeId).toBe(employeeId);
+      expect(data.data.schedule).toBeDefined();
+      expect(data.data.serverTime).toBeDefined();
+      expect(data.data.employee.id).toBe(employeeId);
     });
 
     it('should return null when no attendance today', async () => {
@@ -578,7 +582,11 @@ describe('Attendance API', () => {
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.data).toBeNull();
+      expect(data.data).toBeDefined();
+      expect(data.data.attendance).toBeNull();
+      expect(data.data.schedule).toBeDefined();
+      expect(data.data.serverTime).toBeDefined();
+      expect(data.data.employee.id).toBe(employeeId);
     });
   });
 });

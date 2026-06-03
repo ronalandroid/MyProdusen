@@ -186,12 +186,12 @@ function AttendanceClockContent() {
       }
       setUi({ statusText: "Mengirim absensi…" });
       const response = await fetch(`/api/attendance/${isClockIn ? "check-in" : "check-out"}`, { method: "POST", headers: getAuthHeaders(), body: formData });
-      const result = (await response.json()) as ApiResponse<AttendanceRecord>;
+      const result = (await response.json()) as ApiResponse<AttendanceRecord & { isPendingGeoReview?: boolean }>;
       if (!response.ok || !result.success) throw new Error(result.error || result.message || "Gagal menyimpan absensi");
       setUi({ statusText: "Menyimpan riwayat…", message: isClockIn ? "Clock In berhasil." : "Clock Out berhasil." });
       clearSelfie();
-      await loadData();
-      setTimeout(() => router.push("/dashboard/attendance"), 700);
+      const pending = result.data?.isPendingGeoReview ? "&pending=1" : "";
+      router.push(`/dashboard/attendance/success?type=${type}${pending}`);
     } catch (err) {
       setUi({ step: "selfie", error: cleanError(err) });
     } finally {
@@ -259,7 +259,7 @@ function AttendanceClockContent() {
         </>
       )}
 
-      <section className="card p-4" aria-labelledby="attendance-history-title">
+      <section className="card p-4" aria-labelledby="attendance-history-title" hidden={step !== "location"}>
         <h2 id="attendance-history-title" className="mb-3 text-base font-extrabold">Daftar Absensi</h2>
         {history.length === 0 ? <p className="text-sm text-[var(--text-secondary)]">Belum ada riwayat absensi.</p> : <div className="flex flex-col divide-y divide-[var(--border-color)]">{history.map((item) => <div key={item.id} className="flex min-h-[56px] items-center justify-between gap-3 py-3"><div><strong className="block text-sm">{formatTime(item.checkInTime)} / {formatTime(item.checkOutTime)}</strong><span className="text-xs text-[var(--text-secondary)]">{new Date(item.checkInTime).toLocaleDateString("id-ID", { day: "numeric", month: "long" })} · {item.checkInGeoStatus || item.status || "Status"}</span></div><ChevronRight size={16} /></div>)}</div>}
       </section>

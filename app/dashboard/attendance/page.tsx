@@ -553,6 +553,36 @@ export default function AttendancePage() {
 
       <TodayStatusCard isLoading={isLoading} statusContent={statusContent} />
 
+      {todayAttendance && (
+        <section className="card p-4" aria-labelledby="today-log-title">
+          <h2 id="today-log-title" className="mb-4 text-base font-bold">Log Hari Ini</h2>
+          <ol className="relative flex flex-col gap-5 pl-2">
+            <span aria-hidden="true" className="absolute left-[19px] bottom-3 top-3 w-0.5 bg-[var(--border-color)]" />
+            {([
+              { id: "in", label: "Check-In", time: formatTime(todayAttendance.checkInTime), active: Boolean(todayAttendance.checkInTime), tone: "var(--success)" },
+              { id: "out", label: "Check-Out", time: formatTime(todayAttendance.checkOutTime), active: Boolean(todayAttendance.checkOutTime), tone: "var(--danger)" },
+            ] as const).map((item) => (
+              <li key={item.id} className="relative flex items-center gap-4">
+                <span
+                  className="z-10 flex size-9 shrink-0 items-center justify-center rounded-full border-2 bg-white"
+                  style={{ borderColor: item.active ? item.tone : "var(--border-color)", color: item.active ? item.tone : "var(--text-muted)" }}
+                  aria-hidden="true"
+                >
+                  <ClipboardList size={16} />
+                </span>
+                <div className="flex flex-1 items-center justify-between gap-3">
+                  <div>
+                    <strong className="block text-sm text-[var(--text-primary)]">{item.label}</strong>
+                    <span className="text-xs text-[var(--text-secondary)]">{item.active ? "Tercatat" : "Belum dilakukan"}</span>
+                  </div>
+                  <span className={`text-sm font-bold ${item.active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>{item.time}</span>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
       {(message || error) && (
         <div role={error ? "alert" : "status"} style={{ fontSize: "12px", color: error ? "var(--danger)" : "var(--success)", fontWeight: 600 }} aria-live={error ? "assertive" : "polite"}>
           {error || message}

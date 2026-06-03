@@ -26,6 +26,7 @@ const logoPath = path.join(referencesDir, 'myprodusen-logo.png');
 
 const REQUIRED_SCREENS = new Set([
   'employee-full-ui-ux-mobile.png',
+  'absent-ui-ux.png',
   'super-admin-full-ui-ux-desktop.png',
   'super-admin-full-ui-ux-mobile.png',
   'full-ui-ux-emailing-system.png',

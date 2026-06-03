@@ -17,6 +17,7 @@ docs/references/
 ├── myprodusen-logo.png             ← official logo
 └── screens/
     ├── employee-full-ui-ux-mobile.png       ← Employee mobile shell
+    ├── absent-ui-ux.png                     ← Attendance mobile flow reference
     ├── super-admin-full-ui-ux-desktop.png   ← Super Admin desktop shell
     ├── super-admin-full-ui-ux-mobile.png    ← Super Admin mobile shell
     └── full-ui-ux-emailing-system.png       ← Email templates

@@ -31,6 +31,8 @@ function writeChecklist(target: string) {
 
 ## EMPLOYEE APP SHELL — \`screens/employee-full-ui-ux-mobile.png\`
 
+## ATTENDANCE FLOW — \`screens/absent-ui-ux.png\`
+
 ## SUPER ADMIN APP SHELL — \`screens/super-admin-full-ui-ux-mobile.png\` and \`screens/super-admin-full-ui-ux-desktop.png\`
 
 ## EMAILING SYSTEM — \`screens/full-ui-ux-emailing-system.png\`
@@ -56,6 +58,7 @@ function seedHappyPath(workdir: string) {
   writeEmailGuide(path.join(refsDir, 'email-style-guide', 'README.md'));
   writeFakePng(path.join(refsDir, 'myprodusen-logo.png'));
   writeFakePng(path.join(screensDir, 'employee-full-ui-ux-mobile.png'));
+  writeFakePng(path.join(screensDir, 'absent-ui-ux.png'));
   writeFakePng(path.join(screensDir, 'super-admin-full-ui-ux-desktop.png'));
   writeFakePng(path.join(screensDir, 'super-admin-full-ui-ux-mobile.png'));
   writeFakePng(path.join(screensDir, 'full-ui-ux-emailing-system.png'));

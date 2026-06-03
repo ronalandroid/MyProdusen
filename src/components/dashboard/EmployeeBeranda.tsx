@@ -431,10 +431,22 @@ export default function EmployeeBeranda({ profile }: Props) {
         
         <div className="flex flex-col gap-4">
           <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white text-[var(--primary-dark)] border border-[#FFE082] shadow-sm">
-              <Clock size={12} strokeWidth={2.5} />
-              {shiftTimeText}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white text-[var(--primary-dark)] border border-[#FFE082] shadow-sm">
+                <Clock size={12} strokeWidth={2.5} />
+                {shiftTimeText}
+              </span>
+              <span
+                className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-extrabold border"
+                style={{
+                  background: hasCheckedOut ? "rgba(107,114,128,0.12)" : hasCheckedIn ? "rgba(34,197,94,0.12)" : "rgba(245,158,11,0.16)",
+                  color: hasCheckedOut ? "#6B7280" : hasCheckedIn ? "var(--success)" : "var(--warning)",
+                  borderColor: hasCheckedOut ? "rgba(107,114,128,0.25)" : hasCheckedIn ? "rgba(34,197,94,0.25)" : "rgba(245,158,11,0.3)",
+                }}
+              >
+                {hasCheckedOut ? "Absensi Selesai" : hasCheckedIn ? "Sudah Clock In" : "Belum Absen"}
+              </span>
+            </div>
             <h2 id="attendance-card-title" suppressHydrationWarning data-ux-note="Validasi lokasi dulu, lalu ambil selfie realtime." className="text-base sm:text-lg font-extrabold text-[var(--text-primary)] mt-3">
               {todayLabel}
             </h2>
@@ -502,6 +514,20 @@ export default function EmployeeBeranda({ profile }: Props) {
                 <p className="text-xs font-medium text-[var(--text-secondary)]">Jangan lupa absen hari ini! Validasi lokasi dulu, lalu ambil selfie realtime setelah tombol Clock In atau Clock Out ditekan.</p>
               </div>
               <Camera size={20} className="text-[var(--primary-dark)]" aria-hidden="true" />
+            </div>
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              <div className="rounded-2xl border border-[var(--border-color)] bg-[#FFFDF3] p-3">
+                <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wide text-[var(--text-secondary)]">
+                  <Clock size={11} /> Clock In
+                </span>
+                <strong className="mt-1 block text-base font-black text-[var(--text-primary)]">{formatTime(todayRecord?.checkInTime)}</strong>
+              </div>
+              <div className="rounded-2xl border border-[var(--border-color)] bg-[#FFFDF3] p-3">
+                <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wide text-[var(--text-secondary)]">
+                  <Clock size={11} /> Clock Out
+                </span>
+                <strong className="mt-1 block text-base font-black text-[var(--text-primary)]">{formatTime(todayRecord?.checkOutTime)}</strong>
+              </div>
             </div>
             <Link
               href={hasCheckedOut ? "/dashboard/attendance" : hasCheckedIn ? "/dashboard/attendance/clock?type=clock-out" : "/dashboard/attendance/clock?type=clock-in"}

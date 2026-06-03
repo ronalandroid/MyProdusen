@@ -92,6 +92,7 @@ export const shifts = pgTable('Shift', {
   lateToleranceMinutes: integer('lateToleranceMinutes').default(15).notNull(),
   checkinOpenMinutesBefore: integer('checkinOpenMinutesBefore').default(60).notNull(),
   checkoutCloseMinutesAfter: integer('checkoutCloseMinutesAfter').default(60).notNull(),
+  isSpecialShift: boolean('isSpecialShift').default(false).notNull(),
   isActive: boolean('isActive').default(true).notNull(),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
@@ -100,12 +101,54 @@ export const shifts = pgTable('Shift', {
   nameIdx: index('Shift_name_idx').on(table.name),
 }));
 
+// Per-day employee schedule (assign a shift to an employee for a date)
+export const employeeSchedules = pgTable('EmployeeSchedule', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId').notNull(),
+  shiftId: text('shiftId').notNull(),
+  date: timestamp('date', { mode: 'date' }).notNull(),
+  isActive: boolean('isActive').default(true).notNull(),
+  createdBy: text('createdBy'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  employeeDateUnique: uniqueIndex('EmployeeSchedule_employeeId_date_key').on(table.employeeId, table.date),
+  employeeIdIdx: index('EmployeeSchedule_employeeId_idx').on(table.employeeId),
+  shiftIdIdx: index('EmployeeSchedule_shiftId_idx').on(table.shiftId),
+  dateIdx: index('EmployeeSchedule_date_idx').on(table.date),
+}));
+
+// Valid work locations attached to a specific schedule (multi-location)
+export const scheduleLocations = pgTable('ScheduleLocation', {
+  id: text('id').primaryKey(),
+  scheduleId: text('scheduleId').notNull(),
+  workLocationId: text('workLocationId').notNull(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  scheduleLocationUnique: uniqueIndex('ScheduleLocation_scheduleId_workLocationId_key').on(table.scheduleId, table.workLocationId),
+  scheduleIdIdx: index('ScheduleLocation_scheduleId_idx').on(table.scheduleId),
+  workLocationIdIdx: index('ScheduleLocation_workLocationId_idx').on(table.workLocationId),
+}));
+
+// Default valid work locations for a shift (used when no schedule override exists)
+export const shiftLocations = pgTable('ShiftLocation', {
+  id: text('id').primaryKey(),
+  shiftId: text('shiftId').notNull(),
+  workLocationId: text('workLocationId').notNull(),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  shiftLocationUnique: uniqueIndex('ShiftLocation_shiftId_workLocationId_key').on(table.shiftId, table.workLocationId),
+  shiftIdIdx: index('ShiftLocation_shiftId_idx').on(table.shiftId),
+  workLocationIdIdx: index('ShiftLocation_workLocationId_idx').on(table.workLocationId),
+}));
+
 // Attendance table
 export const attendances = pgTable('Attendance', {
   id: text('id').primaryKey(),
   employeeId: text('employeeId').notNull(),
   workLocationId: text('workLocationId').notNull(),
   shiftId: text('shiftId'),
+  scheduleId: text('scheduleId'),
   checkInTime: timestamp('checkInTime', { mode: 'date' }).notNull(),
   checkInLatitude: real('checkInLatitude').notNull(),
   checkInLongitude: real('checkInLongitude').notNull(),
@@ -403,6 +446,40 @@ export const attendancesRelations = relations(attendances, ({ one }) => ({
   shift: one(shifts, {
     fields: [attendances.shiftId],
     references: [shifts.id],
+  }),
+}));
+
+export const employeeSchedulesRelations = relations(employeeSchedules, ({ one, many }) => ({
+  employee: one(employees, {
+    fields: [employeeSchedules.employeeId],
+    references: [employees.id],
+  }),
+  shift: one(shifts, {
+    fields: [employeeSchedules.shiftId],
+    references: [shifts.id],
+  }),
+  locations: many(scheduleLocations),
+}));
+
+export const scheduleLocationsRelations = relations(scheduleLocations, ({ one }) => ({
+  schedule: one(employeeSchedules, {
+    fields: [scheduleLocations.scheduleId],
+    references: [employeeSchedules.id],
+  }),
+  workLocation: one(workLocations, {
+    fields: [scheduleLocations.workLocationId],
+    references: [workLocations.id],
+  }),
+}));
+
+export const shiftLocationsRelations = relations(shiftLocations, ({ one }) => ({
+  shift: one(shifts, {
+    fields: [shiftLocations.shiftId],
+    references: [shifts.id],
+  }),
+  workLocation: one(workLocations, {
+    fields: [shiftLocations.workLocationId],
+    references: [workLocations.id],
   }),
 }));
 

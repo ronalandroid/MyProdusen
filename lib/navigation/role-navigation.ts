@@ -6,6 +6,7 @@ export type NavigationItemKey =
   | 'self-service'
   | 'attendance'
   | 'attendance-exceptions'
+  | 'attendance-schedules'
   | 'users'
   | 'employees'
   | 'locations'
@@ -44,6 +45,7 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
   { key: 'attendance', name: 'Absensi', path: '/dashboard/attendance', primaryFor: ['LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
   { key: 'locations', name: 'Cabang', path: '/dashboard/locations', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'attendance-exceptions', name: 'Approval', path: '/dashboard/attendance/exceptions', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'attendance-schedules', name: 'Jadwal', path: '/dashboard/attendance/schedules', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'users', name: 'Pengguna', path: '/dashboard/users', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'employees', name: 'Karyawan', path: '/dashboard/employees', primaryFor: ['SUPERADMIN'], allowedRoles: ['SUPERADMIN'] },
   { key: 'shifts', name: 'Shift', path: '/dashboard/shifts', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
