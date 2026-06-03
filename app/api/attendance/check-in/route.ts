@@ -3,7 +3,7 @@ import { attendanceService } from '@/services/attendance/attendance.service';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
 import { requireAuth, getClientIp, getUserAgent } from '@/lib/middleware';
 import { employeeService } from '@/services/employees/employee.service';
-import { attendanceExceptionService } from '@/features/attendance/attendance-exception.service';
+import { attendanceExceptionService } from '@/services/attendance/attendance-exception.service';
 import { classifyAttendanceExceptionError } from '@/lib/attendance/exception-policy';
 import { parseCheckInRealtimeForm } from '@/lib/attendance/realtime-selfie-form';
 import { logAudit } from '@/lib/audit';

@@ -1,5 +1,5 @@
 import { db, attendanceExceptions, attendances, employees, notifications } from '@/lib/db';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import type { AttendanceExceptionType } from '@/lib/attendance/exception-policy';
 import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
@@ -45,16 +45,16 @@ export class AttendanceExceptionService {
       conditions.push(eq(attendanceExceptions.employeeId, filters.viewerEmployeeId));
     }
 
-
-
-    let query = db
+    // Build the WHERE before issuing the query so we keep full Drizzle typing
+    // (no `as any` escape hatch).
+    const query = db
       .select({ exception: attendanceExceptions, employee: employees })
       .from(attendanceExceptions)
       .leftJoin(employees, eq(attendanceExceptions.employeeId, employees.id))
       .orderBy(desc(attendanceExceptions.createdAt));
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as any;
+      return query.where(and(...conditions));
     }
 
     return query;

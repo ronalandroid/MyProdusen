@@ -6,6 +6,7 @@ import { cacheManager } from '@/lib/cache/cache-manager';
 import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
 import { CacheStrategy } from '@/lib/cache/cache-strategies';
 import { saveAttendanceSelfie } from '@/lib/upload';
+import { payrollPeriodLockService } from '@/features/payroll/payroll-period-lock.service';
 import { validateGpsAttendance } from '@/lib/attendance/gps-validation';
 import { nanoid } from 'nanoid';
 import { calculateAttendancePayrollImpact, DEFAULT_ATTENDANCE_POLICY } from '@/services/attendance/attendance-payroll-impact.service';
@@ -118,6 +119,10 @@ export class AttendanceService {
     if (existingCheckIn) {
       throw new Error('Anda sudah melakukan check-in hari ini');
     }
+
+    // Block clock-in when the payroll period covering today is already locked —
+    // attendance must not mutate a finalised payroll window.
+    await payrollPeriodLockService.assertAttendanceDateEditable(new Date());
 
     // Get work location
     const [workLocation] = await db
@@ -400,6 +405,10 @@ export class AttendanceService {
     if (attendance.checkOutTime) {
       throw new Error('Anda sudah melakukan check-out hari ini');
     }
+
+    // Guard against mutating a locked payroll period (uses the work-date the
+    // attendance belongs to, matching overtime/exception semantics).
+    await payrollPeriodLockService.assertAttendanceDateEditable(attendance.checkInTime);
 
     // Get work location
     const [workLocation] = await db

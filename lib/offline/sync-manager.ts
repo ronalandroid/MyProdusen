@@ -15,6 +15,75 @@ export interface SyncEvent {
 
 type SyncEventListener = (event: SyncEvent) => void;
 
+/**
+ * Built request payload for a queued sync item.
+ * Attendance create operations are sent as multipart/form-data with a
+ * realtime selfie File (the server endpoints parse request.formData() and
+ * reject JSON), everything else stays JSON.
+ */
+export interface SyncRequestPayload {
+  body: BodyInit;
+  /**
+   * Extra headers to merge onto the base sync headers. For FormData the
+   * Content-Type MUST be omitted so the browser/runtime sets the multipart
+   * boundary automatically.
+   */
+  headers: Record<string, string>;
+}
+
+/**
+ * Convert a data URL (e.g. "data:image/jpeg;base64,....") into a File.
+ * Returns null when the value is not a parseable data URL.
+ */
+export function dataUrlToFile(dataUrl: string, filename: string): File | null {
+  if (typeof dataUrl !== 'string') return null;
+  const match = /^data:([^;,]+)?(;base64)?,([\s\S]*)$/.exec(dataUrl);
+  if (!match) return null;
+
+  const mime = match[1] || 'application/octet-stream';
+  const isBase64 = !!match[2];
+  const rawData = match[3] || '';
+
+  const source = isBase64 ? atob(rawData) : decodeURIComponent(rawData);
+  const buffer = new ArrayBuffer(source.length);
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < source.length; i++) {
+    bytes[i] = source.charCodeAt(i);
+  }
+
+  return new File([buffer], filename, { type: mime });
+}
+
+/**
+ * Build the outgoing request payload for a queued attendance create item.
+ * Produces FormData matching the server contract:
+ *   - selfie (File, required)
+ *   - workLocationId, shiftId, latitude, longitude, accuracy,
+ *     deviceInfo, gpsTimestamp
+ * The stored offline record uses different field names (locationId,
+ * selfieDataUrl, timestamp), so this remaps them.
+ */
+export function buildAttendanceFormData(data: any): FormData {
+  const form = new FormData();
+
+  const selfie = dataUrlToFile(data?.selfieDataUrl, 'selfie.jpg');
+  if (selfie) {
+    form.append('selfie', selfie);
+  }
+
+  if (data?.locationId != null) form.append('workLocationId', String(data.locationId));
+  if (data?.shiftId != null) form.append('shiftId', String(data.shiftId));
+  if (data?.latitude != null) form.append('latitude', String(data.latitude));
+  if (data?.longitude != null) form.append('longitude', String(data.longitude));
+  if (data?.accuracy != null) form.append('accuracy', String(data.accuracy));
+  if (data?.notes != null) form.append('deviceInfo', String(data.notes));
+  if (data?.timestamp != null) {
+    form.append('gpsTimestamp', new Date(data.timestamp).toISOString());
+  }
+
+  return form;
+}
+
 export class SyncManager {
   private listeners: Set<SyncEventListener> = new Set();
   private isSyncing: boolean = false;
@@ -168,8 +237,7 @@ export class SyncManager {
 
     try {
       let response: Response;
-      const headers = {
-        'Content-Type': 'application/json',
+      const baseHeaders: Record<string, string> = {
         'X-Sync-Timestamp': item.timestamp.toString(),
         'X-Client-ID': item.clientId
       };
@@ -179,17 +247,18 @@ export class SyncManager {
       const method = this.getMethod(item.operation);
 
       if (item.operation === 'delete') {
-        response = await fetch(endpoint, { 
-          method, 
-          headers,
+        response = await fetch(endpoint, {
+          method,
+          headers: baseHeaders,
           credentials: 'include' // Use httpOnly cookie for auth
         });
       } else {
+        const payload = this.buildRequestPayload(item);
         response = await fetch(endpoint, {
           method,
-          headers,
+          headers: { ...baseHeaders, ...payload.headers },
           credentials: 'include', // Use httpOnly cookie for auth
-          body: JSON.stringify(item.data)
+          body: payload.body
         });
       }
 
@@ -282,6 +351,28 @@ export class SyncManager {
 
       throw error;
     }
+  }
+
+  /**
+   * Build the request body + content headers for a non-delete sync item.
+   * Attendance create operations must be multipart/form-data with a selfie
+   * File (the server parses request.formData() and validates a selfie file +
+   * flat fields), so JSON would always be rejected. Everything else is JSON.
+   */
+  private buildRequestPayload(item: SyncQueueItem): SyncRequestPayload {
+    if (item.entity === 'attendance' && item.operation === 'create') {
+      // FormData: do NOT set Content-Type — the runtime sets the multipart
+      // boundary header automatically.
+      return {
+        body: buildAttendanceFormData(item.data),
+        headers: {}
+      };
+    }
+
+    return {
+      body: JSON.stringify(item.data),
+      headers: { 'Content-Type': 'application/json' }
+    };
   }
 
   /**

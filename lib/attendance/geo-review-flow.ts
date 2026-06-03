@@ -14,7 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { eq } from 'drizzle-orm';
 import { db, notifications, users } from '@/lib/db';
 import { logAudit } from '@/lib/audit';
-import { attendanceExceptionService } from '@/features/attendance/attendance-exception.service';
+import { attendanceExceptionService } from '@/services/attendance/attendance-exception.service';
 import type { GpsValidationResult } from '@/lib/attendance/gps-validation';
 import type { JwtPayload } from '@/lib/auth';
 import type { NextRequest } from 'next/server';

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { attendanceExceptionService } from '@/features/attendance/attendance-exception.service';
+import { attendanceExceptionService } from '@/services/attendance/attendance-exception.service';
 import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
