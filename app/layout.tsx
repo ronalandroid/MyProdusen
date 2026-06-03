@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
+import Providers from "./providers";
 import "@/lib/init";
 import "./globals.css";
 
@@ -67,11 +68,13 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.webmanifest" />
       </head>
       <body className="antialiased" suppressHydrationWarning>
-        <div className="mobile-container">
-          {children}
-        </div>
-        <PwaInstallPrompt />
-        <ServiceWorkerRegistration />
+        <Providers>
+          <div className="mobile-container">
+            {children}
+          </div>
+          <PwaInstallPrompt />
+          <ServiceWorkerRegistration />
+        </Providers>
       </body>
     </html>
   );
