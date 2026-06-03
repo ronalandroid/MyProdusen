@@ -4,6 +4,14 @@ const leaderEmail = process.env.E2E_LEADER_EMAIL || process.env.UAT_LEADER_EMAIL
 const leaderPassword = process.env.E2E_LEADER_PASSWORD || process.env.UAT_LEADER_PASSWORD;
 const today = new Date().toISOString().slice(0, 10);
 
+// Mutating cookie-auth requests are CSRF-protected by proxy.ts: a trusted
+// Origin/Referer is required or the request is rejected with 403 before RBAC.
+// A real browser always sends these on same-origin fetches; Playwright's
+// APIRequestContext does not attach them automatically, so we send them
+// explicitly to mirror real device behavior (no RBAC weakening).
+const mutationOrigin = (process.env.E2E_BASE_URL || 'http://localhost:3014').replace(/\/$/, '');
+const csrfHeaders = { Origin: mutationOrigin, Referer: `${mutationOrigin}/dashboard` };
+
 async function loginLeader(page: Page) {
   test.skip(!leaderEmail || !leaderPassword, 'Set E2E_LEADER_EMAIL and E2E_LEADER_PASSWORD.');
 
@@ -59,6 +67,7 @@ test.describe('Leader staging gate', () => {
     expect(memberA, 'Employee A must exist in Leader team').toBeTruthy();
     expect(memberB, 'Employee B must exist in Leader team').toBeTruthy();
     const kpi = await page.request.post('/api/leader/kpi-production', {
+      headers: csrfHeaders,
       data: { entries: [
         { employeeId: memberA.id, teamId: memberA.teamId, date: today, metricType: 'production_count', quantity: 10, unit: 'pcs' },
         { employeeId: memberB.id, teamId: memberB.teamId, date: today, metricType: 'production_count', quantity: 20, unit: 'pcs' },
@@ -69,6 +78,7 @@ test.describe('Leader staging gate', () => {
     expect(kpiJson.success).toBe(true);
 
     const outsideTeam = await page.request.post('/api/leader/kpi-production', {
+      headers: csrfHeaders,
       data: { employeeId: 'outside-team-employee', teamId: memberA.teamId, date: today, metricType: 'production_count', quantity: 1, unit: 'pcs' },
     });
     expect([403, 404, 422], `Leader must not input KPI outside team, got ${outsideTeam.status()}`).toContain(outsideTeam.status());
