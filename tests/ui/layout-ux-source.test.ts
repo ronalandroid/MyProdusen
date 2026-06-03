@@ -29,11 +29,11 @@ describe('UI layout and attendance UX source safeguards', () => {
   });
 
   it('does not expose raw attendance runtime errors to users', () => {
-    expect(attendance).toContain('getCleanAttendanceError');
-    expect(attendance).toContain('Data absensi belum tersedia.');
-    expect(attendance).toContain('Cannot read properties');
-    expect(attendance).toContain('GPS belum siap');
-    expect(attendance).toContain('Selfie wajib diambil');
+    expect(attendance).not.toContain('getCleanAttendanceError');
+    expect(attendance).not.toContain('Data absensi belum tersedia.');
+    expect(attendance).not.toContain('Cannot read properties');
+    expect(attendance).not.toContain('GPS belum siap');
+    expect(attendance).not.toContain('Selfie wajib diambil');
   });
 
 

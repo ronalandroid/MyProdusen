@@ -42,6 +42,47 @@ function geoStatusBadge(status?: string | null) {
   return { label: normalized.replace(/_/g, " "), bg: "rgba(220,38,38,0.12)", color: "var(--danger)" };
 }
 
+function SuccessSelfieThumbnail({ attendanceId, kind }: { attendanceId: string; kind: "check-in" | "check-out" }) {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    let createdUrl: string | null = null;
+    async function load() {
+      try {
+        const response = await fetch(`/api/attendances/${attendanceId}/selfie/${kind}`, {
+          headers: getAuthHeaders(),
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error();
+        const blob = await response.blob();
+        if (!active) return;
+        createdUrl = URL.createObjectURL(blob);
+        setImageUrl(createdUrl);
+      } catch {
+        setError(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      active = false;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [attendanceId, kind]);
+
+  if (loading) {
+    return <div className="text-[10px] text-[var(--text-secondary)] font-semibold animate-pulse">Memuat…</div>;
+  }
+  if (error || !imageUrl) {
+    return <div className="text-[10px] text-[var(--danger)] font-bold">Gagal</div>;
+  }
+  return <img src={imageUrl} alt="Selfie" className="size-full object-cover" />;
+}
+
 export default function AttendanceSuccessPage() {
   return (
     <Suspense fallback={<div className="phone-screen attendance-screen p-4 text-sm text-[var(--text-secondary)]">Memuat konfirmasi…</div>}>
@@ -113,9 +154,9 @@ function AttendanceSuccessContent() {
   ];
 
   return (
-    <div className="phone-screen attendance-screen" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="phone-screen attendance-screen pb-8" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <header className="flex items-center gap-3">
-        <button type="button" className="btn btn-secondary btn-icon min-h-[44px]" onClick={() => router.push("/dashboard")} aria-label="Kembali ke beranda">
+        <button type="button" className="btn btn-secondary btn-icon min-h-[44px] focus:outline-none" onClick={() => router.push("/dashboard")} aria-label="Kembali ke beranda">
           <ArrowLeft size={20} />
         </button>
         <div>
@@ -129,7 +170,7 @@ function AttendanceSuccessContent() {
       {/* Hero confirmation */}
       <section className="card flex flex-col items-center gap-3 border border-[#FFECB3] bg-gradient-to-br from-[#FFFDEB] to-white p-6 text-center">
         <div className="flex size-20 items-center justify-center rounded-full bg-[rgba(34,197,94,0.12)]" aria-hidden="true">
-          <CheckCircle2 size={48} className="text-[var(--success)]" />
+          <CheckCircle2 size={48} className="text-[var(--success)] animate-bounce" />
         </div>
         <div>
           <h2 className="text-lg font-extrabold text-[var(--text-primary)]">{title}</h2>
@@ -145,19 +186,31 @@ function AttendanceSuccessContent() {
 
       {/* Stamp detail */}
       <section className="card p-4">
-        <div className="grid grid-cols-2 gap-3 text-xs">
-          <div className="rounded-2xl border border-[var(--border-color)] p-3">
-            <span className="flex items-center gap-1 text-[var(--text-muted)]"><Clock size={12} /> Waktu</span>
-            <strong className="mt-1 block text-sm">{stampedTime}</strong>
+        <div className="flex gap-3 items-stretch">
+          <div className="flex-1 grid grid-cols-2 gap-3 text-xs">
+            <div className="rounded-2xl border border-[var(--border-color)] p-3 bg-white">
+              <span className="flex items-center gap-1 text-[var(--text-muted)] font-semibold"><Clock size={12} /> Waktu</span>
+              <strong className="mt-1 block text-sm font-extrabold">{stampedTime}</strong>
+            </div>
+            <div className="rounded-2xl border border-[var(--border-color)] p-3 bg-white">
+              <span className="flex items-center gap-1 text-[var(--text-muted)] font-semibold"><Clock size={12} /> Shift</span>
+              <strong className="mt-1 block text-sm font-extrabold truncate">{shiftLabel}</strong>
+            </div>
+            <div className="col-span-2 rounded-2xl border border-[var(--border-color)] p-3 bg-white">
+              <span className="flex items-center gap-1 text-[var(--text-muted)] font-semibold"><MapPin size={12} /> Lokasi kerja</span>
+              <strong className="mt-1 block text-sm font-extrabold">{locationName}</strong>
+            </div>
           </div>
-          <div className="rounded-2xl border border-[var(--border-color)] p-3">
-            <span className="flex items-center gap-1 text-[var(--text-muted)]"><Clock size={12} /> Shift</span>
-            <strong className="mt-1 block text-sm">{shiftLabel}</strong>
-          </div>
-          <div className="col-span-2 rounded-2xl border border-[var(--border-color)] p-3">
-            <span className="flex items-center gap-1 text-[var(--text-muted)]"><MapPin size={12} /> Lokasi kerja</span>
-            <strong className="mt-1 block text-sm">{locationName}</strong>
-          </div>
+          
+          {/* Selfie thumbnail container */}
+          {record?.id && (
+            <div className="w-24 shrink-0 flex flex-col items-center justify-center rounded-2xl border border-[var(--border-color)] p-1 bg-[var(--bg-secondary)] overflow-hidden">
+              <span className="text-[10px] font-bold text-[var(--text-secondary)] mb-1">Foto Selfie</span>
+              <div className="w-full flex-1 rounded-xl overflow-hidden relative min-h-[72px] bg-white border border-[var(--border-color)] flex items-center justify-center">
+                <SuccessSelfieThumbnail attendanceId={record.id} kind={isClockIn ? "check-in" : "check-out"} />
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

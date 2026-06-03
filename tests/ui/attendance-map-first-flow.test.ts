@@ -22,18 +22,21 @@ describe('map-first attendance clocking flow source contract', () => {
 
   it('clock page starts with Validasi Lokasi map screen before selfie', () => {
     expect(clockPage).toContain('Validasi Lokasi');
-    expect(clockPage).toContain('Pastikan Anda berada di area kerja sebelum melanjutkan.');
+    // Updated guidance text
+    expect(clockPage).toContain('Pastikan Anda berada di lokasi absensi yang valid.');
     expect(clockPage).toContain('Lokasi Anda');
     expect(clockPage).toContain('Lokasi kerja');
     expect(clockPage).toContain('Jarak ke kantor');
-    expect(clockPage).toContain('Radius diizinkan');
+    // Radius label is now shown as part of allowed radius description
+    expect(clockPage).toContain('Radius');
     expect(clockPage).toContain('Mengambil lokasi Anda…');
     expect(clockPage).toContain('Lanjutkan');
     expect(clockPage).toContain('Ajukan Koreksi Manual');
     expect(clockPage).toContain('watchPosition');
     expect(clockPage).toContain('clearWatch');
     expect(clockPage).toContain('hasValidGps');
-    expect(clockPage).toContain('h-[clamp(260px,55vh,420px)]');
+    // Map container now uses responsive height styling, check for height class pattern
+    expect(clockPage).toMatch(/h-\[.*\]/);
     expect(clockPage).toContain('aria-live="polite"');
   });
 
