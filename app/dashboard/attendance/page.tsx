@@ -312,7 +312,7 @@ export default function AttendancePage() {
           className={`min-h-[52px] flex-1 rounded-2xl font-black text-sm flex items-center justify-center shadow-md transition-all ${
             checkInDisabled
               ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed pointer-events-none"
-              : "bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white"
+              : "bg-[var(--attn-red)] hover:bg-[var(--attn-red-hover)] text-white"
           }`}
           aria-disabled={checkInDisabled}
         >
@@ -323,7 +323,7 @@ export default function AttendancePage() {
           className={`min-h-[52px] flex-1 rounded-2xl font-black text-sm flex items-center justify-center border-2 shadow-md transition-all ${
             checkOutDisabled
               ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed pointer-events-none"
-              : "border-[var(--accent-red)] text-[var(--accent-red)] bg-white hover:bg-red-50"
+              : "border-[var(--attn-red)] text-[var(--attn-red)] bg-white hover:bg-red-50"
           }`}
           aria-disabled={checkOutDisabled}
         >
@@ -338,9 +338,12 @@ export default function AttendancePage() {
           <ol className="relative flex flex-col gap-5 pl-2">
             <span aria-hidden="true" className="absolute left-[19px] bottom-3 top-3 w-0.5 bg-[var(--border-color)]" />
             {([
-              { id: "in", label: "Clock In", time: formatTime(todayAttendance.checkInTime), active: Boolean(todayAttendance.checkInTime), tone: "var(--success)" },
-              { id: "out", label: "Clock Out", time: formatTime(todayAttendance.checkOutTime), active: Boolean(todayAttendance.checkOutTime), tone: "var(--danger)" },
-            ] as const).map((item) => (
+              { id: "in", label: "Clock In", time: formatTime(todayAttendance.checkInTime), active: Boolean(todayAttendance.checkInTime), tone: "var(--attn-success)" },
+              { id: "out", label: "Clock Out", time: formatTime(todayAttendance.checkOutTime), active: Boolean(todayAttendance.checkOutTime), tone: "var(--attn-red)" },
+            ] as const).map((item) => {
+              const late = todayAttendance.status === "LATE";
+              const showBadge = item.id === "in" && item.active;
+              return (
               <li key={item.id} className="relative flex items-center gap-4">
                 <span
                   className="z-10 flex size-9 shrink-0 items-center justify-center rounded-full border-2 bg-white"
@@ -352,12 +355,21 @@ export default function AttendancePage() {
                 <div className="flex flex-1 items-center justify-between gap-3">
                   <div>
                     <strong className="block text-sm font-extrabold text-[var(--text-primary)]">{item.label}</strong>
-                    <span className="text-xs font-semibold text-[var(--text-secondary)]">{item.active ? "Tercatat" : "Belum dilakukan"}</span>
+                    {showBadge ? (
+                      <span
+                        className="mt-0.5 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-extrabold"
+                        style={late ? { background: "rgba(245,124,0,0.14)", color: "var(--attn-warning)" } : { background: "rgba(46,125,50,0.14)", color: "var(--attn-success)" }}
+                      >
+                        {late ? "Terlambat" : "Tepat Waktu"}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold text-[var(--text-secondary)]">{item.active ? "Tercatat" : "Belum Absen"}</span>
+                    )}
                   </div>
                   <span className={`text-sm font-black ${item.active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>{item.time}</span>
                 </div>
               </li>
-            ))}
+            );})}
           </ol>
         </section>
       )}

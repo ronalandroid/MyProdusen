@@ -134,14 +134,15 @@ function AttendanceSuccessContent() {
   const stampedTime = isClockIn ? formatTime(record?.checkInTime) : formatTime(record?.checkOutTime);
   const geo = geoStatusBadge(isClockIn ? record?.checkInGeoStatus : record?.checkOutGeoStatus);
 
-  const timeline: Array<{ id: string; icon: typeof LogIn; label: string; time: string; active: boolean; tone: string }> = [
+  const timeline: Array<{ id: string; icon: typeof LogIn; label: string; time: string; active: boolean; tone: string; status?: string | null }> = [
     {
       id: "in",
       icon: LogIn,
       label: "Clock In",
       time: formatTime(record?.checkInTime),
       active: Boolean(record?.checkInTime),
-      tone: "var(--success)",
+      tone: "var(--attn-success)",
+      status: record?.status,
     },
     {
       id: "out",
@@ -149,7 +150,7 @@ function AttendanceSuccessContent() {
       label: "Clock Out",
       time: formatTime(record?.checkOutTime),
       active: Boolean(record?.checkOutTime),
-      tone: "var(--danger)",
+      tone: "var(--attn-red)",
     },
   ];
 
@@ -169,8 +170,8 @@ function AttendanceSuccessContent() {
 
       {/* Hero confirmation */}
       <section className="card flex flex-col items-center gap-3 border border-[var(--attn-warn-border-soft)] bg-gradient-to-br from-[var(--attn-warn-bg)] to-white p-6 text-center">
-        <div className="flex size-20 items-center justify-center rounded-full bg-[rgba(34,197,94,0.12)]" aria-hidden="true">
-          <CheckCircle2 size={48} className="text-[var(--success)] animate-bounce" />
+        <div className="flex size-20 items-center justify-center rounded-full bg-[rgba(46,125,50,0.12)]" aria-hidden="true">
+          <CheckCircle2 size={48} className="text-[var(--attn-success)] animate-bounce" />
         </div>
         <div>
           <h2 className="text-lg font-extrabold text-[var(--text-primary)]">{title}</h2>
@@ -233,7 +234,16 @@ function AttendanceSuccessContent() {
                 <div className="flex flex-1 items-center justify-between gap-3">
                   <div>
                     <strong className="block text-sm text-[var(--text-primary)]">{item.label}</strong>
-                    <span className="text-xs text-[var(--text-secondary)]">{item.active ? "Tercatat" : "Belum dilakukan"}</span>
+                    {item.active && item.id === "in" ? (
+                      <span
+                        className="mt-0.5 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-extrabold"
+                        style={item.status === "LATE" ? { background: "rgba(245,124,0,0.14)", color: "var(--attn-warning)" } : { background: "rgba(46,125,50,0.14)", color: "var(--attn-success)" }}
+                      >
+                        {item.status === "LATE" ? "Terlambat" : "Tepat Waktu"}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-[var(--text-secondary)]">{item.active ? "Tercatat" : "Belum Absen"}</span>
+                    )}
                   </div>
                   <span className={`text-sm font-extrabold ${item.active ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>{item.time}</span>
                 </div>

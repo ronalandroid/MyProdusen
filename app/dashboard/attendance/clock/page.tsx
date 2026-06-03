@@ -276,8 +276,8 @@ function AttendanceClockContent() {
             <div className="flex items-center justify-between"><h2 id="gps-title" className="text-base font-extrabold">Validasi Lokasi</h2><LocateFixed className="text-[var(--primary-dark)] animate-pulse" size={22} /></div>
             
             {insideRadius === true && (
-              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl p-4 text-xs text-[var(--success)] font-extrabold leading-normal animate-fade-in">
-                <ShieldCheck size={20} className="shrink-0 text-[var(--success)]" />
+              <div className="flex items-center gap-3 rounded-2xl p-4 text-xs font-extrabold leading-normal animate-fade-in" style={{ background: "rgba(46,125,50,0.10)", border: "1px solid rgba(46,125,50,0.35)", color: "var(--attn-success)" }}>
+                <ShieldCheck size={20} className="shrink-0" style={{ color: "var(--attn-success)" }} />
                 <div>Anda berada di lokasi yang valid. Radius area absensi {allowedRadius} meter.</div>
               </div>
             )}
@@ -325,7 +325,7 @@ function AttendanceClockContent() {
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border-color)] bg-white/95 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] backdrop-blur">
         <div className="mx-auto flex max-w-[520px] flex-col gap-2">
           <output className="flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)]" aria-live="polite"><ShieldCheck size={14} />{isSubmitting ? statusText : step === "location" ? (gpsError || (gpsPosition ? "Memvalidasi lokasi…" : "Mengambil lokasi Anda…")) : canSubmit ? "Siap dikirim" : "Ambil foto untuk melanjutkan"}</output>
-          {step === "location" ? <button type="button" className="btn btn-primary min-h-[52px] w-full rounded-2xl font-extrabold" disabled={!canContinue} onClick={() => setUi({ step: "selfie" })}>Lanjutkan</button> : <button type="button" className="btn btn-primary min-h-[52px] w-full rounded-2xl font-extrabold" disabled={!canSubmit} onClick={submitAttendance}>{isSubmitting ? statusText : submitLabel}</button>}
+          {step === "location" ? <button type="button" className="min-h-[52px] w-full rounded-2xl font-extrabold text-white bg-[var(--attn-red)] hover:bg-[var(--attn-red-hover)] disabled:bg-gray-200 disabled:text-gray-400 transition-all" disabled={!canContinue} onClick={() => setUi({ step: "selfie" })}>Lanjutkan</button> : <button type="button" className="min-h-[52px] w-full rounded-2xl font-extrabold text-white bg-[var(--attn-red)] hover:bg-[var(--attn-red-hover)] disabled:bg-gray-200 disabled:text-gray-400 transition-all" disabled={!canSubmit} onClick={submitAttendance}>{isSubmitting ? statusText : submitLabel}</button>}
           <Link href="/dashboard/attendance" className="text-center text-xs font-bold text-[var(--text-secondary)] underline-offset-2 hover:underline mt-1">Daftar Absensi</Link>
         </div>
       </div>

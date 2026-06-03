@@ -22,6 +22,13 @@
   --attn-warn-border-soft: #FFECB3;
   --attn-neutral-surface: #F1F5F9;
   --attn-map-surface: #F8FAFC;
+  /* HRIS attendance brand spec (Employee HRIS Indonesia — Alur Absensi) */
+  --attn-red: #C62828;
+  --attn-red-hover: #AD2020;
+  --attn-gold: #F5A623;
+  --attn-gold-soft: #F9C55A;
+  --attn-success: #2E7D32;
+  --attn-warning: #F57C00;
 
   /* Professional HRIS SaaS Tokens (Talenta-style benchmark, MyProdusen brand) */
   --surface-warm: #FAF9F6;
