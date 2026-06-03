@@ -33,4 +33,15 @@ describe('leader KPI production RBAC source contract', () => {
     expect(service).toContain('data.quantity ?? data.packs');
     expect(service).toContain('KPI_QUANTITY_INVALID');
   });
+
+  it('cookie-auth mutations require trusted origin (CSRF) so leader POST works only same-origin', () => {
+    const proxy = readFileSync('proxy.ts', 'utf8');
+    // Mutating cookie-auth requests without a trusted Origin/Referer are rejected
+    // with a generic 403 "Permintaan tidak valid" BEFORE reaching RBAC. This is the
+    // documented reason an off-origin script gets 403 while the same-origin
+    // browser/Playwright leader flow succeeds (regression guard for the UAT 403).
+    expect(proxy).toContain("MUTATING_METHODS");
+    expect(proxy).toContain('isTrustedMutationOrigin');
+    expect(proxy).toContain('Permintaan tidak valid');
+  });
 });
