@@ -76,7 +76,9 @@ export function buildAttendanceFormData(data: any): FormData {
   if (data?.latitude != null) form.append('latitude', String(data.latitude));
   if (data?.longitude != null) form.append('longitude', String(data.longitude));
   if (data?.accuracy != null) form.append('accuracy', String(data.accuracy));
-  if (data?.notes != null) form.append('deviceInfo', String(data.notes));
+  if (data?.deviceInfo != null) form.append('deviceInfo', String(data.deviceInfo));
+  if (data?.note != null) form.append('note', String(data.note));
+  if (data?.notes != null) form.append('note', String(data.notes));
   if (data?.timestamp != null) {
     form.append('gpsTimestamp', new Date(data.timestamp).toISOString());
   }

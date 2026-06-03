@@ -66,6 +66,7 @@ export class AttendanceService {
     ipAddress?: string;
     userAgent?: string;
     capturedAt?: Date | string | number | null;
+    note?: string;
   }) {
     // Get employee data
     const [employee] = await db
@@ -269,6 +270,7 @@ export class AttendanceService {
             checkInDeviceInfo: data.deviceInfo,
             checkInIp: data.ipAddress,
             checkInUserAgent: data.userAgent,
+            adjustmentReason: data.note?.trim() || null,
             status,
             lateMinutes,
           })
@@ -379,6 +381,7 @@ export class AttendanceService {
     ipAddress?: string;
     userAgent?: string;
     capturedAt?: Date | string | number | null;
+    note?: string;
   }) {
     // Get today's attendance
     const today = new Date();
@@ -472,6 +475,10 @@ export class AttendanceService {
       attendanceId: attendance.id,
       type: 'check-out',
     });
+    const checkOutNote = data.note?.trim();
+    const mergedNote = checkOutNote
+      ? [attendance.adjustmentReason, `Clock-out: ${checkOutNote}`].filter(Boolean).join('\n')
+      : attendance.adjustmentReason;
 
     // Update attendance + daily-summary atomically. The WHERE additionally
     // guards on checkOutTime IS NULL so a concurrent double-submit can only
@@ -499,6 +506,7 @@ export class AttendanceService {
           checkOutDeviceInfo: data.deviceInfo,
           checkOutIp: data.ipAddress,
           checkOutUserAgent: data.userAgent,
+          adjustmentReason: mergedNote,
           earlyLeaveMinutes,
           totalWorkMinutes,
           updatedAt: new Date(),

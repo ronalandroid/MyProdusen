@@ -9,6 +9,7 @@ import { parseCheckOutRealtimeForm } from '@/lib/attendance/realtime-selfie-form
 import { logAudit } from '@/lib/audit';
 import { UploadError } from '@/lib/upload';
 import { recordGeoOutcome } from '@/lib/attendance/geo-review-flow';
+import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 
 function getFailureAuditAction(error: unknown, type: 'CHECK_IN' | 'CHECK_OUT') {
   const message = error instanceof Error ? error.message : String(error || '');
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
       deviceInfo: data.deviceInfo,
       ipAddress,
       userAgent,
+      note: data.note,
     });
 
     await logAudit(
@@ -80,6 +82,26 @@ export async function POST(request: NextRequest) {
         validation: attendance.geoValidation,
       });
     }
+
+    await publishRealtimeEvent(createRealtimeEvent({
+      type: 'attendance.updated',
+      scope: 'user',
+      target: user.userId,
+      payload: {
+        attendanceId: attendance?.id,
+        employeeId: employee.id,
+        action: 'check-out',
+        status: attendance?.status,
+        geoStatus: attendance?.checkOutGeoStatus,
+        isPendingGeoReview: attendance?.isPendingGeoReview,
+      },
+    }));
+    await publishRealtimeEvent(createRealtimeEvent({
+      type: 'dashboard.updated',
+      scope: 'user',
+      target: user.userId,
+      payload: { employeeId: employee.id, source: 'attendance.check-out' },
+    }));
 
     return successResponse(
       attendance,

@@ -8,6 +8,7 @@ export const checkInSchema = z.object({
   accuracy: z.number().positive(),
   deviceInfo: z.string().optional(),
   gpsTimestamp: z.string().optional(),
+  note: z.string().max(150).optional(),
 });
 
 export const checkOutSchema = z.object({
@@ -17,6 +18,7 @@ export const checkOutSchema = z.object({
   accuracy: z.number().positive(),
   deviceInfo: z.string().optional(),
   gpsTimestamp: z.string().optional(),
+  note: z.string().max(150).optional(),
 });
 
 export const manualAttendanceSchema = z.object({

@@ -29,6 +29,8 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
+import { useRealtime } from "@/hooks/useRealtime";
+import type { RealtimeEventType } from "@/lib/realtime/events";
 
 interface AttendanceRecord {
   id: string;
@@ -248,6 +250,7 @@ function gpsReducer(_state: GpsState, nextState: GpsState) {
 
 const initialGpsState: GpsState = { position: null, error: "", isGetting: false };
 const emptyHeatmap: Record<string, string> = {};
+const dashboardRealtimeEvents: RealtimeEventType[] = ["attendance.updated", "dashboard.updated"];
 
 export default function EmployeeBeranda({ profile }: Props) {
   const locationId = profile?.employee?.defaultLocation?.id;
@@ -301,6 +304,13 @@ export default function EmployeeBeranda({ profile }: Props) {
     refetchOnReconnect: true,
     refetchInterval: 30_000,
     staleTime: 10_000,
+  });
+
+  useRealtime({
+    eventTypes: dashboardRealtimeEvents,
+    onEvent: () => {
+      void dashboardQuery.refetch();
+    },
   });
 
   const heatmap: Record<string, string> = dashboardQuery.data?.heatmap ?? emptyHeatmap;

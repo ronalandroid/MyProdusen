@@ -46,6 +46,7 @@ export async function parseCheckInRealtimeForm(request: Request): Promise<Attend
     accuracy: readNumber(formData, 'accuracy'),
     deviceInfo: readString(formData, 'deviceInfo'),
     gpsTimestamp: readString(formData, 'gpsTimestamp'),
+    note: readString(formData, 'note'),
   });
 
   if (!validation.success) {
@@ -70,6 +71,7 @@ export async function parseCheckOutRealtimeForm(request: Request): Promise<Atten
     accuracy: readNumber(formData, 'accuracy'),
     deviceInfo: readString(formData, 'deviceInfo'),
     gpsTimestamp: readString(formData, 'gpsTimestamp'),
+    note: readString(formData, 'note'),
   });
 
   if (!validation.success) {

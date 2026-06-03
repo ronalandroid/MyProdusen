@@ -11,7 +11,7 @@ import { checkInSchema, checkOutSchema } from '@/utils/validation/attendance';
  *   - multipart/form-data (FormData), never JSON
  *   - a non-empty `selfie` File
  *   - flat fields with server names: workLocationId, latitude, longitude,
- *     accuracy, gpsTimestamp (string), shiftId, deviceInfo
+ *     accuracy, gpsTimestamp (string), shiftId, deviceInfo, note
  *
  * The old payload used JSON with the wrong keys (locationId, selfieDataUrl,
  * numeric timestamp) and could therefore NEVER sync.
@@ -30,7 +30,8 @@ const checkInQueueData = {
   selfieDataUrl: SELFIE_DATA_URL,
   locationId: 'loc-123',
   shiftId: 'shift-9',
-  notes: 'Android/Chrome',
+  deviceInfo: 'Android/Chrome',
+  notes: 'Lalu lintas padat',
   timestamp: 1717999999000,
 };
 
@@ -91,6 +92,7 @@ describe('buildAttendanceFormData (check-in)', () => {
     );
     expect(fields.shiftId).toBe('shift-9');
     expect(fields.deviceInfo).toBe('Android/Chrome');
+    expect(fields.note).toBe('Lalu lintas padat');
     expect(fields.latitude).toBe('3.5952');
     expect(fields.longitude).toBe('98.6722');
     expect(fields.accuracy).toBe('12.5');
@@ -106,6 +108,7 @@ describe('buildAttendanceFormData (check-in)', () => {
       accuracy: Number(fields.accuracy),
       deviceInfo: fields.deviceInfo,
       gpsTimestamp: fields.gpsTimestamp,
+      note: fields.note,
     });
     expect(parsed.success).toBe(true);
   });
