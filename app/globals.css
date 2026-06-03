@@ -14,6 +14,14 @@
   --primary-soft: #FFF7D6;
   --primary-dark: #CC9A05;
   --accent-red: #E53935;
+  --accent-red-hover: #D32F2F;
+
+  /* Attendance flow soft-warning + neutral surfaces (matches absent-ui-ux.png reference) */
+  --attn-warn-bg: #FFFDEB;
+  --attn-warn-border: #FFE082;
+  --attn-warn-border-soft: #FFECB3;
+  --attn-neutral-surface: #F1F5F9;
+  --attn-map-surface: #F8FAFC;
 
   /* Professional HRIS SaaS Tokens (Talenta-style benchmark, MyProdusen brand) */
   --surface-warm: #FAF9F6;

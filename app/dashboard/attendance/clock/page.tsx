@@ -243,7 +243,7 @@ function AttendanceClockContent() {
 
       {(message || error) && <div role={error ? "alert" : "status"} className={`text-xs font-bold ${error ? "text-[var(--danger)] bg-red-50 border border-red-200 rounded-2xl p-3" : "text-[var(--success)] bg-green-50 border border-green-200 rounded-2xl p-3"}`}>{error || message}</div>}
 
-      <section className="card flex items-center gap-3 border border-[#FFECB3] bg-gradient-to-br from-[#FFFDEB] to-white p-3" aria-label="Shift aktif">
+      <section className="card flex items-center gap-3 border border-[var(--attn-warn-border-soft)] bg-gradient-to-br from-[var(--attn-warn-bg)] to-white p-3" aria-label="Shift aktif">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)] text-[var(--text-primary)]" aria-hidden="true">
           <CalendarClock size={20} />
         </span>

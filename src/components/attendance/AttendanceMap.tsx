@@ -116,7 +116,7 @@ export function AttendanceMap({
         height: `${height}px`,
         borderRadius: "24px",
         overflow: "hidden",
-        background: "#F8FAFC",
+        background: "var(--attn-map-surface)",
         border: "1px solid var(--border-color)",
       }}
     >

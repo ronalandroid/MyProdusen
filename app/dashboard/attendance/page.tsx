@@ -298,7 +298,7 @@ export default function AttendancePage() {
       </section>
 
       {/* Notice Card */}
-      <div className="card flex items-start gap-3 border border-[#FFE082] bg-[#FFFDEB] p-4 rounded-2xl">
+      <div className="card flex items-start gap-3 border border-[var(--attn-warn-border)] bg-[var(--attn-warn-bg)] p-4 rounded-2xl">
         <Info size={18} className="text-[var(--primary-dark)] shrink-0 mt-0.5" />
         <p className="text-xs font-bold text-[var(--text-primary)] leading-relaxed">
           Foto selfie dan verifikasi lokasi GPS diperlukan untuk Clock In dan Clock Out.
@@ -312,7 +312,7 @@ export default function AttendancePage() {
           className={`min-h-[52px] flex-1 rounded-2xl font-black text-sm flex items-center justify-center shadow-md transition-all ${
             checkInDisabled
               ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed pointer-events-none"
-              : "bg-[#E53935] hover:bg-[#D32F2F] text-white"
+              : "bg-[var(--accent-red)] hover:bg-[var(--accent-red-hover)] text-white"
           }`}
           aria-disabled={checkInDisabled}
         >
@@ -323,7 +323,7 @@ export default function AttendancePage() {
           className={`min-h-[52px] flex-1 rounded-2xl font-black text-sm flex items-center justify-center border-2 shadow-md transition-all ${
             checkOutDisabled
               ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed pointer-events-none"
-              : "border-[#E53935] text-[#E53935] bg-white hover:bg-red-50"
+              : "border-[var(--accent-red)] text-[var(--accent-red)] bg-white hover:bg-red-50"
           }`}
           aria-disabled={checkOutDisabled}
         >
@@ -375,7 +375,7 @@ export default function AttendancePage() {
               </div>
             )}
           </div>
-          <div className="relative size-16 shrink-0 overflow-hidden rounded-2xl bg-[#F1F5F9] border border-[var(--border-color)] flex items-center justify-center">
+          <div className="relative size-16 shrink-0 overflow-hidden rounded-2xl bg-[var(--attn-neutral-surface)] border border-[var(--border-color)] flex items-center justify-center">
             <MapPin size={24} className="text-[var(--danger)]" />
           </div>
         </div>

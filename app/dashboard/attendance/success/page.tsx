@@ -168,7 +168,7 @@ function AttendanceSuccessContent() {
       </header>
 
       {/* Hero confirmation */}
-      <section className="card flex flex-col items-center gap-3 border border-[#FFECB3] bg-gradient-to-br from-[#FFFDEB] to-white p-6 text-center">
+      <section className="card flex flex-col items-center gap-3 border border-[var(--attn-warn-border-soft)] bg-gradient-to-br from-[var(--attn-warn-bg)] to-white p-6 text-center">
         <div className="flex size-20 items-center justify-center rounded-full bg-[rgba(34,197,94,0.12)]" aria-hidden="true">
           <CheckCircle2 size={48} className="text-[var(--success)] animate-bounce" />
         </div>
