@@ -166,6 +166,25 @@ function AttendanceClockContent() {
     };
   }, [clearSelfie, loadData]);
 
+  function handleRecenter() {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGpsError("Lokasi tidak dapat diakses. Izinkan lokasi di browser Anda.");
+      return;
+    }
+    setUi({ statusText: "Memperbarui lokasi…" });
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGpsPosition(pos);
+        setGpsError(pos.coords.accuracy > 100 ? "Akurasi GPS belum cukup baik. Coba pindah ke area terbuka." : "");
+        setUi({ statusText: "Memvalidasi lokasi…" });
+      },
+      (err) => {
+        setGpsError(cleanError(err));
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  }
+
   async function submitAttendance() {
     if (!canSubmit || !employee?.defaultLocation?.id) return;
     setUi({ step: "send", isSubmitting: true, error: "", message: "" });
@@ -248,6 +267,7 @@ function AttendanceClockContent() {
                 userLatitude={gpsPosition?.coords.latitude}
                 userLongitude={gpsPosition?.coords.longitude}
                 height={280}
+                onRecenter={handleRecenter}
               />
             </section>
           )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapPin } from "lucide-react";
+import { LocateFixed, MapPin } from "lucide-react";
 import {
   TILE_SIZE,
   buildTileUrl,
@@ -23,6 +23,7 @@ type Props = {
   userLatitude?: number | null;
   userLongitude?: number | null;
   height?: number;
+  onRecenter?: () => void;
 };
 
 export function AttendanceMap({
@@ -32,6 +33,7 @@ export function AttendanceMap({
   userLatitude,
   userLongitude,
   height = 260,
+  onRecenter,
 }: Props) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -240,6 +242,17 @@ export function AttendanceMap({
               : "Menyiapkan peta lokasi…"}
           </span>
         </div>
+      )}
+
+      {onRecenter && (
+        <button
+          type="button"
+          onClick={onRecenter}
+          aria-label="Pusatkan ke lokasi Anda"
+          className="absolute right-3 top-3 z-20 flex size-10 items-center justify-center rounded-full border border-[var(--border-color)] bg-white text-[var(--text-primary)] shadow-md transition active:scale-95 hover:bg-[var(--bg-secondary)]"
+        >
+          <LocateFixed size={18} />
+        </button>
       )}
 
       <span
