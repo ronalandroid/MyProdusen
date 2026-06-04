@@ -71,6 +71,10 @@ function distanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) 
   return radius * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
+function formatDistanceMeters(value: number) {
+  return value >= 1000 ? `${(value / 1000).toFixed(1)} km` : `${Math.round(value)} m`;
+}
+
 function cleanError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error || "");
   if (/denied|permission/i.test(message)) return "Lokasi tidak dapat diakses. Izinkan lokasi di browser Anda.";
@@ -112,6 +116,10 @@ function AttendanceClockContent() {
   const gpsDistance = gpsPosition && location ? distanceMeters(gpsPosition.coords.latitude, gpsPosition.coords.longitude, location.latitude, location.longitude) : null;
   const insideRadius = gpsDistance !== null ? gpsDistance <= allowedRadius : null;
   const hasValidGps = Boolean(gpsPosition && !gpsError);
+  const missingRequirements = [
+    !gpsPosition ? "GPS belum siap" : null,
+    !selfieBlob ? "Selfie wajib diambil" : null,
+  ].filter(Boolean);
   const canContinue = Boolean(hasValidGps && (insideRadius || manualReason.trim().length >= 10));
   const canSubmit = Boolean(selfieBlob && hasValidGps && (insideRadius || manualReason.trim().length >= 10) && !isSubmitting);
 
@@ -188,7 +196,7 @@ function AttendanceClockContent() {
   }
 
   async function submitAttendance() {
-    if (!canSubmit || !employee?.defaultLocation?.id) return;
+    if (!canSubmit || !selfieBlob || !employee?.defaultLocation?.id) return;
     setUi({ step: "send", isSubmitting: true, error: "", message: "" });
     try {
       setUi({ statusText: "Mengoptimalkan foto…" });
@@ -200,7 +208,8 @@ function AttendanceClockContent() {
       formData.set("distance", String(Math.round(gpsDistance || 0)));
       formData.set("type", type);
       formData.set("deviceInfo", navigator.userAgent);
-      formData.set("selfie", selfieBlob!, selfieFilenameRef.current);
+      const selfieFilename = selfieFilenameRef.current;
+      formData.set("selfie", selfieBlob, selfieFilename);
       if (note.trim()) formData.set("note", note.trim());
       if (isClockIn) {
         formData.set("workLocationId", employee.defaultLocation.id);
@@ -295,8 +304,11 @@ function AttendanceClockContent() {
             <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
               <div className="rounded-2xl border border-[var(--border-color)] p-3 bg-white"><span className="block text-[var(--text-muted)] font-semibold mb-0.5">Lokasi Anda</span><strong>{gpsPosition ? `${gpsPosition.coords.latitude.toFixed(6)}, ${gpsPosition.coords.longitude.toFixed(6)}` : "GPS belum siap"}</strong></div>
               <div className="rounded-2xl border border-[var(--border-color)] p-3 bg-white"><span className="block text-[var(--text-muted)] font-semibold mb-0.5">Lokasi kerja</span><strong>{location?.name || "Produsen Dimsum Medan"}</strong></div>
-              <div className="rounded-2xl border border-[var(--border-color)] p-3 bg-white"><span className="block text-[var(--text-muted)] font-semibold mb-0.5">Jarak ke kantor</span><strong>{gpsDistance === null ? "-" : `${Math.round(gpsDistance)} m`}</strong></div>
+              <div className="rounded-2xl border border-[var(--border-color)] p-3 bg-white"><span className="block text-[var(--text-muted)] font-semibold mb-0.5">Jarak ke lokasi</span><strong>{gpsDistance === null ? "-" : formatDistanceMeters(gpsDistance)}</strong></div>
               <div className="rounded-2xl border border-[var(--border-color)] p-3 bg-white"><span className="block text-[var(--text-muted)] font-semibold mb-0.5">Akurasi GPS</span><strong>{gpsPosition ? `${Math.round(gpsPosition.coords.accuracy)} m` : "GPS belum siap"}</strong></div>
+              <div className="rounded-2xl border border-[var(--border-color)] p-3 bg-white"><span className="block text-[var(--text-muted)] font-semibold mb-0.5">Jarak Anda:</span><strong>{gpsDistance === null ? "-" : formatDistanceMeters(gpsDistance)}</strong></div>
+              <div className="rounded-2xl border border-[var(--border-color)] p-3 bg-white"><span className="block text-[var(--text-muted)] font-semibold mb-0.5">Radius diizinkan:</span><strong>{formatDistanceMeters(allowedRadius)}</strong></div>
+              <div className="rounded-2xl border border-[var(--border-color)] p-3 bg-white"><span className="block text-[var(--text-muted)] font-semibold mb-0.5">Status:</span><strong>{insideRadius === false ? "Di luar radius" : insideRadius === true ? "Dalam radius" : "Memvalidasi lokasi"}</strong></div>
             </div>
             
             {gpsError && <p role="alert" className="text-xs font-bold text-[var(--danger)] bg-red-50 border border-red-200 rounded-2xl p-3">{gpsError}</p>}
@@ -320,16 +332,31 @@ function AttendanceClockContent() {
           
           <div className="card p-4 border border-[var(--border-color)] bg-white flex items-center gap-3">
             <ShieldCheck size={18} className="text-[var(--text-secondary)] shrink-0" />
-            <span className="text-xs font-bold text-[var(--text-secondary)]">Pastikan wajah Anda terlihat jelas pada kamera.</span>
+            <span className="text-xs font-bold text-[var(--text-secondary)]">Posisikan wajah di dalam frame. Pastikan wajah Anda terlihat jelas pada kamera.</span>
           </div>
 
           <section className="card p-4"><label className="text-sm font-extrabold" htmlFor="attendance-note">Catatan (opsional)</label><textarea id="attendance-note" maxLength={150} className="mt-2 w-full rounded-2xl border border-[var(--border-color)] p-3 text-sm focus:outline-none" rows={3} value={note} onChange={(event) => setUi({ note: event.target.value })} placeholder="Tulis catatan jika diperlukan…" /><div className="mt-1 text-right text-[10px] font-semibold text-[var(--text-muted)]">{note.length}/150</div></section>
         </>
       )}
 
+      <section className="card p-4 border border-[var(--border-color)] bg-white" aria-label="Riwayat absensi terbaru">
+        {history.length === 0 ? (
+          <output className="text-xs font-semibold text-[var(--text-secondary)]">Belum ada riwayat absensi.</output>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {history.map((record) => (
+              <div key={record.id} className="flex items-center justify-between text-xs font-semibold text-[var(--text-secondary)]">
+                <span>{shortDateFormatter.format(new Date(record.checkInTime))}</span>
+                <span>{formatTime(record.checkInTime)} - {formatTime(record.checkOutTime)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border-color)] bg-white/95 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] backdrop-blur">
         <div className="mx-auto flex max-w-[520px] flex-col gap-2">
-          <output className="flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)]" aria-live="polite"><ShieldCheck size={14} />{isSubmitting ? statusText : step === "location" ? (gpsError || (gpsPosition ? "Memvalidasi lokasi…" : "Mengambil lokasi Anda…")) : canSubmit ? "Siap dikirim" : "Ambil foto untuk melanjutkan"}</output>
+          <output className="flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)]" aria-live="polite"><ShieldCheck size={14} />{isSubmitting ? statusText : step === "location" ? (gpsError || (gpsPosition ? "Memvalidasi lokasi…" : "Mengambil lokasi Anda…")) : canSubmit ? "Siap dikirim" : (missingRequirements.join(", ") || "Ambil foto untuk melanjutkan")}</output>
           {step === "location" ? <button type="button" className="min-h-[52px] w-full rounded-2xl font-extrabold text-white bg-[var(--attn-red)] hover:bg-[var(--attn-red-hover)] disabled:bg-gray-200 disabled:text-gray-400 transition-all" disabled={!canContinue} onClick={() => setUi({ step: "selfie" })}>Lanjutkan</button> : <button type="button" className="min-h-[52px] w-full rounded-2xl font-extrabold text-white bg-[var(--attn-red)] hover:bg-[var(--attn-red-hover)] disabled:bg-gray-200 disabled:text-gray-400 transition-all" disabled={!canSubmit} onClick={submitAttendance}>{isSubmitting ? statusText : submitLabel}</button>}
           <Link href="/dashboard/attendance" className="text-center text-xs font-bold text-[var(--text-secondary)] underline-offset-2 hover:underline mt-1">Daftar Absensi</Link>
         </div>

@@ -26,7 +26,7 @@ describe('map-first attendance clocking flow source contract', () => {
     expect(clockPage).toContain('Pastikan Anda berada di lokasi absensi yang valid.');
     expect(clockPage).toContain('Lokasi Anda');
     expect(clockPage).toContain('Lokasi kerja');
-    expect(clockPage).toContain('Jarak ke kantor');
+    expect(clockPage).toContain('Jarak ke lokasi');
     // Radius label is now shown as part of allowed radius description
     expect(clockPage).toContain('Radius');
     expect(clockPage).toContain('Mengambil lokasi Anda…');

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'fs';
 
-const attendancePageSource = readFileSync('app/dashboard/attendance/page.tsx', 'utf8');
+const attendanceListPageSource = readFileSync('app/dashboard/attendance/page.tsx', 'utf8');
+const attendanceClockPageSource = readFileSync('app/dashboard/attendance/clock/page.tsx', 'utf8');
+const attendancePageSource = `${attendanceListPageSource}\n${attendanceClockPageSource}`;
 const realtimeCameraSource = readFileSync('src/components/attendance/RealtimeSelfieCamera.tsx', 'utf8');
 const selfieCompressorSource = readFileSync('lib/attendance/selfie-compressor.ts', 'utf8');
 

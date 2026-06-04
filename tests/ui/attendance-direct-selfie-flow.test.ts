@@ -23,8 +23,8 @@ describe('direct attendance selfie flow source contract', () => {
   it('attendance capture flow exposes selfie, GPS, radius, distance, and submit labels', () => {
     expect(attendancePage).toContain('Absensi Hari Ini');
     expect(attendancePage).not.toContain('Bukti Lokasi GPS');
-    expect(attendancePage).not.toContain('Jarak ke lokasi');
-    expect(attendancePage).not.toContain('Radius resmi');
+    expect(attendancePage).toContain('Jarak ke lokasi preview');
+    expect(attendancePage).toContain('Radius resmi');
     expect(capturePage).toContain('Kirim Clock In');
     expect(capturePage).toContain('Kirim Clock Out');
     expect(camera).toContain('Ambil Selfie');
