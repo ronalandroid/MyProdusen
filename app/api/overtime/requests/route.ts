@@ -28,11 +28,18 @@ export async function GET(request: NextRequest) {
 
     const filters: any = {};
 
-    // Employee can only see their own requests
-    if (user.role === 'EMPLOYEE') {
+    // BOLA guard: only SUPERADMIN may read other employees' requests via ?employeeId.
+    // Every other authenticated role is hard-scoped to their own employee record.
+    if (user.role === 'SUPERADMIN') {
+      const requestedEmployeeId = searchParams.get('employeeId');
+      if (requestedEmployeeId) {
+        filters.employeeId = requestedEmployeeId;
+      }
+    } else {
+      if (!user.employeeId) {
+        return errorResponse('User tidak terhubung dengan karyawan', 403);
+      }
       filters.employeeId = user.employeeId;
-    } else if (searchParams.get('employeeId')) {
-      filters.employeeId = searchParams.get('employeeId')!;
     }
 
     if (status) filters.status = status;
@@ -44,7 +51,7 @@ export async function GET(request: NextRequest) {
     return successResponse(requests);
   } catch (error: any) {
     console.error('Get overtime requests error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
+    return errorResponse('Gagal mengambil data lembur', 500);
   }
 }
 
@@ -76,6 +83,6 @@ export async function POST(request: NextRequest) {
       return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
     }
 
-    return errorResponse(error.message || 'Internal server error', 500);
+    return errorResponse('Gagal membuat pengajuan lembur', 500);
   }
 }

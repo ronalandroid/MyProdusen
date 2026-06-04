@@ -6,9 +6,36 @@ import { logger } from '@/lib/logger';
 export interface RateLimitConfig {
   maxAttempts: number;
   windowMs: number;
+  /**
+   * When true, a Redis/limiter failure falls back to an in-process limiter
+   * instead of allowing the request. Use for auth/abuse-sensitive endpoints
+   * so brute-force protection never silently disappears during a Redis outage.
+   */
+  failSafe?: boolean;
 }
 
 const rateLimiters = new Map<string, RedisRateLimiter>();
+
+// In-process fallback counter, used only when Redis is unavailable and the
+// config is failSafe. Per-instance (best-effort) but far better than allowing
+// unlimited auth attempts. Entries are pruned lazily on access.
+const memoryBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function memoryCheck(
+  identifier: string,
+  config: RateLimitConfig
+): { limited: boolean; remaining: number; resetAt: number } {
+  const now = Date.now();
+  const existing = memoryBuckets.get(identifier);
+  if (!existing || existing.resetAt <= now) {
+    const resetAt = now + config.windowMs;
+    memoryBuckets.set(identifier, { count: 1, resetAt });
+    return { limited: false, remaining: config.maxAttempts - 1, resetAt };
+  }
+  existing.count += 1;
+  const remaining = Math.max(0, config.maxAttempts - existing.count);
+  return { limited: existing.count > config.maxAttempts, remaining, resetAt: existing.resetAt };
+}
 
 function getRateLimiter(config: RateLimitConfig): RedisRateLimiter {
   const key = `${config.maxAttempts}:${config.windowMs}`;
@@ -57,6 +84,16 @@ export async function rateLimit(
       resetAt: result.resetAt.getTime(),
     };
   } catch (error) {
+    if (config.failSafe) {
+      logger.error('Rate limit check failed, using in-process fallback', { error });
+      try {
+        const ip = getClientIp(request);
+        return memoryCheck(`${ip}:${request.nextUrl.pathname}`, config);
+      } catch (fallbackError) {
+        logger.error('In-process rate limit fallback failed, denying request', { fallbackError });
+        return { limited: true, remaining: 0, resetAt: Date.now() + config.windowMs };
+      }
+    }
     logger.error('Rate limit check failed, allowing request', { error });
     return {
       limited: false,
@@ -86,14 +123,17 @@ export const RATE_LIMITS = {
   LOGIN: {
     maxAttempts: 5,
     windowMs: 15 * 60 * 1000, // 15 minutes
+    failSafe: true,
   },
   REGISTER: {
     maxAttempts: 3,
     windowMs: 60 * 60 * 1000, // 1 hour
+    failSafe: true,
   },
   PASSWORD_CHANGE: {
     maxAttempts: 3,
     windowMs: 60 * 60 * 1000, // 1 hour
+    failSafe: true,
   },
   API_DEFAULT: {
     maxAttempts: 100,

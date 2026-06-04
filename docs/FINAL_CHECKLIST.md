@@ -20,6 +20,11 @@
 - [ ] Employee own-data isolation verified.
 - [ ] Payroll RBAC verified when payroll module enabled.
 - [ ] Audit log added for sensitive actions.
+- [x] OWASP API authorization hardening verified for reimbursement, overtime, and KPI result-by-id BOLA/IDOR paths.
+- [x] Root `proxy.ts` wires global cookie-auth CSRF origin checks for all API mutations.
+- [x] Test-only activation-token endpoint blocks in `NODE_ENV=production` regardless of compat flags.
+- [x] Auth rate limiter uses fail-safe in-process fallback for login/register/password-change when Redis fails.
+- [x] Baseline HTTP security headers configured: CSP, HSTS, frame denial, referrer policy, permissions policy, nosniff.
 
 ## UI/UX Quality Gate
 

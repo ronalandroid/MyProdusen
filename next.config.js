@@ -10,7 +10,54 @@ const nextConfig = {
   output: 'standalone',
   allowedDevOrigins: localDevOrigins,
   async headers() {
+    const isProd = process.env.NODE_ENV === 'production';
+    // Pragmatic CSP for a Next.js app that renders Leaflet/OSM map tiles,
+    // inline styles, blob/data selfie previews, and same-origin SSE/fetch.
+    // 'unsafe-inline'/'unsafe-eval' kept for Next's runtime + styled output;
+    // tighten with nonces later if the inline surface is reduced.
+    const csp = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+      "form-action 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https:",
+      "worker-src 'self' blob:",
+      "media-src 'self' blob: data:",
+      "manifest-src 'self'",
+      ...(isProd ? ['upgrade-insecure-requests'] : []),
+    ].join('; ');
+
+    const securityHeaders = [
+      { key: 'Content-Security-Policy', value: csp },
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      {
+        key: 'Permissions-Policy',
+        value: 'camera=(self), geolocation=(self), microphone=(), payment=(), usb=()',
+      },
+      { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+      ...(isProd
+        ? [
+            {
+              key: 'Strict-Transport-Security',
+              value: 'max-age=63072000; includeSubDomains; preload',
+            },
+          ]
+        : []),
+    ];
+
     return [
+      {
+        // Apply baseline security headers to every response.
+        source: '/:path*',
+        headers: securityHeaders,
+      },
       {
         source: '/:path*.(png|jpg|jpeg|gif|webp|ico|svg|woff|woff2)',
         headers: [

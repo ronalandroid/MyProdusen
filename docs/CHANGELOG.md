@@ -1,5 +1,18 @@
 # Changelog — MyProdusen
 
+## 2026-06-04 — Security / Deploy Readiness Hardening
+
+- Applied OWASP API Top 10-style authorization checks from the cybersecurity skills audit lens.
+- Fixed BOLA/IDOR in reimbursement claim list: non-SUPERADMIN users are forced to own employee scope.
+- Fixed BOLA/IDOR in overtime request list: non-SUPERADMIN users are forced to own employee scope.
+- Fixed BOLA/IDOR in KPI result-by-id: non-`KPI_READ` users must own the employee result.
+- Verified root `proxy.ts` global CSRF-origin logic runs for all `/api` mutations in Next 16.
+- Hardened TestSprite activation-token helper so production always returns not-found even if compat env is set.
+- Added baseline deploy security headers: CSP, frame denial, HSTS in production, referrer policy, permissions policy, COOP, nosniff.
+- Added fail-safe in-process fallback for auth rate limits when Redis limiter is unavailable.
+- Added regression tests in `tests/security/api-authorization-hardening.test.ts`.
+- Verification: `tsc`, security tests, reference gate, release gate, and build passed locally.
+
 ## 2026-06-04 — Attendance Sync & Reliability Hardening
 
 - Wrapped clock-in writes (attendance + daily summary + payroll-impact history + notification) in a single DB transaction so a downstream failure rolls back the whole set; no orphan attendance rows.

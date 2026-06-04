@@ -189,7 +189,11 @@ Requirements:
 - Validate env before production start.
 - Private uploads stored in persistent volume.
 - No public direct access to private selfies/attachments.
-- Rate-limit sensitive auth flows.
+- Rate-limit sensitive auth flows, with fail-safe fallback for login/register/password-change.
+- Cookie-authenticated API mutations must pass CSRF origin/referer checks through root `proxy.ts`.
+- OWASP API Top 10 authorization rules apply: no BOLA/IDOR; non-superadmin reimbursement, overtime, KPI, attendance, payroll, and profile reads are hard-scoped to the user's own employee/team scope.
+- Production-only test endpoints must be unreachable in `NODE_ENV=production` even if compat flags are set.
+- Baseline HTTP security headers required: CSP, `X-Frame-Options`, HSTS in production, `Referrer-Policy`, `Permissions-Policy`, and `X-Content-Type-Options`.
 - No secrets in repository.
 - No destructive production DB actions.
 

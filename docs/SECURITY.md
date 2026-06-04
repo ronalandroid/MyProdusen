@@ -14,8 +14,14 @@
 - Strict `getProductionJwtSecret()` is the single signing helper for sessions and password-reset tokens.
 - HTTPS terminated by Coolify. Geolocation requires HTTPS by browser policy; do not work around it.
 - Cookie-authenticated mutating API requests are protected by an Origin/Referer
-  guard in `lib/core/route-handler.ts`; bearer-token API clients remain usable
-  for trusted server-to-server calls.
+  guard in root `proxy.ts` for every `/api/*` mutation, plus
+  `lib/core/route-handler.ts` for wrapped handlers; bearer-token API clients
+  remain usable for trusted server-to-server calls.
+- Baseline HTTP security headers are configured in `next.config.js`: CSP,
+  `X-Frame-Options: DENY`, HSTS in production, `Referrer-Policy`,
+  `Permissions-Policy`, COOP, and `X-Content-Type-Options: nosniff`.
+- Auth rate limiting fails safe for login/register/password-change by falling
+  back to an in-process limiter if Redis is unavailable.
 
 ## Roles & access
 
@@ -29,6 +35,13 @@ Inactive users cannot log in. Disabled accounts lose access on the next auth
 revalidation.
 
 System `role` controls access only. Operational labels such as HR, Expedition, Driver, or Staff belong in employee `division`, `team`, and `position`, not in new RBAC roles. `LEADER` is the only production team-lead access role. Public registration always creates inactive `EMPLOYEE`; only existing authorized Superadmin flows may assign `LEADER` or `SUPERADMIN`, with last-Superadmin safety checks.
+
+OWASP API authorization guardrails:
+
+- Non-`SUPERADMIN` reimbursement claim reads are always scoped to the current user's linked employee record.
+- Non-`SUPERADMIN` overtime request reads are always scoped to the current user's linked employee record.
+- KPI result-by-id reads require `KPI_READ` or ownership of the result's employee/user record.
+- Route source-contract tests in `tests/security/api-authorization-hardening.test.ts` prevent regression.
 
 ## Auth email delivery
 

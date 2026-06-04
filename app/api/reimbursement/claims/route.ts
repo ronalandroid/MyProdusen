@@ -41,11 +41,19 @@ export async function GET(request: NextRequest) {
 
     const filters: any = {};
 
-    // Employee can only see their own claims
-    if (user.role === 'EMPLOYEE') {
+    // BOLA guard: only SUPERADMIN may read other employees' claims via ?employeeId.
+    // Every other authenticated role is hard-scoped to their own employee record,
+    // and must have a linked employee to see anything.
+    if (user.role === 'SUPERADMIN') {
+      const requestedEmployeeId = searchParams.get('employeeId');
+      if (requestedEmployeeId) {
+        filters.employeeId = requestedEmployeeId;
+      }
+    } else {
+      if (!user.employeeId) {
+        return errorResponse('User tidak terhubung dengan karyawan', 403);
+      }
       filters.employeeId = user.employeeId;
-    } else if (searchParams.get('employeeId')) {
-      filters.employeeId = searchParams.get('employeeId')!;
     }
 
     if (status) filters.status = status;

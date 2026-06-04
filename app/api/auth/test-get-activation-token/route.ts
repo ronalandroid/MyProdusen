@@ -10,10 +10,20 @@ const tokenRequestSchema = z.object({
   email: z.string().email('Email tidak valid'),
 });
 
-export const POST = withApiHandler(async (request: NextRequest) => {
-  if (process.env.TESTSPRITE_COMPAT_RESPONSE !== 'true') {
+// Defense in depth: this endpoint mints account-activation tokens for any email
+// and exists ONLY for the TestSprite compat harness. It must never be reachable
+// in production, regardless of how env flags are set on the deploy host.
+function assertTestCompatEnabled() {
+  if (
+    process.env.NODE_ENV === 'production' ||
+    process.env.TESTSPRITE_COMPAT_RESPONSE !== 'true'
+  ) {
     throw AppError.notFound('Endpoint tidak ditemukan');
   }
+}
+
+export const POST = withApiHandler(async (request: NextRequest) => {
+  assertTestCompatEnabled();
 
   const body = await parseJsonBody(request, tokenRequestSchema);
   let activation = await authService.createAccountActivationToken(body.email);
@@ -40,9 +50,7 @@ export const POST = withApiHandler(async (request: NextRequest) => {
 });
 
 export const GET = withApiHandler(async (request: NextRequest) => {
-  if (process.env.TESTSPRITE_COMPAT_RESPONSE !== 'true') {
-    throw AppError.notFound('Endpoint tidak ditemukan');
-  }
+  assertTestCompatEnabled();
 
   const email = request.nextUrl.searchParams.get('email');
   if (!email) {

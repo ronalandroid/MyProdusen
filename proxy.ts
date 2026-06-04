@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isTrustedMutationOrigin } from '@/lib/security/csrf-origin';
-
-const TOKEN_COOKIE_NAME = 'myprodusen_token';
+import { TOKEN_COOKIE_NAME } from '@/lib/auth-response';
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const protectedRoutes = ['/dashboard'];
 const authRoutes = ['/login', '/register'];

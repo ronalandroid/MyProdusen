@@ -10,6 +10,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const user = await requireAuth(request);
     const { id } = await params;
     const result = await kpiService.getResultById(id);
+
+    // BOLA guard: self-service roles may only read their own KPI result.
+    // SUPERADMIN (KPI_READ) may read any.
+    if (!hasPermission(user.role, 'KPI_READ')) {
+      const ownerUserId = result.employee?.userId;
+      if (!ownerUserId || ownerUserId !== user.userId) {
+        return forbiddenResponse('Anda tidak memiliki akses');
+      }
+    }
+
     return successResponse(result);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
