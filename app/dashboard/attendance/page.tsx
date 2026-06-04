@@ -63,6 +63,22 @@ function formatTime(value?: string | null) {
   return timeFormatter.format(new Date(value));
 }
 
+function calculateDistanceMeters(
+  from: { latitude: number; longitude: number },
+  to: { latitude: number; longitude: number },
+) {
+  const earthRadiusMeters = 6_371_000;
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const dLat = toRadians(to.latitude - from.latitude);
+  const dLon = toRadians(to.longitude - from.longitude);
+  const lat1 = toRadians(from.latitude);
+  const lat2 = toRadians(to.latitude);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return Math.round(earthRadiusMeters * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
 type AttendanceState = {
   profile: ClientUserProfile | null;
   todayAttendance: AttendanceRecord | null;
@@ -193,6 +209,12 @@ export default function AttendancePage() {
   const locationName = todayAttendance?.workLocation?.name || employee?.defaultLocation?.name || "Lokasi kerja belum tersedia";
   const locationAddress = todayAttendance?.workLocation?.address || employee?.defaultLocation?.address || "Hubungi HR untuk pengaturan lokasi kerja.";
   const assignedLocation = employee?.defaultLocation;
+  const officialPreviewDistanceMeters = assignedLocation
+    ? calculateDistanceMeters(
+        { latitude: assignedLocation.latitude, longitude: assignedLocation.longitude },
+        { latitude: assignedLocation.latitude, longitude: assignedLocation.longitude },
+      )
+    : null;
   const shift = employee?.defaultShift;
   const shiftLabel = shift ? `${shift.name} (${shift.startTime.slice(0, 5)} - ${shift.endTime.slice(0, 5)})` : "Shift belum tersedia";
 
@@ -381,9 +403,17 @@ export default function AttendancePage() {
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "4px", color: "var(--text-primary)" }}>{locationName}</div>
             <div style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: 500 }}>{locationAddress}</div>
-            {assignedLocation && (
-              <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600 }}>
-                {assignedLocation.latitude.toFixed(7)}, {assignedLocation.longitude.toFixed(7)} • Radius {assignedLocation.radius} m
+            {assignedLocation ? (
+              <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span>{assignedLocation.latitude.toFixed(7)}, {assignedLocation.longitude.toFixed(7)}</span>
+                <span>Radius resmi: {assignedLocation.radius} m</span>
+                <span>Jarak ke lokasi preview: {officialPreviewDistanceMeters} m (dihitung ulang saat Clock In/Clock Out).</span>
+                <span>Anda berada di luar radius lokasi kerja jika jarak GPS melebihi radius resmi.</span>
+                <span>Server tetap menghitung jarak resmi; tampilan ini hanya preview.</span>
+              </div>
+            ) : (
+              <div style={{ fontSize: "11px", color: "var(--danger)", marginTop: "6px", fontWeight: 700 }}>
+                Lokasi kerja belum tersedia. Hubungi Superadmin.
               </div>
             )}
           </div>
