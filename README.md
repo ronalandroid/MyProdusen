@@ -77,6 +77,8 @@ Postponed/non-MVP: recruitment, complex BPJS/tax automation, bank disbursement, 
 
 Employee/Leader dashboard flow: Clock In/Clock Out → GPS/map validation → distance/radius status → selfie capture → optional note → submit → attendance history refresh. Backend must require authenticated employee profile, assigned active shift, assigned active work location, GPS evidence, selfie evidence, geofence validation, protected selfie storage, and audit-sensitive action logging. Superadmin does not use normal attendance CTA.
 
+Clock-in/out writes run in a DB transaction with race-safe duplicate/double-submit handling and payroll-period lock enforcement. After a successful clock event the API publishes realtime SSE events (`attendance.updated`, `dashboard.updated`) and the employee dashboard refreshes without manual reload (with focus/reconnect/30s-poll fallback). The optional note (≤150 chars) is stored in `Attendance.adjustmentReason`. Offline-queued attendance syncs as multipart with a rebuilt selfie file. See `docs/attendance-flow.md`.
+
 ### Payroll/Gajian MVP
 
 Superadmin owns payroll setup, calculation review, period/status control, payslip/report access, and approval/payment state. Employee and Leader can see own payroll/payslip only. Leader cannot see assigned-team salary, payroll amount, payslip, or payroll export. Payroll breakdown should remain simple: base salary, KPI bonus if configured, attendance deduction, holiday multiplier if supported, and final amount.

@@ -31,11 +31,11 @@ Absensi Berhasil + Log Absensi Hari Ini
 
 ## Backend Endpoints
 
-- `GET /api/attendance/today`
+- `GET /api/attendance/today` (`force-dynamic`)
 - `POST /api/attendance/validate-location`
-- `POST /api/attendance/check-in`
-- `POST /api/attendance/check-out`
-- `GET /api/attendance`
+- `POST /api/attendance/check-in` (multipart; optional `note`, ≤150 chars; publishes realtime events)
+- `POST /api/attendance/check-out` (multipart; optional `note`, ≤150 chars; publishes realtime events)
+- `GET /api/attendance` (`force-dynamic`)
 - `GET /api/attendance/selfie/:path`
 - `GET /api/attendance/schedules?date=YYYY-MM-DD`
 - `POST /api/attendance/schedules`
@@ -91,3 +91,35 @@ Seeded examples:
 - Selfie preview remains mirrored.
 - Success screen shows today attendance timeline.
 - Mobile layout uses safe-area padding so bottom bar does not cover submit button.
+
+## Reliability & Data Integrity
+
+- `checkIn` writes attendance + daily summary + payroll-impact history + notification inside a single `db.transaction`. A downstream failure rolls the whole set back, so an attendance row never exists without its side-effect rows.
+- The unique daily index (`Attendance_employeeId_checkInDate_key`) is the source of truth for "one attendance per day". A concurrent duplicate check-in is caught and surfaced as `Anda sudah melakukan check-in hari ini` instead of a 500.
+- `checkOut` updates attendance + daily summary inside a transaction and uses a compare-and-set guard (`WHERE check_out_time IS NULL`). A double clock-out can only win once; the loser gets a clean business error and never overwrites the first.
+- Clock-in and clock-out both call `payrollPeriodLockService.assertAttendanceDateEditable()` so attendance cannot mutate a locked payroll period.
+
+## Realtime Sync (no manual refresh)
+
+- After a successful clock-in/out the API publishes two scoped events: `attendance.updated` and `dashboard.updated` (scope `user`, target the signed-in user id).
+- The employee dashboard (`EmployeeBeranda`) subscribes through the existing SSE channel `/api/realtime` (`useRealtime`) and refetches the moment an event arrives — no full page reload.
+- Defense-in-depth freshness on the dashboard query: `refetchOnWindowFocus`, `refetchOnReconnect`, a 30s poll, and a 10s `staleTime`. So even if SSE drops, returning to the tab after a clock event shows fresh state.
+- The clock screen also invalidates the `employee-beranda` query on submit, so navigating back is instant.
+- `GET /api/attendance/today` and `GET /api/attendance` are `force-dynamic` (`revalidate = 0`) — never served from a stale prerender/cache.
+
+## Optional Note
+
+- Clock-in/out accepts an optional `note` (max 150 chars), validated by `checkInSchema`/`checkOutSchema` and parsed from the multipart form by `parseCheckInRealtimeForm`/`parseCheckOutRealtimeForm`.
+- The note is persisted in the existing `Attendance.adjustmentReason` column (no migration). Check-out notes are appended (`Clock-out: …`) so a check-in note is not lost.
+
+## Offline Sync
+
+- Queued offline clock-in/out records sync as `multipart/form-data` (the selfie is rebuilt from its data URL into a real `File`), matching the same server contract as the live path — they are no longer sent as JSON.
+- Queue fields are remapped to server names on dispatch: `locationId` → `workLocationId`, numeric `timestamp` → ISO `gpsTimestamp`, and queued `notes`/`note` → `note` (distinct from `deviceInfo`).
+- Auth is preserved via `credentials: 'include'`; the multipart boundary `Content-Type` is left to the runtime.
+- Contract pinned by `tests/offline/attendance-sync-payload.test.ts`.
+
+## Code Structure Notes
+
+- Canonical attendance code lives under `src/services/attendance/` (`attendance.service.ts`, `attendance-exception.service.ts`). The duplicate `features/attendance/*` tree was removed; only `features/payroll/*` remains canonical for payroll-period locks.
+- Reference UI contract validated by `tests/ui/attendance-*` and `tests/ui/layout-ux-source.test.ts`.

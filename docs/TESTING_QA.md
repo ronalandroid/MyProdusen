@@ -13,6 +13,31 @@ npm run build
 npm run release:check
 ```
 
+## Attendance Sync Verification (2026-06-04)
+
+Targeted suite for the clock-in/out sync + reliability work:
+
+```bash
+npx tsc --noEmit
+npx vitest run \
+  tests/api/attendance.test.ts \
+  tests/api/attendance-schedules.test.ts \
+  tests/ui/attendance-direct-selfie-flow.test.ts \
+  tests/ui/attendance-map-first-flow.test.ts \
+  tests/ui/layout-ux-source.test.ts \
+  tests/offline/attendance-sync-payload.test.ts \
+  tests/offline/sync-manager.test.ts \
+  tests/offline/conflict-resolver.test.ts \
+  --pool=forks --maxWorkers=2
+node scripts/check-references.mjs
+node scripts/check-release-gates.mjs
+npm run build
+```
+
+- `tests/offline/attendance-sync-payload.test.ts` pins the rebuilt offline payload to the server contract (multipart, rebuilt selfie `File`, `locationId`→`workLocationId`, ISO `gpsTimestamp`, `note` distinct from `deviceInfo`).
+- Last run: `tsc` clean, 59/59 Vitest, reference + release gates passed, build clean.
+- Manual realtime check: clock-in on one tab → employee dashboard refreshes the today card without manual reload (SSE `attendance.updated`/`dashboard.updated`); with SSE blocked it still refreshes on tab focus / within the 30s poll.
+
 Additional available checks:
 
 ```bash

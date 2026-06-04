@@ -49,11 +49,18 @@ Attendance.check_out_selfie_mime_type
 Attendance.check_in_geo_status         -- INSIDE_RADIUS / OUTSIDE_RADIUS / PENDING_REVIEW / APPROVED_MANUAL / REJECTED / GPS_UNAVAILABLE
 Attendance.check_out_geo_status
 Attendance.geo_validation_metadata     -- JSONB: lat/lon/accuracy/distance/timestamp evidence per check
+Attendance.adjustment_reason           -- optional clock note (≤150 chars); check-out note appended as "Clock-out: …"
 ```
 
 GPS coordinates and distances live in the legacy `checkInLatitude / Longitude
 / Accuracy / Distance` columns; geo-status columns make those values
 queryable without recomputing the radius check.
+
+The optional clock-in/out note is stored in the existing `adjustment_reason`
+column (no migration). Clock-out notes are appended to any clock-in note so
+neither is lost. Clock-in/out writes run inside a DB transaction; the unique
+`Attendance_employeeId_checkInDate_key` enforces one attendance per employee per
+day and backs the race-safe duplicate check-in handling.
 
 ## Indexes
 

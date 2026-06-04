@@ -1,5 +1,20 @@
 # Changelog — MyProdusen
 
+## 2026-06-04 — Attendance Sync & Reliability Hardening
+
+- Wrapped clock-in writes (attendance + daily summary + payroll-impact history + notification) in a single DB transaction so a downstream failure rolls back the whole set; no orphan attendance rows.
+- Made concurrent duplicate clock-in race-safe: the unique daily index violation is now surfaced as a clean business error instead of a 500.
+- Made clock-out double-submit race-safe with a transactional compare-and-set guard (`WHERE check_out_time IS NULL`); the loser cannot overwrite the first checkout.
+- Added payroll-period lock enforcement (`payrollPeriodLockService.assertAttendanceDateEditable`) to the live clock-in/out path; previously only the now-deleted duplicate service had it.
+- Added push realtime: clock-in/out publish `attendance.updated` + `dashboard.updated`; the employee dashboard subscribes via the existing SSE channel and refetches instantly. Added focus/reconnect/poll freshness and clock-screen cache invalidation as fallbacks.
+- Marked `GET /api/attendance/today` and `GET /api/attendance` `force-dynamic` (`revalidate = 0`) to prevent stale cached responses.
+- Persisted the optional clock note (≤150 chars) into the existing `Attendance.adjustmentReason` column (no migration); check-out notes append rather than overwrite.
+- Fixed the previously non-functional offline sync: queued records now dispatch as `multipart/form-data` with a rebuilt selfie `File`, remap `locationId`→`workLocationId`, numeric timestamp→ISO `gpsTimestamp`, and queued `notes`/`note`→`note` (no longer abused as `deviceInfo`).
+- Removed the duplicate zombie `features/attendance/*` service tree; canonical attendance code now lives under `src/services/attendance/`. Migrated `attendance-exception.service` and repointed all importers. Deleted the orphan `lib/validations/attendance.ts`.
+- Added a map recenter ("locate me") control to the clock GPS step.
+- Replaced hard-coded attendance hex values with design tokens in `app/globals.css`.
+- Verified: `tsc --noEmit` clean, 59/59 Vitest (incl. new `tests/offline/attendance-sync-payload.test.ts`), reference gate, release gate, and `npm run build`.
+
 ## 2026-06-02 — Production Audit Hardening
 
 - Blocked TestSprite/E2E compatibility flags from disabling rate limits, CSRF origin checks, or secure cookies in production.
