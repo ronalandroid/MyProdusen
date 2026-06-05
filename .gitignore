@@ -83,3 +83,7 @@ temp/
 # Playwright artifacts
 /playwright-report/
 /test-results/
+
+# Local code intelligence indexes
+.codegraph/
+.understand-anything/

@@ -1,5 +1,18 @@
 import React from 'react';
 
+const BASE_STYLES = 'inline-flex min-h-[44px] max-w-full items-center justify-center gap-2 font-medium leading-tight rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)] focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+const VARIANT_STYLES = {
+  primary: 'bg-[var(--primary)] text-[var(--text-primary)] hover:bg-[var(--primary-hover)] active:scale-95',
+  secondary: 'bg-white text-[var(--text-primary)] border border-[var(--border-color)] hover:bg-gray-50 active:scale-95',
+  danger: 'bg-[var(--danger)] text-white hover:bg-red-700 active:scale-95',
+  ghost: 'bg-transparent text-[var(--text-primary)] hover:bg-gray-100 active:scale-95',
+};
+const SIZE_STYLES = {
+  sm: 'px-3 py-2 text-xs',
+  md: 'px-4 py-2.5 text-sm',
+  lg: 'px-6 py-3 text-base',
+};
+
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
@@ -18,27 +31,12 @@ export default function Button({
   className = '',
   ...props
 }: ButtonProps) {
-  const baseStyles = 'inline-flex min-h-[44px] max-w-full items-center justify-center gap-2 font-medium leading-tight rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring-focus)] focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
-  
-  const variantStyles = {
-    primary: 'bg-[var(--primary)] text-[var(--text-primary)] hover:bg-[var(--primary-hover)] active:scale-95',
-    secondary: 'bg-white text-[var(--text-primary)] border border-[var(--border-color)] hover:bg-gray-50 active:scale-95',
-    danger: 'bg-[var(--danger)] text-white hover:bg-red-700 active:scale-95',
-    ghost: 'bg-transparent text-[var(--text-primary)] hover:bg-gray-100 active:scale-95',
-  };
-  
-  const sizeStyles = {
-    sm: 'px-3 py-2 text-xs',
-    md: 'px-4 py-2.5 text-sm',
-    lg: 'px-6 py-3 text-base',
-  };
-  
   const widthStyle = fullWidth ? 'w-full' : '';
   
   return (
     <button
       aria-busy={loading || undefined}
-      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${widthStyle} ${className}`}
+      className={`${BASE_STYLES} ${VARIANT_STYLES[variant]} ${SIZE_STYLES[size]} ${widthStyle} ${className}`}
       disabled={disabled || loading}
       {...props}
     >

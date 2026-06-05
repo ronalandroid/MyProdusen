@@ -105,7 +105,7 @@ function AttendanceClockContent() {
   const [gpsError, setGpsError] = useState(() => (typeof navigator !== "undefined" && !navigator.geolocation ? "Lokasi tidak dapat diakses. Izinkan lokasi di browser Anda." : ""));
   const [selfieBlob, setSelfieBlob] = useState<Blob | null>(null);
   const [selfiePreviewUrl, setSelfiePreviewUrl] = useState("");
-  const [liveness, setLiveness] = useState({ score: 0, passed: false, unsupported: false });
+  const livenessRef = useRef({ score: 0, passed: false, unsupported: false });
   const selfieFilenameRef = useRef("attendance-selfie.webp");
   const todayAttendanceRef = useRef<AttendanceRecord | null>(null);
   const { step, note, manualReason, isSubmitting, statusText, message, error } = ui;
@@ -130,7 +130,7 @@ function AttendanceClockContent() {
 
   const clearSelfie = useCallback(() => {
     setSelfieBlob(null);
-    setLiveness({ score: 0, passed: false, unsupported: false });
+    livenessRef.current = { score: 0, passed: false, unsupported: false };
     setSelfiePreviewUrl((current) => {
       if (current) URL.revokeObjectURL(current);
       return "";
@@ -210,8 +210,8 @@ function AttendanceClockContent() {
       formData.set("distance", String(Math.round(gpsDistance || 0)));
       formData.set("type", type);
       formData.set("deviceInfo", navigator.userAgent);
-      formData.set("livenessScore", String(liveness.score));
-      formData.set("livenessPassed", String(liveness.passed));
+      formData.set("livenessScore", String(livenessRef.current.score));
+      formData.set("livenessPassed", String(livenessRef.current.passed));
       const selfieFilename = selfieFilenameRef.current;
       formData.set("selfie", selfieBlob, selfieFilename);
       if (note.trim()) formData.set("note", note.trim());
@@ -332,7 +332,7 @@ function AttendanceClockContent() {
 
       {step === "selfie" && (
         <>
-          <RealtimeSelfieCamera capturedPreviewUrl={selfiePreviewUrl} disabled={isSubmitting} autoStart captureLabel="Ambil Foto" retakeLabel="Ulangi Foto" onCapture={({ blob, previewUrl, meta, liveness }) => { if (selfiePreviewUrl) URL.revokeObjectURL(selfiePreviewUrl); setSelfieBlob(blob); setSelfiePreviewUrl(previewUrl); setLiveness(liveness); const ext = meta.mimeType.split("/")[1] || "webp"; selfieFilenameRef.current = `attendance-selfie.${ext === "jpeg" ? "jpg" : ext}`; }} onClear={clearSelfie} />
+          <RealtimeSelfieCamera capturedPreviewUrl={selfiePreviewUrl} disabled={isSubmitting} autoStart captureLabel="Ambil Foto" retakeLabel="Ulangi Foto" onCapture={({ blob, previewUrl, meta, liveness }) => { if (selfiePreviewUrl) URL.revokeObjectURL(selfiePreviewUrl); setSelfieBlob(blob); setSelfiePreviewUrl(previewUrl); livenessRef.current = liveness; const ext = meta.mimeType.split("/")[1] || "webp"; selfieFilenameRef.current = `attendance-selfie.${ext === "jpeg" ? "jpg" : ext}`; }} onClear={clearSelfie} />
           
           <div className="card p-4 border border-[var(--border-color)] bg-white flex items-center gap-3">
             <ShieldCheck size={18} className="text-[var(--text-secondary)] shrink-0" />

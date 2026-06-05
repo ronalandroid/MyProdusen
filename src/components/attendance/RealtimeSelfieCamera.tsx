@@ -47,8 +47,15 @@ export function RealtimeSelfieCamera({
   const [cameraError, setCameraError] = useState("");
   const [captureInfo, setCaptureInfo] = useState<CompressedSelfie | null>(null);
   const [livenessState, setLivenessState] = useState<LivenessState>("searching");
-  const [livenessScore, setLivenessScore] = useState(0);
+  const livenessScoreRef = useRef(0);
   const livenessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearLivenessTimer = useCallback(() => {
+    if (livenessTimerRef.current) {
+      clearTimeout(livenessTimerRef.current);
+      livenessTimerRef.current = null;
+    }
+  }, []);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -90,11 +97,11 @@ export function RealtimeSelfieCamera({
 
       setIsCameraOpen(true);
       setLivenessState("detected");
-      setLivenessScore(0.35);
-      if (livenessTimerRef.current) clearTimeout(livenessTimerRef.current);
+      livenessScoreRef.current = 0.35;
+      clearLivenessTimer();
       livenessTimerRef.current = setTimeout(() => {
         setLivenessState("passed");
-        setLivenessScore(0.92);
+        livenessScoreRef.current = 0.92;
       }, 1400);
     } catch (error) {
       const name = error instanceof DOMException ? error.name : "";
@@ -107,7 +114,7 @@ export function RealtimeSelfieCamera({
     } finally {
       setIsStarting(false);
     }
-  }, [stopCamera]);
+  }, [clearLivenessTimer, stopCamera]);
 
   async function captureSelfie() {
     setCameraError("");
@@ -137,7 +144,7 @@ export function RealtimeSelfieCamera({
 
       const previewUrl = URL.createObjectURL(result.blob);
       stopCamera();
-      onCapture({ blob: result.blob, previewUrl, meta: result, liveness: { score: livenessScore, passed: true, unsupported: false } });
+      onCapture({ blob: result.blob, previewUrl, meta: result, liveness: { score: livenessScoreRef.current, passed: true, unsupported: false } });
     } catch (error) {
       setCameraError(error instanceof Error ? error.message : CAPTURE_FAILED);
     } finally {
@@ -148,7 +155,7 @@ export function RealtimeSelfieCamera({
   const retakeSelfie = useCallback(() => {
     setCaptureInfo(null);
     setLivenessState("searching");
-    setLivenessScore(0);
+    livenessScoreRef.current = 0;
     onClear();
     void openCamera();
   }, [onClear, openCamera]);
@@ -156,10 +163,10 @@ export function RealtimeSelfieCamera({
   // Source-contract equivalent of: useEffect(() => stopCamera, [])
   useEffect(() => {
     return () => {
-      if (livenessTimerRef.current) clearTimeout(livenessTimerRef.current);
+      clearLivenessTimer();
       stopCamera();
     };
-  }, [stopCamera]);
+  }, [clearLivenessTimer, stopCamera]);
 
   useEffect(() => {
     if (disabled) stopCamera();
