@@ -20,6 +20,12 @@ function readNumber(formData: FormData, key: string) {
   return value === undefined ? undefined : Number(value);
 }
 
+function readBoolean(formData: FormData, key: string) {
+  const value = readString(formData, key);
+  if (value === undefined) return undefined;
+  return value === 'true' || value === '1';
+}
+
 function requireSelfieFile(formData: FormData) {
   const selfie = formData.get('selfie');
 
@@ -44,6 +50,8 @@ export async function parseCheckInRealtimeForm(request: Request): Promise<Attend
     latitude: readNumber(formData, 'latitude'),
     longitude: readNumber(formData, 'longitude'),
     accuracy: readNumber(formData, 'accuracy'),
+    livenessScore: readNumber(formData, 'livenessScore'),
+    livenessPassed: readBoolean(formData, 'livenessPassed'),
     deviceInfo: readString(formData, 'deviceInfo'),
     gpsTimestamp: readString(formData, 'gpsTimestamp'),
     note: readString(formData, 'note'),
@@ -69,6 +77,8 @@ export async function parseCheckOutRealtimeForm(request: Request): Promise<Atten
     latitude: readNumber(formData, 'latitude'),
     longitude: readNumber(formData, 'longitude'),
     accuracy: readNumber(formData, 'accuracy'),
+    livenessScore: readNumber(formData, 'livenessScore'),
+    livenessPassed: readBoolean(formData, 'livenessPassed'),
     deviceInfo: readString(formData, 'deviceInfo'),
     gpsTimestamp: readString(formData, 'gpsTimestamp'),
     note: readString(formData, 'note'),

@@ -1547,22 +1547,3 @@ jobs:
 *Terinspirasi dari: Mekari Talenta · GreatDay HR · LinovHR · Gadjian*
 *Lebih baik dari semua kompetitor untuk industri produksi dimsum*
 *2026-06-04*
-
-
-## Professional UX + Gamification Contract Appendix
-
-Talenta-style professional HRIS UX principles:
-- Today-first dashboard
-- Admin flows as checklist
-- Tables on desktop, cards on mobile
-- status chips
-- approval timeline
-- payroll checklist
-
-Professional Gamification System:
-- Attendance / Kehadiran: 30%
-- Production KPI: 50%
-- Behavior / Perilaku Kerja: 20%
-- Every new employee starts at 100
-- Formula: `score / 10`
-- Badges: maximum 3–5 visible

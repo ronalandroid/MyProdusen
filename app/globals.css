@@ -164,6 +164,25 @@ body {
   100% { background-position: 0 0; }
 }
 
+@keyframes liveness-pulse-ring {
+  0% { opacity: 0.55; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.24); }
+}
+
+.liveness-pulse {
+  position: absolute;
+  width: 54%;
+  max-width: 220px;
+  aspect-ratio: 3 / 4;
+  border: 3px solid rgba(76, 175, 80, 0.42);
+  border-radius: 50%;
+  animation: liveness-pulse-ring 1.2s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liveness-pulse { animation: none; }
+}
+
 .gamification-hub {
   display: grid;
   gap: 1rem;

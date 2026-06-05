@@ -914,11 +914,3 @@ ADMIN SIDEBAR: #1A1A1A (active #F5A623)
 *DESIGN.md PRODUCTION FINAL v5.0.0*
 *MyProdusen HRIS — PT Tcipta Buana Mandiri*
 *2026-06-04*
-
-
-## Gamification UI/UX Standard
-
-Professional gamification must stay professional HRIS first and fun motivation second.
-- Minimum tap target: 44px
-- Streak calendar must fit 320px mobile width
-- Always respect `prefers-reduced-motion: reduce`
