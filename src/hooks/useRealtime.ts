@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RealtimeEvent, RealtimeEventType } from '@/lib/realtime/events';
 
 interface UseRealtimeOptions {
@@ -9,11 +9,24 @@ interface UseRealtimeOptions {
   eventTypes?: RealtimeEventType[];
 }
 
+const DEFAULT_REALTIME_EVENT_TYPES: RealtimeEventType[] = [
+  'notification.created',
+  'notification.read',
+  'attendance.updated',
+  'dashboard.updated',
+  'sync.updated',
+];
+
 export function useRealtime(options: UseRealtimeOptions = {}) {
   const { enabled = true, onEvent, eventTypes } = options;
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<RealtimeEvent | null>(null);
   const onEventRef = useRef(onEvent);
+  const eventTypesKey = eventTypes?.join('|') || '';
+  const subscribedTypes = useMemo(
+    () => eventTypesKey ? eventTypesKey.split('|') as RealtimeEventType[] : DEFAULT_REALTIME_EVENT_TYPES,
+    [eventTypesKey],
+  );
 
   useEffect(() => {
     onEventRef.current = onEvent;
@@ -33,14 +46,6 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
     source.addEventListener('error', () => setConnected(false));
     source.addEventListener('heartbeat', () => setConnected(true));
 
-    const subscribedTypes: RealtimeEventType[] = eventTypes || [
-      'notification.created',
-      'notification.read',
-      'attendance.updated',
-      'dashboard.updated',
-      'sync.updated',
-    ];
-
     for (const type of subscribedTypes) {
       source.addEventListener(type, handleEvent as EventListener);
     }
@@ -52,7 +57,7 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
       source.close();
       setConnected(false);
     };
-  }, [enabled, eventTypes]);
+  }, [enabled, subscribedTypes]);
 
   return { connected, lastEvent };
 }
