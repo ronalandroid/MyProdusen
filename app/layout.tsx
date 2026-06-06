@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Poppins, JetBrains_Mono } from "next/font/google";
 import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 import Providers from "./providers";
@@ -6,6 +7,20 @@ import "@/lib/init";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-poppins",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["500", "700", "800"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || "https://myprodusen.online"),
@@ -57,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
+    <html lang="id" className={`${poppins.variable} ${jetbrainsMono.variable}`}>
       <head>
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />

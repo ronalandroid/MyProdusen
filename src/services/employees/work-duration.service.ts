@@ -1,12 +1,14 @@
 const JAKARTA_TIMEZONE = 'Asia/Jakarta';
 
+const JAKARTA_DATE_KEY_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+  timeZone: JAKARTA_TIMEZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
 function toJakartaDateKey(value: Date) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: JAKARTA_TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(value);
+  const parts = JAKARTA_DATE_KEY_FORMATTER.formatToParts(value);
   const get = (type: string) => parts.find((part) => part.type === type)?.value || '01';
   return `${get('year')}-${get('month')}-${get('day')}`;
 }

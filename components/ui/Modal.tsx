@@ -21,6 +21,13 @@ const focusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(', ');
 
+const SIZE_CLASSES = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+} as const;
+
 export default function Modal({
   isOpen,
   onClose,
@@ -93,13 +100,6 @@ export default function Modal({
 
   if (!isOpen) return null;
 
-  const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
       <div
@@ -114,7 +114,7 @@ export default function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className={`relative flex max-h-[90dvh] w-full ${sizeClasses[size]} flex-col overflow-hidden rounded-t-3xl bg-white shadow-xl outline-none sm:max-h-[85dvh] sm:rounded-3xl`}
+        className={`relative flex max-h-[90dvh] w-full ${SIZE_CLASSES[size]} flex-col overflow-hidden rounded-t-3xl bg-white shadow-xl outline-none sm:max-h-[85dvh] sm:rounded-3xl`}
       >
         <div className="flex items-start justify-between gap-4 border-b border-[var(--border-color)] px-5 py-4 sm:px-6">
           {title ? (

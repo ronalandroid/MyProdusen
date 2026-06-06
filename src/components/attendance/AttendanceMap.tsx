@@ -195,7 +195,7 @@ export function AttendanceMap({
             <div className="rounded-full bg-white p-1 shadow-md border border-[var(--danger)]">
               <MapPin size={22} className="text-[var(--danger)] fill-[var(--danger)]/10" />
             </div>
-            <span style={{ fontSize: "10px", fontWeight: 800, background: "rgba(229,57,53,0.85)", color: "white", padding: "1px 6px", borderRadius: "999px", marginTop: "2px", whiteSpace: "nowrap" }}>Kantor</span>
+            <span style={{ fontSize: "12px", fontWeight: 800, background: "rgba(229,57,53,0.85)", color: "white", padding: "1px 6px", borderRadius: "999px", marginTop: "2px", whiteSpace: "nowrap" }}>Kantor</span>
           </div>
 
           {/* User Marker pin */}
@@ -216,7 +216,7 @@ export function AttendanceMap({
               <div className="flex size-7 items-center justify-center rounded-full bg-white shadow-md border-2 border-blue-500 animate-pulse">
                 <div className="size-3.5 rounded-full bg-blue-500" />
               </div>
-              <span style={{ fontSize: "10px", fontWeight: 800, background: "rgba(59,130,246,0.85)", color: "white", padding: "1px 6px", borderRadius: "999px", marginTop: "4px", whiteSpace: "nowrap" }}>Anda</span>
+              <span style={{ fontSize: "12px", fontWeight: 800, background: "rgba(59,130,246,0.85)", color: "white", padding: "1px 6px", borderRadius: "999px", marginTop: "4px", whiteSpace: "nowrap" }}>Anda</span>
             </div>
           )}
         </>
@@ -235,7 +235,7 @@ export function AttendanceMap({
             color: "var(--text-muted)",
           }}
         >
-          <MapPin size={24} className="text-[var(--text-muted)] animate-bounce" />
+          <MapPin size={24} className="text-[var(--text-muted)]" />
           <span style={{ fontSize: "12px", fontWeight: 600 }}>
             {hasError
               ? "Peta tidak dapat dimuat. Tampilkan koordinat saja."
@@ -260,7 +260,7 @@ export function AttendanceMap({
           position: "absolute",
           right: 8,
           bottom: 8,
-          fontSize: "9px",
+          fontSize: "12px",
           background: "rgba(255,255,255,0.85)",
           padding: "2px 6px",
           borderRadius: "999px",

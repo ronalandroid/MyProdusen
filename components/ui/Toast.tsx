@@ -22,6 +22,20 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
+const TOAST_ICONS = {
+  success: <CheckCircle size={20} aria-hidden="true" />,
+  error: <XCircle size={20} aria-hidden="true" />,
+  warning: <AlertCircle size={20} aria-hidden="true" />,
+  info: <Info size={20} aria-hidden="true" />,
+} as const;
+
+const TOAST_STYLES = {
+  success: 'bg-[var(--success-bg)] text-[var(--success)] border-[var(--success)]',
+  error: 'bg-[var(--danger-bg)] text-[var(--danger)] border-[var(--danger)]',
+  warning: 'bg-[var(--warning-bg)] text-[#D97706] border-[#D97706]',
+  info: 'bg-[var(--info-bg)] text-[var(--info)] border-[var(--info)]',
+} as const;
+
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) {
@@ -86,35 +100,23 @@ function ToastContainer({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: 
 }
 
 function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
-  const icons = {
-    success: <CheckCircle size={20} />,
-    error: <XCircle size={20} />,
-    warning: <AlertCircle size={20} />,
-    info: <Info size={20} />,
-  };
-
-  const styles = {
-    success: 'bg-[var(--success-bg)] text-[var(--success)] border-[var(--success)]',
-    error: 'bg-[var(--danger-bg)] text-[var(--danger)] border-[var(--danger)]',
-    warning: 'bg-[var(--warning-bg)] text-[#D97706] border-[#D97706]',
-    info: 'bg-[var(--info-bg)] text-[var(--info)] border-[var(--info)]',
-  };
-
   return (
     <div
       className={`
         flex items-center gap-3 p-4 rounded-lg border shadow-lg
         animate-slide-in pointer-events-auto
-        ${styles[toast.type]}
+        ${TOAST_STYLES[toast.type]}
       `}
     >
-      <div className="flex-shrink-0">{icons[toast.type]}</div>
+      <div className="flex-shrink-0">{TOAST_ICONS[toast.type]}</div>
       <p className="flex-1 text-sm font-medium">{toast.message}</p>
       <button
+        type="button"
         onClick={() => onRemove(toast.id)}
         className="flex-shrink-0 hover:opacity-70 transition-opacity"
+        aria-label="Tutup notifikasi"
       >
-        <X size={16} />
+        <X size={16} aria-hidden="true" />
       </button>
     </div>
   );

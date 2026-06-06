@@ -442,6 +442,21 @@ export default function EmployeeBeranda({ profile }: Props) {
         </div>
       )}
 
+      <section className="v4-stats-row overflow-hidden rounded-lg border border-[var(--border-color)]" aria-label="Ringkasan aktivitas bulan ini">
+        <div className="v4-stat">
+          <span className="v4-stat-label">Hadir</span>
+          <span className="v4-stat-value">{monthCounts.hadir}</span>
+        </div>
+        <div className="v4-stat">
+          <span className="v4-stat-label">Streak</span>
+          <span className="v4-stat-value">{currentStreak}</span>
+        </div>
+        <div className="v4-stat">
+          <span className="v4-stat-label">Skor</span>
+          <span className="v4-stat-value">{currentScore}</span>
+        </div>
+      </section>
+
       {/* Primary Attendance Card */}
       <section className="card shadow-md overflow-hidden bg-gradient-to-br from-[#FFFDEB] to-white border border-[#FFECB3] p-5 relative" aria-labelledby="attendance-card-title">
         <div className="absolute top-0 right-0 size-24 bg-[var(--primary)] opacity-10 rounded-bl-full pointer-events-none" />

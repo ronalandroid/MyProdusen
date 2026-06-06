@@ -1,6 +1,14 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 
+const SIZE_CLASSES = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+  full: 'max-w-full mx-4',
+} as const;
+
 export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -89,14 +97,6 @@ export default function Modal({
 
   if (!isOpen) return null;
 
-  const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    full: 'max-w-full mx-4',
-  };
-
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (closeOnOverlayClick && e.target === e.currentTarget) {
       onClose();
@@ -122,7 +122,7 @@ export default function Modal({
         ref={contentRef}
         tabIndex={-1}
         className={`
-          relative w-full ${sizeClasses[size]}
+          relative w-full ${SIZE_CLASSES[size]}
           bg-white rounded-t-3xl sm:rounded-3xl
           shadow-2xl
           max-h-[90vh] sm:max-h-[85vh]

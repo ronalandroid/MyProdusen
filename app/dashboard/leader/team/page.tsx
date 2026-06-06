@@ -507,6 +507,7 @@ export default function LeaderTeamPage() {
                           type="range"
                           min="0"
                           max="100"
+                          aria-label={`Nilai ${sub.label}`}
                           className="w-full accent-[var(--primary)] h-1.5 bg-gray-200 rounded-lg cursor-pointer"
                           value={sub.value}
                           onChange={(e) => handleSubcriteriaSliderChange(sub.key, Number(e.target.value))}

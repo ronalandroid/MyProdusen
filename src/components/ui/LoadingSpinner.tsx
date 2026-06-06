@@ -1,6 +1,19 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 
+const SIZE_CLASSES = {
+  sm: 'w-4 h-4',
+  md: 'w-8 h-8',
+  lg: 'w-12 h-12',
+  xl: 'w-16 h-16',
+} as const;
+
+const VARIANT_CLASSES = {
+  primary: 'text-[var(--primary)]',
+  secondary: 'text-[var(--text-muted)]',
+  white: 'text-white',
+} as const;
+
 export interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   message?: string;
@@ -14,23 +27,10 @@ export default function LoadingSpinner({
   fullScreen = false,
   variant = 'primary',
 }: LoadingSpinnerProps) {
-  const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-8 h-8',
-    lg: 'w-12 h-12',
-    xl: 'w-16 h-16',
-  };
-
-  const variantClasses = {
-    primary: 'text-[var(--primary)]',
-    secondary: 'text-[var(--text-muted)]',
-    white: 'text-white',
-  };
-
   const spinner = (
     <div className="flex flex-col items-center justify-center gap-3">
       <Loader2
-        className={`${sizeClasses[size]} ${variantClasses[variant]} animate-spin`}
+        className={`${SIZE_CLASSES[size]} ${VARIANT_CLASSES[variant]} animate-spin`}
         aria-hidden="true"
       />
       {message && (

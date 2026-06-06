@@ -24,6 +24,7 @@ const MIME_BY_EXTENSION: Record<string, string> = {
 };
 const SAFE_FILENAME = /^[a-z0-9_-]+\.(jpg|jpeg|png|webp)$/i;
 const SAFE_DIR_SEGMENT = /^[A-Za-z0-9_-]+$/;
+const ALLOWED_SELFIE_ROLES = ['SUPERADMIN', 'EMPLOYEE', 'LEADER'];
 
 function buildSelfieKey(segments: string[]): string | null {
   if (!segments.length) {
@@ -92,8 +93,7 @@ export async function GET(
     }
 
 
-    const allowedRoles = ['SUPERADMIN', 'EMPLOYEE', 'LEADER'];
-    if (!allowedRoles.includes(user.role) && !hasPermission(user.role, 'ATTENDANCE_READ')) {
+    if (!ALLOWED_SELFIE_ROLES.includes(user.role) && !hasPermission(user.role, 'ATTENDANCE_READ')) {
       return forbiddenResponse('Anda tidak memiliki akses melihat selfie absensi');
     }
 

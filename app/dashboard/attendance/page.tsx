@@ -404,7 +404,7 @@ export default function AttendancePage() {
             <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "4px", color: "var(--text-primary)" }}>{locationName}</div>
             <div style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: 500 }}>{locationAddress}</div>
             {assignedLocation ? (
-              <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span>{assignedLocation.latitude.toFixed(7)}, {assignedLocation.longitude.toFixed(7)}</span>
                 <span>Radius resmi: {assignedLocation.radius} m</span>
                 <span>Jarak ke lokasi preview: {officialPreviewDistanceMeters} m (dihitung ulang saat Clock In/Clock Out).</span>
@@ -412,7 +412,7 @@ export default function AttendancePage() {
                 <span>Server tetap menghitung jarak resmi; tampilan ini hanya preview.</span>
               </div>
             ) : (
-              <div style={{ fontSize: "11px", color: "var(--danger)", marginTop: "6px", fontWeight: 700 }}>
+              <div style={{ fontSize: "12px", color: "var(--danger)", marginTop: "6px", fontWeight: 700 }}>
                 Lokasi kerja belum tersedia. Hubungi Superadmin.
               </div>
             )}
@@ -438,11 +438,11 @@ export default function AttendancePage() {
                 <div style={{ fontSize: "12px", fontWeight: 800, color: "var(--text-primary)" }}>{formatShortDate(record.checkInTime)}</div>
                 <div style={{ display: "flex", gap: "24px" }}>
                   <div>
-                    <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 600 }}>Clock In</span>
+                    <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 600 }}>Clock In</span>
                     <div style={{ fontSize: "14px", fontWeight: 800 }}>{formatTime(record.checkInTime)}</div>
                   </div>
                   <div>
-                    <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 600 }}>Clock Out</span>
+                    <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 600 }}>Clock Out</span>
                     <div style={{ fontSize: "14px", fontWeight: 800 }}>{formatTime(record.checkOutTime)}</div>
                   </div>
                 </div>

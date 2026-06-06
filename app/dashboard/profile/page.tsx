@@ -293,7 +293,7 @@ export default function ProfilePage() {
             <div className="avatar" style={{ width: 88, height: 88, overflow: "hidden" }}>{avatarPreview ? <img src={avatarPreview} alt="Preview gambar foto profil" className="h-full w-full object-cover" /> : initials}</div>
             <div className="grid gap-2">
               <button type="button" className="btn btn-secondary min-h-[44px]" onClick={() => fileInputRef.current?.click()}>Pilih Foto</button>
-              <input ref={fileInputRef} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => handleAvatarPick(e.target.files?.[0] || null)} />
+              <input ref={fileInputRef} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Pilih file foto profil" onChange={(e) => handleAvatarPick(e.target.files?.[0] || null)} />
             </div>
           </div>
           {avatarStatus && <p className="text-sm font-semibold text-[var(--text-secondary)]" role="status">{avatarStatus}</p>}

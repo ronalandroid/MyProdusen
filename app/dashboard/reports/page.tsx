@@ -8,6 +8,12 @@ import Input from "@/components/ui/Input";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getReportPresets, resolveReportPreset, type ReportPresetId } from "@/lib/reports/report-presets";
 
+const REPORT_DESCRIPTIONS: Record<string, string> = {
+  attendance: 'Ringkasan ini diambil dari database attendance sesuai filter.',
+  leave: 'Gunakan export CSV untuk data leave real sesuai filter dan permission.',
+  performance: 'Gunakan export CSV untuk data KPI real sesuai filter dan permission.',
+};
+
 export default function ReportsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -85,12 +91,6 @@ export default function ReportsPage() {
     params.set('format', 'csv');
 
     window.location.href = `${endpointMap[reportType]}?${params.toString()}`;
-  };
-
-  const reportDescriptions: Record<string, string> = {
-    attendance: 'Ringkasan ini diambil dari database attendance sesuai filter.',
-    leave: 'Gunakan export CSV untuk data leave real sesuai filter dan permission.',
-    performance: 'Gunakan export CSV untuk data KPI real sesuai filter dan permission.',
   };
 
   const handleGenerate = () => {
@@ -271,7 +271,7 @@ export default function ReportsPage() {
       {reportType === "attendance" && (
         <div className="card" style={{ padding: "16px" }}>
           <h3 className="text-sm font-semibold mb-1">Ringkasan Kehadiran</h3>
-          <p className="mb-3 text-xs text-[var(--text-secondary)]">{reportDescriptions.attendance}</p>
+          <p className="mb-3 text-xs text-[var(--text-secondary)]">{REPORT_DESCRIPTIONS.attendance}</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px", marginBottom: "16px" }}>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px" }}>
               <p className="text-xs text-[var(--text-secondary)] mb-1">Hadir</p>
@@ -312,7 +312,7 @@ export default function ReportsPage() {
       {reportType === "leave" && (
         <div className="card" style={{ padding: "16px" }}>
           <h3 className="text-sm font-semibold mb-1">Laporan Cuti</h3>
-          <p className="mb-3 text-xs text-[var(--text-secondary)]">{reportDescriptions.leave}</p>
+          <p className="mb-3 text-xs text-[var(--text-secondary)]">{REPORT_DESCRIPTIONS.leave}</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px", marginBottom: "16px" }}>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px" }}>
               <p className="text-xs text-[var(--text-secondary)] mb-1">Export</p>
@@ -347,7 +347,7 @@ export default function ReportsPage() {
       {reportType === "performance" && (
         <div className="card" style={{ padding: "16px" }}>
           <h3 className="text-sm font-semibold mb-1">Laporan Kinerja</h3>
-          <p className="mb-3 text-xs text-[var(--text-secondary)]">{reportDescriptions.performance}</p>
+          <p className="mb-3 text-xs text-[var(--text-secondary)]">{REPORT_DESCRIPTIONS.performance}</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px", marginBottom: "16px" }}>
             <div style={{ textAlign: "center", padding: "12px", backgroundColor: "var(--bg-main)", borderRadius: "8px" }}>
               <p className="text-xs text-[var(--text-secondary)] mb-1">Export</p>

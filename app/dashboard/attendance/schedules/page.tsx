@@ -100,8 +100,8 @@ export default function AttendanceSchedulesPage() {
   });
   const [savingSchedule, setSavingSchedule] = useState(false);
 
-  const [rangeFrom, setRangeFrom] = useState(todayIso());
-  const [rangeTo, setRangeTo] = useState(addDaysIso(todayIso(), 6));
+  const [rangeFrom, setRangeFrom] = useState(() => todayIso());
+  const [rangeTo, setRangeTo] = useState(() => addDaysIso(todayIso(), 6));
   const [filterEmployee, setFilterEmployee] = useState("");
   const [schedules, setSchedules] = useState<ScheduleRow[]>([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);

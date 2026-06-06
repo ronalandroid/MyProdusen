@@ -22,6 +22,20 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
+const TOAST_ICONS = {
+  success: <CheckCircle size={20} aria-hidden="true" />,
+  error: <XCircle size={20} aria-hidden="true" />,
+  warning: <AlertCircle size={20} aria-hidden="true" />,
+  info: <Info size={20} aria-hidden="true" />,
+} as const;
+
+const TOAST_STYLES = {
+  success: 'bg-[var(--success)] text-white border-[var(--success)]',
+  error: 'bg-[var(--danger)] text-white border-[var(--danger)]',
+  warning: 'bg-[var(--warning)] text-[var(--text-primary)] border-[var(--warning)]',
+  info: 'bg-[var(--info)] text-white border-[var(--info)]',
+} as const;
+
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) {
@@ -72,24 +86,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 }
 
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
-  const icons = {
-    success: <CheckCircle size={20} aria-hidden="true" />,
-    error: <XCircle size={20} aria-hidden="true" />,
-    warning: <AlertCircle size={20} aria-hidden="true" />,
-    info: <Info size={20} aria-hidden="true" />,
-  };
-
-  const styles = {
-    success: 'bg-[var(--success)] text-white border-[var(--success)]',
-    error: 'bg-[var(--danger)] text-white border-[var(--danger)]',
-    warning: 'bg-[var(--warning)] text-[var(--text-primary)] border-[var(--warning)]',
-    info: 'bg-[var(--info)] text-white border-[var(--info)]',
-  };
-
   return (
     <div
       className={`
-        ${styles[toast.type]}
+        ${TOAST_STYLES[toast.type]}
         flex items-center gap-3 p-4 rounded-xl shadow-lg border-2
         animate-slide-up
         backdrop-blur-sm
@@ -97,7 +97,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       role="alert"
     >
       <div className="flex-shrink-0">
-        {icons[toast.type]}
+        {TOAST_ICONS[toast.type]}
       </div>
       <p className="flex-1 text-sm font-medium">
         {toast.message}
