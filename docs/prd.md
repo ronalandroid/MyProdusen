@@ -15,6 +15,24 @@ MyProdusen supports HRIS operations for Produsen Dimsum Medan:
 - Announcements and notifications.
 - Admin employee, shift, location, payroll, audit, and report management.
 
+## Talenta-style professional HRIS UX principles
+
+- Today-first dashboard.
+- Admin flows as checklist.
+- Tables on desktop, cards on mobile.
+- Use status chips for approvals, attendance, payroll, and notifications.
+- Use approval timeline for leave, overtime, attendance exception, and payroll review.
+- payroll checklist keeps admin flow auditable before final approval.
+
+## Professional Gamification System
+
+- Attendance / Kehadiran: 30%.
+- Production KPI: 50%.
+- Behavior / Perilaku Kerja: 20%.
+- Every new employee starts at 100.
+- Formula: `score / 10` for readable 10-point display.
+- Badges remain professional and maximum 3–5 visible.
+
 ## UI/UX requirements v4
 
 ### Visual identity

@@ -13,6 +13,14 @@ v4 UI/UX is implemented across frontend through global tokens, shared classes, a
 5. Gray bands separate sections; white cards hold content.
 6. Radius discipline: default radius is 8px.
 
+## Gamification UI/UX Standard
+
+- MyProdusen remains professional HRIS first and fun motivation second.
+- Minimum tap target: 44px.
+- Streak calendar must fit 320px mobile width.
+- Always respect `prefers-reduced-motion: reduce`.
+- Show score, streak, badge, and projection as work-motivation signals, not game clutter.
+
 ## Screen rules
 
 ### Login

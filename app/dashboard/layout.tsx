@@ -9,6 +9,8 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { canAccessNavigationPath } from "@/lib/navigation/role-navigation";
 import type { UserRole } from "@/lib/permissions";
 import type { ClientUserProfile } from "@/lib/auth-client";
+import { useRealtime } from "@/hooks/useRealtime";
+import type { RealtimeEventType } from "@/lib/realtime/events";
 
 type ProfileMe = {
   role: UserRole;
@@ -27,6 +29,8 @@ const missingMessages = {
   hasShift: "Shift belum tersedia. Hubungi Superadmin.",
   hasTeam: "Anda belum ditetapkan ke tim. Hubungi Superadmin.",
 };
+
+const DASHBOARD_REALTIME_EVENTS: RealtimeEventType[] = ["dashboard.updated", "sync.updated"];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -85,6 +89,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     window.scrollTo({ top: 0, left: 0 });
     if (contentRef.current) contentRef.current.scrollTo({ top: 0, left: 0 });
   }, [pathname]);
+
+  useRealtime({
+    enabled: !isCheckingSession && Boolean(profile),
+    eventTypes: DASHBOARD_REALTIME_EVENTS,
+    onEvent: () => {
+      void loadProfileState(true).then(({ sessionProfile }) => {
+        if (!canAccessNavigationPath(sessionProfile.role as UserRole, pathname)) router.replace("/dashboard");
+      }).catch(() => undefined);
+    },
+  });
 
   if (isCheckingSession) return <div className="dashboard-auth-loading" role="status" aria-live="polite" aria-busy="true"><div className="dashboard-auth-card"><img src="/logo.png" alt="MyProdusen" className="h-16 w-16 object-contain" /><LoadingSpinner size="lg" message="Memeriksa sesi..." /><p className="text-xs text-[var(--text-muted)]">Menyiapkan dashboard aman Anda.</p></div></div>;
   if (!profile) return null;

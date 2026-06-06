@@ -7,6 +7,9 @@ import Button from "@/components/ui/Button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders } from "@/lib/auth-client";
 import { useRealtime } from "@/hooks/useRealtime";
+import type { RealtimeEventType } from "@/lib/realtime/events";
+
+const NOTIFICATION_REALTIME_EVENTS: RealtimeEventType[] = ["notification.created", "notification.read"];
 
 interface NotificationItem {
   id: string;
@@ -31,7 +34,7 @@ export default function NotificationsPage() {
   }, [filter]);
 
   const realtime = useRealtime({
-    eventTypes: ["notification.created", "notification.read"],
+    eventTypes: NOTIFICATION_REALTIME_EVENTS,
     onEvent: () => loadNotifications(),
   });
 
