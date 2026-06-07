@@ -1,4 +1,5 @@
 import type { ApiResponse } from '../../utils/response';
+import { parseJsonResponse } from '@/lib/api/safe-json';
 
 // Deprecated: kept for backward compatibility with existing pages
 const TOKEN_KEY = 'myprodusen_token';
@@ -77,10 +78,11 @@ export async function fetchProfile(): Promise<ClientUserProfile> {
     cache: 'no-store',
   });
 
-  const payload = (await response.json()) as ApiResponse<ClientUserProfile>;
+  const result = await parseJsonResponse<ApiResponse<ClientUserProfile>>(response);
+  const payload = result.data;
 
-  if (!response.ok || !payload.success || !payload.data) {
-    throw new Error(payload.error || 'Sesi tidak valid');
+  if (!result.ok || !payload?.success || !payload?.data) {
+    throw new Error(payload?.error || 'Sesi tidak valid');
   }
 
   return payload.data;
@@ -91,13 +93,13 @@ export async function fetchProfile(): Promise<ClientUserProfile> {
  * Server will clear the httpOnly cookie
  */
 export async function logout(): Promise<void> {
-  const response = await fetch('/api/auth/logout', {
-    method: 'POST',
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    throw new Error('Logout gagal. Periksa koneksi lalu coba lagi.');
+  try {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch {
+    // Network failure during logout must not trap the user in the app.
   }
 
   // Clear localStorage token if exists (backward compatibility)

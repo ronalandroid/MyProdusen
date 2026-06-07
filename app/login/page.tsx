@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { isLoginSubmitDisabled } from "@/lib/forms/login-form-state";
+import { parseJsonResponse, messageForHttpStatus } from "@/lib/api/safe-json";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -35,14 +36,15 @@ export default function LoginPage() {
         }),
       });
 
-      const payload = await response.json();
+      const result = await parseJsonResponse<{ success?: boolean; message?: string; error?: string }>(response);
+      const payload = result.data;
 
-      if (!response.ok || !payload.success) {
-        const message = typeof payload.message === "string"
+      if (!result.ok || !payload?.success) {
+        const message = typeof payload?.message === "string"
           ? payload.message
-          : typeof payload.error === "string"
+          : typeof payload?.error === "string"
             ? payload.error
-            : "Email atau password salah";
+            : messageForHttpStatus(result.status, "Email atau password salah");
         throw new Error(message);
       }
 
@@ -65,10 +67,11 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier: identifier.trim() }),
       });
-      const payload = await response.json().catch(() => null);
+      const result = await parseJsonResponse<{ success?: boolean; message?: string; error?: string }>(response);
+      const payload = result.data;
 
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.error || "Gagal mengirim ulang email aktivasi");
+      if (!result.ok || !payload?.success) {
+        throw new Error(payload?.error || messageForHttpStatus(result.status, "Gagal mengirim ulang email aktivasi"));
       }
 
       setActivationMessage(payload.message || "Link aktivasi sudah dikirim ke inbox email.");
