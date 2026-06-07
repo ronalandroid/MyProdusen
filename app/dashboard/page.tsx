@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell, CheckCircle, Clock, Users, AlertTriangle, RefreshCcw, ShieldCheck, BarChart3, ThumbsUp, ThumbsDown, Eye, UserCog, MapPin, Calendar, FileText, Banknote, TrendingUp, Sparkles, Settings, ClipboardList } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { getAuthHeaders, fetchProfile, type ClientUserProfile } from "@/lib/auth-client";
+import { getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
+import { useCachedProfile, useDashboardStats, usePerformanceAnomalies, usePerformanceScores } from "@/hooks/useDashboardQueries";
 import EmployeeBeranda from "@/components/dashboard/EmployeeBeranda";
 import LeaderBeranda from "@/components/dashboard/LeaderBeranda";
 import { type DashboardActionTone } from "@/lib/dashboard/action-cards";
@@ -58,77 +59,45 @@ const SUPERADMIN_QUICK_ACTIONS = [
   { name: "Laporan PDF", path: "/dashboard/reports/pdf", icon: FileText, bg: "var(--primary-light)", text: "var(--primary-dark)" },
 ];
 
-export default function DashboardPage() {
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<ClientUserProfile | null>(null);
-  const [error, setError] = useState("");
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalEmployees: 0,
-    activeEmployees: 0,
-    todayAttendance: { total: 0, present: 0, percentage: 0 },
-    pendingLeave: 0,
-    pendingKpiApprovals: 0,
-    lateToday: 0,
-    absentToday: 0,
-    unreadNotifications: 0,
-    pendingAttendanceExceptions: 0,
-    payrollPeriodStatus: null,
-    role: "EMPLOYEE",
-  });
+const DEFAULT_DASHBOARD_STATS: DashboardStats = {
+  totalEmployees: 0,
+  activeEmployees: 0,
+  todayAttendance: { total: 0, present: 0, percentage: 0 },
+  pendingLeave: 0,
+  pendingKpiApprovals: 0,
+  lateToday: 0,
+  absentToday: 0,
+  unreadNotifications: 0,
+  pendingAttendanceExceptions: 0,
+  payrollPeriodStatus: null,
+  role: "EMPLOYEE",
+};
 
-  // Gamification & Performance states for Superadmin
-  const [performanceSummaries, setPerformanceSummaries] = useState<any[]>([]);
-  const [performanceAnomalies, setPerformanceAnomalies] = useState<any[]>([]);
+export default function DashboardPage() {
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const profileQuery = useCachedProfile();
+  const statsQuery = useDashboardStats<DashboardStats>();
+  const stats = statsQuery.data ?? DEFAULT_DASHBOARD_STATS;
+  const isSuperadmin = stats.role === "SUPERADMIN";
+  const performanceScoresQuery = usePerformanceScores<any>(isSuperadmin);
+  const performanceAnomaliesQuery = usePerformanceAnomalies<any>(isSuperadmin);
+  const profile = profileQuery.data ?? null;
+  const performanceSummaries = performanceScoresQuery.data ?? [];
+  const performanceAnomalies = performanceAnomaliesQuery.data ?? [];
+  const error = profileQuery.error?.message || statsQuery.error?.message || "";
+  const loading = (profileQuery.isLoading || statsQuery.isLoading) && !profile && !statsQuery.data;
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    if (statsQuery.dataUpdatedAt) setLastUpdated(new Date(statsQuery.dataUpdatedAt));
+  }, [statsQuery.dataUpdatedAt]);
 
   const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const userProfile = await fetchProfile();
-      setProfile(userProfile);
-
-      const statsRes = await fetch("/api/dashboard/stats", { headers: getAuthHeaders(), cache: "no-store" });
-      const statsData = await statsRes.json();
-
-      if (!statsRes.ok || !statsData.success) {
-        throw new Error(statsData.error || "Sebagian data dashboard gagal dimuat.");
-      }
-
-      setStats(statsData.data);
-      setLastUpdated(new Date());
-
-      // Fetch Gamification data for Superadmin
-      if (statsData.data.role === "SUPERADMIN") {
-        try {
-          const [scoresRes, anomaliesRes] = await Promise.all([
-            fetch("/api/performance/scores", { headers: getAuthHeaders(), cache: "no-store" }),
-            fetch("/api/performance/anomalies", { headers: getAuthHeaders(), cache: "no-store" }),
-          ]);
-          
-          if (scoresRes.ok) {
-            const scoresPayload = await scoresRes.json();
-            if (scoresPayload.success) setPerformanceSummaries(scoresPayload.data || []);
-          }
-          if (anomaliesRes.ok) {
-            const anomaliesPayload = await anomaliesRes.json();
-            if (anomaliesPayload.success) setPerformanceAnomalies(anomaliesPayload.data || []);
-          }
-        } catch (err) {
-          console.error("Gagal memuat data gamifikasi Superadmin:", err);
-        }
-      }
-    } catch (dashboardError) {
-      console.error("Failed to load dashboard data:", dashboardError);
-      setError(dashboardError instanceof Error ? dashboardError.message : "Dashboard gagal dimuat.");
-    } finally {
-      setLoading(false);
-    }
+    await Promise.all([
+      profileQuery.refetch(),
+      statsQuery.refetch(),
+      isSuperadmin ? performanceScoresQuery.refetch() : Promise.resolve(),
+      isSuperadmin ? performanceAnomaliesQuery.refetch() : Promise.resolve(),
+    ]);
   };
 
   if (loading) {

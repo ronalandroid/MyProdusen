@@ -3,24 +3,15 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
-import { fetchProfile, logout } from "@/lib/auth-client";
+import { logout } from "@/lib/auth-client";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { ToastProvider } from "@/components/ui/Toast";
 import { canAccessNavigationPath } from "@/lib/navigation/role-navigation";
 import type { UserRole } from "@/lib/permissions";
 import type { ClientUserProfile } from "@/lib/auth-client";
 import { useRealtime } from "@/hooks/useRealtime";
+import { type ProfileMe, useCachedProfile, useInvalidateDashboardData, useProfileMe } from "@/hooks/useDashboardQueries";
 import type { RealtimeEventType } from "@/lib/realtime/events";
-
-type ProfileMe = {
-  role: UserRole;
-  fullName: string;
-  phone: string;
-  address: string;
-  profilePhoto: string;
-  profileCompleted: boolean;
-  assignmentStatus: { hasDivision: boolean; hasPosition: boolean; hasLocation: boolean; hasShift: boolean; hasTeam: boolean };
-};
 
 const missingMessages = {
   hasDivision: "Divisi belum ditetapkan. Hubungi Superadmin.",
@@ -40,15 +31,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [profile, setProfile] = useState<ClientUserProfile | null>(null);
   const [profileMe, setProfileMe] = useState<ProfileMe | null>(null);
   const [syncNotice, setSyncNotice] = useState("");
+  const profileQuery = useCachedProfile();
+  const profileMeQuery = useProfileMe();
+  const invalidateDashboardData = useInvalidateDashboardData();
 
-  async function loadProfileState(showSyncNotice = false) {
-    const [sessionProfile, meResponse] = await Promise.all([
-      fetchProfile(),
-      fetch("/api/profile/me", { credentials: "include", cache: "no-store" }),
-    ]);
-    const mePayload = await meResponse.json().catch(() => null);
-    if (!meResponse.ok || !mePayload?.success) throw new Error(mePayload?.error?.message || "Sesi tidak valid");
-    const nextProfileMe = mePayload.data as ProfileMe;
+  function applyProfileState(sessionProfile: ClientUserProfile, nextProfileMe: ProfileMe, showSyncNotice = false) {
     setProfile((current) => {
       if (showSyncNotice && current && current.role !== sessionProfile.role) setSyncNotice("Data pekerjaan Anda telah diperbarui.");
       return sessionProfile;
@@ -58,6 +45,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return nextProfileMe;
     });
     return { sessionProfile, profileMe: nextProfileMe };
+  }
+
+  async function loadProfileState(showSyncNotice = false) {
+    const [sessionProfile, nextProfileMe] = await Promise.all([
+      profileQuery.refetch().then((result) => {
+        if (!result.data) throw result.error || new Error("Sesi tidak valid");
+        return result.data;
+      }),
+      profileMeQuery.refetch().then((result) => {
+        if (!result.data) throw result.error || new Error("Sesi tidak valid");
+        return result.data;
+      }),
+    ]);
+    return applyProfileState(sessionProfile, nextProfileMe, showSyncNotice);
   }
 
   useEffect(() => {

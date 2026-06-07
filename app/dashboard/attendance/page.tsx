@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Bell, ArrowLeft, ClipboardList, Info, MapPin, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ClientUserProfile, fetchProfile, getAuthHeaders } from "@/lib/auth-client";
+import { fetchApiData, useCachedProfile } from "@/hooks/useDashboardQueries";
 import { SelfieViewer } from "@/components/attendance/SelfieViewer";
 import { MyExceptionPanel } from "@/components/attendance/MyExceptionPanel";
 
@@ -79,60 +80,6 @@ function calculateDistanceMeters(
   return Math.round(earthRadiusMeters * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
-type AttendanceState = {
-  profile: ClientUserProfile | null;
-  todayAttendance: AttendanceRecord | null;
-  history: AttendanceRecord[];
-  error: string;
-  isLoading: boolean;
-  viewerState: {
-    record: AttendanceRecord;
-    kind: "check-in" | "check-out";
-  } | null;
-};
-
-type AttendanceAction =
-  | { type: "loadStart" }
-  | { type: "loadSuperadmin"; profile: ClientUserProfile }
-  | { type: "loadSuccess"; profile: ClientUserProfile; today: AttendanceRecord | null; history: AttendanceRecord[] }
-  | { type: "loadError"; error: string }
-  | { type: "openViewer"; record: AttendanceRecord; kind: "check-in" | "check-out" }
-  | { type: "closeViewer" };
-
-const initialAttendanceState: AttendanceState = {
-  profile: null,
-  todayAttendance: null,
-  history: [],
-  error: "",
-  isLoading: true,
-  viewerState: null,
-};
-
-function attendanceReducer(state: AttendanceState, action: AttendanceAction): AttendanceState {
-  switch (action.type) {
-    case "loadStart":
-      return { ...state, isLoading: true, error: "" };
-    case "loadSuperadmin":
-      return { ...state, profile: action.profile, todayAttendance: null, history: [], isLoading: false };
-    case "loadSuccess":
-      return {
-        ...state,
-        profile: action.profile,
-        todayAttendance: action.today,
-        history: action.history,
-        isLoading: false,
-      };
-    case "loadError":
-      return { ...state, error: action.error, isLoading: false };
-    case "openViewer":
-      return { ...state, viewerState: { record: action.record, kind: action.kind } };
-    case "closeViewer":
-      return { ...state, viewerState: null };
-    default:
-      return state;
-  }
-}
-
 function AttendanceHeader({ onBack, avatarName }: { onBack: () => void; avatarName: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -188,21 +135,34 @@ function SuperadminAttendanceView({ onBack }: { onBack: () => void }) {
 
 export default function AttendancePage() {
   const router = useRouter();
-  const [state, dispatch] = useReducer(attendanceReducer, initialAttendanceState);
+  const profileQuery = useCachedProfile();
+  const profile = profileQuery.data ?? null;
+  const todayQuery = useQuery<AttendanceRecord | null>({
+    queryKey: ["attendance", "today"],
+    queryFn: () => fetchApiData<AttendanceRecord | null>("/api/attendance/today", "Gagal mengambil absensi hari ini"),
+    enabled: Boolean(profile && profile.role !== "SUPERADMIN"),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const historyQuery = useQuery<AttendanceRecord[]>({
+    queryKey: ["attendance", "history", "recent"],
+    queryFn: () => fetchApiData<AttendanceRecord[]>("/api/attendance", "Gagal mengambil riwayat absensi"),
+    enabled: Boolean(profile && profile.role !== "SUPERADMIN"),
+    select: (records) => records.slice(0, 5),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const [viewerState, setViewerState] = useState<{ record: AttendanceRecord; kind: "check-in" | "check-out" } | null>(null);
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     setNow(new Date());
     const id = setInterval(() => setNow(new Date()), 1000 * 30);
     return () => clearInterval(id);
   }, []);
-  const {
-    profile,
-    todayAttendance,
-    history,
-    error,
-    isLoading,
-    viewerState,
-  } = state;
+  const todayAttendance = todayQuery.data ?? null;
+  const history = historyQuery.data ?? [];
+  const error = profileQuery.error?.message || todayQuery.error?.message || historyQuery.error?.message || "";
+  const isLoading = profileQuery.isLoading || (Boolean(profile && profile.role !== "SUPERADMIN") && (todayQuery.isLoading || historyQuery.isLoading));
 
   const isSuperadminAttendanceViewer = profile?.role === "SUPERADMIN";
   const employee = profile?.employee;
@@ -218,47 +178,9 @@ export default function AttendancePage() {
   const shift = employee?.defaultShift;
   const shiftLabel = shift ? `${shift.name} (${shift.startTime.slice(0, 5)} - ${shift.endTime.slice(0, 5)})` : "Shift belum tersedia";
 
-  async function loadAttendance() {
-    dispatch({ type: "loadStart" });
-    try {
-      const currentProfile = await fetchProfile();
-      if (currentProfile.role === "SUPERADMIN") {
-        dispatch({ type: "loadSuperadmin", profile: currentProfile });
-        return;
-      }
-
-      const [todayResponse, historyResponse] = await Promise.all([
-        fetch("/api/attendance/today", { headers: getAuthHeaders(), cache: "no-store" }),
-        fetch("/api/attendance", { headers: getAuthHeaders(), cache: "no-store" }),
-      ]);
-
-      const todayPayload = (await todayResponse.json()) as ApiResponse<AttendanceRecord | null>;
-      const historyPayload = (await historyResponse.json()) as ApiResponse<AttendanceRecord[]>;
-
-      if (!todayResponse.ok || !todayPayload.success) {
-        throw new Error(todayPayload.error || "Gagal mengambil absensi hari ini");
-      }
-
-      if (!historyResponse.ok || !historyPayload.success) {
-        throw new Error(historyPayload.error || "Gagal mengambil riwayat absensi");
-      }
-
-      dispatch({
-        type: "loadSuccess",
-        profile: currentProfile,
-        today: todayPayload.data || null,
-        history: (historyPayload.data || []).slice(0, 5),
-      });
-    } catch (err) {
-      // Use a generic error message to avoid exposing internal details
-      const safeMessage = 'Kesalahan mengambil data absensi.';
-      dispatch({ type: "loadError", error: safeMessage });
-    }
-  }
-
-  useEffect(() => {
-    loadAttendance();
-  }, []);
+  const loadAttendance = async () => {
+    await Promise.all([profileQuery.refetch(), todayQuery.refetch(), historyQuery.refetch()]);
+  };
 
   if (isSuperadminAttendanceViewer) {
     return <SuperadminAttendanceView onBack={() => router.back()} />;
@@ -451,7 +373,7 @@ export default function AttendancePage() {
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm rounded-xl px-3 py-1 text-xs font-bold"
-                      onClick={() => dispatch({ type: "openViewer", record, kind: "check-in" })}
+                      onClick={() => setViewerState({ record, kind: "check-in" })}
                     >
                       Selfie Masuk
                     </button>
@@ -460,7 +382,7 @@ export default function AttendancePage() {
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm rounded-xl px-3 py-1 text-xs font-bold"
-                      onClick={() => dispatch({ type: "openViewer", record, kind: "check-out" })}
+                      onClick={() => setViewerState({ record, kind: "check-out" })}
                     >
                       Selfie Pulang
                     </button>
@@ -477,7 +399,7 @@ export default function AttendancePage() {
           attendanceId={viewerState.record.id}
           kind={viewerState.kind}
           open
-          onClose={() => dispatch({ type: "closeViewer" })}
+          onClose={() => setViewerState(null)}
           takenAt={
             viewerState.kind === "check-in"
               ? viewerState.record.checkInSelfieUploadedAt || viewerState.record.checkInTime
