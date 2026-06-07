@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useReducer } from "react";
+import { useCallback, useReducer } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, MapPin } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth-client";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 import { LocationCard } from "./LocationCard";
 import { LocationFilters } from "./LocationFilters";
 import { LocationFormModal } from "./LocationFormModal";
@@ -17,9 +19,6 @@ import {
 export default function LocationsPage() {
   const [state, dispatch] = useReducer(locationsReducer, INITIAL_STATE);
   const {
-    locations,
-    isLoading,
-    error,
     message,
     searchTerm,
     activeFilter,
@@ -30,35 +29,23 @@ export default function LocationsPage() {
     submitting,
     deleting,
   } = state;
-
-  const load = useCallback(async () => {
-    dispatch({ type: "loadStart" });
-    try {
+  const queryClient = useQueryClient();
+  const locationsQuery = useQuery<WorkLocationItem[]>({
+    queryKey: ["work-locations", activeFilter, searchTerm.trim()],
+    queryFn: () => {
       const params = new URLSearchParams();
       if (activeFilter !== "all") params.set("isActive", activeFilter === "active" ? "true" : "false");
       const trimmed = searchTerm.trim();
       if (trimmed.length >= 2) params.set("search", trimmed);
-
-      const response = await fetch(`/api/work-locations?${params.toString()}`, {
-        headers: getAuthHeaders(),
-        cache: "no-store",
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error || "Gagal memuat lokasi kerja");
-      }
-      dispatch({ type: "loadSuccess", locations: payload.data || [] });
-    } catch (err) {
-      dispatch({ type: "loadError", error: err instanceof Error ? err.message : "Gagal memuat lokasi kerja" });
-    }
-  }, [activeFilter, searchTerm]);
-
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      void load();
-    }, 300);
-    return () => clearTimeout(handle);
-  }, [load]);
+      return fetchApiData<WorkLocationItem[]>(`/api/work-locations?${params.toString()}`, "Gagal memuat lokasi kerja");
+    },
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+  });
+  const locations = locationsQuery.data ?? [];
+  const isLoading = locationsQuery.isLoading;
+  const error = state.error || locationsQuery.error?.message || "";
+  const reloadLocations = useCallback(() => queryClient.invalidateQueries({ queryKey: ["work-locations"] }), [queryClient]);
 
   const submit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -123,12 +110,12 @@ export default function LocationsPage() {
           type: "submitSuccess",
           message: editing ? "Lokasi kerja berhasil diperbarui." : "Lokasi kerja berhasil ditambahkan.",
         });
-        await load();
+        await reloadLocations();
       } catch (err) {
         dispatch({ type: "submitError", error: err instanceof Error ? err.message : "Gagal menyimpan lokasi kerja." });
       }
     },
-    [editing, form, load],
+    [editing, form, reloadLocations],
   );
 
   const remove = useCallback(
@@ -144,12 +131,12 @@ export default function LocationsPage() {
           throw new Error(payload.error || "Gagal menghapus lokasi.");
         }
         dispatch({ type: "deleteSuccess", message: "Lokasi kerja berhasil dihapus." });
-        await load();
+        await reloadLocations();
       } catch (err) {
         dispatch({ type: "deleteError", error: err instanceof Error ? err.message : "Gagal menghapus lokasi." });
       }
     },
-    [load],
+    [reloadLocations],
   );
 
   return (

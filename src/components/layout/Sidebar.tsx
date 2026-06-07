@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 import {
   BarChart3,
   Bell,
@@ -47,7 +49,36 @@ const iconMap: Record<string, LucideIcon> = {
 
 export default function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const isSuperadmin = role === "SUPERADMIN";
+
+  const warmRouteData = (path: string) => {
+    if (path === "/dashboard") {
+      void queryClient.prefetchQuery({
+        queryKey: ["dashboard", "stats"],
+        queryFn: () => fetchApiData("/api/dashboard/stats", "Sebagian data dashboard gagal dimuat."),
+        staleTime: 30_000,
+      });
+    } else if (path === "/dashboard/employees") {
+      void queryClient.prefetchQuery({
+        queryKey: ["employees", "all", ""],
+        queryFn: () => fetchApiData("/api/employees?", "Gagal memuat data karyawan"),
+        staleTime: 30_000,
+      });
+    } else if (path === "/dashboard/locations") {
+      void queryClient.prefetchQuery({
+        queryKey: ["work-locations", "all", ""],
+        queryFn: () => fetchApiData("/api/work-locations?", "Gagal memuat lokasi kerja"),
+        staleTime: 60_000,
+      });
+    } else if (path === "/dashboard/notifications") {
+      void queryClient.prefetchQuery({
+        queryKey: ["notifications", "all"],
+        queryFn: () => fetchApiData("/api/notifications", "Notifikasi gagal dimuat"),
+        staleTime: 30_000,
+      });
+    }
+  };
 
   const navItems = getNavigationForRole(role)
     .map((item) => ({
@@ -89,6 +120,8 @@ export default function Sidebar({ role }: SidebarProps) {
               prefetch
               className={`nav-item ${item.primary ? "" : "nav-item-desktop"} ${isActive ? "active" : ""} group`}
               aria-current={isActive ? "page" : undefined}
+              onMouseEnter={() => warmRouteData(item.path)}
+              onFocus={() => warmRouteData(item.path)}
             >
               <div className={`nav-icon-wrapper ${isActive ? "text-[var(--primary)]" : "bg-transparent text-[var(--text-muted)]"} group-hover:text-[var(--primary-dark)] transition-all duration-200`}>
                 <Icon className="nav-icon" strokeWidth={isActive ? 2.5 : 2} aria-hidden="true" />

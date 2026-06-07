@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Bell, CheckCircle2, RefreshCcw, Trash2, CheckCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders } from "@/lib/auth-client";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 import { useRealtime } from "@/hooks/useRealtime";
 import type { RealtimeEventType } from "@/lib/realtime/events";
 
@@ -22,41 +24,35 @@ interface NotificationItem {
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const [items, setItems] = useState<NotificationItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [pendingDelete, setPendingDelete] = useState<NotificationItem | null>(null);
+  const queryClient = useQueryClient();
+  const notificationsKey = ["notifications", filter] as const;
+  const notificationsQuery = useQuery<NotificationItem[]>({
+    queryKey: notificationsKey,
+    queryFn: async () => {
+      const url = filter === "unread" ? "/api/notifications?unread=true" : "/api/notifications";
+      const payload = await fetchApiData<NotificationItem[] | { items?: NotificationItem[] }>(url, "Notifikasi gagal dimuat");
+      return Array.isArray(payload) ? payload : payload.items || [];
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const items = notificationsQuery.data ?? [];
+  const loading = notificationsQuery.isLoading;
+  const error = actionError || notificationsQuery.error?.message || "";
 
-  useEffect(() => {
-    loadNotifications();
-  }, [filter]);
+  const loadNotifications = () => notificationsQuery.refetch();
+
+  const invalidateNotifications = () =>
+    queryClient.invalidateQueries({ queryKey: ["notifications"] });
 
   const realtime = useRealtime({
     eventTypes: NOTIFICATION_REALTIME_EVENTS,
-    onEvent: () => loadNotifications(),
+    onEvent: invalidateNotifications,
   });
-
-  const loadNotifications = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const url = filter === "unread" ? "/api/notifications?unread=true" : "/api/notifications";
-      const response = await fetch(url, { headers: getAuthHeaders() });
-      const payload = await response.json();
-
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error || "Notifikasi gagal dimuat");
-      }
-
-      setItems(Array.isArray(payload.data) ? payload.data : payload.data?.items || []);
-    } catch (notificationError) {
-      setError(notificationError instanceof Error ? notificationError.message : "Notifikasi gagal dimuat");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const markAsRead = async (id: string) => {
     try {
@@ -66,7 +62,8 @@ export default function NotificationsPage() {
       });
 
       if (response.ok) {
-        setItems((current) => current.map((item) => item.id === id ? { ...item, isRead: true } : item));
+        queryClient.setQueryData<NotificationItem[]>(notificationsKey, (current = []) => current.map((item) => item.id === id ? { ...item, isRead: true } : item));
+        void invalidateNotifications();
       }
     } catch (err) {
       console.error("Failed to mark as read:", err);
@@ -84,12 +81,13 @@ export default function NotificationsPage() {
       const payload = await response.json();
 
       if (response.ok && payload.success) {
-        setItems((current) => current.map((item) => ({ ...item, isRead: true })));
+        queryClient.setQueryData<NotificationItem[]>(notificationsKey, (current = []) => current.map((item) => ({ ...item, isRead: true })));
+        void invalidateNotifications();
       } else {
         throw new Error(payload.error || "Gagal menandai semua sebagai dibaca");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal menandai semua sebagai dibaca");
+      setActionError(err instanceof Error ? err.message : "Gagal menandai semua sebagai dibaca");
     } finally {
       setProcessing(false);
     }
@@ -106,13 +104,14 @@ export default function NotificationsPage() {
       const payload = await response.json();
 
       if (response.ok && payload.success) {
-        setItems((current) => current.filter((item) => item.id !== id));
+        queryClient.setQueryData<NotificationItem[]>(notificationsKey, (current = []) => current.filter((item) => item.id !== id));
         setPendingDelete(null);
+        void invalidateNotifications();
       } else {
         throw new Error(payload.error || "Gagal menghapus notifikasi");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal menghapus notifikasi");
+      setActionError(err instanceof Error ? err.message : "Gagal menghapus notifikasi");
     } finally {
       setProcessing(false);
     }

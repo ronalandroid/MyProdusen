@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Search, Plus, Edit, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -8,7 +9,8 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useToast } from "@/components/ui/Toast";
-import { fetchProfile, getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
+import { getAuthHeaders } from "@/lib/auth-client";
+import { fetchApiData, useCachedProfile } from "@/hooks/useDashboardQueries";
 
 interface Employee {
   id: string;
@@ -38,15 +40,30 @@ export default function EmployeesPage() {
   const router = useRouter();
   const { success, error: showError } = useToast();
   
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [profile, setProfile] = useState<ClientUserProfile | null>(null);
   const [accessNotice, setAccessNotice] = useState("");
+  const queryClient = useQueryClient();
+  const profileQuery = useCachedProfile();
+  const profile = profileQuery.data ?? null;
+  const employeesQuery = useQuery<Employee[]>({
+    queryKey: ["employees", statusFilter, searchTerm.trim()],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") params.append("status", statusFilter);
+      const trimmedSearch = searchTerm.trim();
+      if (trimmedSearch.length >= 2) params.append("search", trimmedSearch);
+      return fetchApiData<Employee[]>(`/api/employees?${params.toString()}`, "Gagal memuat data karyawan");
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const employees = employeesQuery.data ?? [];
+  const loading = employeesQuery.isLoading;
+  const fetchEmployees = useCallback(() => queryClient.invalidateQueries({ queryKey: ["employees"] }), [queryClient]);
   const [formData, setFormData] = useState({
     nip: "",
     fullName: "",
@@ -61,53 +78,12 @@ export default function EmployeesPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchProfile()
-      .then(setProfile)
-      .catch(() => setProfile(null));
-  }, []);
-
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      fetchEmployees();
-    }, 300);
-    return () => clearTimeout(handle);
-  }, [statusFilter, searchTerm]);
-
-  useEffect(() => {
-    const refreshOnFocus = () => fetchEmployees();
+    const refreshOnFocus = () => {
+      void fetchEmployees();
+    };
     window.addEventListener("focus", refreshOnFocus);
     return () => window.removeEventListener("focus", refreshOnFocus);
-  }, []);
-
-  const fetchEmployees = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      if (statusFilter !== "all") {
-        params.append("status", statusFilter);
-      }
-      const trimmedSearch = searchTerm.trim();
-      if (trimmedSearch.length >= 2) {
-        params.append("search", trimmedSearch);
-      }
-      
-      const response = await fetch(`/api/employees?${params.toString()}`, {
-        headers: getAuthHeaders(),
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setEmployees(data.data || []);
-      } else {
-        showError(data.error || "Gagal memuat data karyawan");
-      }
-    } catch (err) {
-      showError("Terjadi kesalahan saat memuat data");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchEmployees]);
 
   const handleCreate = () => {
     if (profile?.role === "EMPLOYEE") {
