@@ -4,6 +4,7 @@ import { and, desc, eq, sql } from 'drizzle-orm';
 import { db, badgeDefinitions, companySettings, companyThemeSettings, employeeBadges, employees, leaderScoreAnomalies, leaderScoreEntries, notifications, performancePeriods, performanceScoreSnapshots, performanceScoreSummaries, users } from '@/lib/db';
 import { logAudit } from '@/lib/audit';
 import { requireAuth } from '@/lib/middleware';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { errorResponse, forbiddenResponse, successResponse, unauthorizedResponse } from '@/lib/utils/response';
 import {
   DEFAULT_GAMIFICATION_SETTINGS,
@@ -29,7 +30,16 @@ async function currentEmployee(userId: string) {
 
 function handleError(error: any) {
   if (error.message === 'Unauthorized') return unauthorizedResponse();
-  return errorResponse(error.message || 'Gagal memproses performance');
+  if (error.message === 'FORBIDDEN') return forbiddenResponse();
+  return errorResponse('Gagal memproses performance', 500);
+}
+
+async function enforceStrictMutationLimit(request: NextRequest, identifier: string) {
+  const limit = await rateLimit(request, RATE_LIMITS.API_STRICT, identifier);
+  if (limit.limited) {
+    return errorResponse('Terlalu banyak permintaan. Coba lagi nanti.', 429);
+  }
+  return null;
 }
 
 export async function requireSuperadmin(request: NextRequest) {
@@ -84,6 +94,8 @@ export async function listPeriods(request: NextRequest) {
 
 export async function createPeriod(request: NextRequest) {
   try {
+    const limited = await enforceStrictMutationLimit(request, 'performance:create-period');
+    if (limited) return limited;
     const user = await requireSuperadmin(request);
     const body = await request.json();
     const row = { id: nanoid(), name: body.name, startDate: body.startDate, endDate: body.endDate, createdBy: user.userId };
@@ -95,6 +107,8 @@ export async function createPeriod(request: NextRequest) {
 
 export async function closePeriod(request: NextRequest, id: string) {
   try {
+    const limited = await enforceStrictMutationLimit(request, 'performance:close-period');
+    if (limited) return limited;
     const user = await requireSuperadmin(request);
     const [closed] = await db.update(performancePeriods).set({ status: 'CLOSED', closedBy: user.userId, closedAt: new Date(), updatedAt: new Date() }).where(eq(performancePeriods.id, id)).returning();
     await logAudit(user.userId, 'CLOSE', 'PerformancePeriod', id, undefined, closed, request);
@@ -120,6 +134,8 @@ export async function getSettings(request: NextRequest) {
 
 export async function patchSettings(request: NextRequest) {
   try {
+    const limited = await enforceStrictMutationLimit(request, 'settings:gamification');
+    if (limited) return limited;
     const [user, body, current] = await Promise.all([
       requireSuperadmin(request),
       request.json(),
@@ -144,6 +160,8 @@ export async function getTheme(request: NextRequest) {
 
 export async function patchTheme(request: NextRequest) {
   try {
+    const limited = await enforceStrictMutationLimit(request, 'settings:theme');
+    if (limited) return limited;
     const [user, body, [oldTheme]] = await Promise.all([
       requireSuperadmin(request),
       request.json(),
@@ -159,6 +177,8 @@ export async function patchTheme(request: NextRequest) {
 
 export async function cultureScore(request: NextRequest) {
   try {
+    const limited = await enforceStrictMutationLimit(request, 'performance:culture-score');
+    if (limited) return limited;
     const user = await requireAuth(request);
     if (!isLeader(user.role) && !isSuperadmin(user.role)) return forbiddenResponse();
     const reviewer = await currentEmployee(user.userId);

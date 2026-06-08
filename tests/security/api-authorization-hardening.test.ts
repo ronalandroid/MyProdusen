@@ -84,3 +84,22 @@ describe('baseline HTTP security headers are configured', () => {
     expect(src).toMatch(/frame-ancestors 'none'/);
   });
 });
+
+describe('duplicate API auth aliases are removed', () => {
+  it('does not expose /api/api/auth alias routes', () => {
+    expect(() => read('app/api/api/auth/login/route.ts')).toThrow();
+    expect(() => read('app/api/api/auth/public-register/route.ts')).toThrow();
+  });
+});
+
+describe('ECC performance/settings route hardening', () => {
+  it('scrubs gamification errors and rate limits mutating handlers', () => {
+    const src = read('lib/gamification/api.ts');
+    expect(src).toMatch(/RATE_LIMITS\.API_STRICT/);
+    expect(src).toMatch(/enforceStrictMutationLimit\(request, 'settings:gamification'\)/);
+    expect(src).toMatch(/enforceStrictMutationLimit\(request, 'settings:theme'\)/);
+    expect(src).toMatch(/enforceStrictMutationLimit\(request, 'performance:culture-score'\)/);
+    expect(src).not.toMatch(/errorResponse\(error\.message \|\| 'Gagal memproses performance'/);
+    expect(src).toMatch(/errorResponse\('Gagal memproses performance', 500\)/);
+  });
+});
