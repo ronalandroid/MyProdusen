@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Calendar, Clock } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useToast } from "@/components/ui/Toast";
 import { fetchProfile, getAuthHeaders } from "@/lib/auth-client";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 
 interface LeaveRequest {
   id: string;
@@ -41,10 +43,8 @@ interface LeaveBalance {
 export default function LeavePage() {
   const router = useRouter();
   const { success, error: showError } = useToast();
-  
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
-  const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
@@ -59,9 +59,33 @@ export default function LeavePage() {
   const [rejectReason, setRejectReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchLeaveRequests();
-  }, [statusFilter]);
+  const leaveQuery = useQuery({
+    queryKey: ["leave", "requests", statusFilter],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") {
+        params.append("status", statusFilter);
+      }
+      return fetchApiData<LeaveRequest[]>(`/api/leave?${params.toString()}`, "Gagal memuat data cuti");
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+
+  const balanceQuery = useQuery({
+    queryKey: ["leave", "balance"],
+    queryFn: () => fetchApiData<LeaveBalance>("/api/leave/balance", "Gagal memuat saldo cuti"),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+
+  const leaveRequests = leaveQuery.data ?? [];
+  const leaveBalance = balanceQuery.data ?? null;
+  const loading = leaveQuery.isLoading;
+
+  const reloadLeave = () => {
+    queryClient.invalidateQueries({ queryKey: ["leave"] });
+  };
 
   useEffect(() => {
     fetchProfile()
@@ -70,42 +94,6 @@ export default function LeavePage() {
   }, []);
 
   const canApproveLeave = role === "SUPERADMIN";
-
-  const fetchLeaveRequests = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      if (statusFilter !== "all") {
-        params.append("status", statusFilter);
-      }
-      
-      const response = await fetch(`/api/leave?${params.toString()}`, {
-        headers: getAuthHeaders(),
-      });
-      const balanceResponse = await fetch('/api/leave/balance', {
-        headers: getAuthHeaders(),
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setLeaveRequests(data.data || []);
-      } else {
-        showError(data.error || "Gagal memuat data cuti");
-      }
-
-      if (balanceResponse.ok) {
-        const balanceData = await balanceResponse.json();
-        if (balanceData.success) {
-          setLeaveBalance(balanceData.data);
-        }
-      }
-    } catch (err) {
-      showError("Terjadi kesalahan saat memuat data");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCreate = () => {
     setFormData({
@@ -136,7 +124,7 @@ export default function LeavePage() {
       if (data.success) {
         success(data.message || "Pengajuan cuti berhasil dibuat");
         setIsModalOpen(false);
-        fetchLeaveRequests();
+        reloadLeave();
       } else {
         showError(data.error || "Gagal membuat pengajuan");
       }
@@ -163,11 +151,8 @@ export default function LeavePage() {
 
       if (data.success) {
         success(data.message || "Pengajuan berhasil disetujui");
-        setLeaveRequests((current) => current
-          .map((leave) => leave.id === id ? { ...leave, status: "APPROVED", approvedAt: new Date().toISOString() } : leave)
-          .filter((leave) => statusFilter !== "PENDING" || leave.id !== id));
         setIsDetailModalOpen(false);
-        await fetchLeaveRequests();
+        reloadLeave();
       } else {
         showError(data.error || "Gagal menyetujui pengajuan");
       }
@@ -203,12 +188,9 @@ export default function LeavePage() {
 
       if (data.success) {
         success(data.message || "Pengajuan berhasil ditolak");
-        setLeaveRequests((current) => current
-          .map((leave) => leave.id === id ? { ...leave, status: "REJECTED", rejectionReason: trimmedReason, rejectedAt: new Date().toISOString() } : leave)
-          .filter((leave) => statusFilter !== "PENDING" || leave.id !== id));
         setIsDetailModalOpen(false);
         setRejectReason("");
-        await fetchLeaveRequests();
+        reloadLeave();
       } else {
         showError(data.error || "Gagal menolak pengajuan");
       }

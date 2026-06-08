@@ -19,7 +19,10 @@ describe('final production UI wiring source checks', () => {
   it('shift dashboard writes through backend API and does not use static shift data', () => {
     const source = read('app/dashboard/shifts/page.tsx');
     expect(source).not.toContain('const shiftsData');
-    expect(source).toContain('fetch("/api/shifts"');
+    // List load is cached via React Query against the real endpoint; writes still go through the backend API.
+    expect(source).toContain('fetchApiData<Shift[]>("/api/shifts"');
+    expect(source).toContain('queryKey: ["shifts"]');
+    expect(source).toContain('invalidateQueries({ queryKey: ["shifts"] })');
     expect(source).toContain('method: editingShift ? "PUT" : "POST"');
     expect(source).toContain('toggleShift');
     expect(source).toContain('Belum ada shift');

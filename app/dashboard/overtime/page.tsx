@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useReducer } from 'react';
+import { useCallback, useReducer } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchApiData } from '@/hooks/useDashboardQueries';
 
 interface OvertimeRate {
   id: string;
@@ -503,10 +505,8 @@ function CreateModal({
 
 export default function OvertimePage() {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
+  const queryClient = useQueryClient();
   const {
-    requests,
-    rates,
-    loading,
     showModal,
     filter,
     pendingApproveId,
@@ -514,33 +514,30 @@ export default function OvertimePage() {
     formData,
   } = state;
 
-  const fetchData = useCallback(async () => {
-    try {
-      const [requestsRes, ratesRes] = await Promise.all([
-        fetch(`/api/overtime/requests${filter !== 'ALL' ? `?status=${filter}` : ''}`),
-        fetch('/api/overtime/rates?isActive=true'),
-      ]);
+  const requestsQuery = useQuery({
+    queryKey: ['overtime', 'requests', filter],
+    queryFn: () => fetchApiData<OvertimeRequest[]>(
+      `/api/overtime/requests${filter !== 'ALL' ? `?status=${filter}` : ''}`,
+      'Gagal memuat request lembur',
+    ),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
 
-      const [requestsData, ratesData] = await Promise.all([
-        requestsRes.json(),
-        ratesRes.json(),
-      ]);
+  const ratesQuery = useQuery({
+    queryKey: ['overtime', 'rates'],
+    queryFn: () => fetchApiData<OvertimeRate[]>('/api/overtime/rates?isActive=true', 'Gagal memuat rate lembur'),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
 
-      dispatch({
-        type: 'SET_DATA',
-        requests: requestsRes.ok ? requestsData.data : undefined,
-        rates: ratesRes.ok ? ratesData.data : undefined,
-      });
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      dispatch({ type: 'SET_LOADING', loading: false });
-    }
-  }, [filter]);
+  const requests = requestsQuery.data ?? [];
+  const rates = ratesQuery.data ?? [];
+  const loading = requestsQuery.isLoading;
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const fetchData = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['overtime'] });
+  }, [queryClient]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

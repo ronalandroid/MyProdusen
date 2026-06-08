@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 
 const currentPeriod = new Date().toISOString().slice(0, 7);
 
@@ -13,47 +15,43 @@ type EmployeeRow = { id: string; name?: string; fullName?: string; nip?: string 
 
 export default function KpiTemplatePage() {
   const router = useRouter();
-  const [templates, setTemplates] = useState<TemplateRow[]>([]);
-  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
+  const queryClient = useQueryClient();
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const [period, setPeriod] = useState(currentPeriod);
   const [name, setName] = useState(`Template KPI ${currentPeriod}`);
   const [description, setDescription] = useState("Template KPI operasional bulanan");
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState("");
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [localError, setError] = useState("");
   const [actualValue, setActualValue] = useState("100");
 
-  async function loadData() {
-    setLoading(true);
-    setError("");
-    try {
-      const [templateResponse, employeeResponse] = await Promise.all([
-        fetch("/api/kpi/templates?isActive=true", { credentials: "include", cache: "no-store" }),
-        fetch("/api/employees?limit=100", { credentials: "include", cache: "no-store" }),
+  const dataQuery = useQuery({
+    queryKey: ["kpi-templates-page"],
+    queryFn: async () => {
+      const [templateData, employeeData] = await Promise.all([
+        fetchApiData<TemplateRow[]>("/api/kpi/templates?isActive=true", "Gagal mengambil template KPI", { cache: "no-store" }),
+        fetchApiData<EmployeeRow[]>("/api/employees?limit=100", "Gagal mengambil karyawan", { cache: "no-store" }),
       ]);
-      const [templatePayload, employeePayload] = await Promise.all([
-        templateResponse.json().catch(() => null),
-        employeeResponse.json().catch(() => null),
-      ]);
-      if (!templateResponse.ok || !templatePayload?.success) throw new Error(templatePayload?.error || "Gagal mengambil template KPI");
-      if (!employeeResponse.ok || !employeePayload?.success) throw new Error(employeePayload?.error || "Gagal mengambil karyawan");
-      const nextTemplates = Array.isArray(templatePayload.data) ? templatePayload.data : [];
-      const nextEmployees = Array.isArray(employeePayload.data) ? employeePayload.data : [];
-      setTemplates(nextTemplates);
-      setEmployees(nextEmployees);
-      setSelectedTemplateId((current) => current || nextTemplates[0]?.id || "");
-      setSelectedEmployeeId((current) => current || nextEmployees[0]?.id || "");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memuat KPI template");
-    } finally {
-      setLoading(false);
-    }
-  }
+      return {
+        templates: Array.isArray(templateData) ? templateData : [],
+        employees: Array.isArray(employeeData) ? employeeData : [],
+      };
+    },
+  });
 
-  useEffect(() => { void loadData(); }, []);
+  const templates = dataQuery.data?.templates ?? [];
+  const employees = dataQuery.data?.employees ?? [];
+  const loading = dataQuery.isLoading;
+  const error = localError || (dataQuery.error instanceof Error ? dataQuery.error.message : "");
+
+  useEffect(() => {
+    if (!dataQuery.data) return;
+    setSelectedTemplateId((current) => current || dataQuery.data.templates[0]?.id || "");
+    setSelectedEmployeeId((current) => current || dataQuery.data.employees[0]?.id || "");
+  }, [dataQuery.data]);
+
+  const loadData = () => queryClient.invalidateQueries({ queryKey: ["kpi-templates-page"] });
 
   async function createTemplate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

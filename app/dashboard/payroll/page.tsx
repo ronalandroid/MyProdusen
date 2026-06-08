@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { fetchProfile } from '@/lib/auth-client';
+import { fetchApiData } from '@/hooks/useDashboardQueries';
 
 type PayrollStatus = 'DRAFT' | 'CALCULATED' | 'APPROVED' | 'PAID';
 
@@ -25,41 +27,38 @@ interface EmployeePayrollItem {
 
 export default function PayrollPage() {
   const router = useRouter();
-  const [role, setRole] = useState<string>('');
-  const [runs, setRuns] = useState<PayrollRun[]>([]);
-  const [myItems, setMyItems] = useState<EmployeePayrollItem[]>([]);
+  const queryClient = useQueryClient();
   const [newPeriod, setNewPeriod] = useState('');
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const [mutateError, setError] = useState('');
 
+  const roleQuery = useQuery<string>({
+    queryKey: ['payroll', 'role'],
+    queryFn: async () => (await fetchProfile()).role,
+    staleTime: 2 * 60_000,
+    gcTime: 10 * 60_000,
+  });
+  const role = roleQuery.data ?? '';
   const isEmployee = role === 'EMPLOYEE';
   const canMutate = role === 'SUPERADMIN';
   const canApproveOrPay = role === 'SUPERADMIN';
 
-  useEffect(() => {
-    loadPayroll();
-  }, []);
-
-  async function loadPayroll() {
-    setLoading(true);
-    setError('');
-    try {
-      const profile = await fetchProfile();
-      setRole(profile.role);
-      const endpoint = profile.role === 'EMPLOYEE' ? '/api/payroll/me' : '/api/payroll/runs';
-      const response = await fetch(endpoint, { credentials: 'include', cache: 'no-store' });
-      const payload = await response.json();
-      if (!response.ok || !payload.success) throw new Error(payload.error || 'Gagal memuat payroll');
-      if (profile.role === 'EMPLOYEE') setMyItems(payload.data || []);
-      else setRuns(payload.data || []);
-    } catch (err: any) {
-      setError(err.message || 'Gagal memuat payroll');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const payrollQuery = useQuery<PayrollRun[] | EmployeePayrollItem[]>({
+    queryKey: ['payroll', 'list', role],
+    queryFn: () =>
+      fetchApiData<PayrollRun[] | EmployeePayrollItem[]>(
+        isEmployee ? '/api/payroll/me' : '/api/payroll/runs',
+        'Gagal memuat payroll',
+      ),
+    enabled: Boolean(role),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+  });
+  const runs = (isEmployee ? [] : (payrollQuery.data as PayrollRun[] | undefined)) ?? [];
+  const myItems = (isEmployee ? (payrollQuery.data as EmployeePayrollItem[] | undefined) : []) ?? [];
+  const loading = roleQuery.isLoading || (Boolean(role) && payrollQuery.isLoading);
+  const error = mutateError || roleQuery.error?.message || payrollQuery.error?.message || '';
 
   async function createPayrollRun() {
     if (!newPeriod) return;
@@ -84,7 +83,7 @@ export default function PayrollPage() {
       const payload = await response.json();
       if (!response.ok || !payload.success) throw new Error(payload.error || 'Aksi payroll gagal');
       setMessage(payload.message || 'Aksi payroll berhasil');
-      await loadPayroll();
+      await queryClient.invalidateQueries({ queryKey: ['payroll', 'list'] });
     } catch (err: any) {
       setError(err.message || 'Aksi payroll gagal');
     } finally {

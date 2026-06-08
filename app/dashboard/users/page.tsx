@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, RefreshCw, ShieldCheck, UserCog } from "lucide-react";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 
 type UserRole = "SUPERADMIN" | "LEADER" | "EMPLOYEE";
 type Team = { id: string; name: string; active?: boolean };
@@ -33,46 +35,49 @@ function normalizeRole(role: unknown): UserRole { const value = String(role).toU
 function rowsFrom(result: any) { return Array.isArray(result) ? result : result?.data || []; }
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<UserRow[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [locations, setLocations] = useState<WorkLocation[]>([]);
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [localError, setError] = useState("");
   const [profileModalUser, setProfileModalUser] = useState<UserRow | null>(null);
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
-  const loadSeq = useRef(0);
+  const [optimisticUsers, setOptimisticUsers] = useState<UserRow[] | null>(null);
+
+  const usersQuery = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => {
+      const [userRows, teamRows, locationRows, shiftRows] = await Promise.all([
+        fetchApiData<any[]>("/api/users", "Gagal mengambil /api/users"),
+        fetchApiData<any[]>("/api/teams", "Gagal mengambil /api/teams"),
+        fetchApiData<any[]>("/api/work-locations?isActive=true", "Gagal mengambil /api/work-locations?isActive=true"),
+        fetchApiData<any[]>("/api/shifts?isActive=true", "Gagal mengambil /api/shifts?isActive=true"),
+      ]);
+      return {
+        users: (rowsFrom(userRows) as any[]).map((row: any) => ({ ...row, role: normalizeRole(row.role) })) as UserRow[],
+        teams: (rowsFrom(teamRows) as Team[]).filter((team: Team) => team.active !== false),
+        locations: (rowsFrom(locationRows) as WorkLocation[]).filter((location: WorkLocation) => location.isActive !== false),
+        shifts: (rowsFrom(shiftRows) as Shift[]).filter((shift: Shift) => shift.isActive !== false),
+      };
+    },
+  });
+
+  const users = optimisticUsers ?? usersQuery.data?.users ?? [];
+  const teams = usersQuery.data?.teams ?? [];
+  const locations = usersQuery.data?.locations ?? [];
+  const shifts = usersQuery.data?.shifts ?? [];
+  const loading = usersQuery.isLoading;
+  const error = localError || (usersQuery.error instanceof Error ? usersQuery.error.message : "");
+
+  const setUsers = (updater: (rows: UserRow[]) => UserRow[]) => {
+    setOptimisticUsers((current) => updater(current ?? usersQuery.data?.users ?? []));
+  };
 
   const pendingUsers = useMemo(() => users.filter((user) => !user.isActive), [users]);
 
-  async function fetchJson(path: string) {
-    const response = await fetch(path, { credentials: "include", cache: "no-store" });
-    const result = await response.json().catch(() => null);
-    if (!response.ok || (!Array.isArray(result) && result?.success === false)) throw new Error(result?.error || result?.message || `Gagal mengambil ${path}`);
-    return rowsFrom(result);
-  }
-
-  async function loadAll() {
-    const seq = ++loadSeq.current;
-    setLoading(true); setError("");
-    try {
-      const [userRows, teamRows, locationRows, shiftRows] = await Promise.all([
-        fetchJson("/api/users"), fetchJson("/api/teams"), fetchJson("/api/work-locations?isActive=true"), fetchJson("/api/shifts?isActive=true"),
-      ]);
-      if (seq !== loadSeq.current) return;
-      setUsers(userRows.map((row: any) => ({ ...row, role: normalizeRole(row.role) })));
-      setTeams(teamRows.filter((team: Team) => team.active !== false));
-      setLocations(locationRows.filter((location: WorkLocation) => location.isActive !== false));
-      setShifts(shiftRows.filter((shift: Shift) => shift.isActive !== false));
-    } catch (err) {
-      if (seq !== loadSeq.current) return;
-      setError(err instanceof Error ? err.message : "Gagal mengambil data user");
-    } finally { if (seq === loadSeq.current) setLoading(false); }
-  }
-
-  useEffect(() => { loadAll(); }, []);
+  const loadAll = () => {
+    setOptimisticUsers(null);
+    return queryClient.invalidateQueries({ queryKey: ["users"] });
+  };
 
   async function updateUser(user: UserRow, patch: Partial<UserRow>) {
     setSavingId(user.id); setMessage(""); setError("");

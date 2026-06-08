@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchApiData } from '@/hooks/useDashboardQueries';
 
 interface PayrollStructure {
   id: string;
@@ -14,8 +16,7 @@ interface PayrollStructure {
 
 export default function PayrollStructuresPage() {
   const router = useRouter();
-  const [structures, setStructures] = useState<PayrollStructure[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -26,23 +27,16 @@ export default function PayrollStructuresPage() {
     baseSalary: 0,
   });
 
-  useEffect(() => {
-    fetchStructures();
-  }, []);
+  const structuresQuery = useQuery<PayrollStructure[]>({
+    queryKey: ['payroll', 'structures'],
+    queryFn: () => fetchApiData<PayrollStructure[]>('/api/payroll/structures', 'Gagal memuat struktur gaji'),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+  });
+  const structures = structuresQuery.data ?? [];
+  const loading = structuresQuery.isLoading;
 
-  const fetchStructures = async () => {
-    try {
-      const res = await fetch('/api/payroll/structures');
-      const data = await res.json();
-      if (res.ok) {
-        setStructures(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching structures:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchStructures = () => queryClient.invalidateQueries({ queryKey: ['payroll', 'structures'] });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

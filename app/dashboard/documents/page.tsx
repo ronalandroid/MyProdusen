@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, FileText, RefreshCcw, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders } from "@/lib/auth-client";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 
 interface EmployeeDocument {
   id: string;
@@ -25,10 +27,9 @@ interface EmployeeDocument {
 
 export default function DocumentsPage() {
   const router = useRouter();
-  const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [submitError, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     category: "OTHER",
@@ -38,28 +39,17 @@ export default function DocumentsPage() {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  useEffect(() => {
-    loadDocuments();
-  }, []);
+  const documentsQuery = useQuery<EmployeeDocument[]>({
+    queryKey: ["documents"],
+    queryFn: () => fetchApiData<EmployeeDocument[]>('/api/documents', 'Dokumen gagal dimuat'),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+  });
+  const documents = documentsQuery.data ?? [];
+  const loading = documentsQuery.isLoading;
+  const error = submitError || documentsQuery.error?.message || "";
 
-  const loadDocuments = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const response = await fetch('/api/documents', { headers: getAuthHeaders() });
-      const payload = await response.json();
-
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error || 'Dokumen gagal dimuat');
-      }
-
-      setDocuments(payload.data || []);
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Dokumen gagal dimuat');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadDocuments = () => queryClient.invalidateQueries({ queryKey: ["documents"] });
 
   const createDocument = async (event: React.FormEvent) => {
     event.preventDefault();

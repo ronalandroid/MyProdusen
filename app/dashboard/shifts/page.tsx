@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 
 type Shift = {
   id: string;
@@ -11,33 +13,25 @@ type Shift = {
 };
 
 export default function ShiftsPage() {
-  const [shifts, setShifts] = useState<Shift[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingShift, setEditingShift] = useState<Shift | null>(null);
   const [formData, setFormData] = useState({ name: "", startTime: "", endTime: "" });
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const queryClient = useQueryClient();
 
-  const loadShifts = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch("/api/shifts", { credentials: "include" });
-      const result = await response.json().catch(() => null);
-      if (!response.ok || !result?.success) throw new Error(result?.error || "Gagal mengambil data shift");
-      setShifts(Array.isArray(result.data) ? result.data : []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal mengambil data shift");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const shiftsQuery = useQuery<Shift[]>({
+    queryKey: ["shifts"],
+    queryFn: () => fetchApiData<Shift[]>("/api/shifts", "Gagal mengambil data shift"),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+  });
+  const shifts = shiftsQuery.data ?? [];
+  const loading = shiftsQuery.isLoading;
+  const loadError = shiftsQuery.error?.message || "";
 
-  useEffect(() => {
-    loadShifts();
-  }, [loadShifts]);
+  const loadShifts = useCallback(() => queryClient.invalidateQueries({ queryKey: ["shifts"] }), [queryClient]);
 
   function openCreateModal() {
     setEditingShift(null);
@@ -112,9 +106,9 @@ export default function ShiftsPage() {
       </div>
 
       {message && <div className="card border border-green-200 bg-green-50 p-4 text-sm text-[var(--success)]" role="status">{message}</div>}
-      {error && (
+      {(error || loadError) && (
         <div className="card border border-red-200 bg-red-50 p-4 text-sm text-[var(--danger)]" role="alert">
-          {error}
+          {error || loadError}
           <button type="button" className="btn btn-secondary btn-sm ml-3" onClick={loadShifts}>Coba lagi</button>
         </div>
       )}

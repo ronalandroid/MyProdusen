@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Calendar, TrendingDown, TrendingUp, RefreshCcw, AlertCircle } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { getAuthHeaders } from "@/lib/auth-client";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 
 interface LeaveBalance {
   available: number;
@@ -48,45 +49,30 @@ const transactionTypeColors: Record<string, string> = {
 
 export default function LeaveBalancePage() {
   const router = useRouter();
-  const [balance, setBalance] = useState<LeaveBalance | null>(null);
-  const [transactions, setTransactions] = useState<LeaveTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  useEffect(() => {
-    loadBalanceData();
-  }, [selectedYear]);
+  const balanceQuery = useQuery({
+    queryKey: ["leave", "balance", selectedYear],
+    queryFn: () => fetchApiData<LeaveBalance>(`/api/leave/balance?year=${selectedYear}`, "Gagal memuat saldo cuti"),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
 
-  const loadBalanceData = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const transactionsQuery = useQuery({
+    queryKey: ["leave", "balance", "history", selectedYear],
+    queryFn: () => fetchApiData<LeaveTransaction[]>(`/api/leave/balance/history?year=${selectedYear}`, "Gagal memuat riwayat transaksi"),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
 
-      const [balanceRes, transactionsRes] = await Promise.all([
-        fetch(`/api/leave/balance?year=${selectedYear}`, { headers: getAuthHeaders() }),
-        fetch(`/api/leave/balance/history?year=${selectedYear}`, { headers: getAuthHeaders() }),
-      ]);
+  const balance = balanceQuery.data ?? null;
+  const transactions = transactionsQuery.data ?? [];
+  const loading = balanceQuery.isLoading;
+  const error = balanceQuery.error?.message || "";
 
-      const [balanceData, transactionsData] = await Promise.all([
-        balanceRes.json(),
-        transactionsRes.json(),
-      ]);
-
-      if (!balanceRes.ok || !balanceData.success) {
-        throw new Error(balanceData.error || "Gagal memuat saldo cuti");
-      }
-
-      setBalance(balanceData.data);
-
-      if (transactionsRes.ok && transactionsData.success) {
-        setTransactions(transactionsData.data || []);
-      }
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Gagal memuat data saldo cuti");
-    } finally {
-      setLoading(false);
-    }
+  const loadBalanceData = () => {
+    queryClient.invalidateQueries({ queryKey: ["leave", "balance"] });
   };
 
   if (loading) {

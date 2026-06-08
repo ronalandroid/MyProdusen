@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Target, TrendingUp, Users } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { getAuthHeaders } from "@/lib/auth-client";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 
 type KpiResultRow = {
   result: {
@@ -46,83 +47,64 @@ function statusColor(score: number) {
 
 export default function KPIPage() {
   const router = useRouter();
-  const [role, setRole] = useState<string>("EMPLOYEE");
-  const [results, setResults] = useState<KpiResultRow[]>([]);
-  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
+  const queryClient = useQueryClient();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
-  const [employeeSummary, setEmployeeSummary] = useState<EmployeeSummary | null>(null);
-  const [productionEntries, setProductionEntries] = useState<ProductionEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  const initialQuery = useQuery({
+    queryKey: ["kpi-overview", currentPeriod],
+    queryFn: async () => {
+      const [statsPayload, resultsPayload] = await Promise.all([
+        fetchApiData<{ role?: string }>("/api/dashboard/stats", "Gagal mengambil role pengguna"),
+        fetchApiData<KpiResultRow[]>(`/api/kpi/results?period=${currentPeriod}`, "Gagal mengambil KPI"),
+      ]);
+
+      const nextRole = statsPayload?.role || "EMPLOYEE";
+      const results = Array.isArray(resultsPayload) ? resultsPayload : [];
+
+      let productionEntries: ProductionEntry[] = [];
+      try {
+        const production = await fetchApiData<ProductionEntry[]>("/api/kpi/production/me", "Gagal mengambil produksi", { cache: "no-store" });
+        productionEntries = Array.isArray(production) ? production : [];
+      } catch {
+        productionEntries = [];
+      }
+
+      let employees: EmployeeRow[] = [];
+      if (nextRole === "SUPERADMIN") {
+        try {
+          const employeeData = await fetchApiData<EmployeeRow[]>("/api/employees?limit=100", "Gagal mengambil karyawan");
+          employees = Array.isArray(employeeData) ? employeeData : [];
+        } catch {
+          employees = [];
+        }
+      }
+
+      return { role: nextRole, results, productionEntries, employees };
+    },
+  });
+
+  const role = initialQuery.data?.role || "EMPLOYEE";
+  const results = initialQuery.data?.results ?? [];
+  const employees = initialQuery.data?.employees ?? [];
+  const productionEntries = initialQuery.data?.productionEntries ?? [];
+  const loading = initialQuery.isLoading;
 
   const canViewTeam = role === "SUPERADMIN";
 
-  const loadInitialData = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const [statsResponse, resultsResponse, productionResponse] = await Promise.all([
-        fetch("/api/dashboard/stats", { headers: getAuthHeaders(), credentials: "include" }),
-        fetch(`/api/kpi/results?period=${currentPeriod}`, { headers: getAuthHeaders(), credentials: "include" }),
-        fetch("/api/kpi/production/me", { headers: getAuthHeaders(), credentials: "include", cache: "no-store" }),
-      ]);
+  const loadInitialData = () => queryClient.invalidateQueries({ queryKey: ["kpi-overview"] });
 
-      const statsPayload = await statsResponse.json().catch(() => null);
-      const resultsPayload = await resultsResponse.json().catch(() => null);
-      const productionPayload = await productionResponse.json().catch(() => null);
+  const summaryQuery = useQuery({
+    queryKey: ["kpi-employee-summary", selectedEmployeeId, currentPeriod],
+    enabled: Boolean(selectedEmployeeId),
+    queryFn: () => fetchApiData<EmployeeSummary>(`/api/kpi/employee/${selectedEmployeeId}?period=${currentPeriod}`, "Gagal mengambil ringkasan KPI employee"),
+  });
 
-      if (!statsResponse.ok || !statsPayload?.success) throw new Error(statsPayload?.error || "Gagal mengambil role pengguna");
-      if (!resultsResponse.ok || !resultsPayload?.success) throw new Error(resultsPayload?.error || "Gagal mengambil KPI");
+  const employeeSummary = selectedEmployeeId ? summaryQuery.data ?? null : null;
+  const summaryLoading = Boolean(selectedEmployeeId) && summaryQuery.isLoading;
 
-      const nextRole = statsPayload.data?.role || "EMPLOYEE";
-      setRole(nextRole);
-      setResults(Array.isArray(resultsPayload.data) ? resultsPayload.data : []);
-      if (productionResponse.ok && productionPayload?.success) setProductionEntries(Array.isArray(productionPayload.data) ? productionPayload.data : []);
-
-      if (nextRole === "SUPERADMIN") {
-        const employeeResponse = await fetch("/api/employees?limit=100", { headers: getAuthHeaders(), credentials: "include" });
-        const employeePayload = await employeeResponse.json().catch(() => null);
-        if (employeeResponse.ok && employeePayload?.success) {
-          setEmployees(Array.isArray(employeePayload.data) ? employeePayload.data : []);
-        }
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memuat modul KPI");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadInitialData();
-  }, [loadInitialData]);
-
-  useEffect(() => {
-    if (!selectedEmployeeId) {
-      setEmployeeSummary(null);
-      return;
-    }
-
-    let cancelled = false;
-    async function loadEmployeeSummary() {
-      setSummaryLoading(true);
-      setError("");
-      try {
-        const response = await fetch(`/api/kpi/employee/${selectedEmployeeId}?period=${currentPeriod}`, { headers: getAuthHeaders(), credentials: "include" });
-        const payload = await response.json().catch(() => null);
-        if (!response.ok || !payload?.success) throw new Error(payload?.error || "Gagal mengambil ringkasan KPI employee");
-        if (!cancelled) setEmployeeSummary(payload.data);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Gagal mengambil ringkasan KPI employee");
-      } finally {
-        if (!cancelled) setSummaryLoading(false);
-      }
-    }
-
-    loadEmployeeSummary();
-    return () => { cancelled = true; };
-  }, [selectedEmployeeId]);
+  const error =
+    (initialQuery.error instanceof Error ? initialQuery.error.message : "") ||
+    (summaryQuery.error instanceof Error ? summaryQuery.error.message : "");
 
   const averageScore = useMemo(() => {
     if (!results.length) return 0;
