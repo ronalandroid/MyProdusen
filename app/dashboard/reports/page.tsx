@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Download, FileText, Calendar, Users, Clock } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 import { getReportPresets, resolveReportPreset, type ReportPresetId } from "@/lib/reports/report-presets";
 
 const REPORT_DESCRIPTIONS: Record<string, string> = {
@@ -16,16 +18,12 @@ const REPORT_DESCRIPTIONS: Record<string, string> = {
 
 export default function ReportsPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
   const [reportType, setReportType] = useState("attendance");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState("all");
   const [selectedPreset, setSelectedPreset] = useState<ReportPresetId | "">("");
   const [notice, setNotice] = useState("");
-  const [employees, setEmployees] = useState<Array<{ id: string; name: string; nip?: string | null }>>([]);
-  const [attendanceSummary, setAttendanceSummary] = useState<any | null>(null);
-  const [error, setError] = useState("");
 
   const buildReportParams = useCallback(() => {
     const params = new URLSearchParams();
@@ -36,44 +34,25 @@ export default function ReportsPage() {
     return params;
   }, [endDate, selectedEmployee, selectedPreset, startDate]);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function loadEmployees() {
-      try {
-        const response = await fetch('/api/employees?limit=200', { credentials: 'include' });
-        const payload = await response.json().catch(() => null);
-        if (!cancelled && response.ok && payload?.success) setEmployees(Array.isArray(payload.data) ? payload.data : []);
-      } catch {
-        if (!cancelled) setEmployees([]);
-      }
-    }
-    loadEmployees();
-    return () => { cancelled = true; };
-  }, []);
+  const employeesQuery = useQuery({
+    queryKey: ['reports', 'employees'],
+    queryFn: () => fetchApiData<Array<{ id: string; name: string; nip?: string | null }>>('/api/employees?limit=200', 'Gagal mengambil data karyawan'),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const employees = employeesQuery.data ?? [];
 
-  useEffect(() => {
-    if (reportType !== 'attendance') return;
-    let cancelled = false;
-    const handle = window.setTimeout(async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const params = buildReportParams();
-        const response = await fetch(`/api/reports/attendance/summary?${params.toString()}`, { credentials: 'include' });
-        const payload = await response.json().catch(() => null);
-        if (!response.ok || !payload?.success) throw new Error(payload?.error || 'Gagal mengambil ringkasan absensi');
-        if (!cancelled) setAttendanceSummary(payload.data?.summary || null);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Gagal mengambil ringkasan absensi');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }, 350);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(handle);
-    };
-  }, [buildReportParams, reportType]);
+  const summaryParams = buildReportParams().toString();
+  const summaryQuery = useQuery({
+    queryKey: ['reports', 'attendance-summary', summaryParams],
+    queryFn: () => fetchApiData<{ summary?: any }>(`/api/reports/attendance/summary?${summaryParams}`, 'Gagal mengambil ringkasan absensi'),
+    enabled: reportType === 'attendance',
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const attendanceSummary = summaryQuery.data?.summary ?? null;
+  const loading = summaryQuery.isLoading;
+  const error = reportType === 'attendance' ? (summaryQuery.error?.message ?? '') : '';
 
   const handleExport = (format: 'csv' | 'pdf') => {
     if (format === 'pdf') {

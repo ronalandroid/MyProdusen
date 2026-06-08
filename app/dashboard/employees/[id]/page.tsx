@@ -2,13 +2,15 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, User, Mail, Phone, Briefcase, MapPin, Calendar, Shield } from "lucide-react";
 import Button from "@/components/ui/Button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { getAuthHeaders, fetchProfile } from "@/lib/auth-client";
+import { getAuthHeaders } from "@/lib/auth-client";
 import AttendanceHeatmap from "@/components/attendance/AttendanceHeatmap";
+import { fetchApiData, useCachedProfile } from "@/hooks/useDashboardQueries";
 
 interface Employee {
   id: string;
@@ -30,50 +32,34 @@ interface Employee {
 export default function EmployeeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { success, error: showError } = useToast();
   
-  const [employee, setEmployee] = useState<Employee | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
+  const id = resolvedParams.id;
+  const profileQuery = useCachedProfile();
+  const employeeQuery = useQuery({
+    queryKey: ["employee", id],
+    queryFn: () => fetchApiData<Employee>(`/api/employees/${id}`, "Gagal memuat data karyawan"),
+    enabled: Boolean(id),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+
+  const employee = employeeQuery.data || null;
+  const loading = employeeQuery.isPending;
+  const isSuperadmin = profileQuery.data?.role === 'SUPERADMIN';
+
   useEffect(() => {
-    checkRole();
-    fetchEmployee();
-  }, [resolvedParams.id]);
+    if (employee) setSelectedRole(employee.user?.role || 'EMPLOYEE');
+  }, [employee]);
 
-  const checkRole = async () => {
-    try {
-      const profile = await fetchProfile();
-      setIsSuperadmin(profile.role === 'SUPERADMIN');
-    } catch (err) {
-      setIsSuperadmin(false);
-    }
-  };
-
-  const fetchEmployee = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/employees/${resolvedParams.id}`, {
-        headers: getAuthHeaders(),
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setEmployee(data.data);
-        setSelectedRole(data.data.user?.role || 'EMPLOYEE');
-      } else {
-        showError(data.error || "Gagal memuat data karyawan");
-      }
-    } catch (err) {
-      showError("Terjadi kesalahan saat memuat data");
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    if (employeeQuery.error) showError(employeeQuery.error.message || "Terjadi kesalahan saat memuat data");
+  }, [employeeQuery.error, showError]);
 
   const handleChangeRole = async () => {
     if (!employee) return;
@@ -94,7 +80,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
       if (data.success) {
         success(data.message || "Role berhasil diubah");
         setIsRoleModalOpen(false);
-        fetchEmployee();
+        queryClient.invalidateQueries({ queryKey: ["employee"] });
       } else {
         showError(data.error || "Gagal mengubah role");
       }

@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 
 type AuditLog = {
   id: string;
@@ -56,12 +58,10 @@ function logDetail(log: AuditLog) {
 }
 
 export default function AuditPage() {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -71,32 +71,24 @@ export default function AuditPage() {
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
-  const loadLogs = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
+  const offset = (page - 1) * PAGE_SIZE;
+  const logsQuery = useQuery<AuditLog[]>({
+    queryKey: ["audit", page, search, PAGE_SIZE, offset],
+    queryFn: () => {
       const params = new URLSearchParams({
         limit: String(PAGE_SIZE),
-        offset: String((page - 1) * PAGE_SIZE),
+        offset: String(offset),
       });
       if (search) params.set("search", search);
-
-      const response = await fetch(`/api/audit?${params.toString()}`, { credentials: "include", cache: "no-store" });
-      const result = await response.json().catch(() => null);
-      if (!response.ok || !result?.success) {
-        throw new Error(result?.error || "Gagal mengambil audit log");
-      }
-      setLogs(Array.isArray(result.data) ? result.data : []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal mengambil audit log");
-    } finally {
-      setLoading(false);
-    }
-  }, [page, search]);
-
-  useEffect(() => {
-    loadLogs();
-  }, [loadLogs]);
+      return fetchApiData<AuditLog[]>(`/api/audit?${params.toString()}`, "Gagal mengambil audit log", { cache: "no-store" });
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const logs = logsQuery.data ?? [];
+  const loading = logsQuery.isLoading;
+  const error = logsQuery.error?.message || "";
+  const loadLogs = () => queryClient.invalidateQueries({ queryKey: ["audit"] });
 
   const hasNextPage = logs.length === PAGE_SIZE;
 

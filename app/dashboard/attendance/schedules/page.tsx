@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 
 type Employee = { id: string; fullName: string; nip?: string; division?: string | null };
 type Shift = { id: string; name: string; startTime: string; endTime: string; isActive: boolean };
@@ -45,16 +47,35 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export default function AttendanceSchedulesPage() {
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>("schedules");
-
-  // Shared master data
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [locations, setLocations] = useState<WorkLocation[]>([]);
-  const [loadingMaster, setLoadingMaster] = useState(true);
 
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
+  const masterQuery = useQuery({
+    queryKey: ["attendance-schedules-master"],
+    queryFn: async () => {
+      const [emp, shf, loc] = await Promise.all([
+        fetchApiData<any>("/api/employees?status=ACTIVE", "Gagal memuat data master"),
+        fetchApiData<Shift[]>("/api/shifts", "Gagal memuat data master"),
+        fetchApiData<WorkLocation[]>("/api/work-locations?isActive=true", "Gagal memuat data master"),
+      ]);
+      const empItems: Employee[] = Array.isArray(emp) ? emp : Array.isArray(emp?.items) ? emp.items : [];
+      return {
+        employees: empItems,
+        shifts: Array.isArray(shf) ? shf : [],
+        locations: Array.isArray(loc) ? loc : [],
+      };
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+
+  const employees = masterQuery.data?.employees ?? [];
+  const shifts = masterQuery.data?.shifts ?? [];
+  const locations = masterQuery.data?.locations ?? [];
+  const loadingMaster = masterQuery.isPending;
 
   const activeShifts = useMemo(() => shifts.filter((s) => s.isActive), [shifts]);
   const activeLocations = useMemo(() => locations.filter((l) => l.isActive), [locations]);
@@ -67,29 +88,9 @@ export default function AttendanceSchedulesPage() {
     [employees],
   );
 
-  const loadMaster = useCallback(async () => {
-    setLoadingMaster(true);
-    setError("");
-    try {
-      const [emp, shf, loc] = await Promise.all([
-        api<any>("/api/employees?status=ACTIVE"),
-        api<Shift[]>("/api/shifts"),
-        api<WorkLocation[]>("/api/work-locations?isActive=true"),
-      ]);
-      const empItems: Employee[] = Array.isArray(emp) ? emp : Array.isArray(emp?.items) ? emp.items : [];
-      setEmployees(empItems);
-      setShifts(Array.isArray(shf) ? shf : []);
-      setLocations(Array.isArray(loc) ? loc : []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memuat data master");
-    } finally {
-      setLoadingMaster(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadMaster();
-  }, [loadMaster]);
+  function loadMaster() {
+    queryClient.invalidateQueries({ queryKey: ["attendance-schedules-master"] });
+  }
 
   // ---- Tab 1: per-day schedule assignment ----
   const [form, setForm] = useState({
@@ -103,36 +104,37 @@ export default function AttendanceSchedulesPage() {
   const [rangeFrom, setRangeFrom] = useState(() => todayIso());
   const [rangeTo, setRangeTo] = useState(() => addDaysIso(todayIso(), 6));
   const [filterEmployee, setFilterEmployee] = useState("");
-  const [schedules, setSchedules] = useState<ScheduleRow[]>([]);
-  const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const loadSchedules = useCallback(async () => {
-    setLoadingSchedules(true);
-    setError("");
-    try {
+  const schedulesQuery = useQuery({
+    queryKey: ["attendance-schedules", rangeFrom, rangeTo, filterEmployee],
+    queryFn: () => {
       const params = new URLSearchParams({ from: rangeFrom, to: rangeTo });
       if (filterEmployee) params.set("employeeId", filterEmployee);
-      const data = await api<{ schedules: ScheduleRow[] }>(
+      return fetchApiData<{ schedules: ScheduleRow[] }>(
         `/api/attendance/schedules?${params.toString()}`,
+        "Gagal memuat jadwal",
       );
-      const rows = (data.schedules || []).slice().sort((a, b) => {
-        if (a.date !== b.date) return a.date < b.date ? -1 : 1;
-        const an = employeeNameById.get(a.employeeId) || "";
-        const bn = employeeNameById.get(b.employeeId) || "";
-        return an.localeCompare(bn);
-      });
-      setSchedules(rows);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memuat jadwal");
-    } finally {
-      setLoadingSchedules(false);
-    }
-  }, [rangeFrom, rangeTo, filterEmployee, employeeNameById]);
+    },
+    enabled: tab === "schedules" && !loadingMaster,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
 
-  useEffect(() => {
-    if (tab === "schedules" && !loadingMaster) loadSchedules();
-  }, [tab, loadingMaster, loadSchedules]);
+  const schedules = useMemo(() => {
+    const rows = (schedulesQuery.data?.schedules || []).slice().sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+      const an = employeeNameById.get(a.employeeId) || "";
+      const bn = employeeNameById.get(b.employeeId) || "";
+      return an.localeCompare(bn);
+    });
+    return rows;
+  }, [schedulesQuery.data, employeeNameById]);
+  const loadingSchedules = schedulesQuery.isPending;
+
+  function loadSchedules() {
+    queryClient.invalidateQueries({ queryKey: ["attendance-schedules"] });
+  }
 
   function toggleFormLocation(id: string) {
     setForm((current) => ({
@@ -177,7 +179,7 @@ export default function AttendanceSchedulesPage() {
     try {
       await api(`/api/attendance/schedules/${row.id}`, { method: "DELETE" });
       setMessage("Jadwal dihapus. Karyawan kembali ke shift default untuk hari itu.");
-      setSchedules((current) => current.filter((s) => s.id !== row.id));
+      await queryClient.invalidateQueries({ queryKey: ["attendance-schedules"] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menghapus jadwal");
     } finally {
@@ -188,31 +190,35 @@ export default function AttendanceSchedulesPage() {
   // ---- Tab 2: default shift locations ----
   const [selectedShiftId, setSelectedShiftId] = useState("");
   const [shiftLocationIds, setShiftLocationIds] = useState<string[]>([]);
-  const [loadingShiftLocations, setLoadingShiftLocations] = useState(false);
   const [savingShiftLocations, setSavingShiftLocations] = useState(false);
 
-  const loadShiftLocations = useCallback(async (shiftId: string) => {
-    if (!shiftId) {
+  const shiftLocationsQuery = useQuery({
+    queryKey: ["attendance-shift-locations", selectedShiftId],
+    queryFn: () => fetchApiData<{ workLocationIds: string[] }>(
+      `/api/attendance/shift-locations/${selectedShiftId}`,
+      "Gagal memuat lokasi shift",
+    ),
+    enabled: tab === "shift-locations" && Boolean(selectedShiftId),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+
+  const loadingShiftLocations = shiftLocationsQuery.isPending;
+
+  useEffect(() => {
+    if (!selectedShiftId) {
       setShiftLocationIds([]);
       return;
     }
-    setLoadingShiftLocations(true);
-    setError("");
-    try {
-      const data = await api<{ workLocationIds: string[] }>(
-        `/api/attendance/shift-locations/${shiftId}`,
-      );
-      setShiftLocationIds(data.workLocationIds || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memuat lokasi shift");
-    } finally {
-      setLoadingShiftLocations(false);
+    if (shiftLocationsQuery.data) {
+      setShiftLocationIds(shiftLocationsQuery.data.workLocationIds || []);
     }
-  }, []);
+  }, [selectedShiftId, shiftLocationsQuery.data]);
 
   useEffect(() => {
-    if (tab === "shift-locations" && selectedShiftId) loadShiftLocations(selectedShiftId);
-  }, [tab, selectedShiftId, loadShiftLocations]);
+    const queryError = masterQuery.error?.message || schedulesQuery.error?.message || shiftLocationsQuery.error?.message || "";
+    if (queryError) setError(queryError);
+  }, [masterQuery.error, schedulesQuery.error, shiftLocationsQuery.error]);
 
   function toggleShiftLocation(id: string) {
     setShiftLocationIds((current) =>
@@ -231,6 +237,7 @@ export default function AttendanceSchedulesPage() {
         body: JSON.stringify({ workLocationIds: shiftLocationIds }),
       });
       setMessage("Lokasi default shift tersimpan.");
+      await queryClient.invalidateQueries({ queryKey: ["attendance-shift-locations"] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menyimpan lokasi shift");
     } finally {

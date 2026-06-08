@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowLeft, CheckCircle2, RefreshCcw, Search, XCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders } from "@/lib/auth-client";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 
 interface AttendanceExceptionItem {
   id: string;
@@ -44,42 +46,36 @@ const STATUS_TONE: Record<string, { bg: string; color: string; label: string }> 
 export default function AttendanceExceptionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [items, setItems] = useState<AttendanceExceptionItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [processingId, setProcessingId] = useState("");
-  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
 
   const status = searchParams.get("status") || "PENDING";
 
-  useEffect(() => {
-    loadExceptions();
-    setPage(1);
-  }, [status]);
-
-  const loadExceptions = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const exceptionsQuery = useQuery({
+    queryKey: ["attendance-exceptions", status],
+    queryFn: () => {
       const params = new URLSearchParams();
       if (status && status !== "ALL") params.set("status", status);
-      const response = await fetch(`/api/attendance/exceptions?${params.toString()}`, {
-        headers: getAuthHeaders(),
-        cache: "no-store",
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error || "Exception absensi gagal dimuat");
-      }
-      setItems(payload.data || []);
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Exception absensi gagal dimuat");
-    } finally {
-      setLoading(false);
-    }
-  };
+      return fetchApiData<AttendanceExceptionItem[]>(
+        `/api/attendance/exceptions?${params.toString()}`,
+        "Exception absensi gagal dimuat",
+      );
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+
+  const items = exceptionsQuery.data || [];
+  const loading = exceptionsQuery.isPending;
+  const error = actionError || exceptionsQuery.error?.message || "";
+
+  useEffect(() => {
+    setPage(1);
+  }, [status]);
 
   const filteredItems = useMemo(() => {
     const trimmed = searchTerm.trim().toLowerCase();
@@ -109,12 +105,12 @@ export default function AttendanceExceptionsPage() {
   async function review(id: string, nextStatus: "APPROVED" | "REJECTED") {
     const note = (reviewNotes[id] || "").trim();
     if (nextStatus === "REJECTED" && note.length < 10) {
-      setError("Catatan penolakan minimal 10 karakter.");
+      setActionError("Catatan penolakan minimal 10 karakter.");
       return;
     }
     try {
       setProcessingId(id);
-      setError("");
+      setActionError("");
       const response = await fetch(`/api/attendance/exceptions/${id}/review`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
@@ -132,9 +128,9 @@ export default function AttendanceExceptionsPage() {
         delete next[id];
         return next;
       });
-      await loadExceptions();
+      await queryClient.invalidateQueries({ queryKey: ["attendance-exceptions"] });
     } catch (reviewError) {
-      setError(reviewError instanceof Error ? reviewError.message : "Review gagal diproses");
+      setActionError(reviewError instanceof Error ? reviewError.message : "Review gagal diproses");
     } finally {
       setProcessingId("");
     }
@@ -147,7 +143,7 @@ export default function AttendanceExceptionsPage() {
           <ArrowLeft size={24} aria-hidden="true" />
           <span className="text-xl font-bold">Approval Absensi</span>
         </button>
-        <Button variant="secondary" onClick={loadExceptions} disabled={loading}>
+        <Button variant="secondary" onClick={() => queryClient.invalidateQueries({ queryKey: ["attendance-exceptions"] })} disabled={loading}>
           <RefreshCcw size={16} aria-hidden="true" />
           Refresh
         </Button>

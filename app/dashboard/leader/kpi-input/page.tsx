@@ -1,50 +1,52 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 
 type Team = { id: string; name: string };
 type Member = { id: string; nip: string; fullName: string; division?: string | null; teamId: string; teamName: string };
 
 export default function LeaderKpiInputPage() {
+  const queryClient = useQueryClient();
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
-  const [teams, setTeams] = useState<Team[]>([]);
   const [teamId, setTeamId] = useState("");
-  const [members, setMembers] = useState<Member[]>([]);
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
+
+  const teamsQuery = useQuery({
+    queryKey: ["leader-teams"],
+    queryFn: () => fetchApiData<{ teams?: Team[] }>("/api/leader/me", "Anda belum ditetapkan ke tim. Hubungi Superadmin."),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+
+  const teams = teamsQuery.data?.teams || [];
 
   useEffect(() => {
-    fetch("/api/leader/me", { credentials: "include", cache: "no-store" })
-      .then((res) => res.json())
-      .then((payload) => {
-        if (!payload.success) throw new Error(payload.error || payload.message || "Anda belum ditetapkan ke tim. Hubungi Superadmin.");
-        const nextTeams = payload.data?.teams || [];
-        setTeams(nextTeams);
-        setTeamId(nextTeams[0]?.id || "");
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Gagal mengambil tim Leader"));
-  }, []);
+    if (!teamId && teams[0]?.id) setTeamId(teams[0].id);
+  }, [teamId, teams]);
 
-  useEffect(() => {
-    if (!teamId) return;
-    fetch(`/api/leader/team-employees?teamId=${encodeURIComponent(teamId)}`, { credentials: "include", cache: "no-store" })
-      .then((res) => res.json())
-      .then((payload) => {
-        if (!payload.success) throw new Error(payload.error || payload.message || "Gagal mengambil anggota tim");
-        setMembers(payload.data || []);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Gagal mengambil anggota tim"));
-  }, [teamId]);
+  const membersQuery = useQuery({
+    queryKey: ["leader-team-employees", teamId],
+    queryFn: () => fetchApiData<Member[]>(`/api/leader/team-employees?teamId=${encodeURIComponent(teamId)}`, "Gagal mengambil anggota tim"),
+    enabled: Boolean(teamId),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+
+  const members = membersQuery.data || [];
+  const error = actionError || teamsQuery.error?.message || membersQuery.error?.message || "";
 
   const canSave = useMemo(() => members.some((member) => values[member.id] !== undefined && values[member.id] !== ""), [members, values]);
 
   async function saveAll() {
     setSaving(true);
     setMessage("");
-    setError("");
+    setActionError("");
     try {
       const entries = members
         .filter((member) => values[member.id] !== undefined && values[member.id] !== "")
@@ -53,8 +55,9 @@ export default function LeaderKpiInputPage() {
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.success) throw new Error(payload?.error || payload?.message || "Gagal menyimpan KPI tim");
       setMessage("KPI tim berhasil disimpan.");
+      await queryClient.invalidateQueries({ queryKey: ["leader-team-employees"] });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal menyimpan KPI tim");
+      setActionError(err instanceof Error ? err.message : "Gagal menyimpan KPI tim");
     } finally {
       setSaving(false);
     }

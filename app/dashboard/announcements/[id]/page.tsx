@@ -1,8 +1,10 @@
 'use client';
 
-import { type FormEvent, useEffect, useReducer } from 'react';
+import { type FormEvent, useReducer } from 'react';
 import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchApiData } from '@/hooks/useDashboardQueries';
 
 interface AnnouncementDetail {
   announcement: {
@@ -41,16 +43,12 @@ interface AnnouncementDetail {
 }
 
 interface State {
-  announcement: AnnouncementDetail | null;
-  loading: boolean;
   comment: string;
   submitting: boolean;
   feedback: string | null;
 }
 
 type Action =
-  | { type: 'loaded'; announcement: AnnouncementDetail | null }
-  | { type: 'loadFailed' }
   | { type: 'setComment'; comment: string }
   | { type: 'submitStart' }
   | { type: 'submitSuccess' }
@@ -58,8 +56,6 @@ type Action =
   | { type: 'submitEnd' };
 
 const initialState: State = {
-  announcement: null,
-  loading: true,
   comment: '',
   submitting: false,
   feedback: null,
@@ -67,10 +63,6 @@ const initialState: State = {
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'loaded':
-      return { ...state, announcement: action.announcement, loading: false };
-    case 'loadFailed':
-      return { ...state, loading: false };
     case 'setComment':
       return { ...state, comment: action.comment };
     case 'submitStart':
@@ -123,35 +115,19 @@ export default function AnnouncementDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = typeof params.id === 'string' ? params.id : params.id?.[0];
+  const queryClient = useQueryClient();
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { announcement, loading, comment, submitting, feedback } = state;
+  const { comment, submitting, feedback } = state;
 
-  useEffect(() => {
-    let active = true;
-
-    async function fetchAnnouncement() {
-      if (!id) {
-        dispatch({ type: 'loadFailed' });
-        return;
-      }
-
-      try {
-        const res = await fetch(`/api/announcements/${encodeURIComponent(id)}`);
-        const data = await res.json();
-        if (!active) return;
-        dispatch({ type: 'loaded', announcement: res.ok ? data.data : null });
-      } catch (error) {
-        console.error('Error fetching announcement:', error);
-        if (active) dispatch({ type: 'loadFailed' });
-      }
-    }
-
-    fetchAnnouncement();
-
-    return () => {
-      active = false;
-    };
-  }, [id]);
+  const announcementQuery = useQuery<AnnouncementDetail | null>({
+    queryKey: ['announcement', id],
+    queryFn: () => fetchApiData<AnnouncementDetail | null>(`/api/announcements/${encodeURIComponent(id as string)}`, 'Announcement gagal dimuat.'),
+    enabled: Boolean(id),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const announcement = announcementQuery.data ?? null;
+  const loading = announcementQuery.isLoading;
 
   const handleSubmitComment = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -168,9 +144,7 @@ export default function AnnouncementDetailPage() {
 
       if (res.ok) {
         dispatch({ type: 'submitSuccess' });
-        const refresh = await fetch(announcementUrl);
-        const data = await refresh.json();
-        dispatch({ type: 'loaded', announcement: refresh.ok ? data.data : null });
+        queryClient.invalidateQueries({ queryKey: ['announcement', id] });
       } else {
         const error = await res.json();
         dispatch({

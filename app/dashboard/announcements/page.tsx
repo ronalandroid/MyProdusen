@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useId, useReducer } from 'react';
+import { useId, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchApiData } from '@/hooks/useDashboardQueries';
 
 interface Announcement {
   announcement: {
@@ -36,8 +38,6 @@ interface FormData {
 }
 
 interface State {
-  announcements: Announcement[];
-  loading: boolean;
   filter: string;
   showCreateModal: boolean;
   feedback: string | null;
@@ -54,8 +54,6 @@ const INITIAL_FORM: FormData = {
 };
 
 const initialState: State = {
-  announcements: [],
-  loading: true,
   filter: 'ALL',
   showCreateModal: false,
   feedback: null,
@@ -63,8 +61,6 @@ const initialState: State = {
 };
 
 type Action =
-  | { type: 'SET_ANNOUNCEMENTS'; payload: Announcement[] }
-  | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_FILTER'; payload: string }
   | { type: 'SET_SHOW_CREATE_MODAL'; payload: boolean }
   | { type: 'SET_FEEDBACK'; payload: string | null }
@@ -73,10 +69,6 @@ type Action =
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'SET_ANNOUNCEMENTS':
-      return { ...state, announcements: action.payload };
-    case 'SET_LOADING':
-      return { ...state, loading: action.payload };
     case 'SET_FILTER':
       return { ...state, filter: action.payload };
     case 'SET_SHOW_CREATE_MODAL':
@@ -535,31 +527,24 @@ function CreateModal({
 
 export default function AnnouncementsPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { announcements, loading, filter, showCreateModal, feedback, formData } = state;
+  const { filter, showCreateModal, feedback, formData } = state;
 
-  const loadAnnouncements = useCallback(async (activeFilter: string) => {
-    try {
+  const announcementsQuery = useQuery<Announcement[]>({
+    queryKey: ['announcements', filter],
+    queryFn: () => {
       const params = new URLSearchParams();
-      if (activeFilter !== 'ALL') {
-        params.append('category', activeFilter);
+      if (filter !== 'ALL') {
+        params.append('category', filter);
       }
-
-      const res = await fetch(`/api/announcements?${params}`);
-      const data = await res.json();
-      if (res.ok) {
-        dispatch({ type: 'SET_ANNOUNCEMENTS', payload: data.data });
-      }
-    } catch (error) {
-      console.error('Error fetching announcements:', error);
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  }, []);
-
-  useEffect(() => {
-    loadAnnouncements(filter);
-  }, [filter, loadAnnouncements]);
+      return fetchApiData<Announcement[]>(`/api/announcements?${params}`, 'Announcement gagal dimuat.');
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const announcements = announcementsQuery.data ?? [];
+  const loading = announcementsQuery.isLoading;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -575,7 +560,7 @@ export default function AnnouncementsPage() {
         dispatch({ type: 'SET_SHOW_CREATE_MODAL', payload: false });
         dispatch({ type: 'RESET_FORM' });
         dispatch({ type: 'SET_FEEDBACK', payload: 'Announcement berhasil dibuat.' });
-        loadAnnouncements(filter);
+        queryClient.invalidateQueries({ queryKey: ['announcements'] });
       } else {
         const error = await res.json();
         dispatch({

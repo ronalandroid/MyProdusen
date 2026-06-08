@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Bell, CalendarDays, Clock, FileText, TrendingUp, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { fetchProfile, getAuthHeaders } from "@/lib/auth-client";
+import { fetchProfile } from "@/lib/auth-client";
 import { buildSelfServiceSections, type SelfServiceTone } from "@/lib/employee/self-service-hub";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 
 interface Profile {
   username: string;
@@ -22,60 +23,64 @@ interface Profile {
   } | null;
 }
 
+type AttendanceToday = {
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
+} | null;
+
+type LeaveBalance = {
+  available?: number;
+};
+
+type KpiData = {
+  itemCount?: number;
+  weightedScore?: number;
+} | null;
+
+type SelfServiceHub = {
+  profile: Profile;
+  sections: ReturnType<typeof buildSelfServiceSections>;
+};
+
 export default function SelfServicePage() {
   const router = useRouter();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [sections, setSections] = useState<ReturnType<typeof buildSelfServiceSections>>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
-  useEffect(() => {
-    loadHub();
-  }, []);
-
-  const loadHub = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const hubQuery = useQuery<SelfServiceHub>({
+    queryKey: ['self-service'],
+    queryFn: async () => {
       const userProfile = await fetchProfile();
-      setProfile(userProfile);
-
       const employeeId = userProfile.employee?.id;
-      const [attendanceRes, balanceRes, leaveRes, notificationRes, kpiRes] = await Promise.all([
-        fetch('/api/attendance/today', { headers: getAuthHeaders() }),
-        fetch('/api/leave/balance', { headers: getAuthHeaders() }),
-        fetch('/api/leave?status=PENDING', { headers: getAuthHeaders() }),
-        fetch('/api/notifications?unread=true', { headers: getAuthHeaders() }),
+      const [attendance, balance, leave, notifications, kpi] = await Promise.all([
+        fetchApiData<AttendanceToday>('/api/attendance/today', 'ESS gagal dimuat'),
+        fetchApiData<LeaveBalance>('/api/leave/balance', 'ESS gagal dimuat'),
+        fetchApiData<unknown[]>('/api/leave?status=PENDING', 'ESS gagal dimuat'),
+        fetchApiData<unknown[]>('/api/notifications?unread=true', 'ESS gagal dimuat'),
         employeeId
-          ? fetch(`/api/kpi/employee/${employeeId}`, { headers: getAuthHeaders() })
+          ? fetchApiData<KpiData>(`/api/kpi/employee/${employeeId}`, 'ESS gagal dimuat')
           : Promise.resolve(null),
       ]);
 
-      const [attendanceData, balanceData, leaveData, notificationData, kpiData] = await Promise.all([
-        attendanceRes.json(),
-        balanceRes.json(),
-        leaveRes.json(),
-        notificationRes.json(),
-        kpiRes ? kpiRes.json() : Promise.resolve(null),
-      ]);
-
-      const attendance = attendanceData.success ? attendanceData.data : null;
       const attendanceStatus = attendance?.checkOutTime ? 'checked-out' : attendance?.checkInTime ? 'checked-in' : 'not-started';
-      const kpiScore = kpiData?.success && kpiData.data?.itemCount > 0 ? Math.round(kpiData.data.weightedScore) : null;
+      const kpiScore = kpi && (kpi.itemCount ?? 0) > 0 && typeof kpi.weightedScore === 'number' ? Math.round(kpi.weightedScore) : null;
 
-      setSections(buildSelfServiceSections({
-        attendanceStatus,
-        leaveAvailable: balanceData.success ? balanceData.data.available : 0,
-        pendingRequests: leaveData.success ? (leaveData.data || []).length : 0,
-        kpiScore,
-        unreadNotifications: notificationData.success ? (notificationData.data || []).length : 0,
-      }));
-    } catch (hubError) {
-      setError(hubError instanceof Error ? hubError.message : "ESS gagal dimuat");
-    } finally {
-      setLoading(false);
-    }
-  };
+      return {
+        profile: userProfile,
+        sections: buildSelfServiceSections({
+          attendanceStatus,
+          leaveAvailable: balance.available ?? 0,
+          pendingRequests: leave.length,
+          kpiScore,
+          unreadNotifications: notifications.length,
+        }),
+      };
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const profile = hubQuery.data?.profile ?? null;
+  const sections = hubQuery.data?.sections ?? [];
+  const loading = hubQuery.isLoading;
+  const error = hubQuery.error?.message || "";
 
   if (loading) {
     return (

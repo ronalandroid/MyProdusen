@@ -1,10 +1,12 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Clock, Home, LogIn, LogOut, MapPin, ShieldCheck } from "lucide-react";
-import { fetchProfile, getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
+import { getAuthHeaders } from "@/lib/auth-client";
+import { fetchApiData, useCachedProfile } from "@/hooks/useDashboardQueries";
 
 type AttendanceRecord = {
   id: string;
@@ -17,7 +19,6 @@ type AttendanceRecord = {
   checkOutDistance?: number | null;
   workLocation?: { name?: string | null; address?: string | null } | null;
 };
-type ApiResponse<T> = { success: boolean; data?: T; error?: string };
 type ClockType = "clock-in" | "clock-out";
 
 const fullDateFormatter = new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -98,32 +99,22 @@ function AttendanceSuccessContent() {
   const isClockIn = type === "clock-in";
   const pendingReview = searchParams.get("pending") === "1";
 
-  const [profile, setProfile] = useState<ClientUserProfile | null>(null);
-  const [record, setRecord] = useState<AttendanceRecord | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const current = await fetchProfile();
-        if (cancelled) return;
-        setProfile(current);
-        const res = await fetch("/api/attendance/today", { headers: getAuthHeaders(), cache: "no-store" });
-        const payload = (await res.json()) as ApiResponse<AttendanceRecord | null | { attendance?: AttendanceRecord | null }>;
-        if (cancelled) return;
-        const data = payload.data as any;
-        setRecord((data?.attendance ?? data) || null);
-      } catch {
-        // konfirmasi tetap tampil walau ringkasan gagal dimuat
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const profileQuery = useCachedProfile();
+  const todayQuery = useQuery<AttendanceRecord | null>({
+    queryKey: ["attendance", "today", "success"],
+    queryFn: async () => {
+      const data = await fetchApiData<AttendanceRecord | null | { attendance?: AttendanceRecord | null }>(
+        "/api/attendance/today",
+        "Ringkasan absensi gagal dimuat.",
+      );
+      return ((data as { attendance?: AttendanceRecord | null } | null)?.attendance ?? data) as AttendanceRecord | null;
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const profile = profileQuery.data ?? null;
+  const record = todayQuery.data ?? null;
+  const loading = profileQuery.isLoading || todayQuery.isLoading;
 
   const employee = profile?.employee;
   const shift = employee?.defaultShift;

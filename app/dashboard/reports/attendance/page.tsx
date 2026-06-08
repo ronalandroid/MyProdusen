@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 import { getAuthHeaders } from "@/lib/auth-client";
 
 type AttendanceStatus = "PRESENT" | "LATE" | "ABSENT" | "LEAVE" | "SICK" | "PERMISSION";
@@ -119,6 +121,7 @@ function buildQueryString(filters: Record<string, string | undefined | boolean>)
 
 export default function AttendanceReportPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [from, setFrom] = useState<string>(startOfMonthIso());
   const [to, setTo] = useState<string>(todayIso());
@@ -133,15 +136,10 @@ export default function AttendanceReportPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  const [report, setReport] = useState<ReportPage | null>(null);
-  const [summary, setSummary] = useState<ReportSummary | null>(null);
-  const [workLocations, setWorkLocations] = useState<WorkLocationOption[]>([]);
-
-  const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const queryFilters = useMemo(
     () => ({
@@ -158,77 +156,60 @@ export default function AttendanceReportPage() {
     [from, to, employeeId, division, workLocationId, status, geoStatus, lateOnly, missingCheckoutOnly],
   );
 
-  const loadWorkLocations = useCallback(async () => {
-    try {
-      const response = await fetch("/api/work-locations?isActive=true", {
-        headers: getAuthHeaders(),
-        cache: "no-store",
-      });
-      const payload = await response.json();
-      if (response.ok && payload.success) {
-        setWorkLocations(
-          (payload.data || []).map((loc: { id: string; name: string }) => ({
-            id: loc.id,
-            name: loc.name,
-          })),
-        );
-      }
-    } catch {
-      /* non-fatal */
-    }
-  }, []);
+  const workLocationsQuery = useQuery({
+    queryKey: ["reports", "work-locations"],
+    queryFn: () => fetchApiData<Array<{ id: string; name: string }>>("/api/work-locations?isActive=true", "Gagal mengambil lokasi kerja"),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const workLocations: WorkLocationOption[] = (workLocationsQuery.data ?? []).map((loc) => ({
+    id: loc.id,
+    name: loc.name,
+  }));
 
-  const loadReport = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const baseQuery = buildQueryString(queryFilters);
-      const [listRes, summaryRes] = await Promise.all([
-        fetch(`/api/reports/attendance?${baseQuery}&page=${page}&pageSize=${pageSize}`, {
-          headers: getAuthHeaders(),
-          cache: "no-store",
-        }),
-        fetch(`/api/reports/attendance/summary?${baseQuery}`, {
-          headers: getAuthHeaders(),
-          cache: "no-store",
-        }),
-      ]);
+  const baseQuery = buildQueryString(queryFilters);
 
-      const [listPayload, summaryPayload] = await Promise.all([listRes.json(), summaryRes.json()]);
+  const reportQuery = useQuery({
+    queryKey: ["reports", "attendance-list", baseQuery, page, pageSize],
+    queryFn: () =>
+      fetchApiData<ReportPage>(
+        `/api/reports/attendance?${baseQuery}&page=${page}&pageSize=${pageSize}`,
+        "Gagal mengambil laporan absensi",
+      ),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const report = reportQuery.data ?? null;
 
-      if (!listRes.ok || !listPayload.success) {
-        throw new Error(listPayload.error || "Gagal mengambil laporan absensi");
-      }
-      if (!summaryRes.ok || !summaryPayload.success) {
-        throw new Error(summaryPayload.error || "Gagal mengambil ringkasan laporan");
-      }
+  const summaryQuery = useQuery({
+    queryKey: ["reports", "attendance-report-summary", baseQuery],
+    queryFn: () =>
+      fetchApiData<{ summary?: ReportSummary }>(
+        `/api/reports/attendance/summary?${baseQuery}`,
+        "Gagal mengambil ringkasan laporan",
+      ),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+  const summary = summaryQuery.data?.summary ?? null;
 
-      setReport(listPayload.data as ReportPage);
-      setSummary(summaryPayload.data?.summary as ReportSummary);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal memuat laporan");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [queryFilters, page]);
+  const isLoading = reportQuery.isLoading || summaryQuery.isLoading;
+  const error = actionError || reportQuery.error?.message || summaryQuery.error?.message || null;
 
-  useEffect(() => {
-    void loadWorkLocations();
-  }, [loadWorkLocations]);
-
-  useEffect(() => {
-    void loadReport();
-  }, [loadReport]);
+  const reloadReport = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["reports", "attendance-list"] });
+    void queryClient.invalidateQueries({ queryKey: ["reports", "attendance-report-summary"] });
+  }, [queryClient]);
 
   const totalPages = report ? Math.max(1, Math.ceil(report.total / report.pageSize)) : 1;
 
   async function handleExport() {
     if (!from || !to) {
-      setError("Tanggal awal dan akhir wajib diisi sebelum export.");
+      setActionError("Tanggal awal dan akhir wajib diisi sebelum export.");
       return;
     }
     setIsExporting(true);
-    setError(null);
+    setActionError(null);
     setExportMessage(null);
     try {
       const url = `/api/reports/attendance?${buildQueryString({ ...queryFilters, format: "csv" })}`;
@@ -254,7 +235,7 @@ export default function AttendanceReportPage() {
       URL.revokeObjectURL(objectUrl);
       setExportMessage(`CSV laporan kehadiran berhasil dibuat: ${filename}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal export laporan");
+      setActionError(err instanceof Error ? err.message : "Gagal export laporan");
     } finally {
       setIsExporting(false);
     }
@@ -262,11 +243,11 @@ export default function AttendanceReportPage() {
 
   async function handleExportPdf() {
     if (!from || !to) {
-      setError("Tanggal awal dan akhir wajib diisi sebelum export PDF.");
+      setActionError("Tanggal awal dan akhir wajib diisi sebelum export PDF.");
       return;
     }
     setIsExportingPdf(true);
-    setError(null);
+    setActionError(null);
     setExportMessage(null);
     try {
       const response = await fetch("/api/reports/pdf", {
@@ -290,7 +271,7 @@ export default function AttendanceReportPage() {
       URL.revokeObjectURL(objectUrl);
       setExportMessage(`PDF laporan kehadiran berhasil dibuat: ${filename}. Gunakan file ini sebagai print preview atau cetak PDF.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal export PDF laporan kehadiran");
+      setActionError(err instanceof Error ? err.message : "Gagal export PDF laporan kehadiran");
     } finally {
       setIsExportingPdf(false);
     }
@@ -342,7 +323,7 @@ export default function AttendanceReportPage() {
         <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-3">
           <Button
             variant="secondary"
-            onClick={() => loadReport()}
+            onClick={reloadReport}
             disabled={isLoading}
             fullWidth
             icon={<RefreshCw size={16} aria-hidden="true" />}

@@ -9,7 +9,8 @@ describe('final production UI wiring source checks', () => {
   it('audit dashboard uses API data with loading, empty, pagination, and no static dummy rows', () => {
     const source = read('app/dashboard/audit/page.tsx');
     expect(source).not.toContain('const auditData');
-    expect(source).toContain('fetch(`/api/audit?${params.toString()}`');
+    expect(source).toContain('fetchApiData<AuditLog[]>(`/api/audit?${params.toString()}`');
+    expect(source).toContain('queryKey: ["audit", page, search, PAGE_SIZE, offset]');
     expect(source).toContain('Memuat audit log');
     expect(source).toContain('Tidak ada audit log');
     expect(source).toContain('PAGE_SIZE');

@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Calendar, Clock, Palette, Plus, Save, ShieldAlert, RefreshCcw, Award, Check } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth-client";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { fetchApiData } from "@/hooks/useDashboardQueries";
 
 type Policy = {
   id: string;
@@ -82,11 +84,12 @@ function calculateContrast(a: string, b: string) {
 
 // eslint-disable-next-line react-doctor/no-giant-component, react-doctor/prefer-useReducer
 export default function SettingsPage() {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"policy" | "calendar" | "gamification" | "theme">("policy");
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [progressState, setProgressState] = useState("");
+  const actionError = feedback?.type === "error" ? feedback.message : "";
 
   // Policy state
   const [editingPolicy, setEditingPolicy] = useState<Partial<Policy> | null>(null);
@@ -116,84 +119,111 @@ export default function SettingsPage() {
     themeMode: "default",
   });
 
-  const loadSettingsData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setFeedback(null);
-      setProgressState("Memuat parameter kebijakan...");
+  const policiesQuery = useQuery({
+    queryKey: ["settings", "attendance-policies"],
+    queryFn: () => fetchApiData<Policy[]>("/api/attendance/policies", "Gagal memuat konfigurasi dari server."),
+    enabled: activeTab === "policy",
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
 
-      if (activeTab === "policy") {
-        const res = await fetch("/api/attendance/policies", { headers: getAuthHeaders(), cache: "no-store" });
-        const payload = await res.json();
-        if (payload.success) {
-          if (payload.data && payload.data.length > 0) {
-            setEditingPolicy(payload.data[0]);
-          } else {
-            setEditingPolicy({
-              name: "Kebijakan Absensi Utama",
-              active: true,
-              appliesScopeType: "COMPANY",
-              graceMinutes: 0,
-              lateTier1Min: 1,
-              lateTier1Max: 15,
-              lateTier1Deduction: 5000,
-              lateTier2Min: 16,
-              lateTier2Max: 30,
-              lateTier2Deduction: 10000,
-              halfDayAfterMinutes: 30,
-              halfDayPayFactor: 0.5,
-              geofenceRadiusMeters: 150,
-              payrollSyncEnabled: true,
-            });
-          }
-        }
-      } else if (activeTab === "calendar") {
-        const res = await fetch("/api/work-calendar", { headers: getAuthHeaders(), cache: "no-store" });
-        const payload = await res.json();
-        if (payload.success) {
-          setHolidays(payload.data || []);
-        }
-      } else if (activeTab === "gamification") {
-        setProgressState("Memvalidasi bobot skor...");
-        const [configRes, periodRes] = await Promise.all([
-          fetch("/api/settings/gamification", { headers: getAuthHeaders(), cache: "no-store" }),
-          fetch("/api/performance/periods", { headers: getAuthHeaders(), cache: "no-store" }),
-        ]);
+  const holidaysQuery = useQuery({
+    queryKey: ["settings", "work-calendar"],
+    queryFn: () => fetchApiData<Holiday[]>("/api/work-calendar", "Gagal memuat konfigurasi dari server."),
+    enabled: activeTab === "calendar",
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
 
-        const [configPayload, periodPayload] = await Promise.all([
-          configRes.json(),
-          periodRes.json(),
-        ]);
+  const gamificationQuery = useQuery({
+    queryKey: ["settings", "gamification"],
+    queryFn: () => fetchApiData<GamificationConfig>("/api/settings/gamification", "Gagal memuat konfigurasi dari server."),
+    enabled: activeTab === "gamification",
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
 
-        if (configPayload.success && configPayload.data) {
-          setGamificationConfig(configPayload.data);
-        }
-        if (periodPayload.success) {
-          setPeriods(periodPayload.data || []);
-        }
-      } else if (activeTab === "theme") {
-        const res = await fetch("/api/settings/theme", { headers: getAuthHeaders(), cache: "no-store" });
-        const payload = await res.json();
-        if (payload.success && payload.data) {
-          setThemeConfig({
-            primaryColor: payload.data.primaryColor || "#FFC107",
-            secondaryColor: payload.data.secondaryColor || "#111111",
-            accentColor: payload.data.accentColor || "#E53935",
-            themeMode: payload.data.themeMode || "default",
-          });
-        }
-      }
-    } catch (err) {
-      setFeedback({ type: "error", message: "Gagal memuat konfigurasi dari server." });
-    } finally {
-      setLoading(false);
-      setProgressState("");
-    }
-  }, [activeTab]);
+  const periodsQuery = useQuery({
+    queryKey: ["settings", "performance-periods"],
+    queryFn: () => fetchApiData<PerformancePeriod[]>("/api/performance/periods", "Gagal memuat konfigurasi dari server."),
+    enabled: activeTab === "gamification",
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+
+  const themeQuery = useQuery({
+    queryKey: ["settings", "theme"],
+    queryFn: () => fetchApiData<Partial<ThemeConfig>>("/api/settings/theme", "Gagal memuat konfigurasi dari server."),
+    enabled: activeTab === "theme",
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
 
   useEffect(() => {
-    void loadSettingsData();
-  }, [loadSettingsData]);
+    if (policiesQuery.data) {
+      if (policiesQuery.data.length > 0) {
+        setEditingPolicy(policiesQuery.data[0]);
+      } else {
+        setEditingPolicy({
+          name: "Kebijakan Absensi Utama",
+          active: true,
+          appliesScopeType: "COMPANY",
+          graceMinutes: 0,
+          lateTier1Min: 1,
+          lateTier1Max: 15,
+          lateTier1Deduction: 5000,
+          lateTier2Min: 16,
+          lateTier2Max: 30,
+          lateTier2Deduction: 10000,
+          halfDayAfterMinutes: 30,
+          halfDayPayFactor: 0.5,
+          geofenceRadiusMeters: 150,
+          payrollSyncEnabled: true,
+        });
+      }
+    }
+  }, [policiesQuery.data]);
+
+  useEffect(() => {
+    if (holidaysQuery.data) setHolidays(holidaysQuery.data);
+  }, [holidaysQuery.data]);
+
+  useEffect(() => {
+    if (gamificationQuery.data) setGamificationConfig(gamificationQuery.data);
+  }, [gamificationQuery.data]);
+
+  useEffect(() => {
+    if (periodsQuery.data) setPeriods(periodsQuery.data);
+  }, [periodsQuery.data]);
+
+  useEffect(() => {
+    if (themeQuery.data) {
+      setThemeConfig({
+        primaryColor: themeQuery.data.primaryColor || "#FFC107",
+        secondaryColor: themeQuery.data.secondaryColor || "#111111",
+        accentColor: themeQuery.data.accentColor || "#E53935",
+        themeMode: themeQuery.data.themeMode || "default",
+      });
+    }
+  }, [themeQuery.data]);
+
+  const activeQuery =
+    activeTab === "policy"
+      ? policiesQuery
+      : activeTab === "calendar"
+        ? holidaysQuery
+        : activeTab === "gamification"
+          ? (gamificationQuery.isLoading ? gamificationQuery : periodsQuery)
+          : themeQuery;
+  const loading = activeQuery.isLoading;
+  const error = actionError || activeQuery.error?.message || "";
+  const displayFeedback = feedback || (error ? { type: "error" as const, message: error } : null);
+  const loadSettingsData = () => queryClient.invalidateQueries({ queryKey: ["settings"] });
+
+  useEffect(() => {
+    if (loading) setProgressState(activeTab === "gamification" ? "Memvalidasi bobot skor..." : "Memuat parameter kebijakan...");
+    else setProgressState("");
+  }, [activeTab, loading]);
 
   const handleSavePolicy = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -471,14 +501,14 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      {feedback && (
+      {displayFeedback && (
         <output
           className={`rounded-2xl p-4 text-xs sm:text-sm font-semibold mb-5 flex items-start gap-2 border ${
-            feedback.type === "success" ? "bg-green-50 text-[var(--success)] border-green-200" : "bg-red-50 text-[var(--danger)] border-red-200"
+            displayFeedback.type === "success" ? "bg-green-50 text-[var(--success)] border-green-200" : "bg-red-50 text-[var(--danger)] border-red-200"
           }`}
         >
           <AlertTriangle size={18} className="shrink-0 mt-0.5" />
-          <span>{feedback.message}</span>
+          <span>{displayFeedback.message}</span>
         </output>
       )}
 

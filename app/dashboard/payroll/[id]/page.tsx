@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { fetchApiData } from '@/hooks/useDashboardQueries';
 
 interface PayrollItem {
   item: {
@@ -44,27 +46,19 @@ interface PayrollRun {
 export default function PayrollDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const [run, setRun] = useState<PayrollRun | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const id = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : '';
 
-  useEffect(() => {
-    fetchPayrollRun();
-  }, [params.id]);
+  const payrollRunQuery = useQuery({
+    queryKey: ['payroll-run', id],
+    queryFn: () => fetchApiData<PayrollRun>(`/api/payroll/runs/${id}`, 'Payroll run tidak ditemukan'),
+    enabled: Boolean(id),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
 
-  const fetchPayrollRun = async () => {
-    try {
-      const res = await fetch(`/api/payroll/runs/${params.id}`);
-      const data = await res.json();
-      if (res.ok) {
-        setRun(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching payroll run:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const run = payrollRunQuery.data || null;
+  const loading = payrollRunQuery.isPending;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
