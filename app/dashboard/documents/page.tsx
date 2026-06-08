@@ -39,15 +39,15 @@ export default function DocumentsPage() {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const documentsQuery = useQuery<EmployeeDocument[]>({
+  const { data: documentsData, isLoading: documentsLoading, error: documentsError } = useQuery<EmployeeDocument[]>({
     queryKey: ["documents"],
     queryFn: () => fetchApiData<EmployeeDocument[]>('/api/documents', 'Dokumen gagal dimuat'),
     staleTime: 60_000,
     gcTime: 10 * 60_000,
   });
-  const documents = documentsQuery.data ?? [];
-  const loading = documentsQuery.isLoading;
-  const error = submitError || documentsQuery.error?.message || "";
+  const documents = documentsData ?? [];
+  const loading = documentsLoading;
+  const error = submitError || documentsError?.message || "";
 
   const loadDocuments = () => queryClient.invalidateQueries({ queryKey: ["documents"] });
 

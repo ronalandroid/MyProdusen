@@ -10,6 +10,32 @@ interface HeatmapProps {
   employeeId?: string; // If undefined, fetches current user's heatmap
 }
 
+const getColorClass = (status?: string) => {
+    switch (status) {
+      case 'PRESENT': return 'bg-[var(--success)] border-[var(--success)]';
+      case 'LATE': return 'bg-[var(--warning)] border-[var(--warning)]';
+      case 'ABSENT': return 'bg-[var(--danger)] border-[var(--danger)]';
+      case 'LEAVE':
+      case 'SICK':
+      case 'PERMISSION': return 'bg-[var(--info)] border-[var(--info)]';
+      default: return 'bg-[var(--bg-secondary)] border-[var(--border-color)] opacity-50';
+    }
+  };
+
+
+const getStatusLabel = (status?: string) => {
+    switch (status) {
+      case 'PRESENT': return 'Tepat waktu';
+      case 'LATE': return 'Terlambat';
+      case 'ABSENT': return 'Alpha';
+      case 'LEAVE': return 'Cuti';
+      case 'SICK': return 'Sakit';
+      case 'PERMISSION': return 'Izin';
+      default: return 'Tidak ada data';
+    }
+  };
+
+
 export default function AttendanceHeatmap({ employeeId }: HeatmapProps) {
   const [loading, setLoading] = useState(true);
   const [heatmapData, setHeatmapData] = useState<Record<string, string>>({});
@@ -19,17 +45,17 @@ export default function AttendanceHeatmap({ employeeId }: HeatmapProps) {
     const fetchHeatmap = async () => {
       try {
         setLoading(true);
-        const url = employeeId 
-          ? `/api/dashboard/heatmap?employeeId=${employeeId}` 
+        const url = employeeId
+          ? `/api/dashboard/heatmap?employeeId=${employeeId}`
           : '/api/dashboard/heatmap';
-          
+
         const res = await fetch(url, { headers: getAuthHeaders() });
         const json = await res.json();
-        
+
         if (!res.ok || !json.success) {
           throw new Error(json.error || 'Failed to fetch heatmap data');
         }
-        
+
         setHeatmapData(json.data.heatmap);
       } catch (err: any) {
         setError(err.message);
@@ -48,30 +74,6 @@ export default function AttendanceHeatmap({ employeeId }: HeatmapProps) {
     date.setDate(today.getDate() - (364 - i));
     return date.toISOString().slice(0, 10);
   });
-
-  const getColorClass = (status?: string) => {
-    switch (status) {
-      case 'PRESENT': return 'bg-[var(--success)] border-[var(--success)]';
-      case 'LATE': return 'bg-[var(--warning)] border-[var(--warning)]';
-      case 'ABSENT': return 'bg-[var(--danger)] border-[var(--danger)]';
-      case 'LEAVE':
-      case 'SICK': 
-      case 'PERMISSION': return 'bg-[var(--info)] border-[var(--info)]';
-      default: return 'bg-[var(--bg-secondary)] border-[var(--border-color)] opacity-50';
-    }
-  };
-
-  const getStatusLabel = (status?: string) => {
-    switch (status) {
-      case 'PRESENT': return 'Tepat waktu';
-      case 'LATE': return 'Terlambat';
-      case 'ABSENT': return 'Alpha';
-      case 'LEAVE': return 'Cuti';
-      case 'SICK': return 'Sakit';
-      case 'PERMISSION': return 'Izin';
-      default: return 'Tidak ada data';
-    }
-  };
 
   if (loading) {
     return (
@@ -94,7 +96,7 @@ export default function AttendanceHeatmap({ employeeId }: HeatmapProps) {
   // We'll calculate the day of week of the oldest date to offset the grid correctly.
   const startDate = new Date(days[0]);
   const startDayOfWeek = startDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  
+
   const emptyOffset = Array.from({ length: startDayOfWeek }, () => null);
 
   return (
@@ -102,13 +104,13 @@ export default function AttendanceHeatmap({ employeeId }: HeatmapProps) {
       <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
         Aktivitas Kehadiran (365 Hari Terakhir)
       </h3>
-      
+
       <div className="overflow-x-auto pb-4 custom-scrollbar">
         <div className="grid grid-rows-7 grid-flow-col gap-1 w-max" style={{ gridTemplateRows: 'repeat(7, minmax(0, 1fr))' }}>
           {emptyOffset.map((_, i) => (
             <div key={`empty-${i}`} className="w-3 h-3 opacity-0" /> // Hidden blocks for alignment
           ))}
-          
+
           {days.map((date) => {
             const status = heatmapData[date];
             return (

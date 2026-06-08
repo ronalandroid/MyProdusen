@@ -119,15 +119,15 @@ export default function AnnouncementDetailPage() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { comment, submitting, feedback } = state;
 
-  const announcementQuery = useQuery<AnnouncementDetail | null>({
+  const { data: announcementData, isLoading: announcementLoading } = useQuery<AnnouncementDetail | null>({
     queryKey: ['announcement', id],
     queryFn: () => fetchApiData<AnnouncementDetail | null>(`/api/announcements/${encodeURIComponent(id as string)}`, 'Announcement gagal dimuat.'),
     enabled: Boolean(id),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const announcement = announcementQuery.data ?? null;
-  const loading = announcementQuery.isLoading;
+  const announcement = announcementData ?? null;
+  const loading = announcementLoading;
 
   const handleSubmitComment = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

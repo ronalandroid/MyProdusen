@@ -34,25 +34,25 @@ export default function ReportsPage() {
     return params;
   }, [endDate, selectedEmployee, selectedPreset, startDate]);
 
-  const employeesQuery = useQuery({
+  const { data: employeesData } = useQuery({
     queryKey: ['reports', 'employees'],
     queryFn: () => fetchApiData<Array<{ id: string; name: string; nip?: string | null }>>('/api/employees?limit=200', 'Gagal mengambil data karyawan'),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const employees = employeesQuery.data ?? [];
+  const employees = employeesData ?? [];
 
   const summaryParams = buildReportParams().toString();
-  const summaryQuery = useQuery({
+  const { data: summaryData, isLoading: summaryLoading, error: summaryError } = useQuery({
     queryKey: ['reports', 'attendance-summary', summaryParams],
     queryFn: () => fetchApiData<{ summary?: any }>(`/api/reports/attendance/summary?${summaryParams}`, 'Gagal mengambil ringkasan absensi'),
     enabled: reportType === 'attendance',
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const attendanceSummary = summaryQuery.data?.summary ?? null;
-  const loading = summaryQuery.isLoading;
-  const error = reportType === 'attendance' ? (summaryQuery.error?.message ?? '') : '';
+  const attendanceSummary = summaryData?.summary ?? null;
+  const loading = summaryLoading;
+  const error = reportType === 'attendance' ? (summaryError?.message ?? '') : '';
 
   const handleExport = (format: 'csv' | 'pdf') => {
     if (format === 'pdf') {

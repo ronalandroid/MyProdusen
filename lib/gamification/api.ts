@@ -120,9 +120,11 @@ export async function getSettings(request: NextRequest) {
 
 export async function patchSettings(request: NextRequest) {
   try {
-    const user = await requireSuperadmin(request);
-    const body = await request.json();
-    const current = await readGamificationSettings();
+    const [user, body, current] = await Promise.all([
+      requireSuperadmin(request),
+      request.json(),
+      readGamificationSettings(),
+    ]);
     const next = { ...current, ...body };
     if (next.weights) next.weights = validateGamificationWeights(next.weights);
     const value = JSON.stringify(next);
@@ -142,9 +144,11 @@ export async function getTheme(request: NextRequest) {
 
 export async function patchTheme(request: NextRequest) {
   try {
-    const user = await requireSuperadmin(request);
-    const body = await request.json();
-    const [oldTheme] = await db.select().from(companyThemeSettings).limit(1);
+    const [user, body, [oldTheme]] = await Promise.all([
+      requireSuperadmin(request),
+      request.json(),
+      db.select().from(companyThemeSettings).limit(1),
+    ]);
     themeSetting = body.reset ? sanitizeThemeInput({}) : sanitizeThemeInput(body);
     const row = { id: oldTheme?.id ?? 'default-theme', primaryColor: themeSetting.primaryColor, secondaryColor: themeSetting.secondaryColor, accentColor: themeSetting.accentColor, themeMode: body.themeMode ?? 'default', safeTokens: themeSetting.tokens, updatedBy: user.userId, updatedAt: new Date() };
     const [saved] = await db.insert(companyThemeSettings).values(row).onConflictDoUpdate({ target: companyThemeSettings.id, set: row }).returning();

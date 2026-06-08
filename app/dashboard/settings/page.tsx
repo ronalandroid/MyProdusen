@@ -119,7 +119,7 @@ export default function SettingsPage() {
     themeMode: "default",
   });
 
-  const policiesQuery = useQuery({
+  const { data: policiesData, isLoading: policiesLoading, error: policiesError } = useQuery({
     queryKey: ["settings", "attendance-policies"],
     queryFn: () => fetchApiData<Policy[]>("/api/attendance/policies", "Gagal memuat konfigurasi dari server."),
     enabled: activeTab === "policy",
@@ -127,7 +127,7 @@ export default function SettingsPage() {
     gcTime: 5 * 60_000,
   });
 
-  const holidaysQuery = useQuery({
+  const { data: holidaysData, isLoading: holidaysLoading, error: holidaysError } = useQuery({
     queryKey: ["settings", "work-calendar"],
     queryFn: () => fetchApiData<Holiday[]>("/api/work-calendar", "Gagal memuat konfigurasi dari server."),
     enabled: activeTab === "calendar",
@@ -135,7 +135,7 @@ export default function SettingsPage() {
     gcTime: 5 * 60_000,
   });
 
-  const gamificationQuery = useQuery({
+  const { data: gamificationData, isLoading: gamificationLoading, error: gamificationError } = useQuery({
     queryKey: ["settings", "gamification"],
     queryFn: () => fetchApiData<GamificationConfig>("/api/settings/gamification", "Gagal memuat konfigurasi dari server."),
     enabled: activeTab === "gamification",
@@ -143,7 +143,7 @@ export default function SettingsPage() {
     gcTime: 5 * 60_000,
   });
 
-  const periodsQuery = useQuery({
+  const { data: periodsData, isLoading: periodsLoading, error: periodsError } = useQuery({
     queryKey: ["settings", "performance-periods"],
     queryFn: () => fetchApiData<PerformancePeriod[]>("/api/performance/periods", "Gagal memuat konfigurasi dari server."),
     enabled: activeTab === "gamification",
@@ -151,7 +151,7 @@ export default function SettingsPage() {
     gcTime: 5 * 60_000,
   });
 
-  const themeQuery = useQuery({
+  const { data: themeData, isLoading: themeLoading, error: themeError } = useQuery({
     queryKey: ["settings", "theme"],
     queryFn: () => fetchApiData<Partial<ThemeConfig>>("/api/settings/theme", "Gagal memuat konfigurasi dari server."),
     enabled: activeTab === "theme",
@@ -160,9 +160,9 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    if (policiesQuery.data) {
-      if (policiesQuery.data.length > 0) {
-        setEditingPolicy(policiesQuery.data[0]);
+    if (policiesData) {
+      if (policiesData.length > 0) {
+        setEditingPolicy(policiesData[0]);
       } else {
         setEditingPolicy({
           name: "Kebijakan Absensi Utama",
@@ -182,41 +182,48 @@ export default function SettingsPage() {
         });
       }
     }
-  }, [policiesQuery.data]);
+  }, [policiesData]);
 
   useEffect(() => {
-    if (holidaysQuery.data) setHolidays(holidaysQuery.data);
-  }, [holidaysQuery.data]);
+    if (holidaysData) setHolidays(holidaysData);
+  }, [holidaysData]);
 
   useEffect(() => {
-    if (gamificationQuery.data) setGamificationConfig(gamificationQuery.data);
-  }, [gamificationQuery.data]);
+    if (gamificationData) setGamificationConfig(gamificationData);
+  }, [gamificationData]);
 
   useEffect(() => {
-    if (periodsQuery.data) setPeriods(periodsQuery.data);
-  }, [periodsQuery.data]);
+    if (periodsData) setPeriods(periodsData);
+  }, [periodsData]);
 
   useEffect(() => {
-    if (themeQuery.data) {
+    if (themeData) {
       setThemeConfig({
-        primaryColor: themeQuery.data.primaryColor || "#FFC107",
-        secondaryColor: themeQuery.data.secondaryColor || "#111111",
-        accentColor: themeQuery.data.accentColor || "#E53935",
-        themeMode: themeQuery.data.themeMode || "default",
+        primaryColor: themeData.primaryColor || "#FFC107",
+        secondaryColor: themeData.secondaryColor || "#111111",
+        accentColor: themeData.accentColor || "#E53935",
+        themeMode: themeData.themeMode || "default",
       });
     }
-  }, [themeQuery.data]);
+  }, [themeData]);
 
-  const activeQuery =
+  const loading =
     activeTab === "policy"
-      ? policiesQuery
+      ? policiesLoading
       : activeTab === "calendar"
-        ? holidaysQuery
+        ? holidaysLoading
         : activeTab === "gamification"
-          ? (gamificationQuery.isLoading ? gamificationQuery : periodsQuery)
-          : themeQuery;
-  const loading = activeQuery.isLoading;
-  const error = actionError || activeQuery.error?.message || "";
+          ? (gamificationLoading ? gamificationLoading : periodsLoading)
+          : themeLoading;
+  const loadError =
+    activeTab === "policy"
+      ? policiesError
+      : activeTab === "calendar"
+        ? holidaysError
+        : activeTab === "gamification"
+          ? (gamificationLoading ? gamificationError : periodsError)
+          : themeError;
+  const error = actionError || loadError?.message || "";
   const displayFeedback = feedback || (error ? { type: "error" as const, message: error } : null);
   const loadSettingsData = () => queryClient.invalidateQueries({ queryKey: ["settings"] });
 

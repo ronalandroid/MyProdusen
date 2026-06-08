@@ -254,7 +254,13 @@ const dashboardRealtimeEvents: RealtimeEventType[] = ["attendance.updated", "das
 
 export default function EmployeeBeranda({ profile }: Props) {
   const locationId = profile?.employee?.defaultLocation?.id;
-  const dashboardQuery = useQuery<DashboardData>({
+  const {
+    data: dashboardData,
+    isLoading: dashboardLoading,
+    isFetching: dashboardFetching,
+    error: dashboardError,
+    refetch: refetchDashboard,
+  } = useQuery<DashboardData>({
     queryKey: ["employee-beranda", locationId],
     queryFn: async () => {
       const [heatmapRes, attendanceRes, balanceRes, notifRes, perfRes, historyRes, badgesRes] = await Promise.all([
@@ -309,21 +315,21 @@ export default function EmployeeBeranda({ profile }: Props) {
   useRealtime({
     eventTypes: dashboardRealtimeEvents,
     onEvent: () => {
-      void dashboardQuery.refetch();
+      void refetchDashboard();
     },
   });
 
-  const heatmap: Record<string, string> = dashboardQuery.data?.heatmap ?? emptyHeatmap;
-  const history: AttendanceRecord[] = dashboardQuery.data?.history ?? [];
-  const workLocation = dashboardQuery.data?.workLocation ?? null;
-  const leaveBalance = dashboardQuery.data?.leaveBalance ?? null;
-  const notifications: NotificationItem[] = dashboardQuery.data?.notifications ?? [];
-  const loadError = dashboardQuery.error instanceof Error ? dashboardQuery.error.message : "";
-  const perfScore = dashboardQuery.data?.perfScore ?? null;
-  const perfHistory: PerformanceHistoryItem[] = dashboardQuery.data?.perfHistory ?? [];
-  const perfBadges: PerformanceBadge[] = dashboardQuery.data?.perfBadges ?? [];
-  const isPerfLoading = dashboardQuery.isLoading;
-  const perfProgressState = dashboardQuery.isFetching ? "Memuat skor performa… Menghitung proyeksi kenaikan…" : "";
+  const heatmap: Record<string, string> = dashboardData?.heatmap ?? emptyHeatmap;
+  const history: AttendanceRecord[] = dashboardData?.history ?? [];
+  const workLocation = dashboardData?.workLocation ?? null;
+  const leaveBalance = dashboardData?.leaveBalance ?? null;
+  const notifications: NotificationItem[] = dashboardData?.notifications ?? [];
+  const loadError = dashboardError instanceof Error ? dashboardError.message : "";
+  const perfScore = dashboardData?.perfScore ?? null;
+  const perfHistory: PerformanceHistoryItem[] = dashboardData?.perfHistory ?? [];
+  const perfBadges: PerformanceBadge[] = dashboardData?.perfBadges ?? [];
+  const isPerfLoading = dashboardLoading;
+  const perfProgressState = dashboardFetching ? "Memuat skor performa… Menghitung proyeksi kenaikan…" : "";
 
   const [gpsState, setGpsState] = useReducer(gpsReducer, initialGpsState);
   const { position: gpsPosition, error: gpsError, isGetting: isGettingGps } = gpsState;

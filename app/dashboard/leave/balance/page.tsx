@@ -52,24 +52,24 @@ export default function LeaveBalancePage() {
   const queryClient = useQueryClient();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  const balanceQuery = useQuery({
+  const { data: balanceData, isLoading: balanceLoading, error: balanceError } = useQuery({
     queryKey: ["leave", "balance", selectedYear],
     queryFn: () => fetchApiData<LeaveBalance>(`/api/leave/balance?year=${selectedYear}`, "Gagal memuat saldo cuti"),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
 
-  const transactionsQuery = useQuery({
+  const { data: transactionsData } = useQuery({
     queryKey: ["leave", "balance", "history", selectedYear],
     queryFn: () => fetchApiData<LeaveTransaction[]>(`/api/leave/balance/history?year=${selectedYear}`, "Gagal memuat riwayat transaksi"),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
 
-  const balance = balanceQuery.data ?? null;
-  const transactions = transactionsQuery.data ?? [];
-  const loading = balanceQuery.isLoading;
-  const error = balanceQuery.error?.message || "";
+  const balance = balanceData ?? null;
+  const transactions = transactionsData ?? [];
+  const loading = balanceLoading;
+  const error = balanceError?.message || "";
 
   const loadBalanceData = () => {
     queryClient.invalidateQueries({ queryKey: ["leave", "balance"] });

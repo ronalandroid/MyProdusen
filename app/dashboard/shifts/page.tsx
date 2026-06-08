@@ -21,15 +21,15 @@ export default function ShiftsPage() {
   const [message, setMessage] = useState("");
   const queryClient = useQueryClient();
 
-  const shiftsQuery = useQuery<Shift[]>({
+  const { data: shiftsData, isLoading: shiftsLoading, error: shiftsError } = useQuery<Shift[]>({
     queryKey: ["shifts"],
     queryFn: () => fetchApiData<Shift[]>("/api/shifts", "Gagal mengambil data shift"),
     staleTime: 60_000,
     gcTime: 10 * 60_000,
   });
-  const shifts = shiftsQuery.data ?? [];
-  const loading = shiftsQuery.isLoading;
-  const loadError = shiftsQuery.error?.message || "";
+  const shifts = shiftsData ?? [];
+  const loading = shiftsLoading;
+  const loadError = shiftsError?.message || "";
 
   const loadShifts = useCallback(() => queryClient.invalidateQueries({ queryKey: ["shifts"] }), [queryClient]);
 

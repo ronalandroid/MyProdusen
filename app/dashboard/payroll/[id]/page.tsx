@@ -32,6 +32,22 @@ interface PayrollItem {
   };
 }
 
+
+const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+
+const formatPeriod = (period: string) => {
+    const [year, month] = period.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long' });
+  };
+
 interface PayrollRun {
   id: string;
   period: string;
@@ -49,7 +65,10 @@ export default function PayrollDetailPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const id = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : '';
 
-  const payrollRunQuery = useQuery({
+  const {
+    data: payrollRunData,
+    isPending: payrollRunPending,
+  } = useQuery({
     queryKey: ['payroll-run', id],
     queryFn: () => fetchApiData<PayrollRun>(`/api/payroll/runs/${id}`, 'Payroll run tidak ditemukan'),
     enabled: Boolean(id),
@@ -57,22 +76,8 @@ export default function PayrollDetailPage() {
     gcTime: 5 * 60_000,
   });
 
-  const run = payrollRunQuery.data || null;
-  const loading = payrollRunQuery.isPending;
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const formatPeriod = (period: string) => {
-    const [year, month] = period.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long' });
-  };
+  const run = payrollRunData || null;
+  const loading = payrollRunPending;
 
   const filteredItems = run?.items.filter((item) =>
     item.employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||

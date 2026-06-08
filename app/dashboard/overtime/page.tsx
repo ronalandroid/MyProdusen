@@ -514,7 +514,7 @@ export default function OvertimePage() {
     formData,
   } = state;
 
-  const requestsQuery = useQuery({
+  const { data: requestsData, isLoading: requestsLoading } = useQuery({
     queryKey: ['overtime', 'requests', filter],
     queryFn: () => fetchApiData<OvertimeRequest[]>(
       `/api/overtime/requests${filter !== 'ALL' ? `?status=${filter}` : ''}`,
@@ -524,16 +524,16 @@ export default function OvertimePage() {
     gcTime: 5 * 60_000,
   });
 
-  const ratesQuery = useQuery({
+  const { data: ratesData } = useQuery({
     queryKey: ['overtime', 'rates'],
     queryFn: () => fetchApiData<OvertimeRate[]>('/api/overtime/rates?isActive=true', 'Gagal memuat rate lembur'),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
 
-  const requests = requestsQuery.data ?? [];
-  const rates = ratesQuery.data ?? [];
-  const loading = requestsQuery.isLoading;
+  const requests = requestsData ?? [];
+  const rates = ratesData ?? [];
+  const loading = requestsLoading;
 
   const fetchData = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['overtime'] });

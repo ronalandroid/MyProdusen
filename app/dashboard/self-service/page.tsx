@@ -45,7 +45,7 @@ type SelfServiceHub = {
 export default function SelfServicePage() {
   const router = useRouter();
 
-  const hubQuery = useQuery<SelfServiceHub>({
+  const { data: hubData, isLoading: hubLoading, error: hubError } = useQuery<SelfServiceHub>({
     queryKey: ['self-service'],
     queryFn: async () => {
       const userProfile = await fetchProfile();
@@ -77,10 +77,10 @@ export default function SelfServicePage() {
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const profile = hubQuery.data?.profile ?? null;
-  const sections = hubQuery.data?.sections ?? [];
-  const loading = hubQuery.isLoading;
-  const error = hubQuery.error?.message || "";
+  const profile = hubData?.profile ?? null;
+  const sections = hubData?.sections ?? [];
+  const loading = hubLoading;
+  const error = hubError?.message || "";
 
   if (loading) {
     return (

@@ -531,7 +531,7 @@ export default function AnnouncementsPage() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { filter, showCreateModal, feedback, formData } = state;
 
-  const announcementsQuery = useQuery<Announcement[]>({
+  const { data: announcementsData, isLoading: announcementsLoading } = useQuery<Announcement[]>({
     queryKey: ['announcements', filter],
     queryFn: () => {
       const params = new URLSearchParams();
@@ -543,8 +543,8 @@ export default function AnnouncementsPage() {
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const announcements = announcementsQuery.data ?? [];
-  const loading = announcementsQuery.isLoading;
+  const announcements = announcementsData ?? [];
+  const loading = announcementsLoading;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

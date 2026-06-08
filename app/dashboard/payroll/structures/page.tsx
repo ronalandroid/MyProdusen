@@ -14,6 +14,15 @@ interface PayrollStructure {
   createdAt: string;
 }
 
+
+const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
 export default function PayrollStructuresPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -27,14 +36,14 @@ export default function PayrollStructuresPage() {
     baseSalary: 0,
   });
 
-  const structuresQuery = useQuery<PayrollStructure[]>({
+  const { data: structuresData, isLoading: structuresLoading } = useQuery<PayrollStructure[]>({
     queryKey: ['payroll', 'structures'],
     queryFn: () => fetchApiData<PayrollStructure[]>('/api/payroll/structures', 'Gagal memuat struktur gaji'),
     staleTime: 60_000,
     gcTime: 10 * 60_000,
   });
-  const structures = structuresQuery.data ?? [];
-  const loading = structuresQuery.isLoading;
+  const structures = structuresData ?? [];
+  const loading = structuresLoading;
 
   const fetchStructures = () => queryClient.invalidateQueries({ queryKey: ['payroll', 'structures'] });
 
@@ -119,14 +128,6 @@ export default function PayrollStructuresPage() {
     } catch {
       setFeedback('Status struktur gaji gagal diubah. Coba lagi sebentar.');
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
   };
 
   if (loading) {

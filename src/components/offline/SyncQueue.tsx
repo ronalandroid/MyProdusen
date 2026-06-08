@@ -3,6 +3,29 @@
 import { useEffect, useState } from 'react';
 import { offlineDb, SyncQueueItem } from '@/hooks/offline/db';
 
+const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'syncing': return 'bg-blue-100 text-blue-800';
+      case 'synced': return 'bg-green-100 text-green-800';
+      case 'failed': return 'bg-red-100 text-red-800';
+      case 'conflict': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+
+const formatTimestamp = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+
 export function SyncQueue() {
   const [queueItems, setQueueItems] = useState<SyncQueueItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -24,27 +47,6 @@ export function SyncQueue() {
     } catch (error) {
       setQueueItems([]);
     }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'syncing': return 'bg-blue-100 text-blue-800';
-      case 'synced': return 'bg-green-100 text-green-800';
-      case 'failed': return 'bg-red-100 text-red-800';
-      case 'conflict': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const formatTimestamp = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   if (!isOpen) {

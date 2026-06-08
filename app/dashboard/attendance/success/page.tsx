@@ -99,8 +99,8 @@ function AttendanceSuccessContent() {
   const isClockIn = type === "clock-in";
   const pendingReview = searchParams.get("pending") === "1";
 
-  const profileQuery = useCachedProfile();
-  const todayQuery = useQuery<AttendanceRecord | null>({
+  const { data: profileData, isLoading: profileLoading } = useCachedProfile();
+  const { data: todayData, isLoading: todayLoading } = useQuery<AttendanceRecord | null>({
     queryKey: ["attendance", "today", "success"],
     queryFn: async () => {
       const data = await fetchApiData<AttendanceRecord | null | { attendance?: AttendanceRecord | null }>(
@@ -112,9 +112,9 @@ function AttendanceSuccessContent() {
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const profile = profileQuery.data ?? null;
-  const record = todayQuery.data ?? null;
-  const loading = profileQuery.isLoading || todayQuery.isLoading;
+  const profile = profileData ?? null;
+  const record = todayData ?? null;
+  const loading = profileLoading || todayLoading;
 
   const employee = profile?.employee;
   const shift = employee?.defaultShift;

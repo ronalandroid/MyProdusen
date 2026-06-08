@@ -19,13 +19,12 @@ const setShiftLocationsSchema = z.object({
  * These apply when an employee has no per-day schedule override.
  */
 export const GET = withApiHandler<{ shiftId: string }>(async (request: NextRequest, { params }) => {
-  const user = await requireAuth(request);
+  const [user, { shiftId }] = await Promise.all([requireAuth(request), params]);
 
   if (!hasPermission(user.role, 'SHIFT_READ')) {
     throw AppError.forbidden('Anda tidak memiliki akses untuk melihat lokasi shift');
   }
 
-  const { shiftId } = await params;
   // Validate the shift exists (throws NOT_FOUND otherwise).
   await shiftService.getShiftById(shiftId);
 
@@ -40,13 +39,12 @@ export const GET = withApiHandler<{ shiftId: string }>(async (request: NextReque
  * An empty array clears all default locations for the shift.
  */
 export const PUT = withApiHandler<{ shiftId: string }>(async (request: NextRequest, { params }) => {
-  const user = await requireAuth(request);
+  const [user, { shiftId }] = await Promise.all([requireAuth(request), params]);
 
   if (!hasPermission(user.role, 'SHIFT_UPDATE')) {
     throw AppError.forbidden('Anda tidak memiliki akses untuk mengubah lokasi shift');
   }
 
-  const { shiftId } = await params;
   await shiftService.getShiftById(shiftId);
 
   const data = await parseJsonBody(request, setShiftLocationsSchema);

@@ -30,7 +30,12 @@ export default function NotificationsPage() {
   const [pendingDelete, setPendingDelete] = useState<NotificationItem | null>(null);
   const queryClient = useQueryClient();
   const notificationsKey = ["notifications", filter] as const;
-  const notificationsQuery = useQuery<NotificationItem[]>({
+  const {
+    data: notificationsData,
+    isLoading: notificationsLoading,
+    error: notificationsError,
+    refetch: refetchNotifications,
+  } = useQuery<NotificationItem[]>({
     queryKey: notificationsKey,
     queryFn: async () => {
       const url = filter === "unread" ? "/api/notifications?unread=true" : "/api/notifications";
@@ -40,11 +45,11 @@ export default function NotificationsPage() {
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const items = notificationsQuery.data ?? [];
-  const loading = notificationsQuery.isLoading;
-  const error = actionError || notificationsQuery.error?.message || "";
+  const items = notificationsData ?? [];
+  const loading = notificationsLoading;
+  const error = actionError || notificationsError?.message || "";
 
-  const loadNotifications = () => notificationsQuery.refetch();
+  const loadNotifications = () => refetchNotifications();
 
   const invalidateNotifications = () =>
     queryClient.invalidateQueries({ queryKey: ["notifications"] });

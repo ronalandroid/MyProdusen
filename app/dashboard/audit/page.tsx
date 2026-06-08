@@ -72,7 +72,7 @@ export default function AuditPage() {
   }, [searchInput]);
 
   const offset = (page - 1) * PAGE_SIZE;
-  const logsQuery = useQuery<AuditLog[]>({
+  const { data: logsData, isLoading: logsLoading, error: logsError } = useQuery<AuditLog[]>({
     queryKey: ["audit", page, search, PAGE_SIZE, offset],
     queryFn: () => {
       const params = new URLSearchParams({
@@ -85,9 +85,9 @@ export default function AuditPage() {
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const logs = logsQuery.data ?? [];
-  const loading = logsQuery.isLoading;
-  const error = logsQuery.error?.message || "";
+  const logs = logsData ?? [];
+  const loading = logsLoading;
+  const error = logsError?.message || "";
   const loadLogs = () => queryClient.invalidateQueries({ queryKey: ["audit"] });
 
   const hasNextPage = logs.length === PAGE_SIZE;

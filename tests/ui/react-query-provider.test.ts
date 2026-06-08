@@ -38,7 +38,7 @@ describe('React Query provider wiring (dashboard crash regression)', () => {
     expect(employeeBeranda).toContain('useQuery');
     // Safe rendering: data is read with null guards so a failed/empty query
     // never crashes the dashboard.
-    expect(employeeBeranda).toContain('dashboardQuery.data?.heatmap ?? emptyHeatmap');
-    expect(employeeBeranda).toContain('dashboardQuery.error instanceof Error');
+    expect(employeeBeranda).toContain('dashboardData?.heatmap ?? emptyHeatmap');
+    expect(employeeBeranda).toContain('dashboardError instanceof Error');
   });
 });

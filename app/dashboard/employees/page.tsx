@@ -36,10 +36,21 @@ const accessRoleOptions = [
 const divisionOptions = ["HR", "Produksi", "Packing", "Sales", "Expedition", "Finance", "Operational"];
 const positionOptions = ["Admin", "Leader", "Staff", "Driver", "Manager", "Operator"];
 
+const getStatusBadge = (status: string) => {
+  const statusMap: Record<string, { label: string; className: string }> = {
+    ACTIVE: { label: "Aktif", className: "badge-success" },
+    INACTIVE: { label: "Nonaktif", className: "badge-danger" },
+    ON_LEAVE: { label: "Cuti", className: "badge-warning" },
+  };
+
+  const statusInfo = statusMap[status] || { label: status, className: "" };
+  return <span className={`badge ${statusInfo.className}`}>{statusInfo.label}</span>;
+};
+
 export default function EmployeesPage() {
   const router = useRouter();
   const { success, error: showError } = useToast();
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,9 +58,9 @@ export default function EmployeesPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [accessNotice, setAccessNotice] = useState("");
   const queryClient = useQueryClient();
-  const profileQuery = useCachedProfile();
-  const profile = profileQuery.data ?? null;
-  const employeesQuery = useQuery<Employee[]>({
+  const { data: profileData } = useCachedProfile();
+  const profile = profileData ?? null;
+  const { data: employeesData, isLoading: employeesLoading } = useQuery<Employee[]>({
     queryKey: ["employees", statusFilter, searchTerm.trim()],
     queryFn: () => {
       const params = new URLSearchParams();
@@ -61,8 +72,8 @@ export default function EmployeesPage() {
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const employees = employeesQuery.data ?? [];
-  const loading = employeesQuery.isLoading;
+  const employees = employeesData ?? [];
+  const loading = employeesLoading;
   const fetchEmployees = useCallback(() => queryClient.invalidateQueries({ queryKey: ["employees"] }), [queryClient]);
   const [formData, setFormData] = useState({
     nip: "",
@@ -141,9 +152,9 @@ export default function EmployeesPage() {
       const url = selectedEmployee
         ? `/api/employees/${selectedEmployee.id}`
         : "/api/employees";
-      
+
       const method = selectedEmployee ? "PUT" : "POST";
-      
+
       const payload = selectedEmployee
         ? { ...formData, password: formData.password || undefined }
         : formData;
@@ -175,7 +186,7 @@ export default function EmployeesPage() {
 
   const handleDelete = async () => {
     if (!selectedEmployee) return;
-    
+
     setSubmitting(true);
     try {
       const response = await fetch(`/api/employees/${selectedEmployee.id}`, {
@@ -208,17 +219,6 @@ export default function EmployeesPage() {
       emp.email.toLowerCase().includes(searchLower)
     );
   });
-
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; className: string }> = {
-      ACTIVE: { label: "Aktif", className: "badge-success" },
-      INACTIVE: { label: "Nonaktif", className: "badge-danger" },
-      ON_LEAVE: { label: "Cuti", className: "badge-warning" },
-    };
-    
-    const statusInfo = statusMap[status] || { label: status, className: "" };
-    return <span className={`badge ${statusInfo.className}`}>{statusInfo.label}</span>;
-  };
 
   const canManageEmployees = profile?.role === "SUPERADMIN";
 

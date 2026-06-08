@@ -17,20 +17,20 @@ export default function LeaderKpiInputPage() {
   const [message, setMessage] = useState("");
   const [actionError, setActionError] = useState("");
 
-  const teamsQuery = useQuery({
+  const { data: teamsData, error: teamsError } = useQuery({
     queryKey: ["leader-teams"],
     queryFn: () => fetchApiData<{ teams?: Team[] }>("/api/leader/me", "Anda belum ditetapkan ke tim. Hubungi Superadmin."),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
 
-  const teams = teamsQuery.data?.teams || [];
+  const teams = teamsData?.teams || [];
 
   useEffect(() => {
     if (!teamId && teams[0]?.id) setTeamId(teams[0].id);
   }, [teamId, teams]);
 
-  const membersQuery = useQuery({
+  const { data: membersData, error: membersError } = useQuery({
     queryKey: ["leader-team-employees", teamId],
     queryFn: () => fetchApiData<Member[]>(`/api/leader/team-employees?teamId=${encodeURIComponent(teamId)}`, "Gagal mengambil anggota tim"),
     enabled: Boolean(teamId),
@@ -38,8 +38,8 @@ export default function LeaderKpiInputPage() {
     gcTime: 5 * 60_000,
   });
 
-  const members = membersQuery.data || [];
-  const error = actionError || teamsQuery.error?.message || membersQuery.error?.message || "";
+  const members = membersData || [];
+  const error = actionError || teamsError?.message || membersError?.message || "";
 
   const canSave = useMemo(() => members.some((member) => values[member.id] !== undefined && values[member.id] !== ""), [members, values]);
 

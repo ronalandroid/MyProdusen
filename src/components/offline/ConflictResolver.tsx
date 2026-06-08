@@ -4,6 +4,18 @@ import { useEffect, useRef, useState } from 'react';
 import { offlineDb, SyncConflict } from '@/hooks/offline/db';
 import { conflictResolver } from '@/hooks/offline/conflict-resolver';
 
+const formatTimestamp = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+
 export function ConflictResolver() {
   const [conflicts, setConflicts] = useState<SyncConflict[]>([]);
   const [selectedConflict, setSelectedConflict] = useState<SyncConflict | null>(null);
@@ -57,17 +69,6 @@ export function ConflictResolver() {
     } catch (error) {
       // Safe UI-only fallback; technical details stay out of user-visible output.
     }
-  };
-
-  const formatTimestamp = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   if (conflicts.length === 0) {

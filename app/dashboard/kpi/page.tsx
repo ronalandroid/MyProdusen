@@ -50,7 +50,11 @@ export default function KPIPage() {
   const queryClient = useQueryClient();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
 
-  const initialQuery = useQuery({
+  const {
+    data: initialData,
+    isLoading: initialLoading,
+    error: initialError,
+  } = useQuery({
     queryKey: ["kpi-overview", currentPeriod],
     queryFn: async () => {
       const [statsPayload, resultsPayload] = await Promise.all([
@@ -83,28 +87,32 @@ export default function KPIPage() {
     },
   });
 
-  const role = initialQuery.data?.role || "EMPLOYEE";
-  const results = initialQuery.data?.results ?? [];
-  const employees = initialQuery.data?.employees ?? [];
-  const productionEntries = initialQuery.data?.productionEntries ?? [];
-  const loading = initialQuery.isLoading;
+  const role = initialData?.role || "EMPLOYEE";
+  const results = initialData?.results ?? [];
+  const employees = initialData?.employees ?? [];
+  const productionEntries = initialData?.productionEntries ?? [];
+  const loading = initialLoading;
 
   const canViewTeam = role === "SUPERADMIN";
 
   const loadInitialData = () => queryClient.invalidateQueries({ queryKey: ["kpi-overview"] });
 
-  const summaryQuery = useQuery({
+  const {
+    data: summaryData,
+    isLoading: summaryQueryLoading,
+    error: summaryError,
+  } = useQuery({
     queryKey: ["kpi-employee-summary", selectedEmployeeId, currentPeriod],
     enabled: Boolean(selectedEmployeeId),
     queryFn: () => fetchApiData<EmployeeSummary>(`/api/kpi/employee/${selectedEmployeeId}?period=${currentPeriod}`, "Gagal mengambil ringkasan KPI employee"),
   });
 
-  const employeeSummary = selectedEmployeeId ? summaryQuery.data ?? null : null;
-  const summaryLoading = Boolean(selectedEmployeeId) && summaryQuery.isLoading;
+  const employeeSummary = selectedEmployeeId ? summaryData ?? null : null;
+  const summaryLoading = Boolean(selectedEmployeeId) && summaryQueryLoading;
 
   const error =
-    (initialQuery.error instanceof Error ? initialQuery.error.message : "") ||
-    (summaryQuery.error instanceof Error ? summaryQuery.error.message : "");
+    (initialError instanceof Error ? initialError.message : "") ||
+    (summaryError instanceof Error ? summaryError.message : "");
 
   const averageScore = useMemo(() => {
     if (!results.length) return 0;

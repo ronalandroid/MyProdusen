@@ -43,7 +43,7 @@ export default function UsersPage() {
   const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
   const [optimisticUsers, setOptimisticUsers] = useState<UserRow[] | null>(null);
 
-  const usersQuery = useQuery({
+  const { data: usersData, isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
       const [userRows, teamRows, locationRows, shiftRows] = await Promise.all([
@@ -61,15 +61,15 @@ export default function UsersPage() {
     },
   });
 
-  const users = optimisticUsers ?? usersQuery.data?.users ?? [];
-  const teams = usersQuery.data?.teams ?? [];
-  const locations = usersQuery.data?.locations ?? [];
-  const shifts = usersQuery.data?.shifts ?? [];
-  const loading = usersQuery.isLoading;
-  const error = localError || (usersQuery.error instanceof Error ? usersQuery.error.message : "");
+  const users = optimisticUsers ?? usersData?.users ?? [];
+  const teams = usersData?.teams ?? [];
+  const locations = usersData?.locations ?? [];
+  const shifts = usersData?.shifts ?? [];
+  const loading = usersLoading;
+  const error = localError || (usersError instanceof Error ? usersError.message : "");
 
   const setUsers = (updater: (rows: UserRow[]) => UserRow[]) => {
-    setOptimisticUsers((current) => updater(current ?? usersQuery.data?.users ?? []));
+    setOptimisticUsers((current) => updater(current ?? usersData?.users ?? []));
   };
 
   const pendingUsers = useMemo(() => users.filter((user) => !user.isActive), [users]);

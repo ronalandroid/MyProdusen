@@ -40,6 +40,39 @@ interface LeaveBalance {
   available: number;
 }
 
+const getStatusBadge = (status: string) => {
+  const statusMap: Record<string, { label: string; className: string }> = {
+    PENDING: { label: "Menunggu", className: "badge-warning" },
+    APPROVED: { label: "Disetujui", className: "badge-success" },
+    REJECTED: { label: "Ditolak", className: "badge-danger" },
+  };
+
+  const statusInfo = statusMap[status] || { label: status, className: "" };
+  return <span className={`badge ${statusInfo.className}`}>{statusInfo.label}</span>;
+};
+
+const getTypeBadge = (type: string) => {
+  const typeMap: Record<string, string> = {
+    LEAVE: "Cuti",
+    SICK: "Sakit",
+    PERMISSION: "Izin",
+  };
+  return typeMap[type] || type;
+};
+
+const calculateDays = (startDate: string, endDate: string) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  return diffDays;
+};
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+};
+
 export default function LeavePage() {
   const router = useRouter();
   const { success, error: showError } = useToast();
@@ -59,7 +92,7 @@ export default function LeavePage() {
   const [rejectReason, setRejectReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const leaveQuery = useQuery({
+  const { data: leaveData, isLoading: leaveLoading } = useQuery({
     queryKey: ["leave", "requests", statusFilter],
     queryFn: () => {
       const params = new URLSearchParams();
@@ -72,16 +105,16 @@ export default function LeavePage() {
     gcTime: 5 * 60_000,
   });
 
-  const balanceQuery = useQuery({
+  const { data: balanceData } = useQuery({
     queryKey: ["leave", "balance"],
     queryFn: () => fetchApiData<LeaveBalance>("/api/leave/balance", "Gagal memuat saldo cuti"),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
 
-  const leaveRequests = leaveQuery.data ?? [];
-  const leaveBalance = balanceQuery.data ?? null;
-  const loading = leaveQuery.isLoading;
+  const leaveRequests = leaveData ?? [];
+  const leaveBalance = balanceData ?? null;
+  const loading = leaveLoading;
 
   const reloadLeave = () => {
     queryClient.invalidateQueries({ queryKey: ["leave"] });
@@ -199,39 +232,6 @@ export default function LeavePage() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; className: string }> = {
-      PENDING: { label: "Menunggu", className: "badge-warning" },
-      APPROVED: { label: "Disetujui", className: "badge-success" },
-      REJECTED: { label: "Ditolak", className: "badge-danger" },
-    };
-    
-    const statusInfo = statusMap[status] || { label: status, className: "" };
-    return <span className={`badge ${statusInfo.className}`}>{statusInfo.label}</span>;
-  };
-
-  const getTypeBadge = (type: string) => {
-    const typeMap: Record<string, string> = {
-      LEAVE: "Cuti",
-      SICK: "Sakit",
-      PERMISSION: "Izin",
-    };
-    return typeMap[type] || type;
-  };
-
-  const calculateDays = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
   };
 
   return (

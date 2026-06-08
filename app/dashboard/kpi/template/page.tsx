@@ -26,7 +26,7 @@ export default function KpiTemplatePage() {
   const [localError, setError] = useState("");
   const [actualValue, setActualValue] = useState("100");
 
-  const dataQuery = useQuery({
+  const { data: kpiData, isLoading: kpiLoading, error: kpiError } = useQuery({
     queryKey: ["kpi-templates-page"],
     queryFn: async () => {
       const [templateData, employeeData] = await Promise.all([
@@ -40,16 +40,16 @@ export default function KpiTemplatePage() {
     },
   });
 
-  const templates = dataQuery.data?.templates ?? [];
-  const employees = dataQuery.data?.employees ?? [];
-  const loading = dataQuery.isLoading;
-  const error = localError || (dataQuery.error instanceof Error ? dataQuery.error.message : "");
+  const templates = kpiData?.templates ?? [];
+  const employees = kpiData?.employees ?? [];
+  const loading = kpiLoading;
+  const error = localError || (kpiError instanceof Error ? kpiError.message : "");
 
   useEffect(() => {
-    if (!dataQuery.data) return;
-    setSelectedTemplateId((current) => current || dataQuery.data.templates[0]?.id || "");
-    setSelectedEmployeeId((current) => current || dataQuery.data.employees[0]?.id || "");
-  }, [dataQuery.data]);
+    if (!kpiData) return;
+    setSelectedTemplateId((current) => current || kpiData.templates[0]?.id || "");
+    setSelectedEmployeeId((current) => current || kpiData.employees[0]?.id || "");
+  }, [kpiData]);
 
   const loadData = () => queryClient.invalidateQueries({ queryKey: ["kpi-templates-page"] });
 

@@ -135,16 +135,16 @@ function SuperadminAttendanceView({ onBack }: { onBack: () => void }) {
 
 export default function AttendancePage() {
   const router = useRouter();
-  const profileQuery = useCachedProfile();
-  const profile = profileQuery.data ?? null;
-  const todayQuery = useQuery<AttendanceRecord | null>({
+  const { data: profileData, isLoading: profileLoading, error: profileError, refetch: refetchProfile } = useCachedProfile();
+  const profile = profileData ?? null;
+  const { data: todayData, isLoading: todayLoading, error: todayError, refetch: refetchToday } = useQuery<AttendanceRecord | null>({
     queryKey: ["attendance", "today"],
     queryFn: () => fetchApiData<AttendanceRecord | null>("/api/attendance/today", "Gagal mengambil absensi hari ini"),
     enabled: Boolean(profile && profile.role !== "SUPERADMIN"),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const historyQuery = useQuery<AttendanceRecord[]>({
+  const { data: historyData, isLoading: historyLoading, error: historyError, refetch: refetchHistory } = useQuery<AttendanceRecord[]>({
     queryKey: ["attendance", "history", "recent"],
     queryFn: () => fetchApiData<AttendanceRecord[]>("/api/attendance", "Gagal mengambil riwayat absensi"),
     enabled: Boolean(profile && profile.role !== "SUPERADMIN"),
@@ -159,10 +159,10 @@ export default function AttendancePage() {
     const id = setInterval(() => setNow(new Date()), 1000 * 30);
     return () => clearInterval(id);
   }, []);
-  const todayAttendance = todayQuery.data ?? null;
-  const history = historyQuery.data ?? [];
-  const error = profileQuery.error?.message || todayQuery.error?.message || historyQuery.error?.message || "";
-  const isLoading = profileQuery.isLoading || (Boolean(profile && profile.role !== "SUPERADMIN") && (todayQuery.isLoading || historyQuery.isLoading));
+  const todayAttendance = todayData ?? null;
+  const history = historyData ?? [];
+  const error = profileError?.message || todayError?.message || historyError?.message || "";
+  const isLoading = profileLoading || (Boolean(profile && profile.role !== "SUPERADMIN") && (todayLoading || historyLoading));
 
   const isSuperadminAttendanceViewer = profile?.role === "SUPERADMIN";
   const employee = profile?.employee;
@@ -179,7 +179,7 @@ export default function AttendancePage() {
   const shiftLabel = shift ? `${shift.name} (${shift.startTime.slice(0, 5)} - ${shift.endTime.slice(0, 5)})` : "Shift belum tersedia";
 
   const loadAttendance = async () => {
-    await Promise.all([profileQuery.refetch(), todayQuery.refetch(), historyQuery.refetch()]);
+    await Promise.all([refetchProfile(), refetchToday(), refetchHistory()]);
   };
 
   if (isSuperadminAttendanceViewer) {

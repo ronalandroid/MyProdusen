@@ -30,7 +30,7 @@ export default function LocationsPage() {
     deleting,
   } = state;
   const queryClient = useQueryClient();
-  const locationsQuery = useQuery<WorkLocationItem[]>({
+  const { data: locationsData, isLoading: locationsLoading, error: locationsError } = useQuery<WorkLocationItem[]>({
     queryKey: ["work-locations", activeFilter, searchTerm.trim()],
     queryFn: () => {
       const params = new URLSearchParams();
@@ -42,9 +42,9 @@ export default function LocationsPage() {
     staleTime: 60_000,
     gcTime: 10 * 60_000,
   });
-  const locations = locationsQuery.data ?? [];
-  const isLoading = locationsQuery.isLoading;
-  const error = state.error || locationsQuery.error?.message || "";
+  const locations = locationsData ?? [];
+  const isLoading = locationsLoading;
+  const error = state.error || locationsError?.message || "";
   const reloadLocations = useCallback(() => queryClient.invalidateQueries({ queryKey: ["work-locations"] }), [queryClient]);
 
   const submit = useCallback(

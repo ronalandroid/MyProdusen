@@ -53,7 +53,7 @@ export default function AttendanceSchedulesPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const masterQuery = useQuery({
+  const { data: masterData, isPending: masterPending, error: masterError } = useQuery({
     queryKey: ["attendance-schedules-master"],
     queryFn: async () => {
       const [emp, shf, loc] = await Promise.all([
@@ -72,10 +72,10 @@ export default function AttendanceSchedulesPage() {
     gcTime: 5 * 60_000,
   });
 
-  const employees = masterQuery.data?.employees ?? [];
-  const shifts = masterQuery.data?.shifts ?? [];
-  const locations = masterQuery.data?.locations ?? [];
-  const loadingMaster = masterQuery.isPending;
+  const employees = masterData?.employees ?? [];
+  const shifts = masterData?.shifts ?? [];
+  const locations = masterData?.locations ?? [];
+  const loadingMaster = masterPending;
 
   const activeShifts = useMemo(() => shifts.filter((s) => s.isActive), [shifts]);
   const activeLocations = useMemo(() => locations.filter((l) => l.isActive), [locations]);
@@ -106,7 +106,7 @@ export default function AttendanceSchedulesPage() {
   const [filterEmployee, setFilterEmployee] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const schedulesQuery = useQuery({
+  const { data: schedulesData, isPending: schedulesPending, error: schedulesError } = useQuery({
     queryKey: ["attendance-schedules", rangeFrom, rangeTo, filterEmployee],
     queryFn: () => {
       const params = new URLSearchParams({ from: rangeFrom, to: rangeTo });
@@ -122,15 +122,15 @@ export default function AttendanceSchedulesPage() {
   });
 
   const schedules = useMemo(() => {
-    const rows = (schedulesQuery.data?.schedules || []).slice().sort((a, b) => {
+    const rows = (schedulesData?.schedules || []).slice().sort((a, b) => {
       if (a.date !== b.date) return a.date < b.date ? -1 : 1;
       const an = employeeNameById.get(a.employeeId) || "";
       const bn = employeeNameById.get(b.employeeId) || "";
       return an.localeCompare(bn);
     });
     return rows;
-  }, [schedulesQuery.data, employeeNameById]);
-  const loadingSchedules = schedulesQuery.isPending;
+  }, [schedulesData, employeeNameById]);
+  const loadingSchedules = schedulesPending;
 
   function loadSchedules() {
     queryClient.invalidateQueries({ queryKey: ["attendance-schedules"] });
@@ -192,7 +192,7 @@ export default function AttendanceSchedulesPage() {
   const [shiftLocationIds, setShiftLocationIds] = useState<string[]>([]);
   const [savingShiftLocations, setSavingShiftLocations] = useState(false);
 
-  const shiftLocationsQuery = useQuery({
+  const { data: shiftLocationsData, isPending: shiftLocationsPending, error: shiftLocationsError } = useQuery({
     queryKey: ["attendance-shift-locations", selectedShiftId],
     queryFn: () => fetchApiData<{ workLocationIds: string[] }>(
       `/api/attendance/shift-locations/${selectedShiftId}`,
@@ -203,22 +203,22 @@ export default function AttendanceSchedulesPage() {
     gcTime: 5 * 60_000,
   });
 
-  const loadingShiftLocations = shiftLocationsQuery.isPending;
+  const loadingShiftLocations = shiftLocationsPending;
 
   useEffect(() => {
     if (!selectedShiftId) {
       setShiftLocationIds([]);
       return;
     }
-    if (shiftLocationsQuery.data) {
-      setShiftLocationIds(shiftLocationsQuery.data.workLocationIds || []);
+    if (shiftLocationsData) {
+      setShiftLocationIds(shiftLocationsData.workLocationIds || []);
     }
-  }, [selectedShiftId, shiftLocationsQuery.data]);
+  }, [selectedShiftId, shiftLocationsData]);
 
   useEffect(() => {
-    const queryError = masterQuery.error?.message || schedulesQuery.error?.message || shiftLocationsQuery.error?.message || "";
+    const queryError = masterError?.message || schedulesError?.message || shiftLocationsError?.message || "";
     if (queryError) setError(queryError);
-  }, [masterQuery.error, schedulesQuery.error, shiftLocationsQuery.error]);
+  }, [masterError, schedulesError, shiftLocationsError]);
 
   function toggleShiftLocation(id: string) {
     setShiftLocationIds((current) =>

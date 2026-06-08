@@ -13,13 +13,12 @@ import { scheduleService } from '@/services/attendance/schedule.service';
  * falls back to their default shift for that day.
  */
 export const DELETE = withApiHandler<{ id: string }>(async (request: NextRequest, { params }) => {
-  const user = await requireAuth(request);
+  const [user, { id }] = await Promise.all([requireAuth(request), params]);
 
   if (!hasPermission(user.role, 'ATTENDANCE_UPDATE')) {
     throw AppError.forbidden('Anda tidak memiliki akses untuk menghapus jadwal');
   }
 
-  const { id } = await params;
   await scheduleService.deactivateSchedule(id);
   await logAudit(user.userId, 'DEACTIVATE', 'EmployeeSchedule', id, undefined, undefined, request);
 

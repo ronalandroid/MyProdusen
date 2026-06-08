@@ -20,6 +20,15 @@ interface PayrollRun {
   totalNetPay: number;
 }
 
+
+const formatCurrency = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount || 0);
+
+
+const formatPeriod = (period: string) => {
+    const [year, month] = period.split('-').map(Number);
+    return new Date(year, month - 1).toLocaleDateString('id-ID', { year: 'numeric', month: 'long' });
+  };
+
 interface EmployeePayrollItem {
   item: { id: string; netPay: number; grossPay: number; totalDeductions: number };
   run: { period: string; status: PayrollStatus };
@@ -33,18 +42,18 @@ export default function PayrollPage() {
   const [message, setMessage] = useState('');
   const [mutateError, setError] = useState('');
 
-  const roleQuery = useQuery<string>({
+  const { data: roleData, isLoading: roleLoading, error: roleError } = useQuery<string>({
     queryKey: ['payroll', 'role'],
     queryFn: async () => (await fetchProfile()).role,
     staleTime: 2 * 60_000,
     gcTime: 10 * 60_000,
   });
-  const role = roleQuery.data ?? '';
+  const role = roleData ?? '';
   const isEmployee = role === 'EMPLOYEE';
   const canMutate = role === 'SUPERADMIN';
   const canApproveOrPay = role === 'SUPERADMIN';
 
-  const payrollQuery = useQuery<PayrollRun[] | EmployeePayrollItem[]>({
+  const { data: payrollData, isLoading: payrollLoading, error: payrollError } = useQuery<PayrollRun[] | EmployeePayrollItem[]>({
     queryKey: ['payroll', 'list', role],
     queryFn: () =>
       fetchApiData<PayrollRun[] | EmployeePayrollItem[]>(
@@ -55,10 +64,10 @@ export default function PayrollPage() {
     staleTime: 60_000,
     gcTime: 10 * 60_000,
   });
-  const runs = (isEmployee ? [] : (payrollQuery.data as PayrollRun[] | undefined)) ?? [];
-  const myItems = (isEmployee ? (payrollQuery.data as EmployeePayrollItem[] | undefined) : []) ?? [];
-  const loading = roleQuery.isLoading || (Boolean(role) && payrollQuery.isLoading);
-  const error = mutateError || roleQuery.error?.message || payrollQuery.error?.message || '';
+  const runs = (isEmployee ? [] : (payrollData as PayrollRun[] | undefined)) ?? [];
+  const myItems = (isEmployee ? (payrollData as EmployeePayrollItem[] | undefined) : []) ?? [];
+  const loading = roleLoading || (Boolean(role) && payrollLoading);
+  const error = mutateError || roleError?.message || payrollError?.message || '';
 
   async function createPayrollRun() {
     if (!newPeriod) return;
@@ -97,12 +106,6 @@ export default function PayrollPage() {
     approved: runs.filter((run) => run.status === 'APPROVED').length,
     paid: runs.filter((run) => run.status === 'PAID').length,
   }), [runs]);
-
-  const formatCurrency = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount || 0);
-  const formatPeriod = (period: string) => {
-    const [year, month] = period.split('-').map(Number);
-    return new Date(year, month - 1).toLocaleDateString('id-ID', { year: 'numeric', month: 'long' });
-  };
 
   if (loading) return <LoadingSpinner fullScreen message="Memuat payroll..." />;
 

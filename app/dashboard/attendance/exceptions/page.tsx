@@ -55,7 +55,7 @@ export default function AttendanceExceptionsPage() {
 
   const status = searchParams.get("status") || "PENDING";
 
-  const exceptionsQuery = useQuery({
+  const { data: exceptionsData, isPending: exceptionsPending, error: exceptionsError } = useQuery({
     queryKey: ["attendance-exceptions", status],
     queryFn: () => {
       const params = new URLSearchParams();
@@ -69,9 +69,9 @@ export default function AttendanceExceptionsPage() {
     gcTime: 5 * 60_000,
   });
 
-  const items = exceptionsQuery.data || [];
-  const loading = exceptionsQuery.isPending;
-  const error = actionError || exceptionsQuery.error?.message || "";
+  const items = exceptionsData || [];
+  const loading = exceptionsPending;
+  const error = actionError || exceptionsError?.message || "";
 
   useEffect(() => {
     setPage(1);

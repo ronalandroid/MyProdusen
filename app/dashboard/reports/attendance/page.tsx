@@ -156,20 +156,20 @@ export default function AttendanceReportPage() {
     [from, to, employeeId, division, workLocationId, status, geoStatus, lateOnly, missingCheckoutOnly],
   );
 
-  const workLocationsQuery = useQuery({
+  const { data: workLocationsData } = useQuery({
     queryKey: ["reports", "work-locations"],
     queryFn: () => fetchApiData<Array<{ id: string; name: string }>>("/api/work-locations?isActive=true", "Gagal mengambil lokasi kerja"),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const workLocations: WorkLocationOption[] = (workLocationsQuery.data ?? []).map((loc) => ({
+  const workLocations: WorkLocationOption[] = (workLocationsData ?? []).map((loc) => ({
     id: loc.id,
     name: loc.name,
   }));
 
   const baseQuery = buildQueryString(queryFilters);
 
-  const reportQuery = useQuery({
+  const { data: reportData, isLoading: reportLoading, error: reportError } = useQuery({
     queryKey: ["reports", "attendance-list", baseQuery, page, pageSize],
     queryFn: () =>
       fetchApiData<ReportPage>(
@@ -179,9 +179,9 @@ export default function AttendanceReportPage() {
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const report = reportQuery.data ?? null;
+  const report = reportData ?? null;
 
-  const summaryQuery = useQuery({
+  const { data: summaryData, isLoading: summaryLoading, error: summaryError } = useQuery({
     queryKey: ["reports", "attendance-report-summary", baseQuery],
     queryFn: () =>
       fetchApiData<{ summary?: ReportSummary }>(
@@ -191,10 +191,10 @@ export default function AttendanceReportPage() {
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const summary = summaryQuery.data?.summary ?? null;
+  const summary = summaryData?.summary ?? null;
 
-  const isLoading = reportQuery.isLoading || summaryQuery.isLoading;
-  const error = actionError || reportQuery.error?.message || summaryQuery.error?.message || null;
+  const isLoading = reportLoading || summaryLoading;
+  const error = actionError || reportError?.message || summaryError?.message || null;
 
   const reloadReport = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["reports", "attendance-list"] });

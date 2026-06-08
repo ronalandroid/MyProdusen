@@ -29,19 +29,42 @@ interface Employee {
   };
 }
 
+
+const getRoleBadge = (role: string) => {
+    const roleMap: Record<string, { label: string; className: string }> = {
+      SUPERADMIN: { label: "Superadmin", className: "badge-danger" },
+      EMPLOYEE: { label: "Karyawan", className: "badge-success" },
+    };
+
+    const roleInfo = roleMap[role] || { label: role, className: "" };
+    return <span className={`badge ${roleInfo.className}`}>{roleInfo.label}</span>;
+  };
+
+
+const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, { label: string; className: string }> = {
+      ACTIVE: { label: "Aktif", className: "badge-success" },
+      INACTIVE: { label: "Nonaktif", className: "badge-danger" },
+      ON_LEAVE: { label: "Cuti", className: "badge-warning" },
+    };
+
+    const statusInfo = statusMap[status] || { label: status, className: "" };
+    return <span className={`badge ${statusInfo.className}`}>{statusInfo.label}</span>;
+  };
+
 export default function EmployeeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
   const { success, error: showError } = useToast();
-  
+
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
   const id = resolvedParams.id;
-  const profileQuery = useCachedProfile();
-  const employeeQuery = useQuery({
+  const { data: profileData } = useCachedProfile();
+  const { data: employeeData, isPending: employeePending, error: employeeError } = useQuery({
     queryKey: ["employee", id],
     queryFn: () => fetchApiData<Employee>(`/api/employees/${id}`, "Gagal memuat data karyawan"),
     enabled: Boolean(id),
@@ -49,21 +72,21 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     gcTime: 5 * 60_000,
   });
 
-  const employee = employeeQuery.data || null;
-  const loading = employeeQuery.isPending;
-  const isSuperadmin = profileQuery.data?.role === 'SUPERADMIN';
+  const employee = employeeData || null;
+  const loading = employeePending;
+  const isSuperadmin = profileData?.role === 'SUPERADMIN';
 
   useEffect(() => {
     if (employee) setSelectedRole(employee.user?.role || 'EMPLOYEE');
   }, [employee]);
 
   useEffect(() => {
-    if (employeeQuery.error) showError(employeeQuery.error.message || "Terjadi kesalahan saat memuat data");
-  }, [employeeQuery.error, showError]);
+    if (employeeError) showError(employeeError.message || "Terjadi kesalahan saat memuat data");
+  }, [employeeError, showError]);
 
   const handleChangeRole = async () => {
     if (!employee) return;
-    
+
     setSubmitting(true);
     try {
       const response = await fetch(`/api/employees/${employee.id}/role`, {
@@ -89,27 +112,6 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const getRoleBadge = (role: string) => {
-    const roleMap: Record<string, { label: string; className: string }> = {
-      SUPERADMIN: { label: "Superadmin", className: "badge-danger" },
-      EMPLOYEE: { label: "Karyawan", className: "badge-success" },
-    };
-    
-    const roleInfo = roleMap[role] || { label: role, className: "" };
-    return <span className={`badge ${roleInfo.className}`}>{roleInfo.label}</span>;
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; className: string }> = {
-      ACTIVE: { label: "Aktif", className: "badge-success" },
-      INACTIVE: { label: "Nonaktif", className: "badge-danger" },
-      ON_LEAVE: { label: "Cuti", className: "badge-warning" },
-    };
-    
-    const statusInfo = statusMap[status] || { label: status, className: "" };
-    return <span className={`badge ${statusInfo.className}`}>{statusInfo.label}</span>;
   };
 
   if (loading) {
