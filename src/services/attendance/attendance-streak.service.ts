@@ -41,7 +41,7 @@ export function calculateCurrentStreak(days: AttendanceCalendarDay[]) {
   return current;
 }
 
-export async function getMonthlyAttendanceCalendar(employeeId: string, month: string) {
+async function getMonthlyAttendanceCalendar(employeeId: string, month: string) {
   void employeeId;
   void month;
   return [] as AttendanceCalendarDay[];

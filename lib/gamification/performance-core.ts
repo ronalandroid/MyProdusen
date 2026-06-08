@@ -1,7 +1,7 @@
 export const GAMIFICATION_WEIGHT_INVALID = 'GAMIFICATION_WEIGHT_INVALID';
-export const RAISE_PROJECTION_DISCLAIMER = 'Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.';
-export const CULTURE_SCORE_LABEL = 'Culture & Discipline Score';
-export const CULTURE_SCORE_LABEL_ID = 'Penilaian Perilaku Kerja';
+const RAISE_PROJECTION_DISCLAIMER = 'Proyeksi ini bersifat estimasi dan dapat berubah sesuai kebijakan perusahaan.';
+const CULTURE_SCORE_LABEL = 'Culture & Discipline Score';
+const CULTURE_SCORE_LABEL_ID = 'Penilaian Perilaku Kerja';
 
 export type GamificationWeights = { attendance: number; kpi: number; culture?: number; leader?: number };
 export type ResolvedGamificationWeights = { attendance: number; kpi: number; culture: number; leader: number };

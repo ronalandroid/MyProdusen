@@ -28,7 +28,7 @@ export type ApiEnvelope<T> = {
   message?: string;
 };
 
-export const dashboardQueryKeys = {
+const dashboardQueryKeys = {
   profile: ["auth", "profile"] as const,
   profileMe: ["profile", "me"] as const,
   dashboardStats: ["dashboard", "stats"] as const,

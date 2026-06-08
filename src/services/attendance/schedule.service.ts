@@ -229,13 +229,15 @@ class ScheduleService {
       });
     }
 
-    for (const workLocationId of [...new Set(input.workLocationIds)]) {
-      await db.insert(scheduleLocations).values({
-        id: nanoid(),
-        scheduleId,
-        workLocationId,
-      });
-    }
+    await Promise.all(
+      [...new Set(input.workLocationIds)].map((workLocationId) =>
+        db.insert(scheduleLocations).values({
+          id: nanoid(),
+          scheduleId,
+          workLocationId,
+        }),
+      ),
+    );
 
     return this.getScheduleForDate(input.employeeId, input.date);
   }
@@ -249,9 +251,11 @@ class ScheduleService {
 
   async setShiftLocations(shiftId: string, workLocationIds: string[]) {
     await db.delete(shiftLocations).where(eq(shiftLocations.shiftId, shiftId));
-    for (const workLocationId of [...new Set(workLocationIds)]) {
-      await db.insert(shiftLocations).values({ id: nanoid(), shiftId, workLocationId });
-    }
+    await Promise.all(
+      [...new Set(workLocationIds)].map((workLocationId) =>
+        db.insert(shiftLocations).values({ id: nanoid(), shiftId, workLocationId }),
+      ),
+    );
     return this.getShiftLocations(shiftId);
   }
 

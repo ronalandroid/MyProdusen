@@ -153,9 +153,8 @@ export default function AttendancePage() {
     gcTime: 5 * 60_000,
   });
   const [viewerState, setViewerState] = useState<{ record: AttendanceRecord; kind: "check-in" | "check-out" } | null>(null);
-  const [now, setNow] = useState<Date | null>(null);
+  const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    setNow(new Date());
     const id = setInterval(() => setNow(new Date()), 1000 * 30);
     return () => clearInterval(id);
   }, []);

@@ -5,6 +5,6 @@ export function calculateProjectedRaisePercent(annualScore: number, options: { f
   return Math.round((score / 10) * 100) / 100;
 }
 
-export function buildRaiseProjectionCopy(projectedRaisePercent: number) {
+function buildRaiseProjectionCopy(projectedRaisePercent: number) {
   return `Estimasi kenaikan: ${projectedRaisePercent}%. Proyeksi kenaikan ini bersifat estimasi dan tetap membutuhkan persetujuan perusahaan.`;
 }

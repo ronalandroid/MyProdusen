@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import { logout } from "@/lib/auth-client";
@@ -35,7 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const profileMeQuery = useProfileMe();
   const invalidateDashboardData = useInvalidateDashboardData();
 
-  function applyProfileState(sessionProfile: ClientUserProfile, nextProfileMe: ProfileMe, showSyncNotice = false) {
+  const applyProfileState = useCallback((sessionProfile: ClientUserProfile, nextProfileMe: ProfileMe, showSyncNotice = false) => {
     setProfile((current) => {
       if (showSyncNotice && current && current.role !== sessionProfile.role) setSyncNotice("Data pekerjaan Anda telah diperbarui.");
       return sessionProfile;
@@ -45,9 +45,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return nextProfileMe;
     });
     return { sessionProfile, profileMe: nextProfileMe };
-  }
+  }, []);
 
-  async function loadProfileState(showSyncNotice = false) {
+  const loadProfileState = useCallback(async (showSyncNotice = false) => {
     const [sessionProfile, nextProfileMe] = await Promise.all([
       profileQuery.refetch().then((result) => {
         if (!result.data) throw result.error || new Error("Sesi tidak valid");
@@ -59,7 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }),
     ]);
     return applyProfileState(sessionProfile, nextProfileMe, showSyncNotice);
-  }
+  }, [applyProfileState, profileMeQuery, profileQuery]);
 
   useEffect(() => {
     loadProfileState()
@@ -75,7 +75,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setIsCheckingSession(false);
         router.replace("/login");
       });
-  }, [pathname, router]);
+  }, [loadProfileState, pathname, router]);
 
   useEffect(() => {
     const refresh = () => loadProfileState(true).then(({ sessionProfile }) => {
@@ -84,7 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     window.addEventListener("focus", refresh);
     const interval = window.setInterval(refresh, 60_000);
     return () => { window.removeEventListener("focus", refresh); window.clearInterval(interval); };
-  }, [pathname, router]);
+  }, [loadProfileState, pathname, router]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 });

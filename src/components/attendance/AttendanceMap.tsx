@@ -131,8 +131,8 @@ export function AttendanceMap({
   onRecenter,
 }: Props) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const [visible, setVisible] = useState<boolean>();
-  const [hasError, setHasError] = useState<boolean>();
+  const [visible, setVisible] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") {

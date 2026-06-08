@@ -183,10 +183,18 @@ export async function cultureScore(request: NextRequest) {
     const subcriteria = body.subcriteriaEnabled ? { cleanlinessScore: body.cleanlinessScore, disciplineScore: body.disciplineScore, punctualityBehaviorScore: body.punctualityBehaviorScore, neatnessScore: body.neatnessScore, sopComplianceScore: body.sopComplianceScore, teamworkScore: body.teamworkScore, responsibilityScore: body.responsibilityScore, attitudeScore: body.attitudeScore } : undefined;
     const [entry] = await db.insert(leaderScoreEntries).values({ id: nanoid(), employeeId: target.id, leaderEmployeeId: reviewer?.id ?? target.id, score, notes, scoreDate, periodId: body.periodId ?? activePeriod?.id, periodType: settings.leaderScorePeriodType ?? 'MONTHLY', scoreType: 'CULTURE_DISCIPLINE', scorerRole: user.role, subcriteria, isFinal: isSuperadmin(user.role), reason: body.reason, createdBy: user.userId }).returning();
     const anomalies = detectCultureScoreAnomaly({ score, previousScore: previous?.score });
-    for (const type of anomalies) await db.insert(leaderScoreAnomalies).values({ id: nanoid(), leaderScoreEntryId: entry.id, employeeId: target.id, type });
+    await Promise.all(
+      anomalies.map((type) =>
+        db.insert(leaderScoreAnomalies).values({ id: nanoid(), leaderScoreEntryId: entry.id, employeeId: target.id, type }),
+      ),
+    );
     if (anomalies.length) {
       const superadmins = await db.select({ id: users.id }).from(users).where(eq(users.role, 'SUPERADMIN'));
-      for (const admin of superadmins) await db.insert(notifications).values({ id: nanoid(), userId: admin.id, title: 'Anomali Penilaian Perilaku', message: 'Anomali penilaian perilaku terdeteksi.', type: 'PERFORMANCE_ANOMALY' });
+      await Promise.all(
+        superadmins.map((admin) =>
+          db.insert(notifications).values({ id: nanoid(), userId: admin.id, title: 'Anomali Penilaian Perilaku', message: 'Anomali penilaian perilaku terdeteksi.', type: 'PERFORMANCE_ANOMALY' }),
+        ),
+      );
     }
     const auditAction = body.overrideFinal ? 'CULTURE_SCORE_OVERRIDDEN' : body.editingPrevious ? 'CULTURE_SCORE_UPDATED' : 'CULTURE_SCORE_SUBMITTED';
     await logAudit(user.userId, auditAction, 'LeaderScoreEntry', entry.id, undefined, { ...entry, cultureScore: score, anomalies, reason: body.reason }, request);

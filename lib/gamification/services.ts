@@ -2,7 +2,7 @@ import { calculateRaiseProjection } from './performance-core';
 
 export type BadgeCode = 'STREAK_7_DAYS' | 'STREAK_30_DAYS' | 'KPI_PERFECT_MONTH' | 'ZERO_ALPHA_QUARTER' | 'TOP_PERFORMER' | 'CONSISTENT_GOLD';
 
-export const BADGE_RULES: Array<{ code: BadgeCode; name: string; qualifies: (metrics: BadgeMetrics) => boolean }> = [
+const BADGE_RULES: Array<{ code: BadgeCode; name: string; qualifies: (metrics: BadgeMetrics) => boolean }> = [
   { code: 'STREAK_7_DAYS', name: 'Streak 7 Hari', qualifies: (metrics) => metrics.streakDays >= 7 },
   { code: 'STREAK_30_DAYS', name: 'Streak 30 Hari', qualifies: (metrics) => metrics.streakDays >= 30 },
   { code: 'KPI_PERFECT_MONTH', name: 'KPI Perfect Month', qualifies: (metrics) => metrics.kpiPerfectMonth },
