@@ -162,7 +162,7 @@ function AttendanceSuccessContent() {
       {/* Hero confirmation */}
       <section className="card flex flex-col items-center gap-3 border border-[var(--attn-warn-border-soft)] bg-gradient-to-br from-[var(--attn-warn-bg)] to-white p-6 text-center">
         <div className="flex size-20 items-center justify-center rounded-full bg-[rgba(46,125,50,0.12)]" aria-hidden="true">
-          <CheckCircle2 size={48} className="text-[var(--attn-success)] animate-bounce" />
+          <CheckCircle2 size={48} className="text-[var(--attn-success)] transition-transform duration-500 ease-out motion-safe:scale-105" />
         </div>
         <div>
           <h2 className="text-lg font-extrabold text-[var(--text-primary)]">{title}</h2>

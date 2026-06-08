@@ -137,8 +137,8 @@ export function resolveFinalCultureScore(input: { leaderScore?: number; superadm
 }
 
 export function mapRaiseTier(score: number, maintainedDays: number, tiers = DEFAULT_GAMIFICATION_SETTINGS.raiseTiers) {
-  const tier = [...tiers]
-    .sort((a, b) => b.minScore - a.minScore)
+  const tier = tiers
+    .toSorted((a, b) => b.minScore - a.minScore)
     .find((candidate) => score >= candidate.minScore && maintainedDays >= candidate.requiredDays);
   return tier ? { ...tier, disclaimer: RAISE_PROJECTION_DISCLAIMER } : undefined;
 }

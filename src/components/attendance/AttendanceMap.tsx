@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { LocateFixed, MapPin } from "lucide-react";
 import {
   TILE_SIZE,
@@ -15,6 +15,101 @@ const TILE_TEMPLATE = getDefaultTileTemplate();
 const PREVIEW_WIDTH = 3 * TILE_SIZE;
 const PREVIEW_HEIGHT = 3 * TILE_SIZE;
 const ZOOM = 17;
+const MAP_WRAPPER_STYLE_BASE: CSSProperties = {
+  position: "relative",
+  width: "100%",
+  borderRadius: "24px",
+  overflow: "hidden",
+  background: "var(--attn-map-surface)",
+  border: "1px solid var(--border-color)",
+};
+const TILE_LAYER_STYLE_BASE: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  transformOrigin: "0 0",
+};
+const TILE_GRID_STYLE: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: `repeat(3, ${TILE_SIZE}px)`,
+  gridTemplateRows: `repeat(3, ${TILE_SIZE}px)`,
+  width: `${PREVIEW_WIDTH}px`,
+  height: `${PREVIEW_HEIGHT}px`,
+};
+const TILE_IMAGE_STYLE: CSSProperties = {
+  display: "block",
+  width: `${TILE_SIZE}px`,
+  height: `${TILE_SIZE}px`,
+  pointerEvents: "none",
+  userSelect: "none",
+};
+const GEOFENCE_STYLE_BASE: CSSProperties = {
+  position: "absolute",
+  left: "50%",
+  top: "50%",
+  borderRadius: "50%",
+  border: "3px dashed rgba(34,197,94,0.65)",
+  backgroundColor: "rgba(34,197,94,0.08)",
+  transform: "translate(-50%, -50%)",
+  pointerEvents: "none",
+};
+const MARKER_STYLE_BASE: CSSProperties = {
+  position: "absolute",
+  pointerEvents: "none",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+};
+const OFFICE_MARKER_STYLE: CSSProperties = {
+  ...MARKER_STYLE_BASE,
+  left: "50%",
+  top: "50%",
+  transform: "translate(-50%, -100%)",
+};
+const USER_MARKER_STYLE_BASE: CSSProperties = {
+  ...MARKER_STYLE_BASE,
+  transform: "translate(-50%, -50%)",
+  zIndex: 10,
+};
+const OFFICE_LABEL_STYLE: CSSProperties = {
+  fontSize: "12px",
+  fontWeight: 800,
+  background: "rgba(229,57,53,0.85)",
+  color: "white",
+  padding: "1px 6px",
+  borderRadius: "999px",
+  marginTop: "2px",
+  whiteSpace: "nowrap",
+};
+const USER_LABEL_STYLE: CSSProperties = {
+  ...OFFICE_LABEL_STYLE,
+  background: "rgba(59,130,246,0.85)",
+  marginTop: "4px",
+};
+const FALLBACK_STYLE: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexDirection: "column",
+  gap: "8px",
+  color: "var(--text-muted)",
+};
+const FALLBACK_TEXT_STYLE: CSSProperties = {
+  fontSize: "12px",
+  fontWeight: 600,
+};
+const ATTRIBUTION_STYLE: CSSProperties = {
+  position: "absolute",
+  right: 8,
+  bottom: 8,
+  fontSize: "12px",
+  background: "rgba(255,255,255,0.85)",
+  padding: "2px 6px",
+  borderRadius: "999px",
+  color: "var(--text-muted)",
+  fontWeight: 600,
+};
 
 type Props = {
   officeLatitude: number;
@@ -36,8 +131,8 @@ export function AttendanceMap({
   onRecenter,
 }: Props) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const [visible, setVisible] = useState(false);
-  const [hasError, setHasError] = useState(false);
+  const [visible, setVisible] = useState<boolean>();
+  const [hasError, setHasError] = useState<boolean>();
 
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") {
@@ -103,41 +198,43 @@ export function AttendanceMap({
     };
   }, [officeLatitude, officeLongitude, radiusMeters, userLatitude, userLongitude]);
 
+  const wrapperStyle = useMemo<CSSProperties>(
+    () => ({ ...MAP_WRAPPER_STYLE_BASE, height: `${height}px` }),
+    [height],
+  );
+  const tileLayerStyle = useMemo<CSSProperties>(
+    () => ({
+      ...TILE_LAYER_STYLE_BASE,
+      transform: `translate(calc(50% - ${offsetX}px), calc(50% - ${offsetY}px))`,
+    }),
+    [offsetX, offsetY],
+  );
+  const geofenceStyle = useMemo<CSSProperties>(
+    () => ({
+      ...GEOFENCE_STYLE_BASE,
+      width: `${2 * radiusPx}px`,
+      height: `${2 * radiusPx}px`,
+    }),
+    [radiusPx],
+  );
+  const userMarkerStyle = useMemo<CSSProperties>(
+    () => ({
+      ...USER_MARKER_STYLE_BASE,
+      left: userOffset ? `calc(50% + ${userOffset.x}px)` : "50%",
+      top: userOffset ? `calc(50% + ${userOffset.y}px)` : "50%",
+    }),
+    [userOffset],
+  );
+
   if (!Number.isFinite(officeLatitude) || !Number.isFinite(officeLongitude)) {
     return null;
   }
 
   return (
-    <div
-      ref={wrapperRef}
-      style={{
-        position: "relative",
-        width: "100%",
-        height: `${height}px`,
-        borderRadius: "24px",
-        overflow: "hidden",
-        background: "var(--attn-map-surface)",
-        border: "1px solid var(--border-color)",
-      }}
-    >
+    <div ref={wrapperRef} style={wrapperStyle}>
       {visible && !hasError && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            transform: `translate(calc(50% - ${offsetX}px), calc(50% - ${offsetY}px))`,
-            transformOrigin: "0 0",
-          }}
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(3, ${TILE_SIZE}px)`,
-              gridTemplateRows: `repeat(3, ${TILE_SIZE}px)`,
-              width: `${PREVIEW_WIDTH}px`,
-              height: `${PREVIEW_HEIGHT}px`,
-            }}
-          >
+        <div style={tileLayerStyle}>
+          <div style={TILE_GRID_STYLE}>
             {tiles.map((tile) => (
               <img
                 key={tile.key}
@@ -148,13 +245,7 @@ export function AttendanceMap({
                 loading="lazy"
                 decoding="async"
                 onError={() => setHasError(true)}
-                style={{
-                  display: "block",
-                  width: `${TILE_SIZE}px`,
-                  height: `${TILE_SIZE}px`,
-                  pointerEvents: "none",
-                  userSelect: "none",
-                }}
+                style={TILE_IMAGE_STYLE}
               />
             ))}
           </div>
@@ -164,79 +255,32 @@ export function AttendanceMap({
       {visible && !hasError && (
         <>
           {/* Geofence Shaded Area circle */}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "50%",
-              width: `${2 * radiusPx}px`,
-              height: `${2 * radiusPx}px`,
-              borderRadius: "50%",
-              border: "3px dashed rgba(34,197,94,0.65)",
-              backgroundColor: "rgba(34,197,94,0.08)",
-              transform: "translate(-50%, -50%)",
-              pointerEvents: "none",
-            }}
-          />
+          <div style={geofenceStyle} />
 
           {/* Office Marker pin */}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "50%",
-              transform: "translate(-50%, -100%)",
-              pointerEvents: "none",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
+          <div style={OFFICE_MARKER_STYLE}>
             <div className="rounded-full bg-white p-1 shadow-md border border-[var(--danger)]">
               <MapPin size={22} className="text-[var(--danger)] fill-[var(--danger)]/10" />
             </div>
-            <span style={{ fontSize: "12px", fontWeight: 800, background: "rgba(229,57,53,0.85)", color: "white", padding: "1px 6px", borderRadius: "999px", marginTop: "2px", whiteSpace: "nowrap" }}>Kantor</span>
+            <span style={OFFICE_LABEL_STYLE}>Kantor</span>
           </div>
 
           {/* User Marker pin */}
           {userOffset && (
-            <div
-              style={{
-                position: "absolute",
-                left: `calc(50% + ${userOffset.x}px)`,
-                top: `calc(50% + ${userOffset.y}px)`,
-                transform: "translate(-50%, -50%)",
-                pointerEvents: "none",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                zIndex: 10,
-              }}
-            >
+            <div style={userMarkerStyle}>
               <div className="flex size-7 items-center justify-center rounded-full bg-white shadow-md border-2 border-blue-500 animate-pulse">
                 <div className="size-3.5 rounded-full bg-blue-500" />
               </div>
-              <span style={{ fontSize: "12px", fontWeight: 800, background: "rgba(59,130,246,0.85)", color: "white", padding: "1px 6px", borderRadius: "999px", marginTop: "4px", whiteSpace: "nowrap" }}>Anda</span>
+              <span style={USER_LABEL_STYLE}>Anda</span>
             </div>
           )}
         </>
       )}
 
       {(!visible || hasError) && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "column",
-            gap: "8px",
-            color: "var(--text-muted)",
-          }}
-        >
+        <div style={FALLBACK_STYLE}>
           <MapPin size={24} className="text-[var(--text-muted)]" />
-          <span style={{ fontSize: "12px", fontWeight: 600 }}>
+          <span style={FALLBACK_TEXT_STYLE}>
             {hasError
               ? "Peta tidak dapat dimuat. Tampilkan koordinat saja."
               : "Menyiapkan peta lokasi…"}
@@ -255,21 +299,7 @@ export function AttendanceMap({
         </button>
       )}
 
-      <span
-        style={{
-          position: "absolute",
-          right: 8,
-          bottom: 8,
-          fontSize: "12px",
-          background: "rgba(255,255,255,0.85)",
-          padding: "2px 6px",
-          borderRadius: "999px",
-          color: "var(--text-muted)",
-          fontWeight: 600,
-        }}
-      >
-        © OpenStreetMap contributors
-      </span>
+      <span style={ATTRIBUTION_STYLE}>© OpenStreetMap contributors</span>
     </div>
   );
 }

@@ -448,8 +448,7 @@ export default function LeaderTeamPage() {
             </div>
 
             {submitFeedback && (
-              <div
-                role="status"
+              <output
                 className={`rounded-xl p-3 text-xs font-semibold ${
                   submitFeedback.type === "success"
                     ? "bg-green-50 text-[var(--success)] border border-green-200"
@@ -457,7 +456,7 @@ export default function LeaderTeamPage() {
                 }`}
               >
                 {submitFeedback.message}
-              </div>
+              </output>
             )}
 
             <form onSubmit={handleScoreSubmit} className="flex flex-col gap-4">
@@ -539,17 +538,17 @@ export default function LeaderTeamPage() {
 
               {/* Anomaly warning messages */}
               {isLowScoreAnomaly && (
-                <div role="status" className="rounded-xl bg-red-50 border border-red-200 p-3 text-[11px] text-[var(--danger)] font-bold leading-normal flex items-start gap-1.5 animate-slide-up">
+                <output className="rounded-xl bg-red-50 border border-red-200 p-3 text-[11px] text-[var(--danger)] font-bold leading-normal flex items-start gap-1.5 animate-slide-up">
                   <AlertTriangle size={14} className="shrink-0 mt-0.5" />
                   <span>⚠️ Peringatan: Skor di bawah 40 tergolong sangat rendah dan akan memicu review anomali.</span>
-                </div>
+                </output>
               )}
 
               {isDeltaAnomaly && (
-                <div role="status" className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-[11px] text-amber-800 font-bold leading-normal flex items-start gap-1.5 animate-slide-up">
+                <output className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-[11px] text-amber-800 font-bold leading-normal flex items-start gap-1.5 animate-slide-up">
                   <AlertTriangle size={14} className="shrink-0 mt-0.5" />
                   <span>⚠️ Peringatan: Perubahan skor yang sangat drastis (&gt;30 poin) akan memicu review anomali.</span>
-                </div>
+                </output>
               )}
 
               <div className="flex gap-2 mt-2">

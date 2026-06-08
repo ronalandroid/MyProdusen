@@ -30,6 +30,11 @@ type UserRow = {
   teamId?: string | null;
 };
 
+const EMPTY_USERS: UserRow[] = [];
+const EMPTY_TEAMS: Team[] = [];
+const EMPTY_LOCATIONS: WorkLocation[] = [];
+const EMPTY_SHIFTS: Shift[] = [];
+
 const roleLabels: Record<UserRole, string> = { SUPERADMIN: "Superadmin", LEADER: "Leader", EMPLOYEE: "Karyawan" };
 function normalizeRole(role: unknown): UserRole { const value = String(role).toUpperCase(); return value === "SUPERADMIN" || value === "LEADER" ? value : "EMPLOYEE"; }
 function rowsFrom(result: any) { return Array.isArray(result) ? result : result?.data || []; }
@@ -61,15 +66,15 @@ export default function UsersPage() {
     },
   });
 
-  const users = optimisticUsers ?? usersData?.users ?? [];
-  const teams = usersData?.teams ?? [];
-  const locations = usersData?.locations ?? [];
-  const shifts = usersData?.shifts ?? [];
+  const users = optimisticUsers ?? usersData?.users ?? EMPTY_USERS;
+  const teams = usersData?.teams ?? EMPTY_TEAMS;
+  const locations = usersData?.locations ?? EMPTY_LOCATIONS;
+  const shifts = usersData?.shifts ?? EMPTY_SHIFTS;
   const loading = usersLoading;
   const error = localError || (usersError instanceof Error ? usersError.message : "");
 
   const setUsers = (updater: (rows: UserRow[]) => UserRow[]) => {
-    setOptimisticUsers((current) => updater(current ?? usersData?.users ?? []));
+    setOptimisticUsers((current) => updater(current ?? usersData?.users ?? EMPTY_USERS));
   };
 
   const pendingUsers = useMemo(() => users.filter((user) => !user.isActive), [users]);

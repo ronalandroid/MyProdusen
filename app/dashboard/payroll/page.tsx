@@ -34,6 +34,9 @@ interface EmployeePayrollItem {
   run: { period: string; status: PayrollStatus };
 }
 
+const EMPTY_PAYROLL_RUNS: PayrollRun[] = [];
+const EMPTY_EMPLOYEE_PAYROLL_ITEMS: EmployeePayrollItem[] = [];
+
 export default function PayrollPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -64,8 +67,8 @@ export default function PayrollPage() {
     staleTime: 60_000,
     gcTime: 10 * 60_000,
   });
-  const runs = (isEmployee ? [] : (payrollData as PayrollRun[] | undefined)) ?? [];
-  const myItems = (isEmployee ? (payrollData as EmployeePayrollItem[] | undefined) : []) ?? [];
+  const runs = (isEmployee ? EMPTY_PAYROLL_RUNS : (payrollData as PayrollRun[] | undefined)) ?? EMPTY_PAYROLL_RUNS;
+  const myItems = (isEmployee ? (payrollData as EmployeePayrollItem[] | undefined) : EMPTY_EMPLOYEE_PAYROLL_ITEMS) ?? EMPTY_EMPLOYEE_PAYROLL_ITEMS;
   const loading = roleLoading || (Boolean(role) && payrollLoading);
   const error = mutateError || roleError?.message || payrollError?.message || '';
 

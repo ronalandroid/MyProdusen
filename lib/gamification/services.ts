@@ -21,9 +21,12 @@ export type BadgeMetrics = {
 
 export function buildBadgeAwards(input: { employeeId: string; existingBadgeCodes: string[]; metrics: BadgeMetrics }) {
   const existing = new Set(input.existingBadgeCodes);
-  return BADGE_RULES
-    .filter((rule) => !existing.has(rule.code) && rule.qualifies(input.metrics))
-    .map((rule) => ({ employeeId: input.employeeId, code: rule.code, name: rule.name, notificationTitle: 'Badge performance baru' }));
+  return BADGE_RULES.reduce<Array<{ employeeId: string; code: BadgeCode; name: string; notificationTitle: string }>>((awards, rule) => {
+    if (!existing.has(rule.code) && rule.qualifies(input.metrics)) {
+      awards.push({ employeeId: input.employeeId, code: rule.code, name: rule.name, notificationTitle: 'Badge performance baru' });
+    }
+    return awards;
+  }, []);
 }
 
 export function transitionPerformancePeriod(currentStatus: string, nextStatus: 'ACTIVE' | 'CLOSED') {

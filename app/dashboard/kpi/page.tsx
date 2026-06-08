@@ -34,6 +34,9 @@ type EmployeeSummary = {
 };
 
 const currentPeriod = new Date().toISOString().slice(0, 7);
+const EMPTY_KPI_RESULTS: KpiResultRow[] = [];
+const EMPTY_EMPLOYEES: EmployeeRow[] = [];
+const EMPTY_PRODUCTION_ENTRIES: ProductionEntry[] = [];
 
 function progressPercentage(score: number) {
   return Math.max(0, Math.min(Math.round(score || 0), 100));
@@ -88,9 +91,9 @@ export default function KPIPage() {
   });
 
   const role = initialData?.role || "EMPLOYEE";
-  const results = initialData?.results ?? [];
-  const employees = initialData?.employees ?? [];
-  const productionEntries = initialData?.productionEntries ?? [];
+  const results = initialData?.results ?? EMPTY_KPI_RESULTS;
+  const employees = initialData?.employees ?? EMPTY_EMPLOYEES;
+  const productionEntries = initialData?.productionEntries ?? EMPTY_PRODUCTION_ENTRIES;
   const loading = initialLoading;
 
   const canViewTeam = role === "SUPERADMIN";

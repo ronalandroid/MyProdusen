@@ -19,6 +19,12 @@ type ScheduleRow = {
 
 type Tab = "schedules" | "shift-locations";
 
+const EMPTY_EMPLOYEES: Employee[] = [];
+const EMPTY_SHIFTS: Shift[] = [];
+const EMPTY_LOCATIONS: WorkLocation[] = [];
+const EMPTY_SCHEDULES: ScheduleRow[] = [];
+const EMPTY_WORK_LOCATION_IDS: string[] = [];
+
 function todayIso(): string {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -72,9 +78,9 @@ export default function AttendanceSchedulesPage() {
     gcTime: 5 * 60_000,
   });
 
-  const employees = masterData?.employees ?? [];
-  const shifts = masterData?.shifts ?? [];
-  const locations = masterData?.locations ?? [];
+  const employees = masterData?.employees ?? EMPTY_EMPLOYEES;
+  const shifts = masterData?.shifts ?? EMPTY_SHIFTS;
+  const locations = masterData?.locations ?? EMPTY_LOCATIONS;
   const loadingMaster = masterPending;
 
   const activeShifts = useMemo(() => shifts.filter((s) => s.isActive), [shifts]);
@@ -122,7 +128,7 @@ export default function AttendanceSchedulesPage() {
   });
 
   const schedules = useMemo(() => {
-    const rows = (schedulesData?.schedules || []).slice().sort((a, b) => {
+    const rows = (schedulesData?.schedules || EMPTY_SCHEDULES).slice().sort((a, b) => {
       if (a.date !== b.date) return a.date < b.date ? -1 : 1;
       const an = employeeNameById.get(a.employeeId) || "";
       const bn = employeeNameById.get(b.employeeId) || "";
@@ -211,7 +217,7 @@ export default function AttendanceSchedulesPage() {
       return;
     }
     if (shiftLocationsData) {
-      setShiftLocationIds(shiftLocationsData.workLocationIds || []);
+      setShiftLocationIds(shiftLocationsData.workLocationIds || EMPTY_WORK_LOCATION_IDS);
     }
   }, [selectedShiftId, shiftLocationsData]);
 
@@ -277,9 +283,9 @@ export default function AttendanceSchedulesPage() {
       </div>
 
       {message && (
-        <div className="card border border-green-200 bg-green-50 p-4 text-sm text-[var(--success)]" role="status">
+        <output className="card border border-green-200 bg-green-50 p-4 text-sm text-[var(--success)]">
           {message}
-        </div>
+        </output>
       )}
       {error && (
         <div className="card border border-red-200 bg-red-50 p-4 text-sm text-[var(--danger)]" role="alert">
@@ -288,9 +294,9 @@ export default function AttendanceSchedulesPage() {
       )}
 
       {loadingMaster ? (
-        <div className="card p-8 text-center text-sm text-[var(--text-secondary)]" role="status">
+        <output className="card p-8 text-center text-sm text-[var(--text-secondary)]">
           Memuat data...
-        </div>
+        </output>
       ) : tab === "schedules" ? (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,360px)_1fr]">
           {/* Assignment form */}
@@ -396,11 +402,11 @@ export default function AttendanceSchedulesPage() {
             </div>
 
             {loadingSchedules ? (
-              <div className="card p-8 text-center text-sm text-[var(--text-secondary)]" role="status">Memuat jadwal...</div>
+              <output className="card p-8 text-center text-sm text-[var(--text-secondary)]">Memuat jadwal...</output>
             ) : schedules.length === 0 ? (
-              <div className="card p-8 text-center text-sm text-[var(--text-secondary)]" role="status">
+              <output className="card p-8 text-center text-sm text-[var(--text-secondary)]">
                 Tidak ada jadwal pada rentang ini.
-              </div>
+              </output>
             ) : (
               <div className="card overflow-x-auto p-0">
                 <table className="w-full text-sm">
@@ -482,7 +488,7 @@ export default function AttendanceSchedulesPage() {
                 Pilih shift untuk mengatur lokasi default.
               </div>
             ) : loadingShiftLocations ? (
-              <div className="p-6 text-center text-sm text-[var(--text-secondary)]" role="status">Memuat lokasi...</div>
+              <output className="p-6 text-center text-sm text-[var(--text-secondary)]">Memuat lokasi...</output>
             ) : activeLocations.length === 0 ? (
               <div className="p-6 text-center text-sm text-[var(--text-muted)]">Belum ada lokasi kerja aktif.</div>
             ) : (

@@ -18,6 +18,7 @@ type AuditLog = {
 };
 
 const PAGE_SIZE = 25;
+const EMPTY_AUDIT_LOGS: AuditLog[] = [];
 
 function getActionBadge(action: string) {
   switch (action) {
@@ -85,7 +86,7 @@ export default function AuditPage() {
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-  const logs = logsData ?? [];
+  const logs = logsData ?? EMPTY_AUDIT_LOGS;
   const loading = logsLoading;
   const error = logsError?.message || "";
   const loadLogs = () => queryClient.invalidateQueries({ queryKey: ["audit"] });

@@ -166,9 +166,9 @@ export default function LocationsPage() {
         </div>
       )}
       {message && (
-        <div role="status" className="card" style={{ padding: "12px 16px", borderColor: "var(--success)", color: "var(--success)", fontSize: "13px", fontWeight: 600, marginBottom: "16px" }}>
+        <output className="card" style={{ padding: "12px 16px", borderColor: "var(--success)", color: "var(--success)", fontSize: "13px", fontWeight: 600, marginBottom: "16px" }}>
           {message}
-        </div>
+        </output>
       )}
 
       <LocationFilters

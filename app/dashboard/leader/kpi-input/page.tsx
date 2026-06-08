@@ -7,6 +7,9 @@ import { fetchApiData } from "@/hooks/useDashboardQueries";
 type Team = { id: string; name: string };
 type Member = { id: string; nip: string; fullName: string; division?: string | null; teamId: string; teamName: string };
 
+const EMPTY_TEAMS: Team[] = [];
+const EMPTY_MEMBERS: Member[] = [];
+
 export default function LeaderKpiInputPage() {
   const queryClient = useQueryClient();
   const today = new Date().toISOString().slice(0, 10);
@@ -24,7 +27,7 @@ export default function LeaderKpiInputPage() {
     gcTime: 5 * 60_000,
   });
 
-  const teams = teamsData?.teams || [];
+  const teams = teamsData?.teams || EMPTY_TEAMS;
 
   useEffect(() => {
     if (!teamId && teams[0]?.id) setTeamId(teams[0].id);
@@ -38,7 +41,7 @@ export default function LeaderKpiInputPage() {
     gcTime: 5 * 60_000,
   });
 
-  const members = membersData || [];
+  const members = membersData || EMPTY_MEMBERS;
   const error = actionError || teamsError?.message || membersError?.message || "";
 
   const canSave = useMemo(() => members.some((member) => values[member.id] !== undefined && values[member.id] !== ""), [members, values]);
