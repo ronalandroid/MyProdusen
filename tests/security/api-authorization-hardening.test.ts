@@ -53,6 +53,14 @@ describe('test-only activation-token endpoint is production-hardened', () => {
     expect(src).toMatch(/process\.env\.NODE_ENV === 'production'/);
     expect(src).toMatch(/assertTestCompatEnabled/);
   });
+
+  it('keeps legacy public-register-token compat endpoint gated, validated, and rate limited', () => {
+    const src = read('app/api/auth/public-register-token/route.ts');
+    expect(src).toMatch(/process\.env\.NODE_ENV === 'production'/);
+    expect(src).toMatch(/TESTSPRITE_COMPAT_RESPONSE !== 'true'/);
+    expect(src).toMatch(/z\.string\(\)\.email/);
+    expect(src).toMatch(/rateLimit\(request, RATE_LIMITS\.REGISTRATION, 'public-register-token'\)/);
+  });
 });
 
 describe('auth rate limiting fails safe, not open', () => {
