@@ -37,9 +37,13 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
 
     const source = new EventSource('/api/realtime');
     const handleEvent = (message: MessageEvent) => {
-      const event = JSON.parse(message.data) as RealtimeEvent;
-      setLastEvent(event);
-      onEventRef.current?.(event);
+      try {
+        const event = JSON.parse(message.data) as RealtimeEvent;
+        setLastEvent(event);
+        onEventRef.current?.(event);
+      } catch {
+        // Ignore malformed SSE frames.
+      }
     };
 
     source.addEventListener('connected', () => setConnected(true));

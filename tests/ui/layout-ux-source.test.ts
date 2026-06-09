@@ -11,6 +11,7 @@ const audit = readFileSync('app/dashboard/audit/page.tsx', 'utf8');
 const input = readFileSync('src/components/ui/Input.tsx', 'utf8');
 const camera = readFileSync('src/components/attendance/RealtimeSelfieCamera.tsx', 'utf8');
 const compressor = readFileSync('lib/attendance/selfie-compressor.ts', 'utf8');
+const tailwind = readFileSync('tailwind.config.ts', 'utf8');
 
 describe('UI layout and attendance UX source safeguards', () => {
   it('keeps buttons from clipping icon labels', () => {
@@ -53,6 +54,11 @@ describe('UI layout and attendance UX source safeguards', () => {
     expect(compressor).toContain('mirror = true');
     expect(compressor).toContain('ctx.translate(width, 0)');
     expect(compressor).toContain('ctx.scale(-1, 1)');
+  });
+
+  it('keeps Tailwind scanning live source components for production CSS', () => {
+    expect(tailwind).toContain('./src/**/*.{js,ts,jsx,tsx,mdx}');
+    expect(tailwind).toContain('./app/**/*.{js,ts,jsx,tsx,mdx}');
   });
 
   it('guards employee delete modal when selected data is unavailable', () => {

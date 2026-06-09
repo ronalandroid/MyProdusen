@@ -48,6 +48,9 @@ export async function POST(request: NextRequest) {
     if (!hasPermission(user.role, 'ATTENDANCE_CREATE')) return forbiddenResponse('Anda tidak memiliki akses');
 
     const employee = await employeeService.getEmployeeByUserId(user.userId);
+    if (!employee) {
+      return errorResponse('Profil karyawan tidak ditemukan', 404);
+    }
     const body = await getRequestBody(request);
     const validation = createExceptionSchema.safeParse(body);
     if (!validation.success) return validationErrorResponse(validation.error.errors[0].message);

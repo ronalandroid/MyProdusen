@@ -14,7 +14,7 @@ async function canReadEmployee(user: Awaited<ReturnType<typeof requireAuth>>, em
 
   const currentEmployee = await employeeService.getEmployeeByUserId(user.userId);
 
-  return employee.id === currentEmployee.id;
+  return !!currentEmployee && employee.id === currentEmployee.id;
 }
 
 export async function GET(

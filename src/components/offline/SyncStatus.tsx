@@ -25,13 +25,15 @@ export function SyncStatus() {
     });
 
     // Subscribe to sync events
+    let progressClearTimer: ReturnType<typeof setTimeout> | null = null;
     const unsubscribeSync = syncManager.subscribe((event) => {
       setSyncProgress(event);
       
       if (event.type === 'sync-complete' || event.type === 'sync-error') {
         loadStatus();
         // Clear progress after 3 seconds
-        setTimeout(() => setSyncProgress(null), 3000);
+        if (progressClearTimer) clearTimeout(progressClearTimer);
+        progressClearTimer = setTimeout(() => setSyncProgress(null), 3000);
       }
     });
 
@@ -42,6 +44,7 @@ export function SyncStatus() {
       unsubscribeNetwork();
       unsubscribeSync();
       clearInterval(interval);
+      if (progressClearTimer) clearTimeout(progressClearTimer);
     };
   }, []);
 

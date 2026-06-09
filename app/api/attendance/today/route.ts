@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     const employee = await employeeService.getEmployeeByUserId(user.userId);
+    if (!employee) {
+      return errorResponse('Profil karyawan tidak ditemukan', 404);
+    }
     const [attendance, schedule] = await Promise.all([
       attendanceService.getTodayAttendance(employee.id),
       scheduleService.getScheduleForDate(employee.id),

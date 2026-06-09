@@ -16,7 +16,7 @@ async function canRejectLeave(user: Awaited<ReturnType<typeof requireAuth>>, emp
 
   const supervisor = await employeeService.getEmployeeByUserId(user.userId);
   const targetEmployee = await employeeService.getEmployeeById(employeeId);
-  return targetEmployee.supervisorId === supervisor.id;
+  return !!supervisor && targetEmployee.supervisorId === supervisor.id;
 }
 
 const rejectLeaveSchema = z.object({

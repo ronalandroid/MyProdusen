@@ -4150,6 +4150,16 @@ input:focus, textarea:focus, select:focus {
   box-shadow: none;
 }
 .card:hover { box-shadow: none; transform: none; }
+.metric-card {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+.metric-card strong {
+  font-family: var(--font-mono-stack);
+  letter-spacing: -0.03em;
+}
 .v4-band {
   background: var(--bg-band);
   border-radius: var(--radius-md);

@@ -12,6 +12,9 @@ export async function GET(request: NextRequest) {
     const year = Number(searchParams.get('year') || new Date().getFullYear());
     
     const employee = await employeeService.getEmployeeByUserId(user.userId);
+    if (!employee) {
+      return errorResponse('Profil karyawan tidak ditemukan', 404);
+    }
     const history = await leaveBalanceService.getBalanceHistory(employee.id, year);
 
     return successResponse(history);

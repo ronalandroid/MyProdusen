@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
     // Self-service roles only show their own attendance
     if (user.role === 'EMPLOYEE' || user.role === 'LEADER') {
       const employee = await employeeService.getEmployeeByUserId(user.userId);
+      if (!employee) {
+        return errorResponse('Profil karyawan tidak ditemukan', 404);
+      }
       filters.employeeId = employee.id;
     } else if (!hasPermission(user.role, 'ATTENDANCE_READ')) {
       return forbiddenResponse('Anda tidak memiliki akses untuk melihat data absensi');

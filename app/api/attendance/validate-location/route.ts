@@ -36,6 +36,9 @@ export async function POST(request: NextRequest) {
     }
 
     const employee = await employeeService.getEmployeeByUserId(user.userId);
+    if (!employee) {
+      return errorResponse('Profil karyawan tidak ditemukan', 404);
+    }
     const schedule = await scheduleService.getScheduleForDate(employee.id);
 
     if (schedule.source === 'none' || !schedule.shift) {

@@ -14,7 +14,7 @@ async function canAccessLeave(user: Awaited<ReturnType<typeof requireAuth>>, emp
 
   const currentEmployee = await employeeService.getEmployeeByUserId(user.userId);
 
-  return currentEmployee.id === employeeId;
+  return currentEmployee?.id === employeeId;
 }
 
 export async function GET(

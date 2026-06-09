@@ -380,6 +380,7 @@ export default function EmployeeBeranda({ profile }: Props) {
   const displayName = profile?.employee?.fullName || profile?.username || "Karyawan";
   const initials = displayName.substring(0, 2).toUpperCase();
   const currentScore = Math.round(perfScore?.currentScore ?? 100);
+  const currentScoreOutOfTen = (currentScore / 10).toFixed(1);
   const scoreTone = getScoreTone(currentScore);
   const streakCalendar = useMemo(() => buildStreakCalendar(heatmap), [heatmap]);
   const currentStreak = useMemo(() => getCurrentStreak(heatmap), [heatmap]);
@@ -459,7 +460,7 @@ export default function EmployeeBeranda({ profile }: Props) {
         </div>
         <div className="v4-stat">
           <span className="v4-stat-label">Skor</span>
-          <span className="v4-stat-value">{currentScore}</span>
+          <span className="v4-stat-value mono">{currentScoreOutOfTen}<span className="text-xs font-bold text-[var(--text-muted)]">/10</span></span>
         </div>
       </section>
 
@@ -653,8 +654,8 @@ export default function EmployeeBeranda({ profile }: Props) {
                       strokeLinecap="round"
                     />
                   </svg>
-                  <span className="absolute text-xl font-black text-[var(--text-primary)]">
-                    {perfScore?.currentScore ?? 100}
+                  <span className="absolute text-xl font-black text-[var(--text-primary)] mono">
+                    {currentScoreOutOfTen}<span className="text-[10px] font-bold text-[var(--text-muted)]">/10</span>
                   </span>
                 </div>
 
@@ -915,7 +916,7 @@ export default function EmployeeBeranda({ profile }: Props) {
               <span className="flex items-center justify-between gap-3 border-b border-[var(--border-color)] pb-3">
                 <span className="flex items-center gap-1.5 text-xs font-extrabold text-[var(--text-secondary)] uppercase tracking-wide">
                   <Award size={14} className="text-[var(--primary-dark)]" />
-                  <span>Showcase Badge ({perfBadges.length})</span>
+                  <span>Showcase Badge ({Math.min(perfBadges.length, 5)})</span>
                 </span>
                 <span className="text-[10px] font-bold text-[var(--text-muted)]">Pencapaian Karyawan</span>
               </span>
@@ -926,7 +927,7 @@ export default function EmployeeBeranda({ profile }: Props) {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {perfBadges.map((badge) => (
+                  {perfBadges.slice(0, 5).map((badge) => (
                     <div key={badge.id} className="flex gap-3 items-center rounded-2xl border border-[var(--border-color)] p-3 bg-gray-50/30">
                       <div className="size-10 rounded-2xl bg-[var(--primary-light)] flex items-center justify-center shrink-0 border border-[#FFE082]">
                         <Award size={20} className="text-[var(--primary-dark)]" />

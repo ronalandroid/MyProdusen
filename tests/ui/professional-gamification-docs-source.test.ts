@@ -46,6 +46,9 @@ describe('professional gamification product contract', () => {
 
   it('keeps implementation aligned with simple gamification scope', () => {
     expect(employeeDashboard).toContain('Skor Performa Saya');
+    expect(employeeDashboard).toContain('currentScoreOutOfTen');
+    expect(employeeDashboard).toContain('currentScore / 10');
+    expect(employeeDashboard).toContain('perfBadges.slice(0, 5)');
     expect(employeeDashboard).toContain('Kalender Streak Kehadiran');
     expect(employeeDashboard).toContain('Estimasi ini menunggu evaluasi dan persetujuan Superadmin.');
     expect(employeeDashboard).toContain('🐔');

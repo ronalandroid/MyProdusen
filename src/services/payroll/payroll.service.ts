@@ -375,28 +375,18 @@ export class PayrollService {
     let totalNetPay = 0;
 
     for (const { employee, payroll, structure } of activeEmployees) {
-      // Get attendance data for the period
-      const attendanceData = await this.getAttendanceData(
-        employee.id,
-        run.periodStart,
-        run.periodEnd
-      );
-
-      // Get overtime data for the period
-      const overtimeData = await this.getOvertimeData(
-        employee.id,
-        run.periodStart,
-        run.periodEnd
-      );
-
-      // Get payroll components
-      const components = await db
-        .select()
-        .from(payrollComponents)
-        .where(eq(payrollComponents.structureId, structure.id));
+      // Load independent payroll inputs in parallel to avoid per-employee waterfalls.
+      const [attendanceData, overtimeData, components, activeRule] = await Promise.all([
+        this.getAttendanceData(employee.id, run.periodStart, run.periodEnd),
+        this.getOvertimeData(employee.id, run.periodStart, run.periodEnd),
+        db
+          .select()
+          .from(payrollComponents)
+          .where(eq(payrollComponents.structureId, structure.id)),
+        this.resolveActivePayrollRule(employee.id, run.periodEnd),
+      ]);
 
       // Calculate salary components
-      const activeRule = await this.resolveActivePayrollRule(employee.id, run.periodEnd);
       const baseSalary = activeRule ? activeRule.baseSalary : payroll.baseSalary;
       let totalAllowances = 0;
       let totalDeductionsEmp = 0;

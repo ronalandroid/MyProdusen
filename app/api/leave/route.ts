@@ -33,6 +33,9 @@ export async function GET(request: NextRequest) {
     // If employee role, only show their own requests
     if (user.role === 'EMPLOYEE') {
       const employee = await employeeService.getEmployeeByUserId(user.userId);
+      if (!employee) {
+        return errorResponse('Profil karyawan tidak ditemukan', 404);
+      }
       filters.employeeId = employee.id;
     } else if (!hasPermission(user.role, 'LEAVE_READ')) {
       return forbiddenResponse('Anda tidak memiliki akses untuk melihat pengajuan izin');
@@ -69,6 +72,9 @@ export async function POST(request: NextRequest) {
     }
     
     const employee = await employeeService.getEmployeeByUserId(user.userId);
+    if (!employee) {
+      return errorResponse('Profil karyawan tidak ditemukan', 404);
+    }
     
     const body = await getRequestBody(request);
     

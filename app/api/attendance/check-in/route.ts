@@ -41,6 +41,9 @@ export async function POST(request: NextRequest) {
       return forbiddenResponse('Absensi mandiri hanya untuk Karyawan dan Leader');
     }
     employee = await employeeService.getEmployeeByUserId(user.userId);
+    if (!employee) {
+      return errorResponse('Profil karyawan tidak ditemukan', 404);
+    }
     const { data, selfie } = await parseCheckInRealtimeForm(request);
     const ipAddress = getClientIp(request);
     const userAgent = getUserAgent(request);
