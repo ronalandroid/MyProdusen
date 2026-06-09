@@ -10,6 +10,7 @@ import { logAudit } from '@/lib/audit';
 import { UploadError } from '@/lib/upload';
 import { recordGeoOutcome } from '@/lib/attendance/geo-review-flow';
 import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 function getFailureAuditAction(error: unknown, type: 'CHECK_IN' | 'CHECK_OUT') {
   const message = error instanceof Error ? error.message : String(error || '');
@@ -25,6 +26,10 @@ export async function POST(request: NextRequest) {
   let employee: Awaited<ReturnType<typeof employeeService.getEmployeeByUserId>> | null = null;
   try {
     user = await requireAuth(request);
+    const rl = await rateLimit(request, RATE_LIMITS.ATTENDANCE, 'attendance:check-out');
+    if (rl.limited) {
+      return errorResponse('Terlalu banyak permintaan absensi. Coba lagi sebentar.', 429);
+    }
     if (user.role !== 'EMPLOYEE' && user.role !== 'LEADER') {
       return forbiddenResponse('Absensi mandiri hanya untuk Karyawan dan Leader');
     }

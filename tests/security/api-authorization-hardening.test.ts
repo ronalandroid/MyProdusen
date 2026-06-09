@@ -85,6 +85,14 @@ describe('baseline HTTP security headers are configured', () => {
   });
 });
 
+describe('ECC route hardening: abuse rate limits', () => {
+  it('rate limits password change and attendance clock endpoints', () => {
+    expect(read('app/api/auth/change-password/route.ts')).toMatch(/RATE_LIMITS\.API_STRICT/);
+    expect(read('app/api/attendance/check-in/route.ts')).toMatch(/RATE_LIMITS\.ATTENDANCE/);
+    expect(read('app/api/attendance/check-out/route.ts')).toMatch(/RATE_LIMITS\.ATTENDANCE/);
+  });
+});
+
 describe('duplicate API auth aliases are removed', () => {
   it('does not expose /api/api/auth alias routes', () => {
     expect(() => read('app/api/api/auth/login/route.ts')).toThrow();
