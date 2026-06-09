@@ -8,6 +8,7 @@ import {
 } from '@/drizzle/schema';
 import { eq, and, desc, sql, or, isNull } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { BusinessError } from '@/lib/core/business-error';
 
 export class AnnouncementService {
   // ============================================
@@ -128,7 +129,7 @@ export class AnnouncementService {
       .limit(1);
 
     if (!result) {
-      throw new Error('Announcement tidak ditemukan');
+      throw new BusinessError('Announcement tidak ditemukan');
     }
 
     // Get comments
@@ -177,7 +178,7 @@ export class AnnouncementService {
       .returning();
 
     if (!updated) {
-      throw new Error('Announcement tidak ditemukan');
+      throw new BusinessError('Announcement tidak ditemukan');
     }
 
     return updated;
@@ -335,11 +336,11 @@ export class AnnouncementService {
       .limit(1);
 
     if (!comment) {
-      throw new Error('Comment tidak ditemukan');
+      throw new BusinessError('Comment tidak ditemukan');
     }
 
     if (comment.userId !== userId) {
-      throw new Error('Tidak memiliki akses untuk menghapus comment ini');
+      throw new BusinessError('Tidak memiliki akses untuk menghapus comment ini');
     }
 
     await db

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodSchema } from 'zod';
 import { AppError } from './app-error';
+import { BusinessError } from './business-error';
 import { errorResponse, validationErrorResponse } from '@/utils/response';
 import { logger } from '@/lib/logger';
 import { TOKEN_COOKIE_NAME } from '@/lib/auth-response';
@@ -23,6 +24,18 @@ export function handleApiError(error: unknown) {
       }, { status: error.status });
     }
     return errorResponse(message, error.status);
+  }
+
+  if (error instanceof BusinessError) {
+    if (isTestSpriteCompatEnabled()) {
+      return NextResponse.json({
+        success: false,
+        error: error.code ?? error.message,
+        code: error.code,
+        message: error.message,
+      }, { status: error.status });
+    }
+    return errorResponse(error.message, error.status);
   }
 
   if (error instanceof Error && error.message === 'Unauthorized') {

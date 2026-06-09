@@ -5,6 +5,7 @@ import { successResponse, errorResponse, validationErrorResponse, forbiddenRespo
 import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 async function canReadEmployee(user: Awaited<ReturnType<typeof requireAuth>>, employee: Awaited<ReturnType<typeof employeeService.getEmployeeById>>) {
   if (user.role === 'SUPERADMIN') {
@@ -53,7 +54,7 @@ export async function GET(
     if (error.message === 'Karyawan tidak ditemukan') {
       return notFoundResponse(error.message);
     }
-    return errorResponse(error.message || 'Gagal mengambil data karyawan');
+    return handleApiError(error);
   }
 }
 
@@ -89,7 +90,7 @@ export async function PUT(
     if (error.message === 'Karyawan tidak ditemukan') {
       return notFoundResponse(error.message);
     }
-    return errorResponse(error.message || 'Gagal mengubah data karyawan');
+    return handleApiError(error);
   }
 }
 
@@ -117,6 +118,6 @@ export async function DELETE(
     if (error.message === 'Karyawan tidak ditemukan') {
       return notFoundResponse(error.message);
     }
-    return errorResponse(error.message || 'Gagal menghapus data karyawan');
+    return handleApiError(error);
   }
 }

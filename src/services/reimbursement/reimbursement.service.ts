@@ -8,6 +8,7 @@ import {
 } from '@/drizzle/schema';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { BusinessError } from '@/lib/core/business-error';
 
 export class ReimbursementService {
   // ============================================
@@ -53,7 +54,7 @@ export class ReimbursementService {
       .limit(1);
 
     if (!category) {
-      throw new Error('Kategori expense tidak ditemukan');
+      throw new BusinessError('Kategori expense tidak ditemukan');
     }
 
     return category;
@@ -79,7 +80,7 @@ export class ReimbursementService {
       .returning();
 
     if (!updated) {
-      throw new Error('Kategori expense tidak ditemukan');
+      throw new BusinessError('Kategori expense tidak ditemukan');
     }
 
     return updated;
@@ -94,7 +95,7 @@ export class ReimbursementService {
       .limit(1);
 
     if (usage) {
-      throw new Error('Kategori masih digunakan');
+      throw new BusinessError('Kategori masih digunakan');
     }
 
     await db.delete(expenseCategories).where(eq(expenseCategories.id, id));
@@ -133,13 +134,13 @@ export class ReimbursementService {
     for (const item of data.items) {
       const category = await this.getCategoryById(item.categoryId);
       if (category.maxAmount && item.amount > category.maxAmount) {
-        throw new Error(
+        throw new BusinessError(
           `Amount untuk ${category.name} melebihi batas maksimal Rp ${category.maxAmount}`
         );
       }
 
       if (category.requiresReceipt && (!item.receipts || item.receipts.length === 0)) {
-        throw new Error(`Kategori ${category.name} memerlukan bukti receipt`);
+        throw new BusinessError(`Kategori ${category.name} memerlukan bukti receipt`);
       }
     }
 
@@ -250,7 +251,7 @@ export class ReimbursementService {
       .limit(1);
 
     if (!result) {
-      throw new Error('Claim tidak ditemukan');
+      throw new BusinessError('Claim tidak ditemukan');
     }
 
     // Get items with receipts
@@ -291,7 +292,7 @@ export class ReimbursementService {
     const existing = await this.getClaimById(id);
 
     if (existing.claim.status !== 'PENDING') {
-      throw new Error('Hanya claim dengan status PENDING yang bisa diubah');
+      throw new BusinessError('Hanya claim dengan status PENDING yang bisa diubah');
     }
 
     const [updated] = await db
@@ -310,7 +311,7 @@ export class ReimbursementService {
     const existing = await this.getClaimById(id);
 
     if (existing.claim.status !== 'PENDING') {
-      throw new Error('Claim sudah diproses');
+      throw new BusinessError('Claim sudah diproses');
     }
 
     const [updated] = await db
@@ -331,7 +332,7 @@ export class ReimbursementService {
     const existing = await this.getClaimById(id);
 
     if (existing.claim.status !== 'PENDING') {
-      throw new Error('Claim sudah diproses');
+      throw new BusinessError('Claim sudah diproses');
     }
 
     const [updated] = await db
@@ -353,7 +354,7 @@ export class ReimbursementService {
     const existing = await this.getClaimById(id);
 
     if (existing.claim.status !== 'APPROVED') {
-      throw new Error('Hanya claim APPROVED yang bisa dibayar');
+      throw new BusinessError('Hanya claim APPROVED yang bisa dibayar');
     }
 
     const [updated] = await db
@@ -375,11 +376,11 @@ export class ReimbursementService {
     const existing = await this.getClaimById(id);
 
     if (existing.claim.employeeId !== employeeId) {
-      throw new Error('Tidak memiliki akses');
+      throw new BusinessError('Tidak memiliki akses');
     }
 
     if (existing.claim.status !== 'PENDING') {
-      throw new Error('Hanya claim PENDING yang bisa dihapus');
+      throw new BusinessError('Hanya claim PENDING yang bisa dihapus');
     }
 
     // Delete receipts

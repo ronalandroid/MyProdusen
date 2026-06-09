@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/middleware';
 import { forbiddenResponse, successResponse, unauthorizedResponse, errorResponse } from '@/utils/response';
 import { leaderService } from '@/services/leader/leader.service';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +15,6 @@ export async function POST(request: NextRequest) {
     return successResponse(assignment, 'Karyawan berhasil ditetapkan ke tim');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal menetapkan karyawan', error.status || 400);
+    return handleApiError(error);
   }
 }

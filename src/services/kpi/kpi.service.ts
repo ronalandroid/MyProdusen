@@ -3,6 +3,7 @@ import { eq, and, desc, sql, ne } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { notifyUser } from '@/lib/notifications/dispatch';
 import { logAudit } from '@/lib/audit';
+import { BusinessError } from '@/lib/core/business-error';
 
 export type KpiScoringType = 'HIGHER_IS_BETTER' | 'LOWER_IS_BETTER' | 'BOOLEAN';
 
@@ -79,7 +80,7 @@ export class KpiService {
       .limit(1);
 
     if (!template) {
-      throw new Error('Template KPI tidak ditemukan');
+      throw new BusinessError('Template KPI tidak ditemukan');
     }
 
     // Get items
@@ -107,7 +108,7 @@ export class KpiService {
       .returning();
 
     if (!template) {
-      throw new Error('Template KPI tidak ditemukan');
+      throw new BusinessError('Template KPI tidak ditemukan');
     }
 
     return template;
@@ -170,7 +171,7 @@ export class KpiService {
       .returning();
 
     if (!item) {
-      throw new Error('Item KPI tidak ditemukan');
+      throw new BusinessError('Item KPI tidak ditemukan');
     }
 
     return item;
@@ -195,7 +196,7 @@ export class KpiService {
       .limit(1);
 
     if (!employee) {
-      throw new Error('Karyawan tidak ditemukan');
+      throw new BusinessError('Karyawan tidak ditemukan');
     }
 
     // Check if template exists
@@ -206,7 +207,7 @@ export class KpiService {
       .limit(1);
 
     if (!template) {
-      throw new Error('Template KPI tidak ditemukan');
+      throw new BusinessError('Template KPI tidak ditemukan');
     }
 
     // Check if already assigned
@@ -223,7 +224,7 @@ export class KpiService {
       .limit(1);
 
     if (existing) {
-      throw new Error('KPI sudah di-assign untuk periode ini');
+      throw new BusinessError('KPI sudah di-assign untuk periode ini');
     }
 
     const id = uuidv4();
@@ -286,7 +287,7 @@ export class KpiService {
       .limit(1);
 
     if (!item) {
-      throw new Error('Item KPI tidak ditemukan');
+      throw new BusinessError('Item KPI tidak ditemukan');
     }
 
     // Calculate score
@@ -313,7 +314,7 @@ export class KpiService {
 
     if (existing) {
       if (existing.isApproved) {
-        throw new Error('Hasil KPI sudah disetujui dan tidak dapat diubah tanpa alasan otorisasi');
+        throw new BusinessError('Hasil KPI sudah disetujui dan tidak dapat diubah tanpa alasan otorisasi');
       }
 
       // Update existing
@@ -397,7 +398,7 @@ export class KpiService {
       .limit(1);
 
     if (!result) {
-      throw new Error('Hasil KPI tidak ditemukan');
+      throw new BusinessError('Hasil KPI tidak ditemukan');
     }
 
     return result;
@@ -414,11 +415,11 @@ export class KpiService {
       .limit(1);
 
     if (!existing) {
-      throw new Error('Hasil KPI tidak ditemukan');
+      throw new BusinessError('Hasil KPI tidak ditemukan');
     }
 
     if (existing.isApproved) {
-      throw new Error('Hasil KPI sudah disetujui dan tidak dapat diubah tanpa alasan otorisasi');
+      throw new BusinessError('Hasil KPI sudah disetujui dan tidak dapat diubah tanpa alasan otorisasi');
     }
 
     let score = existing.score;
@@ -464,11 +465,11 @@ export class KpiService {
       .limit(1);
 
     if (!existing) {
-      throw new Error('Hasil KPI tidak ditemukan');
+      throw new BusinessError('Hasil KPI tidak ditemukan');
     }
 
     if (existing.isApproved) {
-      throw new Error('Hasil KPI sudah disetujui');
+      throw new BusinessError('Hasil KPI sudah disetujui');
     }
 
     const [result] = await db
@@ -483,7 +484,7 @@ export class KpiService {
       .returning();
 
     if (!result) {
-      throw new Error('Hasil KPI tidak ditemukan');
+      throw new BusinessError('Hasil KPI tidak ditemukan');
     }
 
     await notifyUser({
@@ -556,7 +557,7 @@ export class KpiService {
   // ============================================
 
   async createMetric(actorUserId: string, data: { name: string; unit: string; active?: boolean }) {
-    if (!data.name?.trim()) throw new Error('Nama metrik KPI wajib diisi');
+    if (!data.name?.trim()) throw new BusinessError('Nama metrik KPI wajib diisi');
     const id = uuidv4();
     const [metric] = await db
       .insert(kpiMetrics)
@@ -586,13 +587,13 @@ export class KpiService {
 
   async getMetricById(id: string) {
     const [metric] = await db.select().from(kpiMetrics).where(eq(kpiMetrics.id, id)).limit(1);
-    if (!metric) throw new Error('Metrik KPI tidak ditemukan');
+    if (!metric) throw new BusinessError('Metrik KPI tidak ditemukan');
     return metric;
   }
 
   async updateMetric(actorUserId: string, id: string, data: Partial<{ name: string; unit: string; active: boolean }>) {
     const [existing] = await db.select().from(kpiMetrics).where(eq(kpiMetrics.id, id)).limit(1);
-    if (!existing) throw new Error('Metrik KPI tidak ditemukan');
+    if (!existing) throw new BusinessError('Metrik KPI tidak ditemukan');
 
     const [updated] = await db
       .update(kpiMetrics)
@@ -621,9 +622,9 @@ export class KpiService {
     effectiveFrom?: Date;
     effectiveTo?: Date;
   }) {
-    if (!data.metricId) throw new Error('Metrik KPI wajib diisi');
-    if (!data.scopeType) throw new Error('Tipe scope target wajib diisi');
-    if (data.targetQuantity < 0) throw new Error('Target kuantitas tidak boleh negatif');
+    if (!data.metricId) throw new BusinessError('Metrik KPI wajib diisi');
+    if (!data.scopeType) throw new BusinessError('Tipe scope target wajib diisi');
+    if (data.targetQuantity < 0) throw new BusinessError('Target kuantitas tidak boleh negatif');
 
     const id = uuidv4();
     const [target] = await db
@@ -674,7 +675,7 @@ export class KpiService {
 
   async getTargetById(id: string) {
     const [target] = await db.select().from(kpiTargets).where(eq(kpiTargets.id, id)).limit(1);
-    if (!target) throw new Error('Target KPI tidak ditemukan');
+    if (!target) throw new BusinessError('Target KPI tidak ditemukan');
     return target;
   }
 
@@ -685,7 +686,7 @@ export class KpiService {
     effectiveTo: Date;
   }>) {
     const [existing] = await db.select().from(kpiTargets).where(eq(kpiTargets.id, id)).limit(1);
-    if (!existing) throw new Error('Target KPI tidak ditemukan');
+    if (!existing) throw new BusinessError('Target KPI tidak ditemukan');
 
     const [updated] = await db
       .update(kpiTargets)

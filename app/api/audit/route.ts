@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { auditService } from '@/features/audit/audit.service';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,6 +49,6 @@ export async function GET(request: NextRequest) {
     if (error.message === 'Unauthorized') {
       return unauthorizedResponse();
     }
-    return errorResponse(error.message || 'Gagal mengambil audit log');
+    return handleApiError(error);
   }
 }

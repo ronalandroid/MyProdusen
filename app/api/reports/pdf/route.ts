@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 import {
   assertPdfReportAccess,
   buildPdfDocument,
@@ -61,6 +62,6 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     if (error.message === 'PDF_REPORT_FORBIDDEN') return forbiddenResponse('Hanya Superadmin yang dapat download PDF report');
-    return errorResponse(error.message || 'Gagal membuat PDF report', 500);
+    return handleApiError(error);
   }
 }

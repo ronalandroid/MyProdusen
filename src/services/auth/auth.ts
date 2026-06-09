@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
+import { BusinessError } from '@/lib/core/business-error';
 
 export type UserRole = 'SUPERADMIN' | 'LEADER' | 'EMPLOYEE';
 
@@ -12,14 +13,14 @@ function getJwtSecret(): string {
 
   if (!secret) {
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('JWT_SECRET is required in production');
+      throw new BusinessError('JWT_SECRET is required in production');
     }
 
     return 'dev-only-secret-change-me';
   }
 
   if (process.env.NODE_ENV === 'production' && secret.length < 32) {
-    throw new Error('JWT_SECRET must be at least 32 characters in production');
+    throw new BusinessError('JWT_SECRET must be at least 32 characters in production');
   }
 
   return secret;

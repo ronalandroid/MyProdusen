@@ -3,6 +3,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import type { AttendanceExceptionType } from '@/lib/attendance/exception-policy';
 import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
+import { BusinessError } from '@/lib/core/business-error';
 
 export type AttendanceExceptionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
@@ -67,7 +68,7 @@ export class AttendanceExceptionService {
     reviewNote: string;
   }) {
     if (data.status === 'REJECTED' && data.reviewNote.trim().length < 5) {
-      throw new Error('Alasan penolakan minimal 5 karakter');
+      throw new BusinessError('Alasan penolakan minimal 5 karakter');
     }
 
     const [existing] = await db
@@ -77,11 +78,11 @@ export class AttendanceExceptionService {
       .limit(1);
 
     if (!existing) {
-      throw new Error('Exception absensi tidak ditemukan');
+      throw new BusinessError('Exception absensi tidak ditemukan');
     }
 
     if (existing.status !== 'PENDING') {
-      throw new Error('Exception absensi sudah diproses');
+      throw new BusinessError('Exception absensi sudah diproses');
     }
 
     const [updated] = await db

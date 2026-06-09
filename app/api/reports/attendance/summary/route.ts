@@ -9,6 +9,7 @@ import {
 import { hasPermission } from '@/lib/permissions';
 import { fetchAttendanceSummary } from '@/lib/reports/attendance-history';
 import { resolveAttendanceReportRequest } from '@/lib/reports/attendance-history-access';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +30,6 @@ export async function GET(request: NextRequest) {
     return successResponse({ summary, scope: resolution.resolved.scope });
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil ringkasan laporan absensi');
+    return handleApiError(error);
   }
 }

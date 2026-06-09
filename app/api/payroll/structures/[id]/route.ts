@@ -6,6 +6,7 @@ import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse
 import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
 import { logAudit } from '@/lib/audit';
 import { hasPermission } from '@/lib/permissions';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const updateStructureSchema = z.object({
   name: z.string().min(1).optional(),
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     const accessMessage = payrollAccessErrorMessage(error);
     if (accessMessage) return forbiddenResponse(accessMessage);
-    return errorResponse(error.message || 'Gagal mengambil struktur payroll', error.message?.includes('tidak ditemukan') ? 404 : 500);
+    return handleApiError(error);
   }
 }
 
@@ -44,7 +45,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     const accessMessage = payrollAccessErrorMessage(error);
     if (accessMessage) return forbiddenResponse(accessMessage);
-    return errorResponse(error.message || 'Gagal mengubah struktur payroll', 500);
+    return handleApiError(error);
   }
 }
 
@@ -61,6 +62,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     const accessMessage = payrollAccessErrorMessage(error);
     if (accessMessage) return forbiddenResponse(accessMessage);
-    return errorResponse(error.message || 'Gagal menghapus struktur payroll', 500);
+    return handleApiError(error);
   }
 }

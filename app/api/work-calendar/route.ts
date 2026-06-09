@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/middleware';
 import { errorResponse, forbiddenResponse, successResponse, unauthorizedResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
 import { desc, eq } from 'drizzle-orm';
+import { handleApiError } from '@/lib/core/route-handler';
 
 function assertSuperadmin(role: string) {
   if (role !== 'SUPERADMIN') throw new Error('FORBIDDEN');
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     if (error.message === 'FORBIDDEN') return forbiddenResponse('Hanya Superadmin yang dapat melihat kalender kerja');
-    return errorResponse(error.message || 'Gagal mengambil kalender kerja');
+    return handleApiError(error);
   }
 }
 
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     if (error.message === 'FORBIDDEN') return forbiddenResponse('Hanya Superadmin yang dapat membuat kalender kerja');
-    return errorResponse(error.message || 'Gagal membuat kalender kerja');
+    return handleApiError(error);
   }
 }
 
@@ -69,6 +70,6 @@ export async function PUT(request: NextRequest) {
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     if (error.message === 'FORBIDDEN') return forbiddenResponse('Hanya Superadmin yang dapat memperbarui kalender kerja');
-    return errorResponse(error.message || 'Gagal memperbarui kalender kerja');
+    return handleApiError(error);
   }
 }

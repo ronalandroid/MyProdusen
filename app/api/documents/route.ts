@@ -7,6 +7,7 @@ import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse
 import { canAccessEmployeeDocument } from '@/lib/documents/document-policy';
 import { saveEmployeeDocumentFile } from '@/lib/documents/document-storage';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const createDocumentSchema = z.object({
   employeeId: z.string().optional(),
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     return successResponse(documents);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil dokumen');
+    return handleApiError(error);
   }
 }
 
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
     return successResponse(created, 'Dokumen berhasil ditambahkan');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal menyimpan dokumen');
+    return handleApiError(error);
   }
 }
 

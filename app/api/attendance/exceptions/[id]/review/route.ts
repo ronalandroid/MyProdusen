@@ -5,6 +5,7 @@ import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const reviewSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED']),
@@ -34,6 +35,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return successResponse(updated, 'Exception absensi berhasil diproses');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal review exception absensi');
+    return handleApiError(error);
   }
 }

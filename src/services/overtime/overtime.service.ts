@@ -9,6 +9,7 @@ import { eq, and, gte, lte, isNull } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { calculateOvertimeHourlyRate } from '@/lib/overtime/payroll-integration';
 import { payrollPeriodLockService } from '@/features/payroll/payroll-period-lock.service';
+import { BusinessError } from '@/lib/core/business-error';
 
 export class OvertimeService {
   // ============================================
@@ -56,7 +57,7 @@ export class OvertimeService {
       .limit(1);
 
     if (!rate) {
-      throw new Error('Rate lembur tidak ditemukan');
+      throw new BusinessError('Rate lembur tidak ditemukan');
     }
 
     return rate;
@@ -84,7 +85,7 @@ export class OvertimeService {
       .returning();
 
     if (!updated) {
-      throw new Error('Rate lembur tidak ditemukan');
+      throw new BusinessError('Rate lembur tidak ditemukan');
     }
 
     return updated;
@@ -99,7 +100,7 @@ export class OvertimeService {
       .limit(1);
 
     if (usage) {
-      throw new Error('Rate lembur masih digunakan');
+      throw new BusinessError('Rate lembur masih digunakan');
     }
 
     await db.delete(overtimeRates).where(eq(overtimeRates.id, id));
@@ -135,7 +136,7 @@ export class OvertimeService {
       .limit(1);
 
     if (!payroll) {
-      throw new Error('Karyawan belum memiliki struktur gaji');
+      throw new BusinessError('Karyawan belum memiliki struktur gaji');
     }
 
     // Get rate
@@ -209,7 +210,7 @@ export class OvertimeService {
       .limit(1);
 
     if (!result) {
-      throw new Error('Request lembur tidak ditemukan');
+      throw new BusinessError('Request lembur tidak ditemukan');
     }
 
     return result;
@@ -231,7 +232,7 @@ export class OvertimeService {
     await payrollPeriodLockService.assertAttendanceDateEditable(data.overtimeDate || existing.request.overtimeDate, data.reason);
 
     if (existing.request.status !== 'PENDING') {
-      throw new Error('Hanya request dengan status PENDING yang bisa diubah');
+      throw new BusinessError('Hanya request dengan status PENDING yang bisa diubah');
     }
 
     // Recalculate if duration or rate changed
@@ -277,7 +278,7 @@ export class OvertimeService {
     await payrollPeriodLockService.assertAttendanceDateEditable(existing.request.overtimeDate, 'Approval lembur oleh reviewer');
 
     if (existing.request.status !== 'PENDING') {
-      throw new Error('Request sudah diproses');
+      throw new BusinessError('Request sudah diproses');
     }
 
     const [updated] = await db
@@ -300,7 +301,7 @@ export class OvertimeService {
     await payrollPeriodLockService.assertAttendanceDateEditable(existing.request.overtimeDate, rejectedReason);
 
     if (existing.request.status !== 'PENDING') {
-      throw new Error('Request sudah diproses');
+      throw new BusinessError('Request sudah diproses');
     }
 
     const [updated] = await db
@@ -322,11 +323,11 @@ export class OvertimeService {
     const existing = await this.getRequestById(id);
 
     if (existing.request.employeeId !== employeeId) {
-      throw new Error('Tidak memiliki akses');
+      throw new BusinessError('Tidak memiliki akses');
     }
 
     if (existing.request.status !== 'PENDING') {
-      throw new Error('Hanya request PENDING yang bisa dibatalkan');
+      throw new BusinessError('Hanya request PENDING yang bisa dibatalkan');
     }
 
     const [updated] = await db
@@ -345,7 +346,7 @@ export class OvertimeService {
     const existing = await this.getRequestById(id);
 
     if (existing.request.status === 'APPROVED' && existing.request.isPaid) {
-      throw new Error('Request yang sudah dibayar tidak bisa dihapus');
+      throw new BusinessError('Request yang sudah dibayar tidak bisa dihapus');
     }
 
     await db.delete(overtimeRequests).where(eq(overtimeRequests.id, id));

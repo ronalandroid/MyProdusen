@@ -6,6 +6,7 @@ import { getRequestBody } from '@/lib/middleware';
 import { sendAuthEmail } from '@/lib/email';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { getCanonicalAppUrl } from '@/lib/app-url';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,6 +33,6 @@ export async function POST(request: NextRequest) {
 
     return successResponse(null, 'Jika email terdaftar, link reset password akan dikirim.');
   } catch (error: any) {
-    return errorResponse(error.message || 'Gagal memproses lupa password');
+    return handleApiError(error);
   }
 }

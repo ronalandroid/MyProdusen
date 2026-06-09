@@ -5,6 +5,7 @@ import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const rejectSchema = z.object({
   rejectionReason: z.string().min(5, 'Rejection reason must be at least 5 characters'),
@@ -34,6 +35,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return successResponse(rejected, 'Overtime request rejected successfully');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Failed to reject overtime request');
+    return handleApiError(error);
   }
 }

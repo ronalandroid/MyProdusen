@@ -4,6 +4,7 @@ import { employeeService } from '@/services/employees/employee.service';
 import { scheduleService } from '@/services/attendance/schedule.service';
 import { isGpsAccuracyAcceptable, getMaxGpsAccuracyMeters } from '@/lib/geofencing';
 import { errorResponse, successResponse, unauthorizedResponse } from '@/utils/response';
+import { handleApiError } from '@/lib/core/route-handler';
 
 /**
  * POST /api/attendance/validate-location
@@ -98,6 +99,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal memvalidasi lokasi');
+    return handleApiError(error);
   }
 }

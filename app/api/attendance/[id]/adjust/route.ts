@@ -7,6 +7,7 @@ import { payrollPeriodService } from '@/features/payroll/payroll-period.service'
 import { db, attendances } from '@/lib/db';
 import { hasPermission } from '@/lib/permissions';
 import { eq } from 'drizzle-orm';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -73,6 +74,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return successResponse(updatedAttendance, 'Absensi berhasil disesuaikan');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal menyesuaikan absensi');
+    return handleApiError(error);
   }
 }

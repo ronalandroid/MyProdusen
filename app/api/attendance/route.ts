@@ -4,6 +4,7 @@ import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse
 import { requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { employeeService } from '@/services/employees/employee.service';
+import { handleApiError } from '@/lib/core/route-handler';
 
 // Per-user attendance list — always dynamic, never statically cached.
 export const dynamic = 'force-dynamic';
@@ -47,6 +48,6 @@ export async function GET(request: NextRequest) {
     if (error.message === 'Unauthorized') {
       return unauthorizedResponse();
     }
-    return errorResponse(error.message || 'Gagal mengambil data absensi');
+    return handleApiError(error);
   }
 }

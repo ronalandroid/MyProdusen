@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 
 import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
+import { handleApiError } from '@/lib/core/route-handler';
 const createRateSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi'),
   multiplier: z.number().min(1, 'Multiplier minimal 1'),
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
     return successResponse(rates);
   } catch (error: any) {
     console.error('Get overtime rates error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
+    return handleApiError(error);
   }
 }
 
@@ -71,6 +72,6 @@ export async function POST(request: NextRequest) {
       return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
     }
 
-    return errorResponse(error.message || 'Internal server error', 500);
+    return handleApiError(error);
   }
 }

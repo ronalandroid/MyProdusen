@@ -9,6 +9,7 @@ import { getCanonicalAppUrl } from '@/lib/app-url';
 import { logAudit } from '@/lib/audit';
 
 import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
+import { handleApiError } from '@/lib/core/route-handler';
 export async function POST(request: NextRequest) {
   try {
     const rateLimitResult = await rateLimit(request, RATE_LIMITS.REGISTRATION, 'public-register');
@@ -67,6 +68,6 @@ export async function POST(request: NextRequest) {
 
     return successResponse(result, 'Akun berhasil dibuat sebagai Karyawan. Superadmin akan menetapkan divisi, posisi, lokasi kerja, dan shift.');
   } catch (error: any) {
-    return errorResponse(error.message || 'Gagal registrasi');
+    return handleApiError(error);
   }
 }

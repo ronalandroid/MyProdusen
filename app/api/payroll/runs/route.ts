@@ -6,6 +6,7 @@ import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse
 import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
 import { logAudit } from '@/lib/audit';
 import { hasPermission } from '@/lib/permissions';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const createRunSchema = z.object({
   period: z.string().regex(/^\d{4}-\d{2}$/, 'Format periode harus YYYY-MM'),
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     const accessMessage = payrollAccessErrorMessage(error);
     if (accessMessage) return forbiddenResponse(accessMessage);
-    return errorResponse(error.message || 'Gagal mengambil payroll run', 500);
+    return handleApiError(error);
   }
 }
 
@@ -42,6 +43,6 @@ export async function POST(request: NextRequest) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     const accessMessage = payrollAccessErrorMessage(error);
     if (accessMessage) return forbiddenResponse(accessMessage);
-    return errorResponse(error.message || 'Gagal membuat payroll run', 500);
+    return handleApiError(error);
   }
 }

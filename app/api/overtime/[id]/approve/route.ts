@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -22,6 +23,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return successResponse(approved, 'Overtime request approved successfully');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Failed to approve overtime request');
+    return handleApiError(error);
   }
 }

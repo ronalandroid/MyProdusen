@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
 import { hasPermission } from '@/lib/permissions';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(
   request: NextRequest,
@@ -19,7 +20,7 @@ export async function GET(
     return successResponse(template);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil template KPI');
+    return handleApiError(error);
   }
 }
 
@@ -41,7 +42,7 @@ export async function PATCH(
     return successResponse(template, 'Template KPI berhasil diperbarui');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal memperbarui template KPI');
+    return handleApiError(error);
   }
 }
 
@@ -61,6 +62,6 @@ export async function DELETE(
     return successResponse(null, 'Template KPI berhasil dihapus');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal menghapus template KPI');
+    return handleApiError(error);
   }
 }

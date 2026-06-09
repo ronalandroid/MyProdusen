@@ -5,6 +5,7 @@ import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
 import { hasPermission } from '@/lib/permissions';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const updatePeriodSchema = z.object({
   name: z.string().min(3).optional(),
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return successResponse(period);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Failed to fetch payroll period');
+    return handleApiError(error);
   }
 }
 
@@ -54,7 +55,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return successResponse(updated, 'Payroll period updated successfully');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Failed to update payroll period');
+    return handleApiError(error);
   }
 }
 
@@ -74,6 +75,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     return successResponse(period, 'Payroll period deleted successfully');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Failed to delete payroll period');
+    return handleApiError(error);
   }
 }

@@ -10,11 +10,12 @@ describe('leave balance insufficient guard source contract', () => {
     expect(service).toContain("if (data.type === 'LEAVE')");
     expect(service).toContain('leaveBalanceService.getBalance');
     expect(service).toContain('balance.available < requestedDays');
-    expect(service).toContain("(error as any).code = 'LEAVE_BALANCE_INSUFFICIENT';");
+    expect(service).toContain("code: 'LEAVE_BALANCE_INSUFFICIENT'");
+    expect(service).toContain("throw new BusinessError(");
   });
 
-  it('returns explicit insufficient balance response from API route', () => {
-    expect(route).toContain("error.code === 'LEAVE_BALANCE_INSUFFICIENT'");
-    expect(route).toContain("return errorResponse(error.message || 'Saldo cuti tidak cukup', 400);");
+  it('returns explicit insufficient balance response through centralized API error handling', () => {
+    expect(route).toContain("return handleApiError(error);");
+    expect(route).not.toContain("return errorResponse(error.message || 'Saldo cuti tidak cukup', 400);");
   });
 });

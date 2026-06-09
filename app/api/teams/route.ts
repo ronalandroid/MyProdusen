@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/middleware';
 import { forbiddenResponse, successResponse, unauthorizedResponse, errorResponse } from '@/utils/response';
 import { leaderService } from '@/services/leader/leader.service';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     return successResponse(await leaderService.listTeams());
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil tim', error.status || 400);
+    return handleApiError(error);
   }
 }
 
@@ -24,6 +25,6 @@ export async function POST(request: NextRequest) {
     return successResponse(team, 'Tim berhasil dibuat', 201);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal membuat tim', error.status || 400);
+    return handleApiError(error);
   }
 }

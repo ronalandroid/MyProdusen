@@ -3,6 +3,7 @@ import { db, users, employees, attendances, leaveRequests, kpiResults, notificat
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse } from '@/utils/response';
 import { eq, and, gte, lte, sql, desc, inArray } from 'drizzle-orm';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -162,7 +163,7 @@ export async function GET(request: NextRequest) {
     if (error.message === 'Unauthorized') {
       return unauthorizedResponse();
     }
-    return errorResponse(error.message || 'Gagal mengambil statistik dashboard');
+    return handleApiError(error);
   }
 }
 

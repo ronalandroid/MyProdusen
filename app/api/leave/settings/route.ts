@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { leaveBalanceService } from '@/features/leave/leave-balance.service';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     return successResponse({ globalQuota });
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil pengaturan cuti');
+    return handleApiError(error);
   }
 }
 
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     return errorResponse('Aksi tidak dikenal', 400);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal memproses pengaturan cuti');
+    return handleApiError(error);
   }
 }
 
@@ -67,6 +68,6 @@ export async function PUT(request: NextRequest) {
     return successResponse(updated, 'Jatah cuti karyawan berhasil diperbarui');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal memperbarui jatah cuti karyawan');
+    return handleApiError(error);
   }
 }

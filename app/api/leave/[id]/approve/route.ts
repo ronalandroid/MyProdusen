@@ -6,6 +6,7 @@ import { hasPermission } from '@/lib/permissions';
 import { employeeService } from '@/services/employees/employee.service';
 import { logAudit } from '@/lib/audit';
 import { payrollPeriodService } from '@/features/payroll/payroll-period.service';
+import { handleApiError } from '@/lib/core/route-handler';
 
 async function canApproveLeave(user: Awaited<ReturnType<typeof requireAuth>>, employeeId: string) {
   if (user.role === 'SUPERADMIN') {
@@ -79,6 +80,6 @@ export async function POST(
     if (error.message === 'Pengajuan tidak ditemukan') {
       return notFoundResponse(error.message);
     }
-    return errorResponse(error.message || 'Gagal menyetujui pengajuan');
+    return handleApiError(error);
   }
 }

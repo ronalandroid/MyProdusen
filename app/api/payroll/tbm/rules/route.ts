@@ -3,6 +3,7 @@ import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { forbiddenResponse, successResponse, unauthorizedResponse, errorResponse } from '@/utils/response';
 import { tbmPayrollService } from '@/src/services/payroll/tbm-payroll.service';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     return successResponse(await tbmPayrollService.listPayrollRules());
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil aturan gaji', error.status || 500);
+    return handleApiError(error);
   }
 }
 
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
     return successResponse(row, 'Aturan gaji berhasil disimpan', body.id ? 200 : 201);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal menyimpan aturan gaji', error.status || 500);
+    return handleApiError(error);
   }
 }
 

@@ -16,6 +16,7 @@ import {
   type AttendanceHistoryRow,
 } from '@/lib/reports/attendance-history';
 import { resolveAttendanceReportRequest } from '@/lib/reports/attendance-history-access';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const CSV_COLUMNS: { key: keyof CsvRow; label: string }[] = [
   { key: 'date', label: 'Date' },
@@ -159,7 +160,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil laporan absensi');
+    return handleApiError(error);
   }
 }
 

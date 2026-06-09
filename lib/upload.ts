@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
+import { BusinessError } from '@/lib/core/business-error';
 
 /**
  * Selfie upload module.
@@ -70,10 +71,11 @@ export interface SaveProfileAvatarInput {
   employeeId: string;
 }
 
-export class UploadError extends Error {
+export class UploadError extends BusinessError {
   constructor(message: string) {
-    super(message);
+    super(message, { status: 400 });
     this.name = 'UploadError';
+    Object.setPrototypeOf(this, UploadError.prototype);
   }
 }
 

@@ -7,6 +7,7 @@ import { canManageRole, hasPermission } from '@/lib/permissions';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { logAudit } from '@/lib/audit';
 import { sendAuthEmail } from '@/lib/email';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,6 +44,6 @@ export async function POST(request: NextRequest) {
     if (error.message === 'Unauthorized') {
       return unauthorizedResponse();
     }
-    return errorResponse(error.message || 'Gagal membuat user');
+    return handleApiError(error);
   }
 }

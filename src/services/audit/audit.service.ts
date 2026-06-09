@@ -1,6 +1,7 @@
 import { db, auditLogs } from '@/lib/db';
 import { eq, and, gte, lte, desc, ilike, or } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { BusinessError } from '@/lib/core/business-error';
 
 export interface AuditLogData {
   userId: string;
@@ -100,7 +101,7 @@ export class AuditService {
       .limit(1);
 
     if (!log) {
-      throw new Error('Audit log tidak ditemukan');
+      throw new BusinessError('Audit log tidak ditemukan');
     }
 
     return log;

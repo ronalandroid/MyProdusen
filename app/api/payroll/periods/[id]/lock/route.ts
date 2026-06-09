@@ -5,6 +5,7 @@ import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
 import { hasPermission } from '@/lib/permissions';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const lockSchema = z.object({
   reason: z.string().min(10, 'Reason must be at least 10 characters'),
@@ -38,6 +39,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return successResponse(locked, 'Payroll period locked successfully');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Failed to lock payroll period');
+    return handleApiError(error);
   }
 }

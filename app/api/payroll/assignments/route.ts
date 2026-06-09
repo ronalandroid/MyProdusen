@@ -6,6 +6,7 @@ import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse
 import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
 import { logAudit } from '@/lib/audit';
 import { hasPermission } from '@/lib/permissions';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const assignmentSchema = z.object({
   employeeId: z.string().min(1),
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     const accessMessage = payrollAccessErrorMessage(error);
     if (accessMessage) return forbiddenResponse(accessMessage);
-    return errorResponse(error.message || 'Gagal mengambil assignment payroll', 500);
+    return handleApiError(error);
   }
 }
 
@@ -51,6 +52,6 @@ export async function POST(request: NextRequest) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     const accessMessage = payrollAccessErrorMessage(error);
     if (accessMessage) return forbiddenResponse(accessMessage);
-    return errorResponse(error.message || 'Gagal assign payroll karyawan', 500);
+    return handleApiError(error);
   }
 }

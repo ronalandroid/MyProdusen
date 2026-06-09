@@ -3,6 +3,7 @@ import { payrollService } from '@/src/services/payroll/payroll.service';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
 import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,6 +19,6 @@ export async function GET(request: NextRequest) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     const accessMessage = payrollAccessErrorMessage(error);
     if (accessMessage) return forbiddenResponse(accessMessage);
-    return errorResponse(error.message || 'Gagal mengambil payroll pribadi', 500);
+    return handleApiError(error);
   }
 }

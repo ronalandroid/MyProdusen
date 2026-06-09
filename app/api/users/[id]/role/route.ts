@@ -9,6 +9,7 @@ import { logAudit } from '@/lib/audit';
 import { getUserEmailEvents, sendAuthEmail } from '@/lib/email';
 import { leaderService } from '@/services/leader/leader.service';
 import { eq } from 'drizzle-orm';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const updateRoleSchema = z.object({
   role: z.enum(['SUPERADMIN', 'LEADER', 'EMPLOYEE']),
@@ -56,6 +57,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return successResponse(updated, 'Role user berhasil diperbarui');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengubah role user', error.status || 400);
+    return handleApiError(error);
   }
 }

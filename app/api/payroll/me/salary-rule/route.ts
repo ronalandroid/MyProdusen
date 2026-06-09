@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse } from '@/utils/response';
 import { tbmPayrollService } from '@/src/services/payroll/tbm-payroll.service';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,6 +10,6 @@ export async function GET(request: NextRequest) {
     return successResponse(await tbmPayrollService.getEmployeeOwnSalary(user.userId));
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil aturan gaji pribadi', error.status || 500);
+    return handleApiError(error);
   }
 }

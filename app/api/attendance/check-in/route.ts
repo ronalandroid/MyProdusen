@@ -12,6 +12,7 @@ import { recordGeoOutcome } from '@/lib/attendance/geo-review-flow';
 import { acquireIdempotencyLock } from '@/lib/core/idempotency';
 import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 function getFailureAuditAction(error: unknown, type: 'CHECK_IN' | 'CHECK_OUT') {
   const message = error instanceof Error ? error.message : String(error || '');
@@ -151,6 +152,6 @@ export async function POST(request: NextRequest) {
       });
     }
     const status = error instanceof UploadError ? 400 : error.status || 400;
-    return errorResponse(error.message || 'Check-in gagal', status);
+    return handleApiError(error);
   }
 }

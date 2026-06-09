@@ -5,6 +5,7 @@ import { errorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/
 import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
 import { logAudit } from '@/lib/audit';
 import { hasPermission } from '@/lib/permissions';
+import { handleApiError } from '@/lib/core/route-handler';
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
@@ -50,6 +51,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     const accessMessage = payrollAccessErrorMessage(error);
     if (accessMessage) return forbiddenResponse(accessMessage);
-    return errorResponse(error.message || 'Gagal download payslip', 500);
+    return handleApiError(error);
   }
 }

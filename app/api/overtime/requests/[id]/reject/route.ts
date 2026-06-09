@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
 import { logAudit } from '@/lib/audit';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const rejectSchema = z.object({
   rejectedReason: z.string().min(10, 'Alasan penolakan minimal 10 karakter'),
@@ -41,6 +42,6 @@ export async function POST(
       return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
     }
 
-    return errorResponse(error.message || 'Internal server error', 500);
+    return handleApiError(error);
   }
 }

@@ -3,6 +3,7 @@ import { announcementService } from '@/src/services/announcement/announcement.se
 import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const createAnnouncementSchema = z.object({
   title: z.string().min(1, 'Title wajib diisi'),
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     return successResponse(announcements);
   } catch (error: any) {
     console.error('Get announcements error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
+    return handleApiError(error);
   }
 }
 
@@ -68,6 +69,6 @@ export async function POST(request: NextRequest) {
       return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
     }
 
-    return errorResponse(error.message || 'Internal server error', 500);
+    return handleApiError(error);
   }
 }

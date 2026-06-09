@@ -6,6 +6,7 @@ import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse
 import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
 import { logAudit } from '@/lib/audit';
 import { hasPermission } from '@/lib/permissions';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const createStructureSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi'),
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     const accessMessage = payrollAccessErrorMessage(error);
     if (accessMessage) return forbiddenResponse(accessMessage);
-    return errorResponse(error.message || 'Gagal mengambil struktur payroll', 500);
+    return handleApiError(error);
   }
 }
 
@@ -43,6 +44,6 @@ export async function POST(request: NextRequest) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     const accessMessage = payrollAccessErrorMessage(error);
     if (accessMessage) return forbiddenResponse(accessMessage);
-    return errorResponse(error.message || 'Gagal membuat struktur payroll', 500);
+    return handleApiError(error);
   }
 }

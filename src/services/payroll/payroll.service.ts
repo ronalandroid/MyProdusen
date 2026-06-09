@@ -18,6 +18,7 @@ import {
 import { eq, and, gte, lte, isNull, sql, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { logAudit } from '@/lib/audit';
+import { BusinessError } from '@/lib/core/business-error';
 
 export class PayrollService {
   // ============================================
@@ -64,7 +65,7 @@ export class PayrollService {
       .limit(1);
 
     if (!structure) {
-      throw new Error('Struktur gaji tidak ditemukan');
+      throw new BusinessError('Struktur gaji tidak ditemukan');
     }
 
     // Get components
@@ -97,7 +98,7 @@ export class PayrollService {
       .returning();
 
     if (!updated) {
-      throw new Error('Struktur gaji tidak ditemukan');
+      throw new BusinessError('Struktur gaji tidak ditemukan');
     }
 
     return updated;
@@ -119,7 +120,7 @@ export class PayrollService {
       .limit(1);
 
     if (usage) {
-      throw new Error('Struktur gaji masih digunakan oleh karyawan');
+      throw new BusinessError('Struktur gaji masih digunakan oleh karyawan');
     }
 
     await db
@@ -174,7 +175,7 @@ export class PayrollService {
       .returning();
 
     if (!updated) {
-      throw new Error('Komponen gaji tidak ditemukan');
+      throw new BusinessError('Komponen gaji tidak ditemukan');
     }
 
     return updated;
@@ -211,7 +212,7 @@ export class PayrollService {
       .limit(1);
 
     if (activeRun) {
-      throw new Error('Assignment payroll tidak dapat diubah setelah ada payroll disetujui/dibayar');
+      throw new BusinessError('Assignment payroll tidak dapat diubah setelah ada payroll disetujui/dibayar');
     }
 
     // End previous payroll assignment
@@ -274,7 +275,7 @@ export class PayrollService {
       .limit(1);
 
     if (!assignment) {
-      throw new Error('Data payroll karyawan tidak ditemukan');
+      throw new BusinessError('Data payroll karyawan tidak ditemukan');
     }
 
     await this.assertNoFinalPayrollForEmployee(assignment.employeeId);
@@ -289,7 +290,7 @@ export class PayrollService {
       .returning();
 
     if (!updated) {
-      throw new Error('Data payroll karyawan tidak ditemukan');
+      throw new BusinessError('Data payroll karyawan tidak ditemukan');
     }
 
     return updated;
@@ -313,7 +314,7 @@ export class PayrollService {
       .limit(1);
 
     if (existing) {
-      throw new Error('Payroll untuk periode ini sudah ada');
+      throw new BusinessError('Payroll untuk periode ini sudah ada');
     }
 
     const [run] = await db
@@ -339,11 +340,11 @@ export class PayrollService {
       .limit(1);
 
     if (!run) {
-      throw new Error('Payroll run tidak ditemukan');
+      throw new BusinessError('Payroll run tidak ditemukan');
     }
 
     if (run.status !== 'DRAFT') {
-      throw new Error('Payroll sudah dikalkulasi');
+      throw new BusinessError('Payroll sudah dikalkulasi');
     }
 
     await db.delete(payrollItems).where(eq(payrollItems.runId, runId));
@@ -647,11 +648,11 @@ export class PayrollService {
       .limit(1);
 
     if (!run) {
-      throw new Error('Payroll run tidak ditemukan');
+      throw new BusinessError('Payroll run tidak ditemukan');
     }
 
     if (run.status !== 'CALCULATED') {
-      throw new Error('Payroll belum dikalkulasi');
+      throw new BusinessError('Payroll belum dikalkulasi');
     }
 
     const [updated] = await db
@@ -690,11 +691,11 @@ export class PayrollService {
       .limit(1);
 
     if (!run) {
-      throw new Error('Payroll run tidak ditemukan');
+      throw new BusinessError('Payroll run tidak ditemukan');
     }
 
     if (run.status !== 'APPROVED') {
-      throw new Error('Hanya payroll approved yang dapat ditandai paid');
+      throw new BusinessError('Hanya payroll approved yang dapat ditandai paid');
     }
 
     const [updated] = await db
@@ -714,11 +715,11 @@ export class PayrollService {
       .limit(1);
 
     if (!run) {
-      throw new Error('Payroll run tidak ditemukan');
+      throw new BusinessError('Payroll run tidak ditemukan');
     }
 
     if (run.status !== 'PAID') {
-      throw new Error('Hanya payroll paid yang dapat ditandai unpaid');
+      throw new BusinessError('Hanya payroll paid yang dapat ditandai unpaid');
     }
 
     const [updated] = await db
@@ -759,7 +760,7 @@ export class PayrollService {
       .limit(1);
 
     if (!run) {
-      throw new Error('Payroll run tidak ditemukan');
+      throw new BusinessError('Payroll run tidak ditemukan');
     }
 
     // Get items
@@ -797,7 +798,7 @@ export class PayrollService {
       .limit(1);
 
     if (!row) {
-      throw new Error('Payslip tidak ditemukan');
+      throw new BusinessError('Payslip tidak ditemukan');
     }
 
     return row;
@@ -838,7 +839,7 @@ export class PayrollService {
       .limit(1);
 
     if (finalized) {
-      throw new Error('Struktur payroll yang sudah masuk payroll approved/paid tidak dapat diedit langsung');
+      throw new BusinessError('Struktur payroll yang sudah masuk payroll approved/paid tidak dapat diedit langsung');
     }
   }
 
@@ -851,7 +852,7 @@ export class PayrollService {
       .limit(1);
 
     if (finalized) {
-      throw new Error('Payroll karyawan yang sudah approved/paid tidak dapat diedit langsung');
+      throw new BusinessError('Payroll karyawan yang sudah approved/paid tidak dapat diedit langsung');
     }
   }
 
@@ -927,7 +928,7 @@ export class PayrollService {
 
   async getPayrollRuleById(id: string) {
     const [rule] = await db.select().from(payrollRules).where(eq(payrollRules.id, id)).limit(1);
-    if (!rule) throw new Error('Aturan payroll tidak ditemukan');
+    if (!rule) throw new BusinessError('Aturan payroll tidak ditemukan');
     return rule;
   }
 
@@ -946,7 +947,7 @@ export class PayrollService {
     effectiveTo: Date | null;
   }>) {
     const [existing] = await db.select().from(payrollRules).where(eq(payrollRules.id, id)).limit(1);
-    if (!existing) throw new Error('Aturan payroll tidak ditemukan');
+    if (!existing) throw new BusinessError('Aturan payroll tidak ditemukan');
 
     const [updated] = await db
       .update(payrollRules)

@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/middleware';
 import { errorResponse, forbiddenResponse, successResponse, unauthorizedResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
 import { and, desc, eq } from 'drizzle-orm';
+import { handleApiError } from '@/lib/core/route-handler';
 
 function assertSuperadmin(role: string) {
   if (role !== 'SUPERADMIN') throw new Error('FORBIDDEN');
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     if (error.message === 'FORBIDDEN') return forbiddenResponse('Hanya Superadmin yang dapat mengelola kebijakan absensi');
-    return errorResponse(error.message || 'Gagal mengambil kebijakan absensi');
+    return handleApiError(error);
   }
 }
 
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     if (error.message === 'FORBIDDEN') return forbiddenResponse('Hanya Superadmin yang dapat membuat kebijakan absensi');
-    return errorResponse(error.message || 'Gagal membuat kebijakan absensi');
+    return handleApiError(error);
   }
 }
 
@@ -91,6 +92,6 @@ export async function PUT(request: NextRequest) {
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     if (error.message === 'FORBIDDEN') return forbiddenResponse('Hanya Superadmin yang dapat memperbarui kebijakan absensi');
-    return errorResponse(error.message || 'Gagal memperbarui kebijakan absensi');
+    return handleApiError(error);
   }
 }

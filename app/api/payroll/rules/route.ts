@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { payrollService } from '@/src/services/payroll/payroll.service';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     return successResponse(rules);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil aturan payroll');
+    return handleApiError(error);
   }
 }
 
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
     return successResponse(rule, 'Aturan payroll berhasil ditambahkan', 201);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal menambahkan aturan payroll');
+    return handleApiError(error);
   }
 }
 
@@ -115,6 +116,6 @@ export async function PUT(request: NextRequest) {
     return successResponse(rule, 'Aturan payroll berhasil diperbarui');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal memperbarui aturan payroll');
+    return handleApiError(error);
   }
 }

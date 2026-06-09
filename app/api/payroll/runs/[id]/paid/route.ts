@@ -6,6 +6,7 @@ import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/ac
 import { logAudit } from '@/lib/audit';
 import { hasPermission } from '@/lib/permissions';
 import { notifyUser } from '@/lib/notifications/dispatch';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -26,6 +27,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     const accessMessage = payrollAccessErrorMessage(error);
     if (accessMessage) return forbiddenResponse(accessMessage);
-    return errorResponse(error.message || 'Gagal menandai payroll paid', 500);
+    return handleApiError(error);
   }
 }

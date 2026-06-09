@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { kpiService } from '@/services/kpi/kpi.service';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     return successResponse(metrics);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil metrik KPI');
+    return handleApiError(error);
   }
 }
 
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     return successResponse(metric, 'Metrik KPI berhasil ditambahkan');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal menambahkan metrik KPI');
+    return handleApiError(error);
   }
 }
 
@@ -46,6 +47,6 @@ export async function PUT(request: NextRequest) {
     return successResponse(metric, 'Metrik KPI berhasil diperbarui');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal memperbarui metrik KPI');
+    return handleApiError(error);
   }
 }

@@ -5,6 +5,7 @@ import { errorResponse, successResponse, validationErrorResponse } from '@/utils
 import { getRequestBody } from '@/lib/middleware';
 import { sendAuthEmail } from '@/lib/email';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,6 +26,6 @@ export async function POST(request: NextRequest) {
 
     return successResponse({ userId: result.userId }, 'Password berhasil direset');
   } catch (error: any) {
-    return errorResponse(error.message || 'Gagal reset password');
+    return handleApiError(error);
   }
 }

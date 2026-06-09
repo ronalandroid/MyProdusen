@@ -6,6 +6,7 @@ import { getRequestBody } from '@/lib/middleware';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { sendAuthEmail } from '@/lib/email';
 import { getCanonicalAppUrl } from '@/lib/app-url';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,6 +33,6 @@ export async function POST(request: NextRequest) {
 
     return successResponse(null, 'Jika akun belum aktif, link aktivasi sudah dikirim ke inbox email.');
   } catch (error: any) {
-    return errorResponse(error.message || 'Gagal mengirim email aktivasi');
+    return handleApiError(error);
   }
 }

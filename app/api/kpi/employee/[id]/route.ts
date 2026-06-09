@@ -5,6 +5,7 @@ import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse
 import { hasPermission } from '@/lib/permissions';
 import { db, employees } from '@/lib/db';
 import { eq } from 'drizzle-orm';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -31,6 +32,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return successResponse(summary);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil ringkasan KPI karyawan');
+    return handleApiError(error);
   }
 }

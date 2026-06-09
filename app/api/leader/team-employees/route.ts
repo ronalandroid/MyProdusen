@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/middleware';
 import { forbiddenResponse, successResponse, unauthorizedResponse, errorResponse } from '@/utils/response';
 import { leaderService } from '@/services/leader/leader.service';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,6 +12,6 @@ export async function GET(request: NextRequest) {
     return successResponse(await leaderService.getTeamEmployeesForLeader(user.userId, teamId));
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil anggota tim', error.status || 400);
+    return handleApiError(error);
   }
 }

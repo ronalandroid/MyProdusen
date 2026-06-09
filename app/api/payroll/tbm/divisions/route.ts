@@ -3,6 +3,7 @@ import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { forbiddenResponse, successResponse, unauthorizedResponse, errorResponse } from '@/utils/response';
 import { tbmPayrollService } from '@/src/services/payroll/tbm-payroll.service';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 function requireSuperadmin(role: string) {
   return role === 'SUPERADMIN';
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
     return successResponse(await tbmPayrollService.listDivisions());
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil divisi', error.status || 500);
+    return handleApiError(error);
   }
 }
 
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     return successResponse(row, 'Divisi berhasil disimpan', body.id ? 200 : 201);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal menyimpan divisi', error.status || 500);
+    return handleApiError(error);
   }
 }
 

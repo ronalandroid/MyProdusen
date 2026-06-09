@@ -10,6 +10,7 @@ import { payrollPeriodLockService } from '@/features/payroll/payroll-period-lock
 import { validateGpsAttendance } from '@/lib/attendance/gps-validation';
 import { nanoid } from 'nanoid';
 import { calculateAttendancePayrollImpact, DEFAULT_ATTENDANCE_POLICY } from '@/services/attendance/attendance-payroll-impact.service';
+import { BusinessError } from '@/lib/core/business-error';
 
 export type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'SICK' | 'PERMISSION';
 
@@ -76,27 +77,27 @@ export class AttendanceService {
       .limit(1);
 
     if (!employee) {
-      throw new Error('Karyawan tidak ditemukan');
+      throw new BusinessError('Karyawan tidak ditemukan');
     }
 
     if (employee.status !== 'ACTIVE') {
-      throw new Error('Karyawan tidak aktif');
+      throw new BusinessError('Karyawan tidak aktif');
     }
 
     if (!employee.defaultLocationId) {
-      throw new Error('Lokasi kerja default belum ditetapkan untuk karyawan');
+      throw new BusinessError('Lokasi kerja default belum ditetapkan untuk karyawan');
     }
 
     if (employee.defaultLocationId !== data.workLocationId) {
-      throw new Error('Lokasi kerja tidak sesuai dengan penugasan karyawan');
+      throw new BusinessError('Lokasi kerja tidak sesuai dengan penugasan karyawan');
     }
 
     if (!employee.defaultShiftId) {
-      throw new Error('Shift default belum ditetapkan untuk karyawan');
+      throw new BusinessError('Shift default belum ditetapkan untuk karyawan');
     }
 
     if (data.shiftId && data.shiftId !== employee.defaultShiftId) {
-      throw new Error('Shift tidak sesuai dengan penugasan karyawan');
+      throw new BusinessError('Shift tidak sesuai dengan penugasan karyawan');
     }
 
     // Check if already checked in today
@@ -118,7 +119,7 @@ export class AttendanceService {
       .limit(1);
 
     if (existingCheckIn) {
-      throw new Error('Anda sudah melakukan check-in hari ini');
+      throw new BusinessError('Anda sudah melakukan check-in hari ini');
     }
 
     // Block clock-in when the payroll period covering today is already locked —
@@ -133,11 +134,11 @@ export class AttendanceService {
       .limit(1);
 
     if (!workLocation) {
-      throw new Error('Lokasi kerja tidak ditemukan');
+      throw new BusinessError('Lokasi kerja tidak ditemukan');
     }
 
     if (!workLocation.isActive) {
-      throw new Error('Lokasi kerja tidak aktif');
+      throw new BusinessError('Lokasi kerja tidak aktif');
     }
 
     const attendancePolicy = await this.getActiveAttendancePolicy(employee);
@@ -161,7 +162,7 @@ export class AttendanceService {
     );
 
     if (validation.decision === 'reject') {
-      throw new Error(validation.reason);
+      throw new BusinessError(validation.reason);
     }
 
     const distance = validation.distanceMeters ?? 0;
@@ -180,11 +181,11 @@ export class AttendanceService {
     }
 
     if (!shift) {
-      throw new Error('Shift kerja tidak ditemukan');
+      throw new BusinessError('Shift kerja tidak ditemukan');
     }
 
     if (!shift.isActive) {
-      throw new Error('Shift kerja tidak aktif');
+      throw new BusinessError('Shift kerja tidak aktif');
     }
 
     // Calculate late minutes and payroll impact from configurable policy.
@@ -355,7 +356,7 @@ export class AttendanceService {
       // business error instead of a raw 500.
       const message = txError instanceof Error ? txError.message : String(txError || '');
       if (/duplicate key|unique constraint|attendance_employee_date/i.test(message)) {
-        throw new Error('Anda sudah melakukan check-in hari ini');
+        throw new BusinessError('Anda sudah melakukan check-in hari ini');
       }
       throw txError;
     }
@@ -402,11 +403,11 @@ export class AttendanceService {
       .limit(1);
 
     if (!attendance) {
-      throw new Error('Anda belum melakukan check-in hari ini');
+      throw new BusinessError('Anda belum melakukan check-in hari ini');
     }
 
     if (attendance.checkOutTime) {
-      throw new Error('Anda sudah melakukan check-out hari ini');
+      throw new BusinessError('Anda sudah melakukan check-out hari ini');
     }
 
     // Guard against mutating a locked payroll period (uses the work-date the
@@ -421,7 +422,7 @@ export class AttendanceService {
       .limit(1);
 
     if (!workLocation) {
-      throw new Error('Lokasi kerja tidak ditemukan');
+      throw new BusinessError('Lokasi kerja tidak ditemukan');
     }
 
     // Hardened GPS + geo-fence validation. Server is the only source of truth.
@@ -442,7 +443,7 @@ export class AttendanceService {
     );
 
     if (validation.decision === 'reject') {
-      throw new Error(validation.reason);
+      throw new BusinessError(validation.reason);
     }
 
     const distance = validation.distanceMeters ?? 0;
@@ -516,7 +517,7 @@ export class AttendanceService {
 
       if (!row) {
         // Lost the race — another request already checked out.
-        throw new Error('Anda sudah melakukan check-out hari ini');
+        throw new BusinessError('Anda sudah melakukan check-out hari ini');
       }
 
       await tx.update(attendanceDailySummaries).set({
@@ -581,7 +582,7 @@ export class AttendanceService {
     adjustedBy: string;
   }) {
     if (!data.reason || data.reason.trim().length < 5) {
-      throw new Error('Alasan penyesuaian wajib diisi minimal 5 karakter');
+      throw new BusinessError('Alasan penyesuaian wajib diisi minimal 5 karakter');
     }
 
     const [attendance] = await db
@@ -602,7 +603,7 @@ export class AttendanceService {
       .returning();
 
     if (!attendance) {
-      throw new Error('Data absensi tidak ditemukan');
+      throw new BusinessError('Data absensi tidak ditemukan');
     }
 
     // Invalidate attendance caches

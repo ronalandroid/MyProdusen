@@ -4,6 +4,7 @@ import { scheduleService } from '@/services/attendance/schedule.service';
 import { employeeService } from '@/services/employees/employee.service';
 import { requireAuth } from '@/lib/middleware';
 import { errorResponse, successResponse, unauthorizedResponse } from '@/utils/response';
+import { handleApiError } from '@/lib/core/route-handler';
 
 // Attendance "today" must never be served from a cached/prerendered response —
 // it is per-user and changes the instant a clock event lands.
@@ -37,6 +38,6 @@ export async function GET(request: NextRequest) {
       return unauthorizedResponse();
     }
 
-    return errorResponse(error.message || 'Gagal mengambil absensi hari ini');
+    return handleApiError(error);
   }
 }

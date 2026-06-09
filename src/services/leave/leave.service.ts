@@ -6,6 +6,7 @@ import { CacheStrategy } from '@/lib/cache/cache-strategies';
 import { notifyUser } from '@/lib/notifications/dispatch';
 import { calculateLeaveDays } from '@/lib/leave/balance-ledger';
 import { leaveBalanceService } from '@/features/leave/leave-balance.service';
+import { BusinessError } from '@/lib/core/business-error';
 
 export type LeaveType = 'LEAVE' | 'SICK' | 'PERMISSION';
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -20,7 +21,7 @@ export class LeaveService {
   }) {
     // Validate dates
     if (data.startDate > data.endDate) {
-      throw new Error('Tanggal mulai tidak boleh lebih besar dari tanggal selesai');
+      throw new BusinessError('Tanggal mulai tidak boleh lebih besar dari tanggal selesai');
     }
 
     // Check if employee exists
@@ -31,7 +32,7 @@ export class LeaveService {
       .limit(1);
 
     if (!employee) {
-      throw new Error('Karyawan tidak ditemukan');
+      throw new BusinessError('Karyawan tidak ditemukan');
     }
 
     const [overlap] = await db
@@ -46,16 +47,17 @@ export class LeaveService {
       .limit(1);
 
     if (overlap) {
-      throw new Error('Pengajuan cuti overlap dengan pengajuan aktif yang sudah ada');
+      throw new BusinessError('Pengajuan cuti overlap dengan pengajuan aktif yang sudah ada');
     }
 
     if (data.type === 'LEAVE') {
       const requestedDays = calculateLeaveDays(data.startDate, data.endDate);
       const balance = await leaveBalanceService.getBalance(data.employeeId, data.startDate.getFullYear());
       if (balance.available < requestedDays) {
-        const error = new Error(`Saldo cuti tidak cukup. Tersedia ${balance.available} hari, diajukan ${requestedDays} hari.`);
-        (error as any).code = 'LEAVE_BALANCE_INSUFFICIENT';
-        throw error;
+        throw new BusinessError(
+          `Saldo cuti tidak cukup. Tersedia ${balance.available} hari, diajukan ${requestedDays} hari.`,
+          { code: 'LEAVE_BALANCE_INSUFFICIENT', status: 400 },
+        );
       }
     }
 
@@ -174,7 +176,7 @@ export class LeaveService {
           .limit(1);
 
         if (!leave) {
-          throw new Error('Pengajuan izin tidak ditemukan');
+          throw new BusinessError('Pengajuan izin tidak ditemukan');
         }
 
         // Get employee data
@@ -204,11 +206,11 @@ export class LeaveService {
       .limit(1);
 
     if (!leave) {
-      throw new Error('Pengajuan izin tidak ditemukan');
+      throw new BusinessError('Pengajuan izin tidak ditemukan');
     }
 
     if (leave.status !== 'PENDING') {
-      throw new Error('Pengajuan izin sudah diproses');
+      throw new BusinessError('Pengajuan izin sudah diproses');
     }
 
     const [updated] = await db
@@ -245,11 +247,11 @@ export class LeaveService {
       .limit(1);
 
     if (!leave) {
-      throw new Error('Pengajuan izin tidak ditemukan');
+      throw new BusinessError('Pengajuan izin tidak ditemukan');
     }
 
     if (leave.status !== 'PENDING') {
-      throw new Error('Pengajuan izin sudah diproses');
+      throw new BusinessError('Pengajuan izin sudah diproses');
     }
 
     const [updated] = await db
@@ -287,11 +289,11 @@ export class LeaveService {
       .limit(1);
 
     if (!leave) {
-      throw new Error('Pengajuan izin tidak ditemukan');
+      throw new BusinessError('Pengajuan izin tidak ditemukan');
     }
 
     if (leave.status !== 'PENDING') {
-      throw new Error('Hanya pengajuan dengan status PENDING yang dapat dihapus');
+      throw new BusinessError('Hanya pengajuan dengan status PENDING yang dapat dihapus');
     }
 
     await db

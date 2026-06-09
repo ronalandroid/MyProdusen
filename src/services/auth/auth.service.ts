@@ -5,6 +5,7 @@ import { eq, or, asc, and, sql } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { BaseService } from '@/lib/core/base-service';
 import { AppError } from '@/lib/core/app-error';
+import { BusinessError } from '@/lib/core/business-error';
 
 export type UserRole = 'SUPERADMIN' | 'LEADER' | 'EMPLOYEE';
 
@@ -70,7 +71,7 @@ export class AuthService extends BaseService {
     // Validate password policy
     const passwordValidation = validatePassword(data.password);
     if (!passwordValidation.valid) {
-      throw new Error(passwordValidation.errors[0]);
+      throw new BusinessError(passwordValidation.errors[0]);
     }
 
     // Check if email already exists
@@ -81,7 +82,7 @@ export class AuthService extends BaseService {
       .limit(1);
 
     if (existingEmail) {
-      throw new Error('Email sudah terdaftar');
+      throw new BusinessError('Email sudah terdaftar');
     }
 
     // Check if username already exists
@@ -92,7 +93,7 @@ export class AuthService extends BaseService {
       .limit(1);
 
     if (existingUsername) {
-      throw new Error('Username sudah terdaftar');
+      throw new BusinessError('Username sudah terdaftar');
     }
 
     const hashedPassword = await hashPassword(data.password);
@@ -259,7 +260,7 @@ export class AuthService extends BaseService {
     const payload = jwt.verify(token, secret) as { userId: string; email: string; purpose?: string };
 
     if (payload.purpose !== 'account-activation') {
-      throw new Error('Token aktivasi akun tidak valid');
+      throw new BusinessError('Token aktivasi akun tidak valid');
     }
 
     const [user] = await db
@@ -278,14 +279,14 @@ export class AuthService extends BaseService {
   async resetPassword(token: string, password: string) {
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.valid) {
-      throw new Error(passwordValidation.errors[0]);
+      throw new BusinessError(passwordValidation.errors[0]);
     }
 
     const secret = getProductionJwtSecret();
     const payload = jwt.verify(token, secret) as { userId: string; email: string; purpose?: string };
 
     if (payload.purpose !== 'password-reset') {
-      throw new Error('Token reset password tidak valid');
+      throw new BusinessError('Token reset password tidak valid');
     }
 
     const hashedPassword = await hashPassword(password);

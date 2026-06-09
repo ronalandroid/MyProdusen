@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/middleware';
 import { forbiddenResponse, successResponse, unauthorizedResponse, errorResponse } from '@/utils/response';
 import { leaderService } from '@/services/leader/leader.service';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     return successResponse(await leaderService.listProductionEntriesForLeader(user.userId, params.get('teamId') || undefined, params.get('date') || undefined));
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil KPI tim', error.status || 400);
+    return handleApiError(error);
   }
 }
 
@@ -30,6 +31,6 @@ export async function POST(request: NextRequest) {
     return successResponse(results, 'KPI tim berhasil disimpan');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal menyimpan KPI tim', error.status || 400);
+    return handleApiError(error);
   }
 }

@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { logAudit } from '@/lib/audit';
 import { payrollPeriodService } from '@/features/payroll/payroll-period.service';
 import { acquireIdempotencyLock } from '@/lib/core/idempotency';
+import { handleApiError } from '@/lib/core/route-handler';
 
 import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 const createLeaveSchema = z.object({
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
     if (error.message === 'Unauthorized') {
       return unauthorizedResponse();
     }
-    return errorResponse(error.message || 'Gagal mengambil data pengajuan');
+    return handleApiError(error);
   }
 }
 
@@ -125,9 +126,6 @@ export async function POST(request: NextRequest) {
     if (error.message === 'Unauthorized') {
       return unauthorizedResponse();
     }
-    if (error.code === 'LEAVE_BALANCE_INSUFFICIENT') {
-      return errorResponse(error.message || 'Saldo cuti tidak cukup', 400);
-    }
-    return errorResponse(error.message || 'Gagal membuat pengajuan');
+    return handleApiError(error);
   }
 }

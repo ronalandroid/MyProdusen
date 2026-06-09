@@ -3,6 +3,7 @@ import { announcementService } from '@/src/services/announcement/announcement.se
 import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const updateAnnouncementSchema = z.object({
   title: z.string().min(1).optional(),
@@ -37,7 +38,7 @@ export async function GET(
     return successResponse(announcement);
   } catch (error: any) {
     console.error('Get announcement error:', error);
-    return errorResponse(error.message || 'Internal server error', error.message.includes('tidak ditemukan') ? 404 : 500);
+    return handleApiError(error);
   }
 }
 
@@ -71,7 +72,7 @@ export async function PATCH(
       return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
     }
 
-    return errorResponse(error.message || 'Internal server error', error.message.includes('tidak ditemukan') ? 404 : 500);
+    return handleApiError(error);
   }
 }
 
@@ -94,6 +95,6 @@ export async function DELETE(
     return successResponse(null);
   } catch (error: any) {
     console.error('Delete announcement error:', error);
-    return errorResponse(error.message || 'Internal server error', 500);
+    return handleApiError(error);
   }
 }

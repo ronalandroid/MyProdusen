@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/middleware';
 import { employeeService } from '@/services/employees/employee.service';
 import { leaveBalanceService } from '@/features/leave/leave-balance.service';
 import { successResponse, errorResponse, unauthorizedResponse } from '@/utils/response';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,6 +17,6 @@ export async function GET(request: NextRequest) {
     return successResponse(history);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil riwayat saldo cuti');
+    return handleApiError(error);
   }
 }

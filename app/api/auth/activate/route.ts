@@ -6,6 +6,7 @@ import { sendAuthEmail } from '@/lib/email';
 import { z } from 'zod';
 
 import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
+import { handleApiError } from '@/lib/core/route-handler';
 const activateSchema = z.object({
   token: z.string().min(1, 'Token aktivasi wajib diisi'),
 });
@@ -33,6 +34,6 @@ export async function POST(request: NextRequest) {
 
     return successResponse(result, 'Akun berhasil diaktivasi. Silakan login.');
   } catch (error: any) {
-    return errorResponse(error.message || 'Gagal aktivasi akun');
+    return handleApiError(error);
   }
 }

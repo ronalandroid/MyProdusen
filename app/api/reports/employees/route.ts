@@ -5,6 +5,7 @@ import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse
 import { rowsToCsv, csvResponse } from '@/utils/csv-export';
 import { hasPermission } from '@/lib/permissions';
 import { eq, desc } from 'drizzle-orm';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,6 +35,6 @@ export async function GET(request: NextRequest) {
     return successResponse(rows);
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil laporan karyawan');
+    return handleApiError(error);
   }
 }

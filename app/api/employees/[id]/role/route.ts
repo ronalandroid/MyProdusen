@@ -4,6 +4,7 @@ import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse
 import { logAudit } from '@/lib/audit';
 import { db, users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
+import { handleApiError } from '@/lib/core/route-handler';
 
 export async function PATCH(
   request: NextRequest,
@@ -81,6 +82,6 @@ export async function PATCH(
     if (error.message === 'Unauthorized') {
       return unauthorizedResponse();
     }
-    return errorResponse(error.message || 'Gagal mengubah role');
+    return handleApiError(error);
   }
 }

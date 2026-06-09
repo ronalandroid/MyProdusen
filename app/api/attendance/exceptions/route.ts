@@ -6,6 +6,7 @@ import { getRequestBody, requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 const createExceptionSchema = z.object({
   attendanceId: z.string().optional(),
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
     return successResponse(rows.map(({ exception, employee }) => ({ ...exception, employee })));
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal mengambil exception absensi');
+    return handleApiError(error);
   }
 }
 
@@ -63,6 +64,6 @@ export async function POST(request: NextRequest) {
     return successResponse(created, 'Exception absensi dibuat');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
-    return errorResponse(error.message || 'Gagal membuat exception absensi');
+    return handleApiError(error);
   }
 }

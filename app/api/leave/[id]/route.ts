@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { employeeService } from '@/services/employees/employee.service';
 import { logAudit } from '@/lib/audit';
+import { handleApiError } from '@/lib/core/route-handler';
 
 async function canAccessLeave(user: Awaited<ReturnType<typeof requireAuth>>, employeeId: string) {
   if (user.role === 'SUPERADMIN') {
@@ -41,7 +42,7 @@ export async function GET(
     if (error.message === 'Pengajuan tidak ditemukan') {
       return notFoundResponse(error.message);
     }
-    return errorResponse(error.message || 'Gagal mengambil data pengajuan');
+    return handleApiError(error);
   }
 }
 
@@ -74,6 +75,6 @@ export async function DELETE(
     if (error.message === 'Hanya pengajuan dengan status PENDING yang dapat dihapus') {
       return forbiddenResponse(error.message);
     }
-    return errorResponse(error.message || 'Gagal menghapus pengajuan');
+    return handleApiError(error);
   }
 }
