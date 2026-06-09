@@ -1,0 +1,13 @@
+.next/
+node_modules/
+dist/
+build/
+coverage/
+android/
+.husky/
+*.min.js
+*.min.css
+package-lock.json
+drizzle/meta/
+public/
+.next-build-*

@@ -146,12 +146,10 @@ export class SyncManager {
    */
   public async syncAll(): Promise<void> {
     if (this.isSyncing) {
-      console.log('Sync already in progress');
       return;
     }
 
     if (!networkDetector.isOnline) {
-      console.log('Cannot sync: offline');
       return;
     }
 
