@@ -11,6 +11,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useToast } from "@/components/ui/Toast";
 import { getAuthHeaders } from "@/lib/auth-client";
 import { fetchApiData, useCachedProfile } from "@/hooks/useDashboardQueries";
+import EmployeeDrawer from "@/components/admin/EmployeeDrawer";
 
 interface Employee {
   id: string;
@@ -56,6 +57,7 @@ export default function EmployeesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [drawerEmployeeId, setDrawerEmployeeId] = useState<string | null>(null);
   const [accessNotice, setAccessNotice] = useState("");
   const queryClient = useQueryClient();
   const { data: profileData } = useCachedProfile();
@@ -311,33 +313,35 @@ export default function EmployeesPage() {
                   </div>
                 </div>
               </div>
-              {canManageEmployees ? (
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button
-                    type="button"
-                    onClick={() => handleEdit(emp)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    aria-label={`Edit ${emp.fullName}`}
-                  >
-                    <Edit size={18} color="var(--text-muted)" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedEmployee(emp);
-                      setIsDeleteModalOpen(true);
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    aria-label={`Hapus ${emp.fullName}`}
-                  >
-                    <Trash2 size={18} color="var(--danger)" />
-                  </button>
-                </div>
-              ) : (
-                <button type="button" className="btn btn-secondary" onClick={() => handleEdit(emp)} style={{ minHeight: "44px", padding: "8px 12px", fontSize: "12px" }}>
-                  Lihat batas akses
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => setDrawerEmployeeId(emp.id)}
+                  style={{ padding: "6px 12px", borderRadius: 7, border: "1px solid #E9EBEF", background: "#FFFFFF", fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}
+                >
+                  Detail
                 </button>
-              )}
+                {canManageEmployees && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(emp)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label={`Edit ${emp.fullName}`}
+                    >
+                      <Edit size={18} color="var(--text-muted)" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedEmployee(emp); setIsDeleteModalOpen(true); }}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label={`Hapus ${emp.fullName}`}
+                    >
+                      <Trash2 size={18} color="var(--danger)" />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -489,6 +493,13 @@ export default function EmployeesPage() {
           </p>
         )}
       </Modal>
+
+      {drawerEmployeeId && (
+        <EmployeeDrawer
+          employeeId={drawerEmployeeId}
+          onClose={() => setDrawerEmployeeId(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { db, users, employees, attendances, leaveRequests, kpiResults, notifications, payrollRuns, attendanceExceptions, workLocations, auditLogs, payrollItems } from '@/lib/db';
+import { db, users, employees, attendances, leaveRequests, kpiResults, notifications, payrollRuns, attendanceExceptions, workLocations, auditLogs, payrollItems, overtimeRequests } from '@/lib/db';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse } from '@/utils/response';
 import { eq, and, gte, lte, sql, desc, inArray } from 'drizzle-orm';
@@ -123,6 +123,12 @@ export async function GET(request: NextRequest) {
       .where(and(eq(attendanceExceptions.status, 'PENDING'), scopedExceptionFilter));
     const pendingAttendanceExceptions = pendingExceptionsResult?.count || 0;
 
+    const [pendingOTResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(overtimeRequests)
+      .where(eq(overtimeRequests.status, 'PENDING'));
+    const pendingOT = pendingOTResult?.count || 0;
+
     const [latestPayrollRun] = await db
       .select({ period: payrollRuns.period, status: payrollRuns.status })
       .from(payrollRuns)
@@ -152,6 +158,7 @@ export async function GET(request: NextRequest) {
       pendingKpiApprovals,
       unreadNotifications,
       pendingAttendanceExceptions,
+      pendingOT,
       payrollPeriodStatus: latestPayrollRun || null,
       date: today.toISOString(),
       role: user.role,

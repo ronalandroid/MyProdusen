@@ -13,6 +13,8 @@ export type NavigationItemKey =
   | 'shifts'
   | 'leave'
   | 'kpi'
+  | 'kpi-template'
+  | 'performance-assessment'
   | 'leader-team'
   | 'leader-kpi-input'
   | 'leader-report'
@@ -20,10 +22,12 @@ export type NavigationItemKey =
   | 'reports-pdf'
   | 'payroll'
   | 'overtime'
+  | 'announcements'
   | 'documents'
   | 'notifications'
   | 'audit'
   | 'settings'
+  | 'accounts'
   | 'profile';
 
 export interface NavigationPolicyItem {
@@ -59,16 +63,21 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
   { key: 'overtime', name: 'Lembur', path: '/dashboard/overtime', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], featureFlag: 'overtime' },
   { key: 'documents', name: 'Dokumen', path: '/dashboard/documents', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], featureFlag: 'documents' },
   { key: 'notifications', name: 'Notifikasi', path: '/dashboard/notifications', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'kpi-template', name: 'Template KPI', path: '/dashboard/kpi-template', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'performance-assessment', name: 'Penilaian', path: '/dashboard/performance/assessment', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'announcements', name: 'Pengumuman', path: '/dashboard/announcements', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
   { key: 'audit', name: 'Audit', path: '/dashboard/audit', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'settings', name: 'Kebijakan', path: '/dashboard/settings', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'accounts', name: 'Akun & Peran', path: '/dashboard/accounts', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'profile', name: 'Akun', path: '/dashboard/profile', primaryFor: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
 ];
 
 const sensitiveRoutePolicy: readonly NavigationPolicyItem[] = [
-  { key: 'users', name: 'Pengguna', path: '/dashboard/accounts', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'kpi', name: 'KPI Templates', path: '/dashboard/kpi/template', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'kpi', name: 'KPI Templates', path: '/dashboard/kpi/templates', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'kpi', name: 'KPI Templates', path: '/dashboard/kpi-template', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'accounts', name: 'Pengguna', path: '/dashboard/accounts', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'kpi-template', name: 'KPI Templates', path: '/dashboard/kpi/template', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'kpi-template', name: 'KPI Templates', path: '/dashboard/kpi/templates', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'kpi-template', name: 'KPI Templates', path: '/dashboard/kpi-template', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'performance-assessment', name: 'Penilaian Perilaku', path: '/dashboard/performance/assessment', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'reports-pdf', name: 'PDF Reports', path: '/dashboard/reports/pdf', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
 ];
 

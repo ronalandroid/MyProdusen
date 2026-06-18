@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, CheckCircle2, RefreshCcw, Search, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, MapPin, RefreshCcw, Search, X, XCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders } from "@/lib/auth-client";
@@ -26,6 +26,237 @@ interface AttendanceExceptionItem {
     nip?: string;
     division?: string | null;
   } | null;
+}
+
+interface ExceptionDetail extends AttendanceExceptionItem {
+  attendance?: {
+    id: string;
+    checkInLatitude?: number;
+    checkInLongitude?: number;
+    checkInAccuracy?: number;
+    checkInDistance?: number;
+    checkInSelfieUrl?: string | null;
+    checkInTime?: string;
+    checkInGeoStatus?: string | null;
+    status?: string;
+  } | null;
+}
+
+function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: string; onClose: () => void; onReviewed: () => void }) {
+  const [note, setNote] = useState("");
+  const [processing, setProcessing] = useState(false);
+  const [actionError, setActionError] = useState("");
+
+  const { data: detail, isPending } = useQuery({
+    queryKey: ["exception-detail", exceptionId],
+    queryFn: () => fetchApiData<ExceptionDetail>(`/api/attendance/exceptions/${exceptionId}`, "Detail gagal dimuat"),
+    staleTime: 30_000,
+  });
+
+  async function review(nextStatus: "APPROVED" | "REJECTED") {
+    const trimmedNote = note.trim();
+    if (nextStatus === "REJECTED" && trimmedNote.length < 10) {
+      setActionError("Catatan penolakan minimal 10 karakter.");
+      return;
+    }
+    try {
+      setProcessing(true);
+      setActionError("");
+      const res = await fetch(`/api/attendance/exceptions/${exceptionId}/review`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ status: nextStatus, reviewNote: trimmedNote || (nextStatus === "APPROVED" ? "Disetujui" : "Ditolak") }),
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) throw new Error(payload.error || "Review gagal");
+      onReviewed();
+      onClose();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Review gagal");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  const att = detail?.attendance;
+  const hasGps = att && att.checkInLatitude != null && att.checkInLongitude != null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 50, backdropFilter: "blur(2px)" }}
+        aria-hidden="true"
+      />
+      {/* Drawer */}
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Bukti Pengecualian Absensi"
+        style={{
+          position: "fixed", top: 0, right: 0, bottom: 0, width: "min(520px, 100vw)",
+          background: "#FFFFFF", zIndex: 51, display: "flex", flexDirection: "column",
+          boxShadow: "-4px 0 32px rgba(28,32,38,0.12)",
+          animation: "slideInRight 220ms ease-out",
+        }}
+      >
+        <style>{`@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
+
+        {/* Header */}
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #EBEBEB", display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#111111" }}>Bukti Pengecualian</div>
+            {detail && (
+              <div style={{ fontSize: 12, color: "#6E6E6E", marginTop: 2 }}>
+                {detail.employee?.fullName || "Karyawan"} · {detail.employee?.nip || detail.employeeId}
+              </div>
+            )}
+          </div>
+          <button type="button" onClick={onClose} style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid #EBEBEB", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} aria-label="Tutup">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
+          {isPending ? (
+            <div style={{ display: "flex", justifyContent: "center", paddingTop: 40 }}>
+              <LoadingSpinner message="Memuat bukti…" />
+            </div>
+          ) : !detail ? (
+            <p style={{ textAlign: "center", color: "#6E6E6E", paddingTop: 40 }}>Gagal memuat data.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              {/* GPS Map Illustration */}
+              <section style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #EBEBEB" }}>
+                <div style={{
+                  height: 180, background: "linear-gradient(135deg, #E8F5E9 0%, #E3F2FD 100%)",
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
+                }}>
+                  <MapPin size={40} color="#FFC107" strokeWidth={2} />
+                  {hasGps ? (
+                    <>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#111111" }}>
+                        {att!.checkInLatitude!.toFixed(6)}, {att!.checkInLongitude!.toFixed(6)}
+                      </div>
+                      <a
+                        href={`https://www.openstreetmap.org/?mlat=${att!.checkInLatitude}&mlon=${att!.checkInLongitude}&zoom=17`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: 11, color: "#3D6B8F", textDecoration: "underline" }}
+                      >
+                        Buka di peta ↗
+                      </a>
+                    </>
+                  ) : (
+                    <div style={{ fontSize: 13, color: "#6E6E6E" }}>Koordinat GPS tidak tersedia</div>
+                  )}
+                </div>
+
+                {/* GPS stats */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid #EBEBEB" }}>
+                  {[
+                    { label: "Jarak", value: att?.checkInDistance != null ? `${Math.round(att.checkInDistance)} m` : "–" },
+                    { label: "Akurasi GPS", value: att?.checkInAccuracy != null ? `${Math.round(att.checkInAccuracy)} m` : "–" },
+                    { label: "Status Geo", value: att?.checkInGeoStatus || "–" },
+                  ].map(({ label, value }) => (
+                    <div key={label} style={{ padding: "10px 12px", textAlign: "center", borderRight: "1px solid #EBEBEB" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: "#111111", marginTop: 2, fontFamily: "var(--font-mono, monospace)" }}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Selfie */}
+              <section>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#6E6E6E", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Foto Selfie</div>
+                <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #EBEBEB", background: "#F5F5F5", minHeight: 180, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {att?.checkInSelfieUrl ? (
+                    <img src={att.checkInSelfieUrl} alt="Selfie absensi" style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
+                  ) : (
+                    <div style={{ textAlign: "center", padding: 32, color: "#6E6E6E" }}>
+                      <div style={{ fontSize: 32, marginBottom: 8 }}>📷</div>
+                      <div style={{ fontSize: 12 }}>Foto tidak tersedia</div>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Exception Info */}
+              <section style={{ background: "#FAFAFA", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#6E6E6E", letterSpacing: "0.08em", textTransform: "uppercase" }}>Detail Pengajuan</div>
+                <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: "6px 12px", fontSize: 13 }}>
+                  <span style={{ color: "#6E6E6E", fontWeight: 600 }}>Tipe</span>
+                  <span style={{ color: "#111111", fontWeight: 700 }}>{detail.type}</span>
+                  <span style={{ color: "#6E6E6E", fontWeight: 600 }}>Diajukan</span>
+                  <span style={{ color: "#111111" }}>{new Date(detail.createdAt).toLocaleString("id-ID")}</span>
+                  <span style={{ color: "#6E6E6E", fontWeight: 600 }}>Alasan</span>
+                  <span style={{ color: "#111111" }}>{detail.reason}</span>
+                  <span style={{ color: "#6E6E6E", fontWeight: 600 }}>Status</span>
+                  <span style={{ color: STATUS_TONE[detail.status]?.color || "#111111", fontWeight: 700 }}>{STATUS_TONE[detail.status]?.label || detail.status}</span>
+                </div>
+              </section>
+
+              {/* Decision Timeline */}
+              {detail.reviewedAt && (
+                <section>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: "#6E6E6E", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Timeline Keputusan</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                    {[
+                      { label: "Diajukan", date: detail.createdAt, color: "#3D6B8F" },
+                      { label: detail.status === "APPROVED" ? "Disetujui" : "Ditolak", date: detail.reviewedAt, color: detail.status === "APPROVED" ? "#1E6B43" : "#B3362B" },
+                    ].map(({ label, date, color }, idx) => (
+                      <div key={idx} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+                          <div style={{ width: 10, height: 10, borderRadius: "50%", background: color, flexShrink: 0, marginTop: 3 }} />
+                          {idx === 0 && <div style={{ width: 2, height: 28, background: "#EBEBEB" }} />}
+                        </div>
+                        <div style={{ paddingBottom: 16 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color }}>{label}</div>
+                          <div style={{ fontSize: 11, color: "#6E6E6E" }}>{new Date(date).toLocaleString("id-ID")}</div>
+                          {detail.reviewNote && idx === 1 && (
+                            <div style={{ fontSize: 12, color: "#555555", marginTop: 4, fontStyle: "italic" }}>"{detail.reviewNote}"</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Review actions for pending */}
+              {detail.status === "PENDING" && (
+                <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: "#6E6E6E", letterSpacing: "0.08em", textTransform: "uppercase" }}>Keputusan</div>
+                  {actionError && (
+                    <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(179,54,43,0.08)", color: "#B3362B", fontSize: 12, fontWeight: 600 }}>
+                      {actionError}
+                    </div>
+                  )}
+                  <textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="input"
+                    rows={3}
+                    placeholder="Catatan review (wajib untuk penolakan, min. 10 karakter)"
+                  />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <Button onClick={() => review("APPROVED")} loading={processing}>
+                      <CheckCircle2 size={14} /> Setujui
+                    </Button>
+                    <Button variant="danger" onClick={() => review("REJECTED")} loading={processing} disabled={processing || note.trim().length < 10}>
+                      <XCircle size={14} /> Tolak
+                    </Button>
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+        </div>
+      </aside>
+    </>
+  );
 }
 
 const PAGE_SIZE = 8;
@@ -52,6 +283,7 @@ export default function AttendanceExceptionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  const [evidenceId, setEvidenceId] = useState<string | null>(null);
 
   const status = searchParams.get("status") || "PENDING";
 
@@ -219,6 +451,14 @@ export default function AttendanceExceptionsPage() {
                   <p className="text-sm text-[var(--text-secondary)]">{item.reason}</p>
                   <p className="text-xs text-[var(--text-muted)]">Diajukan {new Date(item.createdAt).toLocaleString("id-ID")}</p>
 
+                  <button
+                    type="button"
+                    onClick={() => setEvidenceId(item.id)}
+                    style={{ alignSelf: "flex-start", fontSize: 12, fontWeight: 700, color: "#3D6B8F", background: "rgba(61,107,143,0.08)", border: "none", borderRadius: 8, padding: "5px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                  >
+                    <MapPin size={12} /> Lihat Bukti
+                  </button>
+
                   {item.status === "PENDING" && (
                     <>
                       <label htmlFor={`review-note-${item.id}`} className="text-xs font-semibold text-[var(--text-primary)]">
@@ -257,6 +497,14 @@ export default function AttendanceExceptionsPage() {
             );
           })}
         </div>
+      )}
+
+      {evidenceId && (
+        <EvidenceDrawer
+          exceptionId={evidenceId}
+          onClose={() => setEvidenceId(null)}
+          onReviewed={() => queryClient.invalidateQueries({ queryKey: ["attendance-exceptions"] })}
+        />
       )}
 
       {filteredItems.length > 0 && (

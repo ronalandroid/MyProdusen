@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
+import AdminSidebar from "@/components/layout/AdminSidebar";
 import { logout } from "@/lib/auth-client";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -10,7 +11,8 @@ import { canAccessNavigationPath } from "@/lib/navigation/role-navigation";
 import type { UserRole } from "@/lib/permissions";
 import type { ClientUserProfile } from "@/lib/auth-client";
 import { useRealtime } from "@/hooks/useRealtime";
-import { type ProfileMe, useCachedProfile, useInvalidateDashboardData, useProfileMe } from "@/hooks/useDashboardQueries";
+import { type ProfileMe, useCachedProfile, useInvalidateDashboardData, useProfileMe, fetchApiData } from "@/hooks/useDashboardQueries";
+import { useQuery } from "@tanstack/react-query";
 import type { RealtimeEventType } from "@/lib/realtime/events";
 
 const missingMessages = {
@@ -108,7 +110,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <ToastProvider>
       <div className="layout-wrapper">
         <a href="#dashboard-content" className="skip-link">Lewati navigasi</a>
-        <nav className="nav-container" aria-label="Navigasi utama"><Sidebar role={profile.role as UserRole} /></nav>
+        <nav className="nav-container" aria-label="Navigasi utama" style={profile.role === "SUPERADMIN" ? { display: "flex", flexDirection: "column" } : undefined}>
+          {profile.role === "SUPERADMIN"
+            ? <AdminSidebarWithBadges />
+            : <Sidebar role={profile.role as UserRole} />}
+        </nav>
         <main id="dashboard-content" ref={contentRef} className="mobile-content" tabIndex={-1}>
           {syncNotice && <div className="alert alert-success mb-4" role="status">{syncNotice}</div>}
           {profileMe && profile.role !== "SUPERADMIN" && <AssignmentStatusCards profileMe={profileMe} />}
@@ -117,6 +123,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {profileMe && !profileMe.profileCompleted && <ProfileCompletionModal initialFullName={profileMe.fullName} initialPhone={profileMe.phone} initialAddress={profileMe.address} initialProfilePhoto={profileMe.profilePhoto} onSaved={() => loadProfileState(true)} />}
       </div>
     </ToastProvider>
+  );
+}
+
+function AdminSidebarWithBadges() {
+  const { data } = useQuery({
+    queryKey: ["layout-pending-counts"],
+    queryFn: () => fetchApiData<{ pendingAttendanceExceptions?: number; pendingLeave?: number; pendingOT?: number; pendingKpiApprovals?: number }>("/api/dashboard/stats", ""),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  });
+  return (
+    <AdminSidebar
+      isSuperadmin
+      pendingExceptions={data?.pendingAttendanceExceptions ?? 0}
+      pendingLeave={data?.pendingLeave ?? 0}
+      pendingOT={data?.pendingOT ?? 0}
+      pendingKpi={data?.pendingKpiApprovals ?? 0}
+    />
   );
 }
 

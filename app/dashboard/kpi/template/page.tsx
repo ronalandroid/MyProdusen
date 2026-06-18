@@ -1,176 +1,335 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Plus, Save, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { getAuthHeaders } from "@/lib/auth-client";
 
-const currentPeriod = new Date().toISOString().slice(0, 7);
+type KpiItem = {
+  id: string;
+  name: string;
+  description?: string | null;
+  weight: number;
+  targetValue?: number | null;
+  unit?: string | null;
+  scoringType: string;
+};
 
-type TemplateRow = { id: string; name: string; description?: string | null };
-type EmployeeRow = { id: string; name?: string; fullName?: string; nip?: string | null };
+type KpiTemplate = {
+  id: string;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+  items: KpiItem[];
+};
 
-export default function KpiTemplatePage() {
-  const router = useRouter();
+type DraftTemplate = KpiTemplate & { isDirty?: boolean; itemDrafts: KpiItem[] };
+
+function useKpiTemplates() {
   const queryClient = useQueryClient();
-  const [selectedTemplateId, setSelectedTemplateId] = useState("");
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
-  const [period, setPeriod] = useState(currentPeriod);
-  const [name, setName] = useState(`Template KPI ${currentPeriod}`);
-  const [description, setDescription] = useState("Template KPI operasional bulanan");
-  const [submitting, setSubmitting] = useState("");
-  const [message, setMessage] = useState("");
-  const [localError, setError] = useState("");
-  const [actualValue, setActualValue] = useState("100");
-
-  const { data: kpiData, isLoading: kpiLoading, error: kpiError } = useQuery({
-    queryKey: ["kpi-templates-page"],
+  const { data, isPending, error } = useQuery({
+    queryKey: ["kpi-templates-full"],
     queryFn: async () => {
-      const [templateData, employeeData] = await Promise.all([
-        fetchApiData<TemplateRow[]>("/api/kpi/templates?isActive=true", "Gagal mengambil template KPI", { cache: "no-store" }),
-        fetchApiData<EmployeeRow[]>("/api/employees?limit=100", "Gagal mengambil karyawan", { cache: "no-store" }),
-      ]);
-      return {
-        templates: Array.isArray(templateData) ? templateData : [],
-        employees: Array.isArray(employeeData) ? employeeData : [],
-      };
+      const templates = await fetchApiData<KpiTemplate[]>("/api/kpi/templates", "Gagal memuat template KPI");
+      const withItems = await Promise.all(
+        (templates || []).map((t) =>
+          fetchApiData<KpiTemplate>(`/api/kpi/templates/${t.id}`, "Gagal memuat detail template")
+        )
+      );
+      return withItems;
     },
+    staleTime: 30_000,
   });
+  const reload = useCallback(() => queryClient.invalidateQueries({ queryKey: ["kpi-templates-full"] }), [queryClient]);
+  return { templates: data ?? [], isPending, error, reload };
+}
 
-  const templates = kpiData?.templates ?? [];
-  const employees = kpiData?.employees ?? [];
-  const loading = kpiLoading;
-  const error = localError || (kpiError instanceof Error ? kpiError.message : "");
+export default function KpiTemplateEditorPage() {
+  const router = useRouter();
+  const { templates, isPending, error: fetchError, reload } = useKpiTemplates();
+  const [drafts, setDrafts] = useState<Record<string, DraftTemplate>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [createName, setCreateName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
 
   useEffect(() => {
-    if (!kpiData) return;
-    setSelectedTemplateId((current) => current || kpiData.templates[0]?.id || "");
-    setSelectedEmployeeId((current) => current || kpiData.employees[0]?.id || "");
-  }, [kpiData]);
+    setDrafts((prev) => {
+      const next: Record<string, DraftTemplate> = {};
+      for (const t of templates) {
+        next[t.id] = prev[t.id] ?? { ...t, itemDrafts: t.items.map((i) => ({ ...i })) };
+      }
+      return next;
+    });
+    if (expanded === null && templates.length > 0) setExpanded(templates[0].id);
+  }, [templates]);
 
-  const loadData = () => queryClient.invalidateQueries({ queryKey: ["kpi-templates-page"] });
+  const dirtyIds = Object.values(drafts).filter((d) => d.isDirty).map((d) => d.id);
+  const totalDirty = dirtyIds.length;
 
-  async function createTemplate(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitting("template");
-    setError("");
-    setMessage("");
+  function setDraft(id: string, updater: (prev: DraftTemplate) => DraftTemplate) {
+    setDrafts((prev) => {
+      if (!prev[id]) return prev;
+      const next = updater(prev[id]);
+      const original = templates.find((t) => t.id === id);
+      const isDirty =
+        next.name !== original?.name ||
+        next.description !== original?.description ||
+        next.isActive !== original?.isActive ||
+        next.itemDrafts.some((item, idx) => {
+          const orig = original?.items[idx];
+          return !orig || item.weight !== orig.weight || item.targetValue !== orig.targetValue || item.unit !== orig.unit;
+        });
+      return { ...prev, [id]: { ...next, isDirty } };
+    });
+  }
+
+  async function saveTemplate(id: string) {
+    const draft = drafts[id];
+    if (!draft) return;
+    setSaving(id);
+    setActionError("");
     try {
-      const response = await fetch("/api/kpi/templates", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description }),
-      });
-      const payload = await response.json().catch(() => null);
-      if (!response.ok || !payload?.success) throw new Error(payload?.error || "Gagal membuat template KPI");
-      setMessage("Template KPI berhasil dibuat.");
-      setSelectedTemplateId(payload.data.id);
-      await loadData();
+      await fetch(`/api/kpi/templates/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ name: draft.name, description: draft.description, isActive: draft.isActive }),
+      }).then(async (r) => { if (!r.ok) throw new Error((await r.json())?.error || "Gagal simpan"); });
+
+      for (const item of draft.itemDrafts) {
+        await fetch(`/api/kpi/templates/${id}/items/${item.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          body: JSON.stringify({ weight: item.weight, targetValue: item.targetValue, unit: item.unit }),
+        }).then(async (r) => {
+          if (!r.ok) {
+            const p = await r.json().catch(() => null);
+            if (!(p?.error?.includes("not found") || r.status === 404)) throw new Error(p?.error || "Gagal simpan item");
+          }
+        });
+      }
+
+      setActionSuccess(`Template "${draft.name}" berhasil disimpan.`);
+      await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal membuat template KPI");
+      setActionError(err instanceof Error ? err.message : "Gagal menyimpan template");
     } finally {
-      setSubmitting("");
+      setSaving(null);
     }
   }
 
-  async function assignTemplate(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitting("assign");
-    setError("");
-    setMessage("");
+  async function saveAll() {
+    setSaving("all");
+    setActionError("");
     try {
-      const response = await fetch("/api/kpi/assignments", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ templateId: selectedTemplateId, employeeId: selectedEmployeeId, period }),
-      });
-      const payload = await response.json().catch(() => null);
-      if (!response.ok || !payload?.success) throw new Error(payload?.error || "Gagal assign KPI");
-      setMessage("Template KPI berhasil di-assign ke karyawan.");
+      for (const id of dirtyIds) await saveTemplate(id);
+      setActionSuccess(`${dirtyIds.length} template berhasil disimpan.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal assign KPI");
+      setActionError(err instanceof Error ? err.message : "Gagal menyimpan");
     } finally {
-      setSubmitting("");
+      setSaving(null);
     }
   }
 
-  async function submitAndApproveResult(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitting("result");
-    setError("");
-    setMessage("");
+  async function createTemplate() {
+    if (!createName.trim()) return;
+    setCreating(true);
+    setActionError("");
     try {
-      const templateResponse = await fetch(`/api/kpi/templates/${selectedTemplateId}`, { credentials: "include", cache: "no-store" });
-      const templatePayload = await templateResponse.json().catch(() => null);
-      if (!templateResponse.ok || !templatePayload?.success) throw new Error(templatePayload?.error || "Gagal mengambil item KPI");
-      const itemId = templatePayload.data?.items?.[0]?.id;
-      if (!itemId) throw new Error("Template KPI belum memiliki item KPI");
-
-      const resultResponse = await fetch("/api/kpi/results", {
+      const r = await fetch("/api/kpi/templates", {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId: selectedEmployeeId, itemId, period, actualValue: Number(actualValue), notes: "Input hasil KPI dari UI Superadmin" }),
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ name: createName.trim(), description: "" }),
       });
-      const resultPayload = await resultResponse.json().catch(() => null);
-      if (!resultResponse.ok || !resultPayload?.success) throw new Error(resultPayload?.error || "Gagal submit hasil KPI");
-
-      const approveResponse = await fetch(`/api/kpi/results/${resultPayload.data.id}/approve`, { method: "POST", credentials: "include" });
-      const approvePayload = await approveResponse.json().catch(() => null);
-      if (!approveResponse.ok || !approvePayload?.success) throw new Error(approvePayload?.error || "Gagal approve hasil KPI");
-      setMessage("Hasil KPI berhasil dibuat dan approved.");
+      const p = await r.json();
+      if (!r.ok || !p.success) throw new Error(p.error || "Gagal membuat template");
+      setCreateName("");
+      setActionSuccess("Template KPI baru berhasil dibuat.");
+      await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal submit hasil KPI");
+      setActionError(err instanceof Error ? err.message : "Gagal membuat template");
     } finally {
-      setSubmitting("");
+      setCreating(false);
     }
   }
 
   return (
-    <main className="phone-screen feature-screen flex flex-col gap-5" aria-labelledby="kpi-template-title">
-      <button type="button" className="flex min-h-[44px] items-center gap-3 text-left" onClick={() => router.push("/dashboard/kpi")}>
-        <ArrowLeft size={24} aria-hidden="true" />
-        <span id="kpi-template-title" className="text-xl font-bold">Template KPI & Assignment</span>
-      </button>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, paddingBottom: totalDirty > 0 ? 80 : 0 }}>
+      <header className="flex items-center gap-3">
+        <button type="button" onClick={() => router.back()} className="flex min-h-[44px] items-center gap-3">
+          <ArrowLeft size={24} />
+          <span className="text-xl font-bold">Template KPI</span>
+        </button>
+      </header>
 
-      {message && <section className="card border-[var(--success)] text-[var(--success)]" role="status">{message}</section>}
-      {error && <section className="alert-card" role="alert"><strong>Gagal</strong><p>{error}</p></section>}
-      {loading && <section className="card" role="status">Memuat template KPI...</section>}
+      {actionError && <div className="card" role="alert" style={{ padding: "10px 16px", color: "#B3362B", borderColor: "#B3362B", fontSize: 13, fontWeight: 600 }}>{actionError}</div>}
+      {actionSuccess && <div className="card" role="status" style={{ padding: "10px 16px", color: "#1E6B43", borderColor: "#1E6B43", fontSize: 13, fontWeight: 600 }}>{actionSuccess}</div>}
 
-      <form className="card flex flex-col gap-4" onSubmit={createTemplate}>
-        <h2 className="text-lg font-bold">Create Template KPI</h2>
-        <Input label="Nama Template KPI" value={name} onChange={(event) => setName(event.target.value)} required />
-        <Input label="Deskripsi" value={description} onChange={(event) => setDescription(event.target.value)} />
-        <Button type="submit" loading={submitting === "template"}>Buat Template KPI</Button>
-      </form>
+      {/* New Template */}
+      <section className="card" style={{ padding: "16px 20px" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: "#6E6E6E", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Buat Template Baru</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            className="input"
+            style={{ flex: 1 }}
+            value={createName}
+            onChange={(e) => setCreateName(e.target.value)}
+            placeholder="Nama template KPI..."
+            onKeyDown={(e) => e.key === "Enter" && createTemplate()}
+          />
+          <Button onClick={createTemplate} loading={creating} disabled={!createName.trim()}>
+            <Plus size={16} /> Buat
+          </Button>
+        </div>
+      </section>
 
-      <form className="card flex flex-col gap-4" onSubmit={assignTemplate}>
-        <h2 className="text-lg font-bold">Assign Template KPI</h2>
-        <label className="label" htmlFor="template-select">Template KPI</label>
-        <select id="template-select" className="input" value={selectedTemplateId} onChange={(event) => setSelectedTemplateId(event.target.value)} required>
-          <option value="">Pilih template</option>
-          {templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
-        </select>
-        <label className="label" htmlFor="employee-select">Karyawan</label>
-        <select id="employee-select" className="input" value={selectedEmployeeId} onChange={(event) => setSelectedEmployeeId(event.target.value)} required>
-          <option value="">Pilih karyawan</option>
-          {employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.fullName || employee.name}{employee.nip ? ` — ${employee.nip}` : ""}</option>)}
-        </select>
-        <Input label="Periode" type="month" value={period} onChange={(event) => setPeriod(event.target.value)} required />
-        <Button type="submit" loading={submitting === "assign"}>Assign KPI</Button>
-      </form>
+      {isPending ? (
+        <div className="card" style={{ padding: 24, textAlign: "center", color: "#6E6E6E" }}>Memuat template KPI…</div>
+      ) : fetchError ? (
+        <div className="card" role="alert" style={{ padding: 16, color: "#B3362B" }}>Gagal memuat data template.</div>
+      ) : templates.length === 0 ? (
+        <div className="card" style={{ padding: 24, textAlign: "center", color: "#6E6E6E" }}>Belum ada template KPI. Buat template pertama di atas.</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {templates.map((template) => {
+            const draft = drafts[template.id];
+            if (!draft) return null;
+            const isExpanded = expanded === template.id;
+            return (
+              <article key={template.id} className="card" style={{ padding: 0, overflow: "hidden" }}>
+                {/* Card header */}
+                <div
+                  style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", borderBottom: isExpanded ? "1px solid #EBEBEB" : "none" }}
+                  onClick={() => setExpanded(isExpanded ? null : template.id)}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: "#111111" }}>{draft.name}</span>
+                      {draft.isDirty && (
+                        <span style={{ fontSize: 10, fontWeight: 800, color: "#8A5A00", background: "rgba(138,90,0,0.1)", padding: "2px 8px", borderRadius: 6 }}>Belum disimpan</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#6E6E6E", marginTop: 2 }}>{draft.itemDrafts.length} metrik</div>
+                  </div>
 
-      <form className="card flex flex-col gap-4" onSubmit={submitAndApproveResult}>
-        <h2 className="text-lg font-bold">Create & Approve KPI Result</h2>
-        <p className="text-sm text-[var(--text-secondary)]">Gunakan template dan karyawan terpilih untuk input hasil KPI lalu approve.</p>
-        <Input label="Actual Value" type="number" value={actualValue} onChange={(event) => setActualValue(event.target.value)} required />
-        <Button type="submit" loading={submitting === "result"}>Submit dan Approve KPI Result</Button>
-      </form>
-    </main>
+                  {/* Active toggle */}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setDraft(template.id, (d) => ({ ...d, isActive: !d.isActive })); }}
+                    style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: draft.isActive ? "#1E6B43" : "#6E6E6E" }}
+                    aria-label={draft.isActive ? "Nonaktifkan" : "Aktifkan"}
+                  >
+                    {draft.isActive ? <ToggleRight size={22} color="#1E6B43" /> : <ToggleLeft size={22} color="#BBBBBB" />}
+                    {draft.isActive ? "Aktif" : "Nonaktif"}
+                  </button>
+
+                  {isExpanded ? <ChevronUp size={18} color="#6E6E6E" /> : <ChevronDown size={18} color="#6E6E6E" />}
+                </div>
+
+                {/* Expanded items */}
+                {isExpanded && (
+                  <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 14 }}>
+                    {/* Template name field */}
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: "#6E6E6E", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>Nama Template</label>
+                      <input
+                        className="input"
+                        value={draft.name}
+                        onChange={(e) => setDraft(template.id, (d) => ({ ...d, name: e.target.value }))}
+                      />
+                    </div>
+
+                    {/* Items */}
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#6E6E6E", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Metrik KPI</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {draft.itemDrafts.map((item, idx) => (
+                          <div key={item.id} style={{ background: "#FAFAFA", borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#111111" }}>{item.name}</div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                              <div>
+                                <label style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Bobot (%)</label>
+                                <div style={{ display: "flex", alignItems: "center", gap: 0, border: "1px solid #EBEBEB", borderRadius: 8, overflow: "hidden", background: "#FFF" }}>
+                                  <button
+                                    type="button"
+                                    style={{ width: 32, height: 36, border: "none", background: "none", cursor: "pointer", fontSize: 16, color: "#555" }}
+                                    onClick={() => setDraft(template.id, (d) => ({ ...d, itemDrafts: d.itemDrafts.map((it, i) => i === idx ? { ...it, weight: Math.max(0, it.weight - 5) } : it) }))}
+                                  >−</button>
+                                  <span style={{ flex: 1, textAlign: "center", fontSize: 13, fontWeight: 800, fontFamily: "var(--font-mono, monospace)" }}>{Math.round(item.weight)}</span>
+                                  <button
+                                    type="button"
+                                    style={{ width: 32, height: 36, border: "none", background: "none", cursor: "pointer", fontSize: 16, color: "#555" }}
+                                    onClick={() => setDraft(template.id, (d) => ({ ...d, itemDrafts: d.itemDrafts.map((it, i) => i === idx ? { ...it, weight: Math.min(100, it.weight + 5) } : it) }))}
+                                  >+</button>
+                                </div>
+                              </div>
+                              <div>
+                                <label style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Target</label>
+                                <input
+                                  className="input"
+                                  type="number"
+                                  value={item.targetValue ?? ""}
+                                  onChange={(e) => setDraft(template.id, (d) => ({ ...d, itemDrafts: d.itemDrafts.map((it, i) => i === idx ? { ...it, targetValue: e.target.value ? Number(e.target.value) : null } : it) }))}
+                                  style={{ height: 36, fontSize: 13 }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Satuan</label>
+                                <input
+                                  className="input"
+                                  value={item.unit ?? ""}
+                                  onChange={(e) => setDraft(template.id, (d) => ({ ...d, itemDrafts: d.itemDrafts.map((it, i) => i === idx ? { ...it, unit: e.target.value || null } : it) }))}
+                                  placeholder="unit, %, pcs…"
+                                  style={{ height: 36, fontSize: 13 }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, paddingTop: 4 }}>
+                      <Button
+                        size="sm"
+                        onClick={() => saveTemplate(template.id)}
+                        loading={saving === template.id}
+                        disabled={!draft.isDirty || saving === "all"}
+                      >
+                        <Save size={14} /> Simpan Perubahan
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Sticky save bar */}
+      {totalDirty > 0 && (
+        <div style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 40,
+          background: "linear-gradient(135deg, #FFC93C, #FFA000)",
+          padding: "14px 20px", display: "flex", alignItems: "center", gap: 12,
+          boxShadow: "0 -4px 20px rgba(255,193,7,0.35)",
+        }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#111111" }}>
+              {totalDirty} template belum disimpan
+            </div>
+          </div>
+          <Button onClick={saveAll} loading={saving === "all"} style={{ background: "#111111", color: "#FFC107", border: "none", fontWeight: 800 }}>
+            <Save size={16} /> Simpan Semua
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
