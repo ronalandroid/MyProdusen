@@ -760,7 +760,7 @@ Core schemas include:
 - Production KPI: 50%.
 - Behavior / Perilaku Kerja: 20%.
 - Every new employee starts at 100.
-- Display formula: `score / 10` for readable 10-point presentation.
+- Formula: `score / 10` for readable 10-point presentation.
 - Badges remain professional and maximum 3–5 visible.
 
 #### Requirements
@@ -947,12 +947,22 @@ Core schemas include:
 
 ### 16.3 Admin Desktop UX
 
+MyProdusen admin experience follows Talenta-style professional HRIS UX principles: structured information hierarchy, clear decision queues, and workflow-first navigation.
+
+#### UX Principles
+
+- **Today-first dashboard** — pending counts and today's attendance metrics above the fold.
+- **Admin flows as checklist** — payroll checklist, approval queue, and decision timeline surface every blocking action.
+- **Tables on desktop, cards on mobile** — data tables for desktop density; card layout on narrow viewports.
+- **Status at a glance** — status chips (present, late, pending, approved, rejected) in every list and table row.
+- **Approval timeline** — every approval action (leave, exception, overtime, KPI) shows a timestamped approval timeline.
+
 #### Requirements
 
 - Desktop white sidebar with yellow active state.
 - Dashboard metrics use mono numbers.
 - Data tables use compact uppercase headers.
-- Status uses badges.
+- Status uses badges and status chips.
 - Management cards remain white/flat.
 - Tables support responsive fallback to cards or horizontal scroll on tablet/mobile.
 
