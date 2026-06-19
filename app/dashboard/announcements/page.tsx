@@ -3,8 +3,11 @@
 import { useId, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Bell } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchApiData } from '@/hooks/useDashboardQueries';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import GlobalEmptyState from '@/components/ui/EmptyState';
 
 interface Announcement {
   announcement: {
@@ -286,23 +289,12 @@ function StatsCards({ announcements }: { announcements: Announcement[] }) {
 
 function EmptyState() {
   return (
-    <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
-      <svg
-        className="mx-auto size-12 text-gray-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"
-        />
-      </svg>
-      <h3 className="mt-2 text-sm font-medium text-gray-900">Belum ada announcement</h3>
-      <p className="mt-1 text-sm text-gray-500">Mulai dengan membuat announcement baru</p>
+    <div className="card">
+      <GlobalEmptyState
+        icon={Bell}
+        title="Belum ada pengumuman"
+        description="Pengumuman dari Superadmin atau HRD akan muncul di sini."
+      />
     </div>
   );
 }
@@ -578,8 +570,8 @@ export default function AnnouncementsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full size-12 border-b-2 border-blue-600"></div>
+      <div className="p-6 max-w-7xl mx-auto space-y-4">
+        <SkeletonList count={4} />
       </div>
     );
   }

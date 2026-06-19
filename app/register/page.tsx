@@ -4,8 +4,22 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle, Eye, EyeOff, Lock, Mail, ShieldCheck, User } from "lucide-react";
 
+function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
+  if (!pw) return { score: 0, label: "", color: "" };
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (score <= 1) return { score, label: "Lemah", color: "var(--danger)" };
+  if (score <= 3) return { score, label: "Sedang", color: "var(--warning)" };
+  return { score, label: "Kuat", color: "var(--success)" };
+}
+
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -145,6 +159,8 @@ export default function RegisterPage() {
                     autoComplete="new-password"
                     required
                     disabled={isSubmitting}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     aria-describedby={error ? "register-error register-password-help" : "register-password-help"}
                     aria-invalid={Boolean(error)}
                   />
@@ -158,6 +174,25 @@ export default function RegisterPage() {
                     {showPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
                   </button>
                 </div>
+                {password && (() => {
+                  const { score, label, color } = getPasswordStrength(password);
+                  return (
+                    <div className="mt-2 space-y-1.5">
+                      <div className="flex gap-1" aria-hidden="true">
+                        {[1,2,3,4,5].map((i) => (
+                          <div
+                            key={i}
+                            className="h-1 flex-1 rounded-full transition-all duration-300"
+                            style={{ background: i <= score ? color : "var(--border-color)" }}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs font-semibold" style={{ color }}>
+                        Kekuatan: {label}
+                      </p>
+                    </div>
+                  );
+                })()}
                 <p id="register-password-help" className="mt-2 text-xs text-[var(--text-muted)]">Wajib huruf besar, huruf kecil, angka, dan karakter khusus.</p>
               </div>
 

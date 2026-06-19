@@ -120,6 +120,87 @@
 }
 
 /* ============================================
+   DARK MODE
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary: #FFC107;
+    --primary-hover: #FFD54F;
+    --primary-light: rgba(255, 193, 7, 0.15);
+    --primary-soft: rgba(255, 193, 7, 0.10);
+    --primary-dark: #E5AE06;
+
+    --text-primary: #F5F4F0;
+    --text-secondary: #A8A49E;
+    --text-muted: #7A766F;
+    --text-inverse: #111111;
+
+    --bg-main: #111110;
+    --bg-card: #1C1B19;
+    --bg-input: #242320;
+    --bg-hover: #2C2B28;
+    --bg-overlay: rgba(0, 0, 0, 0.72);
+
+    --border-color: #2E2D2A;
+    --border-focus: #FDC704;
+
+    --success: #34D399;
+    --success-text: #6EE7B7;
+    --success-bg: rgba(52, 211, 153, 0.12);
+    --success-border: rgba(52, 211, 153, 0.3);
+
+    --danger: #F87171;
+    --danger-text: #FCA5A5;
+    --danger-bg: rgba(248, 113, 113, 0.12);
+    --danger-border: rgba(248, 113, 113, 0.3);
+
+    --warning: #FBBF24;
+    --warning-text: #FCD34D;
+    --warning-bg: rgba(251, 191, 36, 0.12);
+    --warning-border: rgba(251, 191, 36, 0.3);
+
+    --info: #60A5FA;
+    --info-text: #93C5FD;
+    --info-bg: rgba(96, 165, 250, 0.12);
+    --info-border: rgba(96, 165, 250, 0.3);
+
+    --shadow-xs: 0 1px 2px 0 rgba(0,0,0,0.3);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.25);
+    --shadow-card: 0 14px 38px rgba(0,0,0,0.35);
+    --shadow-md: 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  body {
+    background: radial-gradient(circle at 100% 0%, rgba(255, 193, 7, 0.06), transparent 26rem), #111110;
+  }
+
+  .layout-wrapper {
+    background:
+      radial-gradient(circle at 98% 2%, rgba(255, 193, 7, 0.07), transparent 24rem),
+      linear-gradient(180deg, #111110 0%, #0E0E0D 100%);
+  }
+
+  .nav-container {
+    background-color: rgba(20, 19, 17, 0.96);
+    border-top-color: var(--border-color);
+  }
+
+  @media (min-width: 1024px) {
+    .nav-container {
+      border-right-color: var(--border-color);
+    }
+  }
+
+  .skeleton-card,
+  .skeleton-line,
+  .skeleton-avatar {
+    background: linear-gradient(90deg, #1c1b19 25%, #2a2924 37%, #1c1b19 63%);
+    background-size: 400% 100%;
+  }
+}
+
+/* ============================================
    BASE STYLES
    ============================================ */
 

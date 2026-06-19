@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { fetchApiData } from '@/hooks/useDashboardQueries';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 
 interface PayrollItem {
   item: {
@@ -85,11 +86,7 @@ export default function PayrollDetailPage() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <div className="p-6 max-w-5xl mx-auto"><SkeletonCard rows={8} /></div>;
   }
 
   if (!run) {

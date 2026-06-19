@@ -1,8 +1,12 @@
 'use client';
 
-import { useCallback, useReducer } from 'react';
+import { useCallback, useReducer, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Clock, CheckCircle, XCircle, Zap, Plus, X } from 'lucide-react';
 import { fetchApiData } from '@/hooks/useDashboardQueries';
+import { SkeletonList, SkeletonStatsGrid } from '@/components/ui/Skeleton';
+import EmptyState from '@/components/ui/EmptyState';
 
 interface OvertimeRate {
   id: string;
@@ -68,291 +72,273 @@ const dateFormatter = new Intl.DateTimeFormat('id-ID', {
   year: 'numeric',
 });
 
-const STATUS_STYLES: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  APPROVED: 'bg-green-100 text-green-800',
-  REJECTED: 'bg-red-100 text-red-800',
-  CANCELLED: 'bg-gray-100 text-gray-800',
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Menunggu',
+  APPROVED: 'Disetujui',
+  REJECTED: 'Ditolak',
+  CANCELLED: 'Dibatalkan',
+};
+
+const STATUS_CLASS: Record<string, string> = {
+  PENDING: 'badge-warning',
+  APPROVED: 'badge-success',
+  REJECTED: 'badge-danger',
+  CANCELLED: 'badge',
 };
 
 function calculateDuration(start: string, end: string) {
-  const [startHour, startMin] = start.split(':').map(Number);
-  const [endHour, endMin] = end.split(':').map(Number);
-  const startMinutes = startHour * 60 + startMin;
-  const endMinutes = endHour * 60 + endMin;
-  return (endMinutes - startMinutes) / 60;
-}
-
-function formatCurrency(amount: number) {
-  return currencyFormatter.format(amount);
-}
-
-function formatDate(dateString: string) {
-  return dateFormatter.format(new Date(dateString));
-}
-
-function StatusBadge({ status }: { status: string }) {
-  return (
-    <span
-      className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[status]}`}
-    >
-      {status}
-    </span>
-  );
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  return (eh * 60 + em - (sh * 60 + sm)) / 60;
 }
 
 interface State {
-  requests: OvertimeRequest[];
-  rates: OvertimeRate[];
-  loading: boolean;
   showModal: boolean;
+  rejectId: string | null;
   filter: string;
   pendingApproveId: string | null;
   feedback: string | null;
+  feedbackType: 'success' | 'error';
   formData: FormData;
 }
 
 type Action =
-  | { type: 'SET_DATA'; requests?: OvertimeRequest[]; rates?: OvertimeRate[] }
-  | { type: 'SET_LOADING'; loading: boolean }
   | { type: 'SET_MODAL'; showModal: boolean }
+  | { type: 'SET_REJECT_ID'; rejectId: string | null }
   | { type: 'SET_FILTER'; filter: string }
   | { type: 'SET_PENDING_APPROVE'; pendingApproveId: string | null }
-  | { type: 'SET_FEEDBACK'; feedback: string | null }
+  | { type: 'SET_FEEDBACK'; feedback: string | null; feedbackType?: 'success' | 'error' }
   | { type: 'SET_FORM'; formData: FormData }
   | { type: 'RESET_FORM' };
 
 const INITIAL_STATE: State = {
-  requests: [],
-  rates: [],
-  loading: true,
   showModal: false,
+  rejectId: null,
   filter: 'ALL',
   pendingApproveId: null,
   feedback: null,
+  feedbackType: 'success',
   formData: EMPTY_FORM,
 };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'SET_DATA':
-      return {
-        ...state,
-        requests: action.requests ?? state.requests,
-        rates: action.rates ?? state.rates,
-      };
-    case 'SET_LOADING':
-      return { ...state, loading: action.loading };
-    case 'SET_MODAL':
-      return { ...state, showModal: action.showModal };
-    case 'SET_FILTER':
-      return { ...state, filter: action.filter };
-    case 'SET_PENDING_APPROVE':
-      return { ...state, pendingApproveId: action.pendingApproveId };
-    case 'SET_FEEDBACK':
-      return { ...state, feedback: action.feedback };
-    case 'SET_FORM':
-      return { ...state, formData: action.formData };
-    case 'RESET_FORM':
-      return { ...state, formData: EMPTY_FORM };
-    default:
-      return state;
+    case 'SET_MODAL': return { ...state, showModal: action.showModal };
+    case 'SET_REJECT_ID': return { ...state, rejectId: action.rejectId };
+    case 'SET_FILTER': return { ...state, filter: action.filter };
+    case 'SET_PENDING_APPROVE': return { ...state, pendingApproveId: action.pendingApproveId };
+    case 'SET_FEEDBACK': return { ...state, feedback: action.feedback, feedbackType: action.feedbackType ?? 'success' };
+    case 'SET_FORM': return { ...state, formData: action.formData };
+    case 'RESET_FORM': return { ...state, formData: EMPTY_FORM };
+    default: return state;
   }
 }
 
 function StatsCards({ requests }: { requests: OvertimeRequest[] }) {
-  const pendingCount = requests.filter((r) => r.request.status === 'PENDING').length;
-  const approvedCount = requests.filter((r) => r.request.status === 'APPROVED').length;
+  const pending = requests.filter((r) => r.request.status === 'PENDING').length;
+  const approved = requests.filter((r) => r.request.status === 'APPROVED').length;
   const totalHours = requests
     .filter((r) => r.request.status === 'APPROVED')
     .reduce((sum, r) => sum + r.request.durationHours, 0)
     .toFixed(1);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Total Requests</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{requests.length}</p>
+    <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-5">
+      {[
+        { label: 'Total', value: requests.length, icon: Clock, color: 'var(--info)' },
+        { label: 'Menunggu', value: pending, icon: Clock, color: 'var(--warning)' },
+        { label: 'Disetujui', value: approved, icon: CheckCircle, color: 'var(--success)' },
+        { label: 'Total Jam', value: `${totalHours}j`, icon: Zap, color: 'var(--primary-dark)' },
+      ].map(({ label, value, icon: Icon, color }) => (
+        <div key={label} className="card p-4">
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
+            <Icon size={15} style={{ color }} aria-hidden="true" /> {label}
           </div>
-          <div className="size-12 bg-blue-100 rounded-lg flex items-center justify-center">
-            <svg className="size-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
+          <div className="text-2xl font-extrabold" style={{ color: 'var(--text-primary)' }}>{value}</div>
         </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Pending</p>
-            <p className="text-2xl font-bold text-yellow-600 mt-1">{pendingCount}</p>
-          </div>
-          <div className="size-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-            <svg className="size-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Approved</p>
-            <p className="text-2xl font-bold text-green-600 mt-1">{approvedCount}</p>
-          </div>
-          <div className="size-12 bg-green-100 rounded-lg flex items-center justify-center">
-            <svg className="size-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Total Hours</p>
-            <p className="text-2xl font-bold text-purple-600 mt-1">{totalHours}</p>
-          </div>
-          <div className="size-12 bg-purple-100 rounded-lg flex items-center justify-center">
-            <svg className="size-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-        </div>
-      </div>
-    </div>
+      ))}
+    </section>
   );
 }
 
-function FilterTabs({ filter, onSelect }: { filter: string; onSelect: (status: string) => void }) {
+function FilterTabs({ filter, onSelect }: { filter: string; onSelect: (s: string) => void }) {
+  const tabs = ['ALL', 'PENDING', 'APPROVED', 'REJECTED'];
   return (
-    <div className="mb-6 flex gap-2">
-      {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((status) => (
+    <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+      {tabs.map((t) => (
         <button
-          key={status}
+          key={t}
           type="button"
-          onClick={() => onSelect(status)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            filter === status
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-          }`}
+          onClick={() => onSelect(t)}
+          className={`btn btn-sm shrink-0 ${filter === t ? 'btn-primary' : 'btn-secondary'}`}
         >
-          {status}
+          {t === 'ALL' ? 'Semua' : STATUS_LABEL[t]}
         </button>
       ))}
     </div>
   );
 }
 
-function RequestsTable({
-  requests,
+function RequestCard({
+  item,
   pendingApproveId,
   onApprove,
   onReject,
 }: {
-  requests: OvertimeRequest[];
+  item: OvertimeRequest;
   pendingApproveId: string | null;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
 }) {
+  const { request, employee, rate } = item;
+  const isPending = request.status === 'PENDING';
+  const isConfirming = pendingApproveId === request.id;
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100">
-        <h2 className="text-lg font-semibold text-gray-900">Overtime Requests</h2>
+    <div className="card p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="min-w-0">
+          <p className="font-bold truncate" style={{ color: 'var(--text-primary)' }}>{employee.fullName}</p>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{employee.nip} · {employee.position}</p>
+        </div>
+        <span className={`badge shrink-0 ${STATUS_CLASS[request.status]}`}>{STATUS_LABEL[request.status]}</span>
       </div>
 
-      {requests.length === 0 ? (
-        <div className="text-center py-12">
-          <svg
-            className="mx-auto size-12 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Belum ada request lembur</h3>
-          <p className="mt-1 text-sm text-gray-500">Mulai dengan membuat request lembur baru</p>
+      <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+        <div>
+          <span className="block text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Tanggal</span>
+          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{dateFormatter.format(new Date(request.overtimeDate))}</span>
         </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Karyawan</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Waktu</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durasi</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rate</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pay</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {requests.map((item) => (
-                <tr key={item.request.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">{item.employee.fullName}</div>
-                    <div className="text-xs text-gray-500">
-                      {item.employee.nip} • {item.employee.position}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatDate(item.request.overtimeDate)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.request.startTime} - {item.request.endTime}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
-                    {item.request.durationHours} jam
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.rate.name} ({item.rate.multiplier}x)
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                    {formatCurrency(item.request.calculatedPay)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={item.request.status} />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {item.request.status === 'PENDING' && (
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onApprove(item.request.id)}
-                          className="text-green-600 hover:text-green-900"
-                        >
-                          {pendingApproveId === item.request.id ? 'Konfirmasi Approve' : 'Setujui lembur'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onReject(item.request.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Tolak lembur
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div>
+          <span className="block text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Waktu</span>
+          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{request.startTime}–{request.endTime}</span>
+        </div>
+        <div>
+          <span className="block text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Durasi</span>
+          <span className="font-semibold" style={{ color: 'var(--info)' }}>{request.durationHours} jam</span>
+        </div>
+        <div>
+          <span className="block text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Rate</span>
+          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{rate.name} ({rate.multiplier}×)</span>
+        </div>
+      </div>
+
+      {request.calculatedPay > 0 && (
+        <div className="mb-3 rounded-xl px-3 py-2 text-sm font-bold" style={{ background: 'var(--success-bg)', color: 'var(--success-text)' }}>
+          {currencyFormatter.format(request.calculatedPay)}
         </div>
       )}
+
+      {request.reason && (
+        <p className="mb-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+          Alasan: {request.reason}
+        </p>
+      )}
+
+      {request.rejectedReason && (
+        <p className="mb-3 text-xs rounded-xl px-3 py-2" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>
+          Ditolak: {request.rejectedReason}
+        </p>
+      )}
+
+      {isPending && (
+        <div className="flex gap-2 pt-2 border-t" style={{ borderColor: 'var(--border-color)' }}>
+          <button
+            type="button"
+            onClick={() => onApprove(request.id)}
+            className={`btn btn-sm flex-1 ${isConfirming ? 'btn-primary' : 'btn-secondary'}`}
+          >
+            {isConfirming ? '✓ Konfirmasi' : 'Setujui'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onReject(request.id)}
+            className="btn btn-sm btn-danger flex-1"
+          >
+            Tolak
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RejectModal({
+  onConfirm,
+  onClose,
+}: {
+  onConfirm: (reason: string) => void;
+  onClose: () => void;
+}) {
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState('');
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (reason.trim().length < 10) {
+      setError('Alasan penolakan minimal 10 karakter.');
+      return;
+    }
+    onConfirm(reason.trim());
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+      style={{ background: 'var(--bg-overlay)' }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reject-modal-title"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl" style={{ background: 'var(--bg-card)' }}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 id="reject-modal-title" className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+            Tolak Lembur
+          </h2>
+          <button type="button" onClick={onClose} className="btn btn-icon btn-secondary" aria-label="Tutup">
+            <X size={18} />
+          </button>
+        </div>
+
+        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+          Berikan alasan penolakan yang jelas agar karyawan dapat mengajukan ulang.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="reject-reason" className="label">Alasan Penolakan</label>
+            <textarea
+              id="reject-reason"
+              className="input resize-none"
+              rows={4}
+              value={reason}
+              onChange={(e) => { setReason(e.target.value); setError(''); }}
+              placeholder="Minimal 10 karakter..."
+              autoFocus
+            />
+            <div className="mt-1 flex justify-between">
+              {error ? (
+                <p className="text-xs" style={{ color: 'var(--danger)' }}>{error}</p>
+              ) : (
+                <span />
+              )}
+              <p className="text-xs" style={{ color: reason.length >= 10 ? 'var(--success)' : 'var(--text-muted)' }}>
+                {reason.length}/10
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" onClick={onClose} className="btn btn-secondary min-h-[44px]">
+              Batal
+            </button>
+            <button type="submit" className="btn btn-danger min-h-[44px]">
+              <XCircle size={16} aria-hidden="true" /> Tolak Lembur
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -366,135 +352,127 @@ function CreateModal({
 }: {
   rates: OvertimeRate[];
   formData: FormData;
-  onChangeForm: (formData: FormData) => void;
+  onChangeForm: (f: FormData) => void;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
 }) {
   return (
-    <div className="fixed inset-0 bg-gray-950/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Request Lembur Baru</h3>
-        <form onSubmit={onSubmit}>
-          <div className="mb-4">
-            <label htmlFor="overtimeDate" className="block text-sm font-medium text-gray-700 mb-2">
-              Tanggal Lembur
-            </label>
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+      style={{ background: 'var(--bg-overlay)' }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-ot-title"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto" style={{ background: 'var(--bg-card)' }}>
+        <div className="flex items-center justify-between mb-5">
+          <h2 id="create-ot-title" className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+            Request Lembur Baru
+          </h2>
+          <button type="button" onClick={onClose} className="btn btn-icon btn-secondary" aria-label="Tutup">
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="ot-date" className="label">Tanggal Lembur</label>
             <input
-              id="overtimeDate"
+              id="ot-date"
               type="date"
+              className="input"
               value={formData.overtimeDate}
               onChange={(e) => onChangeForm({ ...formData, overtimeDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-2">
-                Waktu Mulai
-              </label>
+              <label htmlFor="ot-start" className="label">Mulai</label>
               <input
-                id="startTime"
+                id="ot-start"
                 type="time"
+                className="input"
                 value={formData.startTime}
                 onChange={(e) => {
-                  const newStart = e.target.value;
+                  const start = e.target.value;
                   onChangeForm({
                     ...formData,
-                    startTime: newStart,
-                    durationHours: formData.endTime
-                      ? calculateDuration(newStart, formData.endTime)
-                      : 0,
+                    startTime: start,
+                    durationHours: formData.endTime ? calculateDuration(start, formData.endTime) : 0,
                   });
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
-
             <div>
-              <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-2">
-                Waktu Selesai
-              </label>
+              <label htmlFor="ot-end" className="label">Selesai</label>
               <input
-                id="endTime"
+                id="ot-end"
                 type="time"
+                className="input"
                 value={formData.endTime}
                 onChange={(e) => {
-                  const newEnd = e.target.value;
+                  const end = e.target.value;
                   onChangeForm({
                     ...formData,
-                    endTime: newEnd,
-                    durationHours: formData.startTime
-                      ? calculateDuration(formData.startTime, newEnd)
-                      : 0,
+                    endTime: end,
+                    durationHours: formData.startTime ? calculateDuration(formData.startTime, end) : 0,
                   });
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
           </div>
 
           {formData.durationHours > 0 && (
-            <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-800">
-                Durasi: <span className="font-semibold">{formData.durationHours} jam</span>
-              </p>
+            <div className="rounded-2xl px-4 py-3 text-sm font-bold" style={{ background: 'var(--primary-light)', color: 'var(--primary-dark)' }}>
+              Durasi: {formData.durationHours} jam
             </div>
           )}
 
-          <div className="mb-4">
-            <label htmlFor="rateId" className="block text-sm font-medium text-gray-700 mb-2">
-              Rate Lembur
-            </label>
+          <div>
+            <label htmlFor="ot-rate" className="label">Rate Lembur</label>
             <select
-              id="rateId"
+              id="ot-rate"
+              className="input"
               value={formData.rateId}
               onChange={(e) => onChangeForm({ ...formData, rateId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             >
-              <option value="">Pilih Rate</option>
-              {rates.map((rate) => (
-                <option key={rate.id} value={rate.id}>
-                  {rate.name} ({rate.multiplier}x)
-                </option>
+              <option value="">Pilih rate lembur</option>
+              {rates.map((r) => (
+                <option key={r.id} value={r.id}>{r.name} ({r.multiplier}×)</option>
               ))}
             </select>
           </div>
 
-          <div className="mb-6">
-            <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-2">
-              Alasan Lembur
-            </label>
+          <div>
+            <label htmlFor="ot-reason" className="label">Alasan Lembur</label>
             <textarea
-              id="reason"
+              id="ot-reason"
+              className="input resize-none"
+              rows={3}
               value={formData.reason}
               onChange={(e) => onChangeForm({ ...formData, reason: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              rows={3}
+              placeholder="Minimal 10 karakter"
               required
               minLength={10}
-              placeholder="Minimal 10 karakter"
             />
           </div>
 
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button type="button" onClick={onClose} className="btn btn-secondary min-h-[44px]">
               Batal
             </button>
             <button
               type="submit"
               disabled={formData.durationHours < 0.5}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn btn-primary min-h-[44px]"
             >
-              Simpan request lembur
+              Simpan Request
             </button>
           </div>
         </form>
@@ -504,15 +482,10 @@ function CreateModal({
 }
 
 export default function OvertimePage() {
+  const router = useRouter();
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const queryClient = useQueryClient();
-  const {
-    showModal,
-    filter,
-    pendingApproveId,
-    feedback,
-    formData,
-  } = state;
+  const { showModal, rejectId, filter, pendingApproveId, feedback, feedbackType, formData } = state;
 
   const { data: requestsData, isLoading: requestsLoading } = useQuery({
     queryKey: ['overtime', 'requests', filter],
@@ -533,160 +506,166 @@ export default function OvertimePage() {
 
   const requests = requestsData ?? [];
   const rates = ratesData ?? [];
-  const loading = requestsLoading;
 
-  const fetchData = useCallback(() => {
+  const invalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['overtime'] });
   }, [queryClient]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       const res = await fetch('/api/overtime/requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-
       if (res.ok) {
         dispatch({ type: 'SET_MODAL', showModal: false });
         dispatch({ type: 'RESET_FORM' });
-        dispatch({ type: 'SET_FEEDBACK', feedback: 'Request lembur berhasil dibuat.' });
-        fetchData();
+        dispatch({ type: 'SET_FEEDBACK', feedback: 'Request lembur berhasil dibuat.', feedbackType: 'success' });
+        invalidate();
       } else {
-        const error = await res.json();
-        dispatch({
-          type: 'SET_FEEDBACK',
-          feedback: typeof error.error === 'string' ? error.error : 'Request lembur gagal dibuat.',
-        });
+        const err = await res.json();
+        dispatch({ type: 'SET_FEEDBACK', feedback: err.error ?? 'Gagal membuat request.', feedbackType: 'error' });
       }
     } catch {
-      dispatch({
-        type: 'SET_FEEDBACK',
-        feedback: 'Gagal membuat request lembur. Coba lagi sebentar.',
-      });
+      dispatch({ type: 'SET_FEEDBACK', feedback: 'Gagal membuat request lembur.', feedbackType: 'error' });
     }
   };
 
   const handleApprove = async (id: string) => {
     if (pendingApproveId !== id) {
       dispatch({ type: 'SET_PENDING_APPROVE', pendingApproveId: id });
-      dispatch({ type: 'SET_FEEDBACK', feedback: 'Klik Approve sekali lagi untuk konfirmasi.' });
+      dispatch({ type: 'SET_FEEDBACK', feedback: 'Klik "Konfirmasi" sekali lagi untuk menyetujui.', feedbackType: 'success' });
       return;
     }
-
     try {
-      const res = await fetch(`/api/overtime/requests/${id}/approve`, {
-        method: 'POST',
-      });
-
+      const res = await fetch(`/api/overtime/requests/${id}/approve`, { method: 'POST' });
+      dispatch({ type: 'SET_PENDING_APPROVE', pendingApproveId: null });
       if (res.ok) {
-        dispatch({ type: 'SET_PENDING_APPROVE', pendingApproveId: null });
-        dispatch({ type: 'SET_FEEDBACK', feedback: 'Request lembur berhasil disetujui.' });
-        fetchData();
+        dispatch({ type: 'SET_FEEDBACK', feedback: 'Lembur berhasil disetujui.', feedbackType: 'success' });
+        invalidate();
       } else {
-        const error = await res.json();
-        dispatch({
-          type: 'SET_FEEDBACK',
-          feedback: typeof error.error === 'string' ? error.error : 'Request lembur gagal disetujui.',
-        });
+        const err = await res.json();
+        dispatch({ type: 'SET_FEEDBACK', feedback: err.error ?? 'Gagal menyetujui lembur.', feedbackType: 'error' });
       }
     } catch {
-      dispatch({ type: 'SET_FEEDBACK', feedback: 'Gagal approve request. Coba lagi sebentar.' });
+      dispatch({ type: 'SET_FEEDBACK', feedback: 'Gagal menyetujui lembur.', feedbackType: 'error' });
     }
   };
 
-  const handleReject = async (id: string) => {
-    const reason = prompt('Alasan penolakan (minimal 10 karakter):');
-    if (!reason) return;
-    if (reason.trim().length < 10) {
-      alert('Alasan penolakan minimal 10 karakter.');
-      return;
-    }
+  const handleRejectOpen = (id: string) => {
+    dispatch({ type: 'SET_REJECT_ID', rejectId: id });
+  };
 
+  const handleRejectConfirm = async (reason: string) => {
+    if (!rejectId) return;
     try {
-      const res = await fetch(`/api/overtime/requests/${id}/reject`, {
+      const res = await fetch(`/api/overtime/requests/${rejectId}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rejectedReason: reason }),
       });
-
+      dispatch({ type: 'SET_REJECT_ID', rejectId: null });
       if (res.ok) {
-        fetchData();
+        dispatch({ type: 'SET_FEEDBACK', feedback: 'Lembur berhasil ditolak.', feedbackType: 'success' });
+        invalidate();
       } else {
-        const error = await res.json();
-        dispatch({
-          type: 'SET_FEEDBACK',
-          feedback: typeof error.error === 'string' ? error.error : 'Request lembur gagal ditolak.',
-        });
+        const err = await res.json();
+        dispatch({ type: 'SET_FEEDBACK', feedback: err.error ?? 'Gagal menolak lembur.', feedbackType: 'error' });
       }
     } catch {
-      dispatch({ type: 'SET_FEEDBACK', feedback: 'Gagal reject request. Coba lagi sebentar.' });
+      dispatch({ type: 'SET_FEEDBACK', feedback: 'Gagal menolak lembur.', feedbackType: 'error' });
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full size-12 border-b-2 border-blue-600" />
-      </div>
-    );
-  }
-
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="phone-screen feature-screen flex min-h-full flex-col gap-5">
       {/* Header */}
-      <div className="mb-8">
-        {feedback && (
-          <output className="mb-4 block rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-            {feedback}
-          </output>
-        )}
-        <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
+        <button type="button" className="flex min-w-0 items-center gap-3 text-left" onClick={() => router.back()} aria-label="Kembali">
+          <ArrowLeft size={24} aria-hidden="true" />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Overtime Management</h1>
-            <p className="text-gray-600 mt-1">Kelola request lembur karyawan</p>
+            <h1 className="text-xl font-bold">Lembur</h1>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Kelola request lembur</p>
           </div>
-          <div className="flex gap-3">
-            <span className="inline-flex min-h-[44px] items-center rounded-lg border border-[var(--border-color)] bg-white px-4 py-2 text-sm font-semibold text-[var(--text-secondary)]">
-              Rate aktif: {rates.length}
-            </span>
-            <button
-              type="button"
-              onClick={() => dispatch({ type: 'SET_MODAL', showModal: true })}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              + Request Lembur
-            </button>
-          </div>
+        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold px-3 py-1 rounded-full border" style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}>
+            {rates.length} rate aktif
+          </span>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => dispatch({ type: 'SET_MODAL', showModal: true })}
+          >
+            <Plus size={16} aria-hidden="true" /> Request
+          </button>
         </div>
       </div>
 
-      <StatsCards requests={requests} />
+      {/* Feedback */}
+      {feedback && (
+        <output
+          className={`rounded-2xl px-4 py-3 text-sm font-semibold ${feedbackType === 'error' ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-green-50 text-green-800 border border-green-200'}`}
+          role={feedbackType === 'error' ? 'alert' : 'status'}
+        >
+          {feedback}
+        </output>
+      )}
 
-      <FilterTabs
-        filter={filter}
-        onSelect={(status) => dispatch({ type: 'SET_FILTER', filter: status })}
-      />
+      {/* Stats */}
+      {requestsLoading ? (
+        <SkeletonStatsGrid count={4} />
+      ) : (
+        <StatsCards requests={requests} />
+      )}
 
-      <RequestsTable
-        requests={requests}
-        pendingApproveId={pendingApproveId}
-        onApprove={handleApprove}
-        onReject={handleReject}
-      />
+      {/* Filter tabs */}
+      <FilterTabs filter={filter} onSelect={(s) => dispatch({ type: 'SET_FILTER', filter: s })} />
 
+      {/* Requests */}
+      {requestsLoading ? (
+        <SkeletonList count={3} />
+      ) : requests.length === 0 ? (
+        <div className="card">
+          <EmptyState
+            icon={Clock}
+            title="Belum ada request lembur"
+            description="Tekan tombol Request untuk mengajukan lembur baru."
+            action={{ label: '+ Request Lembur', onClick: () => dispatch({ type: 'SET_MODAL', showModal: true }) }}
+          />
+        </div>
+      ) : (
+        <section className="space-y-3">
+          {requests.map((item) => (
+            <RequestCard
+              key={item.request.id}
+              item={item}
+              pendingApproveId={pendingApproveId}
+              onApprove={handleApprove}
+              onReject={handleRejectOpen}
+            />
+          ))}
+        </section>
+      )}
+
+      {/* Create modal */}
       {showModal && (
         <CreateModal
           rates={rates}
           formData={formData}
           onChangeForm={(next) => dispatch({ type: 'SET_FORM', formData: next })}
-          onClose={() => {
-            dispatch({ type: 'SET_MODAL', showModal: false });
-            dispatch({ type: 'RESET_FORM' });
-          }}
+          onClose={() => { dispatch({ type: 'SET_MODAL', showModal: false }); dispatch({ type: 'RESET_FORM' }); }}
           onSubmit={handleSubmit}
+        />
+      )}
+
+      {/* Reject modal */}
+      {rejectId && (
+        <RejectModal
+          onConfirm={handleRejectConfirm}
+          onClose={() => dispatch({ type: 'SET_REJECT_ID', rejectId: null })}
         />
       )}
     </div>

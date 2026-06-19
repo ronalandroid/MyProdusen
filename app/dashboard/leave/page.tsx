@@ -8,6 +8,8 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { SkeletonList } from "@/components/ui/Skeleton";
+import EmptyState from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { fetchProfile, getAuthHeaders } from "@/lib/auth-client";
 import { fetchApiData } from "@/hooks/useDashboardQueries";
@@ -287,12 +289,14 @@ export default function LeavePage() {
 
       {/* List */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <LoadingSpinner size="lg" message="Memuat data cuti..." />
-        </div>
+        <SkeletonList count={4} />
       ) : leaveRequests.length === 0 ? (
-        <div className="text-center py-12 text-[var(--text-secondary)]">
-          Belum ada pengajuan cuti
+        <div className="card">
+          <EmptyState
+            icon={Calendar}
+            title="Belum ada pengajuan cuti"
+            description="Tekan tombol + Ajukan Cuti untuk membuat permintaan baru."
+          />
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "24px" }}>
