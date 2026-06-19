@@ -207,7 +207,6 @@ const nextConfig = {
       './node_modules/next/dist/compiled/webpack/**',
       './node_modules/next/dist/compiled/terser/**',
       './node_modules/next/dist/compiled/babel/**',
-      './node_modules/@swc/**',
       './node_modules/esbuild/**',
       './node_modules/@esbuild/**',
       './node_modules/rollup/**',
