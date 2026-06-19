@@ -598,8 +598,12 @@ export default function OvertimePage() {
   };
 
   const handleReject = async (id: string) => {
-    const reason = prompt('Alasan penolakan:');
+    const reason = prompt('Alasan penolakan (minimal 10 karakter):');
     if (!reason) return;
+    if (reason.trim().length < 10) {
+      alert('Alasan penolakan minimal 10 karakter.');
+      return;
+    }
 
     try {
       const res = await fetch(`/api/overtime/requests/${id}/reject`, {

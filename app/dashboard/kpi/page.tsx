@@ -16,11 +16,11 @@ type KpiResultRow = {
     isApproved: boolean;
     notes?: string | null;
   };
-  employee?: { id: string; name: string; nip?: string | null } | null;
+  employee?: { id: string; fullName: string; nip?: string | null } | null;
   item?: { id: string; name: string; targetValue?: number | null; unit?: string | null } | null;
 };
 
-type EmployeeRow = { id: string; name: string; nip?: string | null };
+type EmployeeRow = { id: string; fullName: string; nip?: string | null };
 type ProductionEntry = { id: string; date: string; quantity: string; unit: string; source: string; teamName: string };
 
 type EmployeeSummary = {
@@ -194,7 +194,7 @@ export default function KPIPage() {
           <select id="employee-kpi-select" className="input" value={selectedEmployeeId} onChange={(event) => setSelectedEmployeeId(event.target.value)}>
             <option value="">Pilih employee</option>
             {employees.map((employee) => (
-              <option key={employee.id} value={employee.id}>{employee.name}{employee.nip ? ` — ${employee.nip}` : ""}</option>
+              <option key={employee.id} value={employee.id}>{employee.fullName}{employee.nip ? ` — ${employee.nip}` : ""}</option>
             ))}
           </select>
           {summaryLoading && <p className="mt-3 text-sm text-[var(--text-secondary)]">Memuat ringkasan employee...</p>}
@@ -234,7 +234,7 @@ export default function KPIPage() {
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h3 className="truncate text-base font-bold">{row.item?.name || "Item KPI"}</h3>
-                    <p className="text-xs text-[var(--text-secondary)]">{row.employee?.name || "Employee"} · Target {row.item?.targetValue ?? "-"} {row.item?.unit || ""}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">{row.employee?.fullName || "Employee"} · Target {row.item?.targetValue ?? "-"} {row.item?.unit || ""}</p>
                   </div>
                   <span className={`badge ${row.result.isApproved ? "badge-success" : "badge-warning"}`}>{row.result.isApproved ? "Approved" : "Pending"}</span>
                 </div>
