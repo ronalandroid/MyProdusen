@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { db, notifications, employees } from '@/lib/db';
+import { db, notifications, employees, users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 
@@ -50,5 +50,46 @@ export async function notifyUser(payload: NotificationPayload): Promise<void> {
     ).catch(() => undefined);
   } catch {
     // Silenced on purpose — caller should not fail because of a notification.
+  }
+}
+
+/**
+ * Broadcast one notification to every active user (company-wide announcements,
+ * policy updates, etc.). Bulk-inserts a row per user, then publishes a single
+ * global realtime event so all connected clients refresh their notification
+ * badge instantly. Best-effort: never blocks the originating mutation.
+ */
+export async function notifyAllActiveUsers(payload: {
+  title: string;
+  message: string;
+  type: string;
+}): Promise<void> {
+  try {
+    const activeUsers = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.isActive, true));
+
+    if (activeUsers.length === 0) return;
+
+    const rows = activeUsers.map((u) => ({
+      id: uuidv4(),
+      userId: u.id,
+      title: payload.title,
+      message: payload.message,
+      type: payload.type,
+    }));
+
+    await db.insert(notifications).values(rows);
+
+    await publishRealtimeEvent(
+      createRealtimeEvent({
+        type: 'notification.created',
+        scope: 'global',
+        payload: { title: payload.title, broadcast: true },
+      }),
+    ).catch(() => undefined);
+  } catch {
+    // Silenced on purpose — announcement creation must not fail on notify.
   }
 }

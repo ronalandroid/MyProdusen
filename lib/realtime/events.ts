@@ -6,6 +6,7 @@ export type RealtimeEventType =
   | 'attendance.updated'
   | 'dashboard.updated'
   | 'sync.updated'
+  | 'announcement.created'
   | 'heartbeat';
 
 export interface RealtimeEvent<TPayload = unknown> {

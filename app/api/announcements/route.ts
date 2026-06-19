@@ -4,6 +4,15 @@ import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { handleApiError } from '@/lib/core/route-handler';
+import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
+import { notifyAllActiveUsers } from '@/lib/notifications/dispatch';
+
+// Empty strings from optional form fields must not fail `.url()` validation —
+// coerce blank imageUrl to undefined before the URL check.
+const optionalUrl = z.preprocess(
+  (val) => (val === '' || val === null ? undefined : val),
+  z.string().url('URL gambar tidak valid').optional(),
+);
 
 const createAnnouncementSchema = z.object({
   title: z.string().min(1, 'Title wajib diisi'),
@@ -11,8 +20,11 @@ const createAnnouncementSchema = z.object({
   category: z.enum(['GENERAL', 'POLICY', 'EVENT', 'EMERGENCY']),
   priority: z.enum(['NORMAL', 'IMPORTANT', 'URGENT']),
   targetAudience: z.string().default('ALL'),
-  expiresAt: z.string().optional().transform((val) => val ? new Date(val) : undefined),
-  imageUrl: z.string().url().optional(),
+  expiresAt: z.preprocess(
+    (val) => (val === '' || val === null ? undefined : val),
+    z.string().optional().transform((val) => (val ? new Date(val) : undefined)),
+  ),
+  imageUrl: optionalUrl,
 });
 
 export async function GET(request: NextRequest) {
@@ -59,6 +71,31 @@ export async function POST(request: NextRequest) {
     const announcement = await announcementService.createAnnouncement({
       ...validated,
       publishedBy: user.id,
+    });
+
+    // Broadcast to every connected client so the announcement appears instantly
+    // for all roles (employee, leader, superadmin) without a manual refresh.
+    await publishRealtimeEvent(
+      createRealtimeEvent({
+        type: 'announcement.created',
+        scope: 'global',
+        payload: {
+          id: announcement.id,
+          title: announcement.title,
+          priority: announcement.priority,
+        },
+      }),
+    ).catch(() => undefined);
+
+    // Persist a notification per active user so it also surfaces in the
+    // notification feed/badge across all account levels.
+    await notifyAllActiveUsers({
+      title: `Pengumuman: ${announcement.title}`,
+      message:
+        announcement.content.length > 140
+          ? `${announcement.content.slice(0, 140)}…`
+          : announcement.content,
+      type: 'ANNOUNCEMENT',
     });
 
     return successResponse(announcement, undefined, 201);

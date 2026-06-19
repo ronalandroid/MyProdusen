@@ -15,6 +15,7 @@ const DEFAULT_REALTIME_EVENT_TYPES: RealtimeEventType[] = [
   'attendance.updated',
   'dashboard.updated',
   'sync.updated',
+  'announcement.created',
 ];
 
 export function useRealtime(options: UseRealtimeOptions = {}) {

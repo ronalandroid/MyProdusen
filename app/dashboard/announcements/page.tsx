@@ -1,11 +1,12 @@
 'use client';
 
-import { useId, useReducer } from 'react';
+import { useCallback, useId, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Bell } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchApiData } from '@/hooks/useDashboardQueries';
+import { fetchApiData, useCachedProfile } from '@/hooks/useDashboardQueries';
+import { useRealtime } from '@/hooks/useRealtime';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import GlobalEmptyState from '@/components/ui/EmptyState';
 
@@ -159,9 +160,11 @@ function formatDate(dateString: string) {
 function AnnouncementsHeader({
   feedback,
   onCreate,
+  canCreate,
 }: {
   feedback: string | null;
   onCreate: () => void;
+  canCreate: boolean;
 }) {
   return (
     <div className="mb-8">
@@ -175,16 +178,18 @@ function AnnouncementsHeader({
           <h1 className="text-3xl font-semibold text-gray-900">Announcements</h1>
           <p className="text-gray-600 mt-1">Berita dan pengumuman perusahaan</p>
         </div>
-        <button
-          type="button"
-          onClick={onCreate}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-        >
-          <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Buat Announcement
-        </button>
+        {canCreate && (
+          <button
+            type="button"
+            onClick={onCreate}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Buat Announcement
+          </button>
+        )}
       </div>
     </div>
   );
@@ -523,6 +528,9 @@ export default function AnnouncementsPage() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { filter, showCreateModal, feedback, formData } = state;
 
+  const { data: profile } = useCachedProfile();
+  const canCreate = profile?.role === 'SUPERADMIN';
+
   const { data: announcementsData, isLoading: announcementsLoading } = useQuery<Announcement[]>({
     queryKey: ['announcements', filter],
     queryFn: () => {
@@ -537,6 +545,18 @@ export default function AnnouncementsPage() {
   });
   const announcements = announcementsData ?? [];
   const loading = announcementsLoading;
+
+  // Realtime sync: when a superadmin publishes (or edits/deletes) an
+  // announcement, every connected client refetches instantly — no manual
+  // refresh needed across employee/leader/superadmin accounts.
+  const handleRealtime = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['announcements'] });
+  }, [queryClient]);
+
+  useRealtime({
+    eventTypes: ['announcement.created'],
+    onEvent: handleRealtime,
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -580,6 +600,7 @@ export default function AnnouncementsPage() {
     <div className="p-6 max-w-7xl mx-auto">
       <AnnouncementsHeader
         feedback={feedback}
+        canCreate={canCreate}
         onCreate={() => dispatch({ type: 'SET_SHOW_CREATE_MODAL', payload: true })}
       />
 

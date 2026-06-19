@@ -4,6 +4,12 @@ import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { handleApiError } from '@/lib/core/route-handler';
+import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
+
+const optionalUrl = z.preprocess(
+  (val) => (val === '' || val === null ? undefined : val),
+  z.string().url('URL gambar tidak valid').optional(),
+);
 
 const updateAnnouncementSchema = z.object({
   title: z.string().min(1).optional(),
@@ -11,8 +17,11 @@ const updateAnnouncementSchema = z.object({
   category: z.enum(['GENERAL', 'POLICY', 'EVENT', 'EMERGENCY']).optional(),
   priority: z.enum(['NORMAL', 'IMPORTANT', 'URGENT']).optional(),
   targetAudience: z.string().optional(),
-  expiresAt: z.string().optional().transform((val) => val ? new Date(val) : undefined),
-  imageUrl: z.string().url().optional(),
+  expiresAt: z.preprocess(
+    (val) => (val === '' || val === null ? undefined : val),
+    z.string().optional().transform((val) => (val ? new Date(val) : undefined)),
+  ),
+  imageUrl: optionalUrl,
   isPinned: z.boolean().optional(),
   isArchived: z.boolean().optional(),
 });
@@ -64,6 +73,15 @@ export async function PATCH(
       validated
     );
 
+    // Push the edit to all clients so changes/archival sync in realtime.
+    await publishRealtimeEvent(
+      createRealtimeEvent({
+        type: 'announcement.created',
+        scope: 'global',
+        payload: { id: params.id, updated: true },
+      }),
+    ).catch(() => undefined);
+
     return successResponse(announcement);
   } catch (error: any) {
     console.error('Update announcement error:', error);
@@ -91,6 +109,14 @@ export async function DELETE(
     }
 
     await announcementService.deleteAnnouncement(params.id);
+
+    await publishRealtimeEvent(
+      createRealtimeEvent({
+        type: 'announcement.created',
+        scope: 'global',
+        payload: { id: params.id, deleted: true },
+      }),
+    ).catch(() => undefined);
 
     return successResponse(null);
   } catch (error: any) {
