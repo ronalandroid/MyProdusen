@@ -30,20 +30,26 @@ interface EmployeeDetail {
   shift?: string | null;
 }
 
+interface AttendanceRecord {
+  id: string;
+  checkInTime: string;
+  status: string;
+}
+
 interface AttendanceSummary {
   present: number;
   late: number;
   absent: number;
   total: number;
-  heatmap?: Array<{ date: string; status: string }>;
+  heatmap: Array<{ date: string; status: string }>;
 }
 
 interface PayslipItem {
   id: string;
   period: string;
-  grossAmount?: number;
-  netAmount?: number;
+  netPay?: number;
   status: string;
+  runId?: string;
 }
 
 const DAY_COLOR: Record<string, string> = {
@@ -108,7 +114,17 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
 
   const { data: attendance } = useQuery<AttendanceSummary>({
     queryKey: ["employee-attendance-summary", employeeId],
-    queryFn: () => fetchApiData<AttendanceSummary>(`/api/attendance?employeeId=${employeeId}&summary=true&limit=27`, ""),
+    queryFn: async () => {
+      const rows = await fetchApiData<AttendanceRecord[]>(`/api/attendance?employeeId=${employeeId}`, "");
+      const recent = (rows ?? []).slice(0, 27);
+      return {
+        total: recent.length,
+        present: recent.filter((r) => r.status === "PRESENT").length,
+        late: recent.filter((r) => r.status === "LATE").length,
+        absent: recent.filter((r) => r.status === "ABSENT").length,
+        heatmap: recent.map((r) => ({ date: r.checkInTime?.slice(0, 10) ?? "", status: r.status })),
+      };
+    },
     staleTime: 60_000,
     enabled: !!emp,
   });
@@ -240,11 +256,11 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
                     <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6, fontSize: 11.5 }}>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ color: "#555555" }}>Bruto</span>
-                        <span style={{ fontFamily: "monospace" }}>Rp {rupiah(latestPayslip.grossAmount ?? 0)}</span>
+                        <span style={{ fontFamily: "monospace" }}>Rp {rupiah(latestPayslip.netPay ?? 0)}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 6, borderTop: "1px solid #EFF1F4", fontWeight: 800 }}>
                         <span>Neto</span>
-                        <span style={{ fontFamily: "monospace" }}>Rp {rupiah(latestPayslip.netAmount ?? 0)}</span>
+                        <span style={{ fontFamily: "monospace" }}>Rp {rupiah(latestPayslip.netPay ?? 0)}</span>
                       </div>
                       <div style={{ fontSize: 10, color: "#6E6E6E" }}>{latestPayslip.period}</div>
                     </div>
@@ -282,7 +298,7 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 700 }}>{p.period}</div>
                       <div style={{ fontSize: 12, color: "#555555", marginTop: 2 }}>
-                        Bruto: <span style={{ fontFamily: "monospace" }}>Rp {rupiah(p.grossAmount ?? 0)}</span> · Neto: <span style={{ fontFamily: "monospace" }}>Rp {rupiah(p.netAmount ?? 0)}</span>
+                        Neto: <span style={{ fontFamily: "monospace" }}>Rp {rupiah(p.netPay ?? 0)}</span>
                       </div>
                     </div>
                     <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 10, fontWeight: 700, background: p.status === "PAID" ? "#E5F2E9" : "#FAF0DC", color: p.status === "PAID" ? "#1E6B43" : "#8A5A00" }}>
