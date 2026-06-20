@@ -229,8 +229,10 @@ export default function PenilaianPerilakuPage() {
   const [openEmployeeId, setOpenEmployeeId] = useState<string | null>(null);
 
   const { data: scores = [], isPending: scoresLoading } = useQuery<EmployeeScore[]>({
+    // /scores returns the per-employee score rows; /scores/summary is a single
+    // aggregate object ({ total, avgScore }) and would break scores.map below.
     queryKey: ["performance-scores-all"],
-    queryFn: () => fetchApiData<EmployeeScore[]>("/api/performance/scores/summary", "Gagal memuat skor"),
+    queryFn: () => fetchApiData<EmployeeScore[]>("/api/performance/scores", "Gagal memuat skor"),
     staleTime: 60_000,
   });
 
@@ -242,7 +244,9 @@ export default function PenilaianPerilakuPage() {
 
   const loading = scoresLoading || empsLoading;
 
-  const scoreMap = new Map<string, EmployeeScore>(scores.map((s) => [s.employeeId, s]));
+  // Defensive: never let an unexpected (non-array) response white-screen the page.
+  const scoreList = Array.isArray(scores) ? scores : [];
+  const scoreMap = new Map<string, EmployeeScore>(scoreList.map((s) => [s.employeeId, s]));
 
   const rows = employees.map((e) => {
     const s = scoreMap.get(e.id);
