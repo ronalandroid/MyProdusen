@@ -88,3 +88,5 @@ temp/
 .codegraph/
 .understand-anything/
 .metadata_never_index
+.env.sentry-build-plugin
+.sentryclirc

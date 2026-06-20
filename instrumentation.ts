@@ -1,15 +1,20 @@
-// Next.js native instrumentation hook. `onRequestError` fires for every
-// unhandled server-side error (RSC, route handlers, server actions), giving
-// us one central place to capture production failures with structured context.
+// Next.js native instrumentation hook. `register()` loads the runtime-specific
+// Sentry config; `onRequestError` fires for every unhandled server-side error
+// (RSC, route handlers, server actions) and forwards it to Sentry while always
+// logging through the structured pino logger.
 //
-// It logs through the existing pino logger always, and additionally forwards
-// to Sentry *only* when SENTRY_DSN is configured — so observability is
-// dependency-free out of the box and upgradeable without touching call sites.
+// Everything is gated on a DSN being present, so with no SENTRY_DSN the app
+// runs exactly as before — observability degrades gracefully to logs only.
+import * as Sentry from '@sentry/nextjs';
 import type { Instrumentation } from 'next';
 
 export async function register() {
-  // Reserved for future tracing/Sentry SDK init. Intentionally a no-op unless
-  // SENTRY_DSN is wired, so cold starts stay fast.
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    await import('./sentry.server.config');
+  }
+  if (process.env.NEXT_RUNTIME === 'edge') {
+    await import('./sentry.edge.config');
+  }
 }
 
 export const onRequestError: Instrumentation.onRequestError = async (
@@ -17,9 +22,11 @@ export const onRequestError: Instrumentation.onRequestError = async (
   request,
   context,
 ) => {
-  // Avoid importing the logger at module top-level: instrumentation can run in
-  // the edge runtime where some node deps are unavailable. Import lazily here,
-  // and fall back to console only if that fails.
+  // Forward to Sentry (no-op if DSN unset).
+  Sentry.captureRequestError(err, request, context);
+
+  // Always keep a structured log line. Import lazily so the edge runtime,
+  // where some node deps are unavailable, doesn't break.
   try {
     const { logger } = await import('@/lib/logger');
     const error = err as Error;
@@ -33,7 +40,6 @@ export const onRequestError: Instrumentation.onRequestError = async (
       renderSource: context?.renderSource,
     });
   } catch {
-    // Last-resort: never let error reporting throw.
     console.error('Unhandled request error (logger unavailable):', err);
   }
 };

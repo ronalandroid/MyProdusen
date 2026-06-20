@@ -225,4 +225,31 @@ const nextConfig = {
   trailingSlash: false,
 };
 
-module.exports = nextConfig;
+// Wrap with Sentry only when a DSN is configured, so builds without Sentry
+// (local/dev, or before the env is set) stay untouched and fast. Source-map
+// upload is skipped unless SENTRY_AUTH_TOKEN is present — runtime error
+// capture works with just the DSN.
+const sentryDsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
+
+if (sentryDsn) {
+  const { withSentryConfig } = require('@sentry/nextjs');
+  module.exports = withSentryConfig(nextConfig, {
+    org: process.env.SENTRY_ORG || 'umbrella-corp-m4',
+    project: process.env.SENTRY_PROJECT || 'javascript-nextjs',
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    silent: !process.env.CI,
+    // Don't fail the build if Sentry's plugin hits an error (e.g. no auth token).
+    errorHandler: () => {},
+    // Tunnel browser events through our origin to dodge ad-blockers.
+    tunnelRoute: '/monitoring',
+    // Tree-shake Sentry's own debug logging out of the client bundle.
+    webpack: {
+      treeshake: { removeDebugLogging: true },
+    },
+    sourcemaps: {
+      disable: !process.env.SENTRY_AUTH_TOKEN,
+    },
+  });
+} else {
+  module.exports = nextConfig;
+}
