@@ -87,3 +87,4 @@ temp/
 # Local code intelligence indexes
 .codegraph/
 .understand-anything/
+.metadata_never_index

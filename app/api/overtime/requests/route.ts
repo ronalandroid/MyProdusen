@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
 import { logAudit } from '@/lib/audit';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
+import { logger } from '@/lib/logger';
 
 const createRequestSchema = z.object({
   overtimeDate: z.string().transform((val) => new Date(val)),
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     return successResponse(requests);
   } catch (error: any) {
-    console.error('Get overtime requests error:', error);
+    logger.error('Get overtime requests error', { error });
     return errorResponse('Gagal mengambil data lembur', 500);
   }
 }
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     return successResponse(overtimeRequest, undefined, 201);
   } catch (error: any) {
-    console.error('Create overtime request error:', error);
+    logger.error('Create overtime request error', { error });
     
     if (error.name === 'ZodError') {
       return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');

@@ -3,6 +3,7 @@ import { reimbursementService } from '@/src/services/reimbursement/reimbursement
 import { getCurrentUser } from '@/lib/auth-context';
 import { errorResponse, forbiddenResponse, successResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 const createCategorySchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi'),
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     return successResponse(categories);
   } catch (error: any) {
-    console.error('Get expense categories error:', error);
+    logger.error('Get expense categories error', { error });
     return errorResponse('Gagal mengambil kategori reimbursement', 500);
   }
 }
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     return successResponse(category, 'Kategori reimbursement berhasil dibuat', 201);
   } catch (error: any) {
-    console.error('Create expense category error:', error);
+    logger.error('Create expense category error', { error });
     
     if (error.name === 'ZodError') {
       return validationErrorResponse('Data kategori reimbursement tidak valid');

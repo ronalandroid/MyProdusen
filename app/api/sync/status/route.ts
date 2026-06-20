@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/middleware';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/sync/status - Get sync status
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Sync status error:', error);
+    logger.error('Sync status error', { error });
     return NextResponse.json(
       { error: 'Failed to get sync status' },
       { status: 500 }

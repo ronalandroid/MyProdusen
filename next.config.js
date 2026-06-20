@@ -121,8 +121,9 @@ const nextConfig = {
     ];
   },
   typescript: {
-    // Run `npm run lint` separately for type checking.
-    ignoreBuildErrors: true,
+    // Type errors fail the build. `npm run lint` (tsc --noEmit) also runs in CI
+    // as a faster pre-build gate, but the production build is the final guard.
+    ignoreBuildErrors: false,
   },
 
   // Avoid double render during local dev; keep strict mode in production.

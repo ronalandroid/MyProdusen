@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/middleware';
+import { logger } from '@/lib/logger';
 
 /**
  * POST /api/sync/queue - Batch sync endpoint
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Batch sync error:', error);
+    logger.error('Batch sync error', { error });
     return NextResponse.json(
       { error: 'Failed to process batch sync' },
       { status: 500 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/middleware';
+import { logger } from '@/lib/logger';
 
 /**
  * POST /api/sync/resolve - Manually resolve a conflict
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Resolve conflict error:', error);
+    logger.error('Resolve conflict error', { error });
     return NextResponse.json(
       { error: 'Failed to resolve conflict' },
       { status: 500 }

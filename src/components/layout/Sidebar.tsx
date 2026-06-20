@@ -17,6 +17,7 @@ import {
   MapPin,
   Shield,
   User,
+  UserCog,
   Users,
   Settings,
 } from "lucide-react";
@@ -33,6 +34,7 @@ const iconMap: Record<string, LucideIcon> = {
   "/dashboard/self-service": BriefcaseBusiness,
   "/dashboard/attendance": Clock,
   "/dashboard/attendance/exceptions": CheckCircle,
+  "/dashboard/users": UserCog,
   "/dashboard/employees": Users,
   "/dashboard/locations": MapPin,
   "/dashboard/shifts": Clock3,

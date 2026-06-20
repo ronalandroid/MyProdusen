@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { logAudit } from '@/lib/audit';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { handleApiError } from '@/lib/core/route-handler';
+import { logger } from '@/lib/logger';
 
 const rejectSchema = z.object({
   rejectedReason: z.string().min(10, 'Alasan penolakan minimal 10 karakter'),
@@ -36,7 +37,7 @@ export async function POST(
 
     return successResponse(overtimeRequest);
   } catch (error: any) {
-    console.error('Reject overtime error:', error);
+    logger.error('Reject overtime error', { error });
     
     if (error.name === 'ZodError') {
       return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');

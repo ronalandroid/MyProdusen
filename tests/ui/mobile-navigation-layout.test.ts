@@ -3,10 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const css = readFileSync('app/globals.css', 'utf8');
 const dashboardLayout = readFileSync('app/dashboard/layout.tsx', 'utf8');
-const sidebarSource = [
-  readFileSync('components/layout/Sidebar.tsx', 'utf8'),
-  readFileSync('src/components/layout/Sidebar.tsx', 'utf8'),
-].join('\n');
+const sidebarSource = readFileSync('src/components/layout/Sidebar.tsx', 'utf8');
 const profilePage = readFileSync('app/dashboard/profile/page.tsx', 'utf8');
 
 describe('mobile dashboard navigation layout', () => {

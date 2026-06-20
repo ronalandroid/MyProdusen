@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth-context';
 import { logAudit } from '@/lib/audit';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { handleApiError } from '@/lib/core/route-handler';
+import { logger } from '@/lib/logger';
 
 export async function POST(
   request: NextRequest,
@@ -24,7 +25,7 @@ export async function POST(
 
     return successResponse(overtimeRequest);
   } catch (error: any) {
-    console.error('Approve overtime error:', error);
+    logger.error('Approve overtime error', { error });
     return handleApiError(error);
   }
 }

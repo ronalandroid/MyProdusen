@@ -3,6 +3,7 @@ import { reimbursementService } from '@/src/services/reimbursement/reimbursement
 import { getCurrentUser } from '@/lib/auth-context';
 import { errorResponse, successResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 const createClaimSchema = z.object({
   claimDate: z.string().transform((val) => new Date(val)),
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     return successResponse(claims);
   } catch (error: any) {
-    console.error('Get expense claims error:', error);
+    logger.error('Get expense claims error', { error });
     return errorResponse('Gagal mengambil klaim reimbursement', 500);
   }
 }
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     return successResponse(claim, 'Klaim reimbursement berhasil dibuat', 201);
   } catch (error: any) {
-    console.error('Create expense claim error:', error);
+    logger.error('Create expense claim error', { error });
     
     if (error.name === 'ZodError') {
       return validationErrorResponse('Data klaim reimbursement tidak valid');

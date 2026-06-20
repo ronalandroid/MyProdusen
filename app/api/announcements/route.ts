@@ -1,31 +1,12 @@
 import { NextRequest } from 'next/server';
 import { announcementService } from '@/src/services/announcement/announcement.service';
 import { getCurrentUser } from '@/lib/auth-context';
-import { z } from 'zod';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { handleApiError } from '@/lib/core/route-handler';
 import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 import { notifyAllActiveUsers } from '@/lib/notifications/dispatch';
-
-// Empty strings from optional form fields must not fail `.url()` validation —
-// coerce blank imageUrl to undefined before the URL check.
-const optionalUrl = z.preprocess(
-  (val) => (val === '' || val === null ? undefined : val),
-  z.string().url('URL gambar tidak valid').optional(),
-);
-
-const createAnnouncementSchema = z.object({
-  title: z.string().min(1, 'Title wajib diisi'),
-  content: z.string().min(10, 'Content minimal 10 karakter'),
-  category: z.enum(['GENERAL', 'POLICY', 'EVENT', 'EMERGENCY']),
-  priority: z.enum(['NORMAL', 'IMPORTANT', 'URGENT']),
-  targetAudience: z.string().default('ALL'),
-  expiresAt: z.preprocess(
-    (val) => (val === '' || val === null ? undefined : val),
-    z.string().optional().transform((val) => (val ? new Date(val) : undefined)),
-  ),
-  imageUrl: optionalUrl,
-});
+import { logger } from '@/lib/logger';
+import { createAnnouncementSchema } from '@/lib/announcements/schema';
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     return successResponse(announcements);
   } catch (error: any) {
-    console.error('Get announcements error:', error);
+    logger.error('Get announcements error', { error });
     return handleApiError(error);
   }
 }
@@ -100,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     return successResponse(announcement, undefined, 201);
   } catch (error: any) {
-    console.error('Create announcement error:', error);
+    logger.error('Create announcement error', { error });
     
     if (error.name === 'ZodError') {
       return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');

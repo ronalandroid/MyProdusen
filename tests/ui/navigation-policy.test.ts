@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { getNavigationForRole, getPrimaryNavigationForRole } from '@/lib/navigation/role-navigation';
 
-const sidebarSource = readFileSync('components/layout/Sidebar.tsx', 'utf8');
+const sidebarSource = readFileSync('src/components/layout/Sidebar.tsx', 'utf8');
 
 describe('responsive primary navigation policy', () => {
   it('keeps Superadmin mobile nav to five items', () => {
@@ -26,9 +26,11 @@ describe('responsive primary navigation policy', () => {
   });
 
   it('uses a distinct professional account-management icon for Pengguna', () => {
-    expect(sidebarSource).toContain('UserCog');
-    expect(sidebarSource).toContain("'/dashboard/users': UserCog");
-    expect(sidebarSource).toContain("'/dashboard': Home");
+    // Quote-style agnostic: assert the icon mapping regardless of single/double quotes.
+    const normalized = sidebarSource.replace(/"/g, "'");
+    expect(normalized).toContain('UserCog');
+    expect(normalized).toContain("'/dashboard/users': UserCog");
+    expect(normalized).toContain("'/dashboard': Home");
   });
 
   it('hides non-core modules from main navigation by default', () => {

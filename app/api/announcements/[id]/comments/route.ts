@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { handleApiError } from '@/lib/core/route-handler';
+import { logger } from '@/lib/logger';
 
 const addCommentSchema = z.object({
   comment: z.string().min(1, 'Comment wajib diisi'),
@@ -30,7 +31,7 @@ export async function POST(
 
     return successResponse(comment, undefined, 201);
   } catch (error: any) {
-    console.error('Add comment error:', error);
+    logger.error('Add comment error', { error });
     
     if (error.name === 'ZodError') {
       return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');

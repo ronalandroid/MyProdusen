@@ -6,7 +6,6 @@ const dashboardFiles = [
   'app/dashboard/page.tsx',
   'app/dashboard/layout.tsx',
   'src/components/layout/Sidebar.tsx',
-  'components/layout/Sidebar.tsx',
 ].map((path) => readFileSync(path, 'utf8')).join('\n');
 
 describe('account logout placement', () => {

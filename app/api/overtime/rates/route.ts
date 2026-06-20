@@ -3,6 +3,7 @@ import { overtimeService } from '@/src/services/overtime/overtime.service';
 import { getCurrentUser } from '@/lib/auth-context';
 import { z } from 'zod';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
+import { logger } from '@/lib/logger';
 
 import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 import { handleApiError } from '@/lib/core/route-handler';
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     return successResponse(rates);
   } catch (error: any) {
-    console.error('Get overtime rates error:', error);
+    logger.error('Get overtime rates error', { error });
     return handleApiError(error);
   }
 }
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
 
     return successResponse(rate, undefined, 201);
   } catch (error: any) {
-    console.error('Create overtime rate error:', error);
+    logger.error('Create overtime rate error', { error });
     
     if (error.name === 'ZodError') {
       return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
