@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodSchema } from 'zod';
+import * as Sentry from '@sentry/nextjs';
 import { AppError } from './app-error';
 import { BusinessError } from './business-error';
 import { errorResponse, validationErrorResponse } from '@/utils/response';
@@ -42,6 +43,9 @@ export function handleApiError(error: unknown) {
     return errorResponse('Unauthorized', 401);
   }
 
+  // Truly unexpected (5xx) — report to Sentry (no-op without a DSN). Expected
+  // 4xx control-flow errors above are intentionally left out to avoid noise.
+  Sentry.captureException(error);
   logger.error('Unhandled API error', error);
   return errorResponse('Terjadi kesalahan pada server', 500);
 }

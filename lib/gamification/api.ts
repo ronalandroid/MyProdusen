@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { nanoid } from 'nanoid';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { db, badgeDefinitions, companySettings, companyThemeSettings, employeeBadges, employees, leaderScoreAnomalies, leaderScoreEntries, notifications, performancePeriods, performanceScoreSnapshots, performanceScoreSummaries, users } from '@/lib/db';
@@ -31,6 +32,8 @@ async function currentEmployee(userId: string) {
 function handleError(error: any) {
   if (error.message === 'Unauthorized') return unauthorizedResponse();
   if (error.message === 'FORBIDDEN') return forbiddenResponse();
+  // Unexpected 5xx → report to Sentry (no-op without a DSN).
+  Sentry.captureException(error);
   return errorResponse('Gagal memproses performance', 500);
 }
 

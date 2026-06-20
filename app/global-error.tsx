@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 
 export default function GlobalError({
@@ -10,7 +11,9 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // We log to the console, but in a real SV environment this sends an event to Sentry/Datadog
+    // Report client render crashes to Sentry (no-op when no DSN), so the
+    // "tim teknis telah diberitahu" copy below is actually true.
+    Sentry.captureException(error);
     console.error('Global Error Trap:', error);
   }, [error]);
 
