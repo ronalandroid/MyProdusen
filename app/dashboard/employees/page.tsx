@@ -278,7 +278,7 @@ export default function EmployeesPage() {
           {searchTerm ? "Tidak ada karyawan yang sesuai dengan pencarian" : "Belum ada data karyawan"}
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "24px" }}>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-8 gap-y-4" style={{ paddingBottom: "24px" }}>
           {filteredEmployees.map((emp) => (
             <div
               key={emp.id}

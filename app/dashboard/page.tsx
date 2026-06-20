@@ -209,6 +209,8 @@ export default function DashboardPage() {
         </section>
       )}
 
+      <DecisionQueuePanel stats={stats} />
+
       <SuperadminGamificationHub
         stats={stats}
         insights={stats.superadminInsights}
@@ -861,20 +863,20 @@ function DecisionQueuePanel({ stats }: { stats: DashboardStats }) {
     <section className="card mb-5" style={{ padding: "16px 20px" }} aria-labelledby="decision-queue-title">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", color: "#6E6E6E", textTransform: "uppercase" }}>Antrian Keputusan</div>
-          <h3 id="decision-queue-title" style={{ fontSize: 15, fontWeight: 800, color: "#111111", marginTop: 2 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", color: "var(--text-muted)", textTransform: "uppercase" }}>Antrian Keputusan</div>
+          <h3 id="decision-queue-title" style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", marginTop: 2 }}>
             {totalPending > 0 ? `${totalPending} pengajuan menunggu` : "Tidak ada pengajuan pending"}
           </h3>
         </div>
         {totalPending > 0 && (
-          <span style={{ background: "#B3362B", color: "#FFF", fontWeight: 800, fontSize: 13, borderRadius: 20, padding: "3px 12px", fontFamily: "var(--font-mono, monospace)" }}>{totalPending}</span>
+          <span style={{ background: "var(--danger)", color: "#FFF", fontWeight: 800, fontSize: 13, borderRadius: 20, padding: "3px 12px", fontFamily: "var(--font-mono, monospace)" }}>{totalPending}</span>
         )}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
         {queues.map((q) => (
-          <Link key={q.label} href={q.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 10, border: `1.5px solid ${q.count > 0 ? q.color + "44" : "#EBEBEB"}`, background: q.count > 0 ? q.color + "08" : "#FAFAFA", textDecoration: "none", transition: "box-shadow 140ms" }}>
-            <span style={{ fontSize: 22, fontWeight: 900, color: q.count > 0 ? q.color : "#BBBBBB", fontFamily: "var(--font-mono, monospace)" }}>{q.count}</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#555555", textAlign: "center", lineHeight: 1.2 }}>{q.label}</span>
+          <Link key={q.label} href={q.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 10, border: `1.5px solid ${q.count > 0 ? q.color + "44" : "var(--border-color)"}`, background: q.count > 0 ? q.color + "14" : "var(--bg-hover)", textDecoration: "none", transition: "box-shadow 140ms" }}>
+            <span style={{ fontSize: 22, fontWeight: 900, color: q.count > 0 ? q.color : "var(--text-muted)", fontFamily: "var(--font-mono, monospace)" }}>{q.count}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", textAlign: "center", lineHeight: 1.2 }}>{q.label}</span>
           </Link>
         ))}
       </div>
@@ -892,8 +894,6 @@ function SuperadminMonitoring({ insights, stats }: { insights: SuperadminInsight
         </div>
         <Link href="/dashboard/reports" className="text-link text-sm">Laporan lengkap →</Link>
       </div>
-
-      <DecisionQueuePanel stats={stats} />
 
       <div className="quick-actions-grid mb-5">
         <ManagementCard card={{ label: "Pengguna", value: insights.managementCards.length, detail: "Manajemen User", href: "/dashboard/users", tone: "info" }} delay="800ms" />

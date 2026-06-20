@@ -165,7 +165,7 @@ export default function KPIPage() {
         </div>
         <div className="card p-4">
           <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)]"><Users size={18} /> Role</div>
-          <div className="text-lg font-extrabold">{role}</div>
+          <div className="truncate text-base font-extrabold leading-tight" title={role}>{role}</div>
         </div>
       </section>
 

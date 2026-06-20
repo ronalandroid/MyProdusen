@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, Clock, AlertTriangle, Calendar, Timer,
   BarChart3, Star, Wallet, FileText, Megaphone, Shield, Settings, UserCog,
-  ChevronRight,
+  ChevronRight, Search,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -106,6 +106,23 @@ export default function AdminSidebar({
           </div>
         </div>
       </div>
+
+      {/* Quick search trigger — opens the command palette (Cmd/Ctrl+K) */}
+      <button
+        type="button"
+        onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
+        aria-label="Pencarian cepat (Cmd+K)"
+        style={{
+          margin: "0 14px 4px", padding: "9px 12px",
+          display: "flex", alignItems: "center", gap: 9,
+          borderRadius: 10, border: "1px solid var(--border-color)",
+          background: "var(--bg-hover)", cursor: "pointer", width: "calc(100% - 28px)",
+        }}
+      >
+        <Search size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} aria-hidden="true" />
+        <span style={{ flex: 1, textAlign: "left", fontSize: 13, color: "var(--text-muted)", fontWeight: 600 }}>Cari menu / karyawan</span>
+        <kbd style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", border: "1px solid var(--border-color)", borderRadius: 5, padding: "1px 5px" }}>⌘K</kbd>
+      </button>
 
       <div style={{ flex: 1, padding: "0 10px 16px", overflowY: "auto" }}>
         {groups.map((group) => (

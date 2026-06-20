@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import AdminSidebar from "@/components/layout/AdminSidebar";
+import CommandPalette from "@/components/layout/CommandPalette";
 import { logout } from "@/lib/auth-client";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -110,6 +111,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <ToastProvider>
       <div className="layout-wrapper">
         <a href="#dashboard-content" className="skip-link">Lewati navigasi</a>
+        <CommandPalette role={profile.role as UserRole} />
         <nav className="nav-container" aria-label="Navigasi utama" style={profile.role === "SUPERADMIN" ? { display: "flex", flexDirection: "column" } : undefined}>
           {profile.role === "SUPERADMIN"
             ? <AdminSidebarWithBadges />

@@ -284,6 +284,10 @@ export default function AttendanceExceptionsPage() {
   const [page, setPage] = useState(1);
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [evidenceId, setEvidenceId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkNote, setBulkNote] = useState("");
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
 
   const status = searchParams.get("status") || "PENDING";
 
@@ -368,6 +372,70 @@ export default function AttendanceExceptionsPage() {
     }
   }
 
+  // Only PENDING items on the current page are selectable for bulk review.
+  const pendingPageItems = useMemo(() => pageItems.filter((i) => i.status === "PENDING"), [pageItems]);
+  const allPageSelected = pendingPageItems.length > 0 && pendingPageItems.every((i) => selectedIds.has(i.id));
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAllPage() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allPageSelected) {
+        pendingPageItems.forEach((i) => next.delete(i.id));
+      } else {
+        pendingPageItems.forEach((i) => next.add(i.id));
+      }
+      return next;
+    });
+  }
+
+  // Clear selection whenever the status filter changes.
+  useEffect(() => {
+    setSelectedIds(new Set());
+    setBulkNote("");
+  }, [status]);
+
+  async function runBulk(nextStatus: "APPROVED" | "REJECTED") {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (nextStatus === "REJECTED" && bulkNote.trim().length < 10) {
+      setActionError("Catatan penolakan massal minimal 10 karakter.");
+      return;
+    }
+    setBulkProcessing(true);
+    setActionError("");
+    setBulkProgress({ done: 0, total: ids.length });
+    const note = bulkNote.trim() || (nextStatus === "APPROVED" ? "Disetujui (massal)" : "Ditolak (massal)");
+    let failed = 0;
+    for (let i = 0; i < ids.length; i++) {
+      try {
+        const response = await fetch(`/api/attendance/exceptions/${ids[i]}/review`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          body: JSON.stringify({ status: nextStatus, reviewNote: note }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.success) failed++;
+      } catch {
+        failed++;
+      }
+      setBulkProgress({ done: i + 1, total: ids.length });
+    }
+    setBulkProcessing(false);
+    setBulkProgress(null);
+    setSelectedIds(new Set());
+    setBulkNote("");
+    if (failed > 0) setActionError(`${failed} dari ${ids.length} gagal diproses. Coba lagi untuk sisanya.`);
+    await queryClient.invalidateQueries({ queryKey: ["attendance-exceptions"] });
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -415,6 +483,46 @@ export default function AttendanceExceptionsPage() {
         </div>
       )}
 
+      {!loading && pendingPageItems.length > 0 && (
+        <div className="card" style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--text-primary)" }}>
+              <input type="checkbox" checked={allPageSelected} onChange={toggleSelectAllPage} style={{ width: 16, height: 16, accentColor: "var(--primary)" }} />
+              Pilih semua di halaman ini ({pendingPageItems.length})
+            </label>
+            {selectedIds.size > 0 && (
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--primary-dark)" }}>{selectedIds.size} terpilih</span>
+            )}
+          </div>
+
+          {selectedIds.size > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: "1px solid var(--border-color)", paddingTop: 12 }}>
+              <textarea
+                className="input"
+                rows={2}
+                placeholder="Catatan untuk aksi massal (wajib min. 10 karakter bila menolak)"
+                value={bulkNote}
+                onChange={(e) => setBulkNote(e.target.value)}
+                aria-label="Catatan aksi massal"
+              />
+              {bulkProgress && (
+                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
+                  Memproses {bulkProgress.done}/{bulkProgress.total}…
+                </p>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button size="sm" onClick={() => runBulk("APPROVED")} loading={bulkProcessing} disabled={bulkProcessing}>
+                  <CheckCircle2 size={14} aria-hidden="true" /> Setujui {selectedIds.size} terpilih
+                </Button>
+                <Button size="sm" variant="danger" onClick={() => runBulk("REJECTED")} loading={bulkProcessing} disabled={bulkProcessing || bulkNote.trim().length < 10}>
+                  <XCircle size={14} aria-hidden="true" /> Tolak {selectedIds.size} terpilih
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div className="min-h-[320px] flex items-center justify-center">
           <LoadingSpinner message="Memuat pengajuan…" />
@@ -436,10 +544,21 @@ export default function AttendanceExceptionsPage() {
               <article key={item.id} className="card" style={{ padding: "16px" }}>
                 <div className="flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">{item.type}</p>
-                      <h2 className="text-base font-semibold truncate">{item.employee?.fullName || "Karyawan"}</h2>
-                      <p className="text-xs text-[var(--text-muted)]">{item.employee?.nip || item.employeeId} · {item.employee?.division || "Tanpa divisi"}</p>
+                    <div className="flex items-start gap-3 min-w-0">
+                      {item.status === "PENDING" && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(item.id)}
+                          onChange={() => toggleSelect(item.id)}
+                          aria-label={`Pilih pengajuan ${item.employee?.fullName || "karyawan"}`}
+                          style={{ width: 16, height: 16, marginTop: 3, accentColor: "var(--primary)", flexShrink: 0 }}
+                        />
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">{item.type}</p>
+                        <h2 className="text-base font-semibold truncate">{item.employee?.fullName || "Karyawan"}</h2>
+                        <p className="text-xs text-[var(--text-muted)]">{item.employee?.nip || item.employeeId} · {item.employee?.division || "Tanpa divisi"}</p>
+                      </div>
                     </div>
                     <span
                       className="text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap"
