@@ -1,10 +1,13 @@
 import { NextRequest } from 'next/server';
 import { attendanceService } from '@/services/attendance/attendance.service';
-import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
+import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { requireAuth } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { employeeService } from '@/services/employees/employee.service';
 import { handleApiError } from '@/lib/core/route-handler';
+import { isValidEnumParam } from '@/lib/core/query-validation';
+
+const ATTENDANCE_STATUSES = ['PRESENT', 'LATE', 'ABSENT', 'LEAVE', 'SICK', 'PERMISSION'] as const;
 
 // Per-user attendance list — always dynamic, never statically cached.
 export const dynamic = 'force-dynamic';
@@ -15,9 +18,14 @@ export async function GET(request: NextRequest) {
     const user = await requireAuth(request);
     
     const { searchParams } = new URL(request.url);
-    
+
+    const statusParam = searchParams.get('status');
+    if (!isValidEnumParam(statusParam, ATTENDANCE_STATUSES)) {
+      return validationErrorResponse('Status absensi tidak valid.');
+    }
+
     let filters: any = {
-      status: searchParams.get('status') as any,
+      status: statusParam || undefined,
       workLocationId: searchParams.get('workLocationId') || undefined,
     };
     

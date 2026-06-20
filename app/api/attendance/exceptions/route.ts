@@ -7,6 +7,9 @@ import { hasPermission } from '@/lib/permissions';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
 import { handleApiError } from '@/lib/core/route-handler';
+import { isValidEnumParam } from '@/lib/core/query-validation';
+
+const EXCEPTION_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] as const;
 
 const createExceptionSchema = z.object({
   attendanceId: z.string().optional(),
@@ -18,7 +21,10 @@ export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') as any;
+    const status = searchParams.get('status');
+    if (!isValidEnumParam(status, EXCEPTION_STATUSES)) {
+      return validationErrorResponse('Status pengecualian tidak valid.');
+    }
     const employee = await employeeService.getEmployeeByUserId(user.userId).catch(() => null);
 
     if (!employee && user.role !== 'SUPERADMIN') {
@@ -29,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     const rows = await attendanceExceptionService.listExceptions({
-      status: status || undefined,
+      status: (status || undefined) as (typeof EXCEPTION_STATUSES)[number] | undefined,
       viewerRole: user.role,
       viewerUserId: user.userId,
       viewerEmployeeId: employee?.id,

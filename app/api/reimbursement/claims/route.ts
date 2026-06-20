@@ -4,6 +4,9 @@ import { getCurrentUser } from '@/lib/auth-context';
 import { errorResponse, successResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
+import { isValidEnumParam } from '@/lib/core/query-validation';
+
+const EXPENSE_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'PAID'] as const;
 
 const createClaimSchema = z.object({
   claimDate: z.string().transform((val) => new Date(val)),
@@ -36,7 +39,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') as any;
+    const status = searchParams.get('status');
+    if (!isValidEnumParam(status, EXPENSE_STATUSES)) {
+      return validationErrorResponse('Status klaim tidak valid.');
+    }
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 

@@ -6,7 +6,7 @@ import {
   users,
   employees,
 } from '@/drizzle/schema';
-import { eq, and, desc, sql, or, isNull } from 'drizzle-orm';
+import { eq, and, desc, sql, or, isNull, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { BusinessError } from '@/lib/core/business-error';
 
@@ -84,15 +84,17 @@ export class AnnouncementService {
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(announcements.isPinned), desc(announcements.publishedAt));
 
-    // If userId provided, check read status
-    if (filters?.userId) {
+    // If userId provided, check read status. Guard on a non-empty result set:
+    // an empty announcementIds array produces invalid SQL (`ANY(())`) and 500s
+    // the whole list — which is exactly the zero-announcement first-use case.
+    if (filters?.userId && results.length > 0) {
       const announcementIds = results.map((r) => r.announcement.id);
       const reads = await db
         .select()
         .from(announcementReads)
         .where(
           and(
-            sql`${announcementReads.announcementId} = ANY(${announcementIds})`,
+            inArray(announcementReads.announcementId, announcementIds),
             eq(announcementReads.userId, filters.userId)
           )
         );
@@ -105,7 +107,7 @@ export class AnnouncementService {
       }));
     }
 
-    return results;
+    return results.map((r) => ({ ...r, isRead: false }));
   }
 
   async getAnnouncementById(id: string, userId?: string) {

@@ -9,6 +9,10 @@ import { logAudit } from '@/lib/audit';
 import { payrollPeriodService } from '@/features/payroll/payroll-period.service';
 import { acquireIdempotencyLock } from '@/lib/core/idempotency';
 import { handleApiError } from '@/lib/core/route-handler';
+import { isValidEnumParam } from '@/lib/core/query-validation';
+
+const LEAVE_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const;
+const LEAVE_TYPES = ['LEAVE', 'SICK', 'PERMISSION'] as const;
 
 import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 const createLeaveSchema = z.object({
@@ -24,10 +28,22 @@ export async function GET(request: NextRequest) {
     const user = await requireAuth(request);
     
     const { searchParams } = new URL(request.url);
-    
+
+    // Validate query filters against the real enums so an unexpected value
+    // (e.g. ?status=ALL) returns a clean 4xx instead of crashing the DB query.
+    const statusParam = searchParams.get('status');
+    const typeParam = searchParams.get('type');
+
+    if (!isValidEnumParam(statusParam, LEAVE_STATUSES)) {
+      return validationErrorResponse('Status tidak valid. Pilih: PENDING, APPROVED, atau REJECTED.');
+    }
+    if (!isValidEnumParam(typeParam, LEAVE_TYPES)) {
+      return validationErrorResponse('Tipe izin tidak valid. Pilih: LEAVE, SICK, atau PERMISSION.');
+    }
+
     let filters: any = {
-      status: searchParams.get('status') as any,
-      type: searchParams.get('type') as any,
+      status: statusParam || undefined,
+      type: typeParam || undefined,
     };
     
     // If employee role, only show their own requests

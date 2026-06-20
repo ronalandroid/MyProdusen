@@ -10,6 +10,9 @@ import { parsePagination } from '@/lib/api/pagination';
 import { AppError } from '@/lib/core/app-error';
 import { parseJsonBody, withApiHandler } from '@/lib/core/route-handler';
 import { calculateWorkDurationDays } from '@/src/services/employees/work-duration.service';
+import { isValidEnumParam } from '@/lib/core/query-validation';
+
+const EMPLOYEE_STATUSES = ['ACTIVE', 'INACTIVE', 'SUSPENDED'] as const;
 
 import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 export const GET = withApiHandler(async (request: NextRequest) => {
@@ -20,8 +23,12 @@ export const GET = withApiHandler(async (request: NextRequest) => {
   }
 
   const { searchParams } = new URL(request.url);
+  const statusParam = searchParams.get('status');
+  if (!isValidEnumParam(statusParam, EMPLOYEE_STATUSES)) {
+    throw AppError.validation('Status karyawan tidak valid.');
+  }
   const filters = {
-    status: searchParams.get('status') as any,
+    status: (statusParam || undefined) as (typeof EMPLOYEE_STATUSES)[number] | undefined,
     division: searchParams.get('division') || undefined,
     supervisorId: searchParams.get('supervisorId') || undefined,
     search: searchParams.get('search') || undefined,

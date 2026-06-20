@@ -5,6 +5,9 @@ import { z } from 'zod';
 import { logAudit } from '@/lib/audit';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logger } from '@/lib/logger';
+import { isValidEnumParam } from '@/lib/core/query-validation';
+
+const OVERTIME_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] as const;
 
 const createRequestSchema = z.object({
   overtimeDate: z.string().transform((val) => new Date(val)),
@@ -23,7 +26,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') as any;
+    const status = searchParams.get('status');
+    if (!isValidEnumParam(status, OVERTIME_STATUSES)) {
+      return validationErrorResponse('Status lembur tidak valid.');
+    }
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 

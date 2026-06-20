@@ -7,6 +7,9 @@ import { hasPermission } from '@/lib/permissions';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
 import { handleApiError } from '@/lib/core/route-handler';
+import { isValidEnumParam } from '@/lib/core/query-validation';
+
+const OVERTIME_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] as const;
 
 const createOvertimeSchema = z.object({
   overtimeDate: z.string().transform(str => new Date(str)),
@@ -20,8 +23,11 @@ export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') as any;
-    
+    const status = searchParams.get('status');
+    if (!isValidEnumParam(status, OVERTIME_STATUSES)) {
+      return validationErrorResponse('Status lembur tidak valid.');
+    }
+
     const employee = await employeeService.getEmployeeByUserId(user.userId).catch(() => null);
     
     if (!employee) {
@@ -30,14 +36,16 @@ export async function GET(request: NextRequest) {
 
     let requests;
     
+    const statusFilter = (status || undefined) as (typeof OVERTIME_STATUSES)[number] | undefined;
+
     if (user.role === 'EMPLOYEE') {
       requests = await overtimeService.getRequests({
         employeeId: employee.id,
-        status: status || undefined,
+        status: statusFilter,
       });
     } else {
       requests = await overtimeService.getRequests({
-        status: status || undefined,
+        status: statusFilter,
       });
     }
 
