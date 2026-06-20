@@ -120,7 +120,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {profileMe && profile.role !== "SUPERADMIN" && <AssignmentStatusCards profileMe={profileMe} />}
           {children}
         </main>
-        {profileMe && !profileMe.profileCompleted && <ProfileCompletionModal initialFullName={profileMe.fullName} initialPhone={profileMe.phone} initialAddress={profileMe.address} initialProfilePhoto={profileMe.profilePhoto} onSaved={() => loadProfileState(true)} />}
+        {profileMe && profile.role !== "SUPERADMIN" && !profileMe.profileCompleted && <ProfileCompletionModal initialFullName={profileMe.fullName} initialPhone={profileMe.phone} initialAddress={profileMe.address} initialProfilePhoto={profileMe.profilePhoto} onSaved={() => loadProfileState(true)} />}
       </div>
     </ToastProvider>
   );
