@@ -8,6 +8,15 @@ import Button from "@/components/ui/Button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders } from "@/lib/auth-client";
 import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { type ValidityTier, validityLabel } from "@/lib/attendance/exception-validity";
+
+interface ExceptionValidity {
+  accuracyMeters?: number | null;
+  distanceMeters?: number | null;
+  geoStatus?: string | null;
+  hasSelfie?: boolean;
+  classification?: { tier: ValidityTier; score: number; reasons: string[] };
+}
 
 interface AttendanceExceptionItem {
   id: string;
@@ -21,12 +30,19 @@ interface AttendanceExceptionItem {
   reviewNote?: string | null;
   createdAt: string;
   reviewedAt?: string | null;
+  validity?: ExceptionValidity | null;
   employee?: {
     fullName?: string;
     nip?: string;
     division?: string | null;
   } | null;
 }
+
+const VALIDITY_TONE: Record<ValidityTier, { bg: string; color: string }> = {
+  VALID: { bg: "rgba(34,197,94,0.14)", color: "var(--success)" },
+  REVIEW: { bg: "rgba(245,158,11,0.16)", color: "var(--warning)" },
+  INVALID: { bg: "rgba(229,57,53,0.14)", color: "var(--danger)" },
+};
 
 interface ExceptionDetail extends AttendanceExceptionItem {
   attendance?: {
@@ -402,31 +418,34 @@ export default function AttendanceExceptionsPage() {
     setBulkNote("");
   }, [status]);
 
-  async function runBulk(nextStatus: "APPROVED" | "REJECTED") {
-    const ids = Array.from(selectedIds);
-    if (ids.length === 0) return;
-    if (nextStatus === "REJECTED" && bulkNote.trim().length < 10) {
-      setActionError("Catatan penolakan massal minimal 10 karakter.");
-      return;
-    }
+  // Shared chunked processor: the server caps each request at 200, so split
+  // large selections and report cumulative progress.
+  const CHUNK = 200;
+  async function bulkReview(ids: string[], nextStatus: "APPROVED" | "REJECTED", note: string) {
     setBulkProcessing(true);
     setActionError("");
     setBulkProgress({ done: 0, total: ids.length });
-    const note = bulkNote.trim() || (nextStatus === "APPROVED" ? "Disetujui (massal)" : "Ditolak (massal)");
+    let processed = 0;
     let failed = 0;
-    for (let i = 0; i < ids.length; i++) {
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const slice = ids.slice(i, i + CHUNK);
       try {
-        const response = await fetch(`/api/attendance/exceptions/${ids[i]}/review`, {
-          method: "PATCH",
+        const response = await fetch(`/api/attendance/exceptions/bulk-review`, {
+          method: "POST",
           headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-          body: JSON.stringify({ status: nextStatus, reviewNote: note }),
+          body: JSON.stringify({ ids: slice, status: nextStatus, reviewNote: note }),
         });
         const payload = await response.json().catch(() => ({}));
-        if (!response.ok || !payload.success) failed++;
+        if (response.ok && payload.success) {
+          processed += payload.data?.processed ?? 0;
+          failed += payload.data?.failed ?? 0;
+        } else {
+          failed += slice.length;
+        }
       } catch {
-        failed++;
+        failed += slice.length;
       }
-      setBulkProgress({ done: i + 1, total: ids.length });
+      setBulkProgress({ done: Math.min(i + CHUNK, ids.length), total: ids.length });
     }
     setBulkProcessing(false);
     setBulkProgress(null);
@@ -434,6 +453,42 @@ export default function AttendanceExceptionsPage() {
     setBulkNote("");
     if (failed > 0) setActionError(`${failed} dari ${ids.length} gagal diproses. Coba lagi untuk sisanya.`);
     await queryClient.invalidateQueries({ queryKey: ["attendance-exceptions"] });
+    return { processed, failed };
+  }
+
+  async function runBulk(nextStatus: "APPROVED" | "REJECTED") {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (nextStatus === "REJECTED" && bulkNote.trim().length < 10) {
+      setActionError("Catatan penolakan massal minimal 10 karakter.");
+      return;
+    }
+    const note = bulkNote.trim() || (nextStatus === "APPROVED" ? "Disetujui (massal)" : "Ditolak (massal)");
+    await bulkReview(ids, nextStatus, note);
+  }
+
+  // --- Validity-based mass processing -------------------------------------
+  // Group every PENDING item (across the whole filtered set, not just the
+  // current page) by its data-validity tier so the reviewer can act per tier.
+  const pendingByTier = useMemo(() => {
+    const groups: Record<ValidityTier, AttendanceExceptionItem[]> = { VALID: [], REVIEW: [], INVALID: [] };
+    for (const item of filteredItems) {
+      if (item.status !== "PENDING") continue;
+      const tier = item.validity?.classification?.tier ?? "REVIEW";
+      groups[tier].push(item);
+    }
+    return groups;
+  }, [filteredItems]);
+
+  function selectTier(tier: ValidityTier) {
+    setSelectedIds(new Set(pendingByTier[tier].map((i) => i.id)));
+  }
+
+  // One-shot: process every PENDING item of a validity tier directly.
+  async function processTier(tier: ValidityTier, nextStatus: "APPROVED" | "REJECTED", note: string) {
+    const ids = pendingByTier[tier].map((i) => i.id);
+    if (ids.length === 0) return;
+    await bulkReview(ids, nextStatus, note);
   }
 
   return (
@@ -480,6 +535,63 @@ export default function AttendanceExceptionsPage() {
       {error && (
         <div className="card" role="alert" style={{ padding: "12px 16px", borderColor: "var(--danger)", color: "var(--danger)", fontSize: "13px", fontWeight: 600 }}>
           {error}
+        </div>
+      )}
+
+      {!loading && status === "PENDING" && (pendingByTier.VALID.length + pendingByTier.REVIEW.length + pendingByTier.INVALID.length) > 0 && (
+        <div className="card" style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", color: "var(--text-muted)", textTransform: "uppercase" }}>Proses Massal Berdasarkan Validitas Data</div>
+            <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>Dikelompokkan dari akurasi GPS, jarak ke lokasi, dan bukti selfie.</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+            {([
+              { tier: "VALID" as const, label: "Valid", hint: "Aman disetujui" },
+              { tier: "REVIEW" as const, label: "Perlu Ditinjau", hint: "Periksa manual" },
+              { tier: "INVALID" as const, label: "Tidak Valid", hint: "Layak ditolak" },
+            ]).map(({ tier, label, hint }) => {
+              const tone = VALIDITY_TONE[tier];
+              const count = pendingByTier[tier].length;
+              return (
+                <button
+                  key={tier}
+                  type="button"
+                  onClick={() => selectTier(tier)}
+                  disabled={count === 0 || bulkProcessing}
+                  style={{
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                    padding: "10px 6px", borderRadius: 10, cursor: count > 0 ? "pointer" : "not-allowed",
+                    border: `1.5px solid ${count > 0 ? tone.color + "55" : "var(--border-color)"}`,
+                    background: count > 0 ? tone.bg : "var(--bg-hover)", opacity: count > 0 ? 1 : 0.6,
+                  }}
+                  title={`Pilih semua ${label.toLowerCase()}`}
+                >
+                  <span style={{ fontSize: 22, fontWeight: 900, color: count > 0 ? tone.color : "var(--text-muted)", fontFamily: "var(--font-mono, monospace)" }}>{count}</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-primary)" }}>{label}</span>
+                  <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{hint}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" style={{ borderTop: "1px solid var(--border-color)", paddingTop: 12 }}>
+            <Button
+              size="sm"
+              onClick={() => processTier("VALID", "APPROVED", "Disetujui otomatis — data valid (akurasi GPS, lokasi, & selfie sesuai)")}
+              loading={bulkProcessing}
+              disabled={bulkProcessing || pendingByTier.VALID.length === 0}
+            >
+              <CheckCircle2 size={14} aria-hidden="true" /> Setujui semua Valid ({pendingByTier.VALID.length})
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => processTier("INVALID", "REJECTED", "Ditolak otomatis — data tidak valid (di luar radius / tanpa selfie / GPS tidak akurat)")}
+              loading={bulkProcessing}
+              disabled={bulkProcessing || pendingByTier.INVALID.length === 0}
+            >
+              <XCircle size={14} aria-hidden="true" /> Tolak semua Tidak Valid ({pendingByTier.INVALID.length})
+            </Button>
+          </div>
         </div>
       )}
 
@@ -560,12 +672,23 @@ export default function AttendanceExceptionsPage() {
                         <p className="text-xs text-[var(--text-muted)]">{item.employee?.nip || item.employeeId} · {item.employee?.division || "Tanpa divisi"}</p>
                       </div>
                     </div>
-                    <span
-                      className="text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap"
-                      style={{ background: tone.bg, color: tone.color }}
-                    >
-                      {tone.label}
-                    </span>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <span
+                        className="text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap"
+                        style={{ background: tone.bg, color: tone.color }}
+                      >
+                        {tone.label}
+                      </span>
+                      {item.status === "PENDING" && item.validity?.classification && (
+                        <span
+                          className="text-[11px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
+                          style={{ background: VALIDITY_TONE[item.validity.classification.tier].bg, color: VALIDITY_TONE[item.validity.classification.tier].color }}
+                          title={item.validity.classification.reasons.join(" · ")}
+                        >
+                          {validityLabel(item.validity.classification.tier)} · {item.validity.classification.score}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p className="text-sm text-[var(--text-secondary)]">{item.reason}</p>
                   <p className="text-xs text-[var(--text-muted)]">Diajukan {new Date(item.createdAt).toLocaleString("id-ID")}</p>

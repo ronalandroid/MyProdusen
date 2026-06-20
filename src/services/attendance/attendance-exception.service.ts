@@ -47,11 +47,23 @@ export class AttendanceExceptionService {
     }
 
     // Build the WHERE before issuing the query so we keep full Drizzle typing
-    // (no `as any` escape hatch).
+    // (no `as any` escape hatch). Join the originating attendance so the client
+    // can classify each exception by data validity (GPS accuracy, distance,
+    // selfie presence, geofence verdict).
     const query = db
-      .select({ exception: attendanceExceptions, employee: employees })
+      .select({
+        exception: attendanceExceptions,
+        employee: employees,
+        validity: {
+          accuracyMeters: attendances.checkInAccuracy,
+          distanceMeters: attendances.checkInDistance,
+          selfieUrl: attendances.checkInSelfieUrl,
+          geoStatus: attendances.checkInGeoStatus,
+        },
+      })
       .from(attendanceExceptions)
       .leftJoin(employees, eq(attendanceExceptions.employeeId, employees.id))
+      .leftJoin(attendances, eq(attendanceExceptions.attendanceId, attendances.id))
       .orderBy(desc(attendanceExceptions.createdAt));
 
     if (conditions.length > 0) {

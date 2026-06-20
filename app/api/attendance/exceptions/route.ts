@@ -8,6 +8,7 @@ import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse
 import { logAudit } from '@/lib/audit';
 import { handleApiError } from '@/lib/core/route-handler';
 import { isValidEnumParam } from '@/lib/core/query-validation';
+import { classifyExceptionValidity } from '@/lib/attendance/exception-validity';
 
 const EXCEPTION_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] as const;
 
@@ -41,7 +42,26 @@ export async function GET(request: NextRequest) {
       viewerEmployeeId: employee?.id,
     });
 
-    return successResponse(rows.map(({ exception, employee }) => ({ ...exception, employee })));
+    return successResponse(
+      rows.map(({ exception, employee, validity }) => {
+        const hasSelfie = Boolean(validity?.selfieUrl);
+        return {
+          ...exception,
+          employee,
+          validity: {
+            ...(validity ?? {}),
+            hasSelfie,
+            classification: classifyExceptionValidity({
+              type: exception.type,
+              hasSelfie: exception.attendanceId ? hasSelfie : undefined,
+              accuracyMeters: validity?.accuracyMeters ?? null,
+              distanceMeters: validity?.distanceMeters ?? null,
+              geoStatus: validity?.geoStatus ?? null,
+            }),
+          },
+        };
+      }),
+    );
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     return handleApiError(error);
