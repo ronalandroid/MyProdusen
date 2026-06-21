@@ -32,10 +32,13 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
 ENV HOSTNAME=0.0.0.0
-ENV NODE_OPTIONS=--max-old-space-size=1024
+# Sentry source-map generation pushes the build past the old 1024 MB heap.
+# Give it more room and drop to a single build worker so peak memory stays
+# bounded on the low-resource builder.
+ENV NODE_OPTIONS=--max-old-space-size=1536
 ENV BUILD_HEARTBEAT_MS=5000
 ENV NEXT_PRIVATE_BUILD_WORKER=1
-ENV NEXT_BUILD_CPUS=2
+ENV NEXT_BUILD_CPUS=1
 
 RUN apk add --no-cache libc6-compat
 
