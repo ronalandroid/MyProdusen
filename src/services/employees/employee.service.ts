@@ -1,4 +1,15 @@
-import { db, employees, users, shifts, workLocations } from '@/lib/db';
+import {
+  db, employees, users, shifts, workLocations,
+  // Dependent tables cleaned up on employee deletion (no DB-level FKs exist,
+  // so this transaction is what prevents orphaned rows).
+  employeeSchedules, attendances, attendanceExceptions, attendanceDailySummaries,
+  leaveRequests, leaveBalanceLedger, kpiAssignments, kpiResults, kpiProductionEntries,
+  employeePayrolls, payrollItems, payslips, payrollCalculationHistory, payrollRules,
+  employeeTeamAssignments, overtimeRequests, expenseClaims, performanceReviews,
+  employeeDocuments, performanceScoreSnapshots, performanceScoreSummaries,
+  leaderScoreEntries, leaderScoreAnomalies, employeeBadges,
+  notifications, announcementReads, announcementComments,
+} from '@/lib/db';
 import { eq, and, or, ilike, sql, asc } from 'drizzle-orm';
 import type { PaginationParams } from '@/lib/api/pagination';
 import { paginated } from '@/lib/api/pagination';
@@ -405,15 +416,46 @@ export class EmployeeService extends BaseService {
       throw AppError.notFound('Karyawan tidak ditemukan');
     }
 
-    // Delete employee (will cascade to user due to FK)
-    await db
-      .delete(employees)
-      .where(eq(employees.id, id));
+    // No DB-level foreign keys exist, so nothing cascades automatically. Remove
+    // every dependent row in a single transaction to avoid orphaning ~2k+ rows
+    // (attendance exceptions, notifications, payroll, KPI, etc.). Audit logs are
+    // intentionally preserved for compliance/history. Order is irrelevant
+    // without FK constraints; atomicity is what matters.
+    await db.transaction(async (tx) => {
+      // Tables keyed by employeeId.
+      await tx.delete(leaderScoreAnomalies).where(eq(leaderScoreAnomalies.employeeId, id));
+      await tx.delete(leaderScoreEntries).where(eq(leaderScoreEntries.employeeId, id));
+      await tx.delete(performanceScoreSnapshots).where(eq(performanceScoreSnapshots.employeeId, id));
+      await tx.delete(performanceScoreSummaries).where(eq(performanceScoreSummaries.employeeId, id));
+      await tx.delete(performanceReviews).where(eq(performanceReviews.employeeId, id));
+      await tx.delete(employeeBadges).where(eq(employeeBadges.employeeId, id));
+      await tx.delete(kpiResults).where(eq(kpiResults.employeeId, id));
+      await tx.delete(kpiAssignments).where(eq(kpiAssignments.employeeId, id));
+      await tx.delete(kpiProductionEntries).where(eq(kpiProductionEntries.employeeId, id));
+      await tx.delete(attendanceExceptions).where(eq(attendanceExceptions.employeeId, id));
+      await tx.delete(attendanceDailySummaries).where(eq(attendanceDailySummaries.employeeId, id));
+      await tx.delete(attendances).where(eq(attendances.employeeId, id));
+      await tx.delete(leaveRequests).where(eq(leaveRequests.employeeId, id));
+      await tx.delete(leaveBalanceLedger).where(eq(leaveBalanceLedger.employeeId, id));
+      await tx.delete(overtimeRequests).where(eq(overtimeRequests.employeeId, id));
+      await tx.delete(expenseClaims).where(eq(expenseClaims.employeeId, id));
+      await tx.delete(payrollItems).where(eq(payrollItems.employeeId, id));
+      await tx.delete(payslips).where(eq(payslips.employeeId, id));
+      await tx.delete(employeePayrolls).where(eq(employeePayrolls.employeeId, id));
+      await tx.delete(payrollCalculationHistory).where(eq(payrollCalculationHistory.employeeId, id));
+      await tx.delete(payrollRules).where(eq(payrollRules.employeeId, id));
+      await tx.delete(employeeDocuments).where(eq(employeeDocuments.employeeId, id));
+      await tx.delete(employeeSchedules).where(eq(employeeSchedules.employeeId, id));
+      await tx.delete(employeeTeamAssignments).where(eq(employeeTeamAssignments.employeeId, id));
 
-    // Delete associated user
-    await db
-      .delete(users)
-      .where(eq(users.id, employee.userId));
+      // Tables keyed by userId (audit logs deliberately kept).
+      await tx.delete(notifications).where(eq(notifications.userId, employee.userId));
+      await tx.delete(announcementReads).where(eq(announcementReads.userId, employee.userId));
+      await tx.delete(announcementComments).where(eq(announcementComments.userId, employee.userId));
+
+      await tx.delete(employees).where(eq(employees.id, id));
+      await tx.delete(users).where(eq(users.id, employee.userId));
+    });
 
     // Invalidate caches
     await this.invalidateEmployeeCaches(id);
