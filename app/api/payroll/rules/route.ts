@@ -1,8 +1,27 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { payrollService } from '@/src/services/payroll/payroll.service';
 import { requireAuth } from '@/lib/middleware';
-import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
+import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse, validationErrorResponse } from '@/utils/response';
 import { handleApiError } from '@/lib/core/route-handler';
+
+// Strict validation so malformed numbers can't become NaN in salary columns.
+const createRuleSchema = z.object({
+  employeeId: z.string().min(1).nullish(),
+  teamId: z.string().min(1).nullish(),
+  divisionId: z.string().min(1).nullish(),
+  periodType: z.enum(['MONTHLY', 'WEEKLY']),
+  baseSalary: z.coerce.number().finite().nonnegative('Gaji pokok harus angka >= 0'),
+  targetMetricId: z.string().min(1).nullish(),
+  targetQuantity: z.coerce.number().finite().nonnegative().nullish(),
+  bonusType: z.enum(['PER_EXTRA_UNIT', 'FIXED', 'PERCENTAGE']).optional(),
+  bonusAmountPerUnit: z.coerce.number().finite().nonnegative().nullish(),
+  attendancePolicyId: z.string().min(1).nullish(),
+  holidayMultiplierEnabled: z.boolean().optional(),
+  realtimeCalculationEnabled: z.boolean().optional(),
+  effectiveFrom: z.string().optional().nullable(),
+  effectiveTo: z.string().optional().nullable(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,41 +48,25 @@ export async function POST(request: NextRequest) {
     if (user.role !== 'SUPERADMIN') {
       return forbiddenResponse('Hanya Superadmin yang dapat menambahkan aturan payroll');
     }
-    const body = await request.json();
-    const {
-      employeeId,
-      teamId,
-      divisionId,
-      periodType,
-      baseSalary,
-      targetMetricId,
-      targetQuantity,
-      bonusType,
-      bonusAmountPerUnit,
-      attendancePolicyId,
-      holidayMultiplierEnabled,
-      realtimeCalculationEnabled,
-      effectiveFrom,
-      effectiveTo,
-    } = body;
-
-    if (!baseSalary) return errorResponse('Gaji pokok wajib diisi', 422);
+    const parsed = createRuleSchema.safeParse(await request.json());
+    if (!parsed.success) return validationErrorResponse(parsed.error.errors[0]?.message || 'Data aturan payroll tidak valid');
+    const v = parsed.data;
 
     const rule = await payrollService.createPayrollRule(user.userId, {
-      employeeId: employeeId || null,
-      teamId: teamId || null,
-      divisionId: divisionId || null,
-      periodType,
-      baseSalary: Number(baseSalary),
-      targetMetricId: targetMetricId || null,
-      targetQuantity: targetQuantity !== undefined && targetQuantity !== null ? Number(targetQuantity) : null,
-      bonusType,
-      bonusAmountPerUnit: bonusAmountPerUnit !== undefined && bonusAmountPerUnit !== null ? Number(bonusAmountPerUnit) : null,
-      attendancePolicyId: attendancePolicyId || null,
-      holidayMultiplierEnabled: holidayMultiplierEnabled !== undefined ? Boolean(holidayMultiplierEnabled) : true,
-      realtimeCalculationEnabled: realtimeCalculationEnabled !== undefined ? Boolean(realtimeCalculationEnabled) : true,
-      effectiveFrom: effectiveFrom ? new Date(effectiveFrom) : null,
-      effectiveTo: effectiveTo ? new Date(effectiveTo) : null,
+      employeeId: v.employeeId || null,
+      teamId: v.teamId || null,
+      divisionId: v.divisionId || null,
+      periodType: v.periodType,
+      baseSalary: v.baseSalary,
+      targetMetricId: v.targetMetricId || null,
+      targetQuantity: v.targetQuantity ?? null,
+      bonusType: v.bonusType,
+      bonusAmountPerUnit: v.bonusAmountPerUnit ?? null,
+      attendancePolicyId: v.attendancePolicyId || null,
+      holidayMultiplierEnabled: v.holidayMultiplierEnabled !== undefined ? v.holidayMultiplierEnabled : true,
+      realtimeCalculationEnabled: v.realtimeCalculationEnabled !== undefined ? v.realtimeCalculationEnabled : true,
+      effectiveFrom: v.effectiveFrom ? new Date(v.effectiveFrom) : null,
+      effectiveTo: v.effectiveTo ? new Date(v.effectiveTo) : null,
     });
 
     return successResponse(rule, 'Aturan payroll berhasil ditambahkan', 201);

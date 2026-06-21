@@ -1,8 +1,20 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { kpiService } from '@/services/kpi/kpi.service';
 import { requireAuth } from '@/lib/middleware';
-import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
+import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse, validationErrorResponse } from '@/utils/response';
 import { handleApiError } from '@/lib/core/route-handler';
+
+const createTargetSchema = z.object({
+  metricId: z.string().min(1, 'Metrik wajib dipilih'),
+  scopeType: z.string().min(1, 'Scope wajib diisi'),
+  scopeId: z.string().min(1, 'Scope ID wajib diisi'),
+  periodType: z.string().min(1, 'Periode wajib diisi'),
+  targetQuantity: z.coerce.number().finite().nonnegative('Target harus angka >= 0'),
+  active: z.boolean().optional(),
+  effectiveFrom: z.string().optional().nullable(),
+  effectiveTo: z.string().optional().nullable(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,14 +41,15 @@ export async function POST(request: NextRequest) {
     if (user.role !== 'SUPERADMIN') {
       return forbiddenResponse('Hanya Superadmin yang dapat menambahkan target KPI');
     }
-    const body = await request.json();
-    const { metricId, scopeType, scopeId, periodType, targetQuantity, active, effectiveFrom, effectiveTo } = body;
+    const parsed = createTargetSchema.safeParse(await request.json());
+    if (!parsed.success) return validationErrorResponse(parsed.error.errors[0]?.message || 'Data target KPI tidak valid');
+    const { metricId, scopeType, scopeId, periodType, targetQuantity, active, effectiveFrom, effectiveTo } = parsed.data;
     const target = await kpiService.createTarget(user.userId, {
       metricId,
       scopeType,
       scopeId,
       periodType,
-      targetQuantity: Number(targetQuantity),
+      targetQuantity,
       active,
       effectiveFrom: effectiveFrom ? new Date(effectiveFrom) : undefined,
       effectiveTo: effectiveTo ? new Date(effectiveTo) : undefined,
