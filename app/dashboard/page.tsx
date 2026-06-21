@@ -872,11 +872,11 @@ function DecisionQueuePanel({ stats }: { stats: DashboardStats }) {
           <span style={{ background: "var(--danger)", color: "#FFF", fontWeight: 800, fontSize: 13, borderRadius: 20, padding: "3px 12px", fontFamily: "var(--font-mono, monospace)" }}>{totalPending}</span>
         )}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
         {queues.map((q) => (
           <Link key={q.label} href={q.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 10, border: `1.5px solid ${q.count > 0 ? q.color + "44" : "var(--border-color)"}`, background: q.count > 0 ? q.color + "14" : "var(--bg-hover)", textDecoration: "none", transition: "box-shadow 140ms" }}>
             <span style={{ fontSize: 22, fontWeight: 900, color: q.count > 0 ? q.color : "var(--text-muted)", fontFamily: "var(--font-mono, monospace)" }}>{q.count}</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", textAlign: "center", lineHeight: 1.2 }}>{q.label}</span>
+            <span style={{ fontSize: "clamp(9.5px, 2.7vw, 11px)", fontWeight: 700, color: "var(--text-secondary)", textAlign: "center", lineHeight: 1.2, wordBreak: "keep-all", hyphens: "none", maxWidth: "100%" }}>{q.label}</span>
           </Link>
         ))}
       </div>

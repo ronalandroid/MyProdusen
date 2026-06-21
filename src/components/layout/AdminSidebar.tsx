@@ -100,8 +100,8 @@ export default function AdminSidebar({
           <img src="/logo.png" alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
         </div>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 800, color: "#111111", letterSpacing: "-0.01em" }}>MyProdusen</div>
-          <div style={{ fontSize: 9.5, fontWeight: 700, color: "#6E6E6E", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>MyProdusen</div>
+          <div style={{ fontSize: 9.5, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>
             TBM Group · Konsol Admin
           </div>
         </div>
@@ -129,7 +129,7 @@ export default function AdminSidebar({
           <div key={group.label} style={{ marginTop: 14 }}>
             <div style={{
               padding: "0 12px 6px",
-              fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "#6E6E6E",
+              fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "var(--text-muted)",
             }}>
               {group.label}
             </div>
@@ -145,9 +145,9 @@ export default function AdminSidebar({
                       display: "flex", alignItems: "center", gap: 10,
                       padding: "9px 12px", borderRadius: 10, textDecoration: "none",
                       border: "none",
-                      boxShadow: active ? "inset 3px 0 0 #FFC107" : "inset 3px 0 0 transparent",
-                      background: active ? "#FFF8DC" : "transparent",
-                      color: active ? "#111111" : "#555555",
+                      boxShadow: active ? "inset 3px 0 0 var(--primary)" : "inset 3px 0 0 transparent",
+                      background: active ? "var(--primary-light)" : "transparent",
+                      color: active ? "var(--text-primary)" : "var(--text-secondary)",
                       fontWeight: active ? 800 : 600,
                       fontSize: 13, transition: "background 140ms ease",
                     }}
@@ -157,7 +157,7 @@ export default function AdminSidebar({
                     {item.badge && item.badge > 0 ? (
                       <span style={{
                         minWidth: 18, height: 18, borderRadius: 9,
-                        background: "#B3362B", color: "#FFFFFF",
+                        background: "var(--danger)", color: "#FFFFFF",
                         fontSize: 10, fontWeight: 800,
                         display: "flex", alignItems: "center", justifyContent: "center",
                         padding: "0 5px",
