@@ -1,0 +1,39 @@
+name: Deploy
+
+# Auto-deploy to Coolify after CI passes on main. Triggers only when the "CI"
+# workflow finishes successfully, so a broken build never reaches production.
+# Requires repo secret COOLIFY_TOKEN (a Coolify API token).
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Trigger Coolify deploy
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Deploy myprodusen-web-app
+        env:
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          if [ -z "$COOLIFY_TOKEN" ]; then
+            echo "::error::COOLIFY_TOKEN secret is not set. Add it in repo Settings → Secrets → Actions."
+            exit 1
+          fi
+          echo "Triggering Coolify deploy for commit ${{ github.event.workflow_run.head_sha }}"
+          curl -fsSL -X POST \
+            "http://84.247.150.77:8000/api/v1/deploy?uuid=llj9s86rrpnnq06a0dyq1aq1&force=true" \
+            -H "Authorization: Bearer $COOLIFY_TOKEN" \
+            -H "Content-Type: application/json"
+          echo ""
+          echo "Deploy queued. Watch progress in the Coolify dashboard."
