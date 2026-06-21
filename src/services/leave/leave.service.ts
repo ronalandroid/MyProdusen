@@ -63,24 +63,28 @@ export class LeaveService {
 
     const leaveId = `leave_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    const [leave] = await db
-      .insert(leaveRequests)
-      .values({
-        id: leaveId,
+    // Create the request and reserve the balance hold atomically.
+    const leave = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(leaveRequests)
+        .values({
+          id: leaveId,
+          employeeId: data.employeeId,
+          type: data.type,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          reason: data.reason,
+          status: 'PENDING',
+        })
+        .returning();
+
+      await leaveBalanceService.holdForRequest({
         employeeId: data.employeeId,
-        type: data.type,
+        leaveRequestId: row.id,
         startDate: data.startDate,
         endDate: data.endDate,
-        reason: data.reason,
-        status: 'PENDING',
-      })
-      .returning();
-
-    await leaveBalanceService.holdForRequest({
-      employeeId: data.employeeId,
-      leaveRequestId: leave.id,
-      startDate: data.startDate,
-      endDate: data.endDate,
+      }, tx);
+      return row;
     });
 
     // Invalidate leave caches
@@ -213,18 +217,24 @@ export class LeaveService {
       throw new BusinessError('Pengajuan izin sudah diproses');
     }
 
-    const [updated] = await db
-      .update(leaveRequests)
-      .set({
-        status: 'APPROVED',
-        approvedBy,
-        approvedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(leaveRequests.id, id))
-      .returning();
+    // Status change + balance-ledger writes must be atomic: a partial failure
+    // would leave the request APPROVED but the balance not deducted (or vice
+    // versa). Run both inside one transaction.
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(leaveRequests)
+        .set({
+          status: 'APPROVED',
+          approvedBy,
+          approvedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(leaveRequests.id, id))
+        .returning();
 
-    await leaveBalanceService.approveRequest(id, approvedBy);
+      await leaveBalanceService.approveRequest(id, approvedBy, tx);
+      return row;
+    });
 
     // Invalidate leave caches
     await this.invalidateLeaveCaches(leave.employeeId, id);
@@ -254,19 +264,23 @@ export class LeaveService {
       throw new BusinessError('Pengajuan izin sudah diproses');
     }
 
-    const [updated] = await db
-      .update(leaveRequests)
-      .set({
-        status: 'REJECTED',
-        rejectedBy,
-        rejectedAt: new Date(),
-        rejectionReason,
-        updatedAt: new Date(),
-      })
-      .where(eq(leaveRequests.id, id))
-      .returning();
+    // Atomic: status change + balance-hold release in one transaction.
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(leaveRequests)
+        .set({
+          status: 'REJECTED',
+          rejectedBy,
+          rejectedAt: new Date(),
+          rejectionReason,
+          updatedAt: new Date(),
+        })
+        .where(eq(leaveRequests.id, id))
+        .returning();
 
-    await leaveBalanceService.releaseRejectedRequest(id, rejectedBy);
+      await leaveBalanceService.releaseRejectedRequest(id, rejectedBy, tx);
+      return row;
+    });
 
     // Invalidate leave caches
     await this.invalidateLeaveCaches(leave.employeeId, id);

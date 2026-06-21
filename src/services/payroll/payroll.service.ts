@@ -347,8 +347,6 @@ export class PayrollService {
       throw new BusinessError('Payroll sudah dikalkulasi');
     }
 
-    await db.delete(payrollItems).where(eq(payrollItems.runId, runId));
-
     // Get all active employees with payroll assignment
     const activeEmployees = await db
       .select({
@@ -373,6 +371,9 @@ export class PayrollService {
     let totalGrossPay = 0;
     let totalDeductions = 0;
     let totalNetPay = 0;
+    // Compute every line item first (pure), then persist atomically below so a
+    // mid-calculation failure can never leave a half-written payroll run.
+    const itemsToInsert: (typeof payrollItems.$inferInsert)[] = [];
 
     for (const { employee, payroll, structure } of activeEmployees) {
       // Load independent payroll inputs in parallel to avoid per-employee waterfalls.
@@ -485,8 +486,8 @@ export class PayrollService {
         bpjsKetenagakerjaan.employee;
       const netPay = grossPay - totalDeductionsItem;
 
-      // Create payroll item
-      await db.insert(payrollItems).values({
+      // Collect the line item; persisted in the atomic block after the loop.
+      itemsToInsert.push({
         id: nanoid(),
         runId: run.id,
         employeeId: employee.id,
@@ -514,20 +515,28 @@ export class PayrollService {
       totalNetPay += netPay;
     }
 
-    // Update payroll run
-    const [updated] = await db
-      .update(payrollRuns)
-      .set({
-        status: 'CALCULATED',
-        totalEmployees: activeEmployees.length,
-        totalGrossPay,
-        totalDeductions,
-        totalNetPay,
-        calculatedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(payrollRuns.id, runId))
-      .returning();
+    // Persist atomically: clear any prior items, insert all freshly computed
+    // ones, and finalize the run — all or nothing.
+    const updated = await db.transaction(async (tx) => {
+      await tx.delete(payrollItems).where(eq(payrollItems.runId, runId));
+      if (itemsToInsert.length > 0) {
+        await tx.insert(payrollItems).values(itemsToInsert);
+      }
+      const [row] = await tx
+        .update(payrollRuns)
+        .set({
+          status: 'CALCULATED',
+          totalEmployees: activeEmployees.length,
+          totalGrossPay,
+          totalDeductions,
+          totalNetPay,
+          calculatedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(payrollRuns.id, runId))
+        .returning();
+      return row;
+    });
 
     return updated;
   }

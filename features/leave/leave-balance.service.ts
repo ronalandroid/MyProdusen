@@ -3,9 +3,15 @@ import { and, eq, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { calculateLeaveDays, summarizeLeaveLedger, type LeaveBalanceTransactionType } from '@/lib/leave/balance-ledger';
 
+// Either the root db or a transaction handle — lets callers run these ledger
+// writes inside a parent transaction so balance changes stay atomic with the
+// leave-request status change.
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type Executor = typeof db | Tx;
+
 export class LeaveBalanceService {
-  async ensureAnnualEntitlement(employeeId: string, year = new Date().getFullYear(), createdBy?: string) {
-    const [existing] = await db
+  async ensureAnnualEntitlement(employeeId: string, year = new Date().getFullYear(), createdBy?: string, executor: Executor = db) {
+    const [existing] = await executor
       .select()
       .from(leaveBalanceLedger)
       .where(and(
@@ -20,7 +26,7 @@ export class LeaveBalanceService {
     // Load global quota dynamically
     const globalQuota = await this.getGlobalLeaveQuota();
 
-    const [created] = await db.insert(leaveBalanceLedger).values({
+    const [created] = await executor.insert(leaveBalanceLedger).values({
       id: uuidv4(),
       employeeId,
       transactionType: 'ENTITLEMENT',
@@ -33,12 +39,12 @@ export class LeaveBalanceService {
     return created;
   }
 
-  async holdForRequest(data: { employeeId: string; leaveRequestId: string; startDate: Date; endDate: Date; createdBy?: string }) {
+  async holdForRequest(data: { employeeId: string; leaveRequestId: string; startDate: Date; endDate: Date; createdBy?: string }, executor: Executor = db) {
     const year = data.startDate.getFullYear();
-    await this.ensureAnnualEntitlement(data.employeeId, year, data.createdBy);
+    await this.ensureAnnualEntitlement(data.employeeId, year, data.createdBy, executor);
     const days = calculateLeaveDays(data.startDate, data.endDate);
 
-    const [created] = await db.insert(leaveBalanceLedger).values({
+    const [created] = await executor.insert(leaveBalanceLedger).values({
       id: uuidv4(),
       employeeId: data.employeeId,
       leaveRequestId: data.leaveRequestId,
@@ -52,8 +58,8 @@ export class LeaveBalanceService {
     return created;
   }
 
-  async approveRequest(leaveRequestId: string, createdBy?: string) {
-    const [hold] = await db
+  async approveRequest(leaveRequestId: string, createdBy?: string, executor: Executor = db) {
+    const [hold] = await executor
       .select()
       .from(leaveBalanceLedger)
       .where(and(
@@ -64,7 +70,7 @@ export class LeaveBalanceService {
 
     if (!hold) return null;
 
-    const [existingApproval] = await db
+    const [existingApproval] = await executor
       .select()
       .from(leaveBalanceLedger)
       .where(and(
@@ -75,7 +81,7 @@ export class LeaveBalanceService {
 
     if (existingApproval) return existingApproval;
 
-    await db.insert(leaveBalanceLedger).values({
+    await executor.insert(leaveBalanceLedger).values({
       id: uuidv4(),
       employeeId: hold.employeeId,
       leaveRequestId,
@@ -86,7 +92,7 @@ export class LeaveBalanceService {
       createdBy,
     });
 
-    const [approved] = await db.insert(leaveBalanceLedger).values({
+    const [approved] = await executor.insert(leaveBalanceLedger).values({
       id: uuidv4(),
       employeeId: hold.employeeId,
       leaveRequestId,
@@ -100,8 +106,8 @@ export class LeaveBalanceService {
     return approved;
   }
 
-  async releaseRejectedRequest(leaveRequestId: string, createdBy?: string) {
-    const [hold] = await db
+  async releaseRejectedRequest(leaveRequestId: string, createdBy?: string, executor: Executor = db) {
+    const [hold] = await executor
       .select()
       .from(leaveBalanceLedger)
       .where(and(
@@ -112,7 +118,7 @@ export class LeaveBalanceService {
 
     if (!hold) return null;
 
-    const [release] = await db.insert(leaveBalanceLedger).values({
+    const [release] = await executor.insert(leaveBalanceLedger).values({
       id: uuidv4(),
       employeeId: hold.employeeId,
       leaveRequestId,
