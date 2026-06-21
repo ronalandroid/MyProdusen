@@ -3,10 +3,11 @@ import { z } from 'zod';
 import { attendanceExceptionService } from '@/services/attendance/attendance-exception.service';
 import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
-import { successResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
+import { successResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse, errorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
 import { handleApiError } from '@/lib/core/route-handler';
 import { BusinessError } from '@/lib/core/business-error';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 // Capped so one request can't run unbounded and hit the gateway timeout. The
 // client chunks large selections (e.g. 1000+) into successive calls.
@@ -23,6 +24,12 @@ export async function POST(request: NextRequest) {
     const user = await requireAuth(request);
     if (!hasPermission(user.role, 'ATTENDANCE_MANUAL_ADJUST')) {
       return forbiddenResponse('Anda tidak memiliki akses review exception absensi');
+    }
+
+    // Throttle the batch endpoint — each call can mutate up to 200 rows.
+    const rl = await rateLimit(request, RATE_LIMITS.API_STRICT, 'attendance:bulk-review');
+    if (rl.limited) {
+      return errorResponse('Terlalu banyak permintaan proses massal. Coba lagi sebentar.', 429);
     }
 
     const body = await getRequestBody(request);

@@ -4,6 +4,7 @@ import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
 import { handleApiError } from '@/lib/core/route-handler';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import {
   assertPdfReportAccess,
   buildPdfDocument,
@@ -22,6 +23,12 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
     assertPdfReportAccess(user.role);
+
+    // PDF generation is heavy — throttle to protect the server.
+    const rl = await rateLimit(request, RATE_LIMITS.API_STRICT, 'reports:pdf');
+    if (rl.limited) {
+      return errorResponse('Terlalu banyak permintaan laporan PDF. Coba lagi sebentar.', 429);
+    }
 
     const body = await getRequestBody(request);
     const validation = pdfReportSchema.safeParse(body);

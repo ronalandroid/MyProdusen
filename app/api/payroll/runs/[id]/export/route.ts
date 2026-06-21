@@ -6,6 +6,7 @@ import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/ac
 import { logAudit } from '@/lib/audit';
 import { hasPermission } from '@/lib/permissions';
 import { handleApiError } from '@/lib/core/route-handler';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 function csvEscape(value: unknown) {
   const text = String(value ?? '');
@@ -16,6 +17,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const user = await requireAuth(request);
     assertPayrollAccess(user.role, 'export');
+
+    const rl = await rateLimit(request, RATE_LIMITS.API_STRICT, 'payroll:export');
+    if (rl.limited) {
+      return errorResponse('Terlalu banyak permintaan ekspor payroll. Coba lagi sebentar.', 429);
+    }
+
     const { id } = await params;
     const run = await payrollService.getPayrollRunById(id);
     const rows = [
