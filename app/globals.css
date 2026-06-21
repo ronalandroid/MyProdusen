@@ -4185,14 +4185,14 @@ h4, .h4 { font-weight: 700; }
 .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
 .btn-primary:disabled { background: #E5E7EB; color: #9CA3AF; }
 .btn-secondary {
-  background: #fff;
+  background: var(--bg-card);
   color: var(--text-primary);
   border: 1.5px solid var(--text-primary);
 }
-.btn-secondary:hover:not(:disabled) { background: #FAFAFA; }
+.btn-secondary:hover:not(:disabled) { background: var(--bg-hover); }
 .btn-secondary:disabled { border-color: var(--border-color); color: var(--text-muted); }
 .btn-ghost {
-  background: #fff;
+  background: var(--bg-card);
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
 }
@@ -4269,7 +4269,7 @@ input:focus, textarea:focus, select:focus {
   display: flex;
   border-top: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
-  background: #fff;
+  background: var(--bg-card);
 }
 .v4-stats-row > .v4-stat {
   flex: 1;
@@ -4315,7 +4315,7 @@ input:focus, textarea:focus, select:focus {
    TABLES — uppercase muted headers, hairline rows, hover
    ===================================================================== */
 .table { border-collapse: collapse; }
-.table thead { background: #FAFAFA; }
+.table thead { background: var(--bg-hover); }
 .table th {
   text-align: left;
   font-size: 10px;
@@ -4324,21 +4324,21 @@ input:focus, textarea:focus, select:focus {
   text-transform: uppercase;
   color: var(--text-muted);
   border-bottom: 1px solid var(--border-color);
-  background: #FAFAFA;
+  background: var(--bg-hover);
 }
 .table td {
   font-size: 13px;
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-subtle);
 }
-.table tbody tr:hover { background: #FAFAFA; }
+.table tbody tr:hover { background: var(--bg-hover); }
 
 /* =====================================================================
    SIDEBAR / NAV — Strava white nav, yellow left-border active (desktop)
    ===================================================================== */
 @media (min-width: 1024px) {
   .nav-container {
-    background: #fff;
+    background: var(--bg-card);
     border-right: 1px solid var(--border-color);
     box-shadow: none;
     width: 240px;

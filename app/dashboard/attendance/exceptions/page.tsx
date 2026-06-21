@@ -112,7 +112,7 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
         aria-label="Bukti Pengecualian Absensi"
         style={{
           position: "fixed", top: 0, right: 0, bottom: 0, width: "min(520px, 100vw)",
-          background: "#FFFFFF", zIndex: 51, display: "flex", flexDirection: "column",
+          background: "var(--bg-card)", zIndex: 51, display: "flex", flexDirection: "column",
           boxShadow: "-4px 0 32px rgba(28,32,38,0.12)",
           animation: "slideInRight 220ms ease-out",
         }}
@@ -120,16 +120,16 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
         <style>{`@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
 
         {/* Header */}
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #EBEBEB", display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: "#111111" }}>Bukti Pengecualian</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>Bukti Pengecualian</div>
             {detail && (
-              <div style={{ fontSize: 12, color: "#6E6E6E", marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
                 {detail.employee?.fullName || "Karyawan"} · {detail.employee?.nip || detail.employeeId}
               </div>
             )}
           </div>
-          <button type="button" onClick={onClose} style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid #EBEBEB", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} aria-label="Tutup">
+          <button type="button" onClick={onClose} style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid var(--border-color)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} aria-label="Tutup">
             <X size={18} />
           </button>
         </div>
@@ -140,11 +140,11 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
               <LoadingSpinner message="Memuat bukti…" />
             </div>
           ) : !detail ? (
-            <p style={{ textAlign: "center", color: "#6E6E6E", paddingTop: 40 }}>Gagal memuat data.</p>
+            <p style={{ textAlign: "center", color: "var(--text-muted)", paddingTop: 40 }}>Gagal memuat data.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               {/* GPS Map Illustration */}
-              <section style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #EBEBEB" }}>
+              <section style={{ borderRadius: 12, overflow: "hidden", border: "1px solid var(--border-color)" }}>
                 <div style={{
                   height: 180, background: "linear-gradient(135deg, #E8F5E9 0%, #E3F2FD 100%)",
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
@@ -152,7 +152,7 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
                   <MapPin size={40} color="#FFC107" strokeWidth={2} />
                   {hasGps ? (
                     <>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#111111" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
                         {att!.checkInLatitude!.toFixed(6)}, {att!.checkInLongitude!.toFixed(6)}
                       </div>
                       <a
@@ -165,20 +165,20 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
                       </a>
                     </>
                   ) : (
-                    <div style={{ fontSize: 13, color: "#6E6E6E" }}>Koordinat GPS tidak tersedia</div>
+                    <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Koordinat GPS tidak tersedia</div>
                   )}
                 </div>
 
                 {/* GPS stats */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid #EBEBEB" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--border-color)" }}>
                   {[
                     { label: "Jarak", value: att?.checkInDistance != null ? `${Math.round(att.checkInDistance)} m` : "–" },
                     { label: "Akurasi GPS", value: att?.checkInAccuracy != null ? `${Math.round(att.checkInAccuracy)} m` : "–" },
                     { label: "Status Geo", value: att?.checkInGeoStatus || "–" },
                   ].map(({ label, value }) => (
-                    <div key={label} style={{ padding: "10px 12px", textAlign: "center", borderRight: "1px solid #EBEBEB" }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: "#111111", marginTop: 2, fontFamily: "var(--font-mono, monospace)" }}>{value}</div>
+                    <div key={label} style={{ padding: "10px 12px", textAlign: "center", borderRight: "1px solid var(--border-color)" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)", marginTop: 2, fontFamily: "var(--font-mono, monospace)" }}>{value}</div>
                     </div>
                   ))}
                 </div>
@@ -186,12 +186,12 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
 
               {/* Selfie */}
               <section>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "#6E6E6E", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Foto Selfie</div>
-                <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #EBEBEB", background: "#F5F5F5", minHeight: 180, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Foto Selfie</div>
+                <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid var(--border-color)", background: "var(--bg-hover)", minHeight: 180, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {att?.checkInSelfieUrl ? (
                     <img src={att.checkInSelfieUrl} alt="Selfie absensi" style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
                   ) : (
-                    <div style={{ textAlign: "center", padding: 32, color: "#6E6E6E" }}>
+                    <div style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>
                       <div style={{ fontSize: 32, marginBottom: 8 }}>📷</div>
                       <div style={{ fontSize: 12 }}>Foto tidak tersedia</div>
                     </div>
@@ -200,24 +200,24 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
               </section>
 
               {/* Exception Info */}
-              <section style={{ background: "#FAFAFA", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "#6E6E6E", letterSpacing: "0.08em", textTransform: "uppercase" }}>Detail Pengajuan</div>
+              <section style={{ background: "var(--bg-hover)", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Detail Pengajuan</div>
                 <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: "6px 12px", fontSize: 13 }}>
-                  <span style={{ color: "#6E6E6E", fontWeight: 600 }}>Tipe</span>
-                  <span style={{ color: "#111111", fontWeight: 700 }}>{detail.type}</span>
-                  <span style={{ color: "#6E6E6E", fontWeight: 600 }}>Diajukan</span>
-                  <span style={{ color: "#111111" }}>{new Date(detail.createdAt).toLocaleString("id-ID")}</span>
-                  <span style={{ color: "#6E6E6E", fontWeight: 600 }}>Alasan</span>
-                  <span style={{ color: "#111111" }}>{detail.reason}</span>
-                  <span style={{ color: "#6E6E6E", fontWeight: 600 }}>Status</span>
-                  <span style={{ color: STATUS_TONE[detail.status]?.color || "#111111", fontWeight: 700 }}>{STATUS_TONE[detail.status]?.label || detail.status}</span>
+                  <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>Tipe</span>
+                  <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>{detail.type}</span>
+                  <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>Diajukan</span>
+                  <span style={{ color: "var(--text-primary)" }}>{new Date(detail.createdAt).toLocaleString("id-ID")}</span>
+                  <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>Alasan</span>
+                  <span style={{ color: "var(--text-primary)" }}>{detail.reason}</span>
+                  <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>Status</span>
+                  <span style={{ color: STATUS_TONE[detail.status]?.color || "var(--text-primary)", fontWeight: 700 }}>{STATUS_TONE[detail.status]?.label || detail.status}</span>
                 </div>
               </section>
 
               {/* Decision Timeline */}
               {detail.reviewedAt && (
                 <section>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: "#6E6E6E", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Timeline Keputusan</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Timeline Keputusan</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                     {[
                       { label: "Diajukan", date: detail.createdAt, color: "#3D6B8F" },
@@ -226,13 +226,13 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
                       <div key={idx} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
                           <div style={{ width: 10, height: 10, borderRadius: "50%", background: color, flexShrink: 0, marginTop: 3 }} />
-                          {idx === 0 && <div style={{ width: 2, height: 28, background: "#EBEBEB" }} />}
+                          {idx === 0 && <div style={{ width: 2, height: 28, background: "var(--border-color)" }} />}
                         </div>
                         <div style={{ paddingBottom: 16 }}>
                           <div style={{ fontSize: 12, fontWeight: 700, color }}>{label}</div>
-                          <div style={{ fontSize: 11, color: "#6E6E6E" }}>{new Date(date).toLocaleString("id-ID")}</div>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{new Date(date).toLocaleString("id-ID")}</div>
                           {detail.reviewNote && idx === 1 && (
-                            <div style={{ fontSize: 12, color: "#555555", marginTop: 4, fontStyle: "italic" }}>"{detail.reviewNote}"</div>
+                            <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4, fontStyle: "italic" }}>"{detail.reviewNote}"</div>
                           )}
                         </div>
                       </div>
@@ -244,7 +244,7 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
               {/* Review actions for pending */}
               {detail.status === "PENDING" && (
                 <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: "#6E6E6E", letterSpacing: "0.08em", textTransform: "uppercase" }}>Keputusan</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Keputusan</div>
                   {actionError && (
                     <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(179,54,43,0.08)", color: "#B3362B", fontSize: 12, fontWeight: 600 }}>
                       {actionError}

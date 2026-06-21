@@ -114,7 +114,7 @@ export default function SettingsPage() {
   // Theme state (with color wheel support)
   const [themeConfig, setThemeConfig] = useState<ThemeConfig>({
     primaryColor: "#FFC107",
-    secondaryColor: "#111111",
+    secondaryColor: "var(--text-primary)",
     accentColor: "#E53935",
     themeMode: "default",
   });
@@ -200,7 +200,7 @@ export default function SettingsPage() {
     if (themeData) {
       setThemeConfig({
         primaryColor: themeData.primaryColor || "#FFC107",
-        secondaryColor: themeData.secondaryColor || "#111111",
+        secondaryColor: themeData.secondaryColor || "var(--text-primary)",
         accentColor: themeData.accentColor || "#E53935",
         themeMode: themeData.themeMode || "default",
       });
@@ -1197,7 +1197,7 @@ export default function SettingsPage() {
               </p>
               <ul className="text-[11px] leading-relaxed text-[var(--text-secondary)] space-y-1.5 font-medium">
                 <li><span className="inline-block size-3 rounded-full mr-1" style={{ backgroundColor: "#FFC107" }} /> <strong>Yellow #FFC107</strong> (Brand Utama)</li>
-                <li><span className="inline-block size-3 rounded-full mr-1" style={{ backgroundColor: "#111111" }} /> <strong>Charcoal #111111</strong> (Teks Utama)</li>
+                <li><span className="inline-block size-3 rounded-full mr-1" style={{ backgroundColor: "var(--text-primary)" }} /> <strong>Charcoal var(--text-primary)</strong> (Teks Utama)</li>
                 <li><span className="inline-block size-3 rounded-full mr-1" style={{ backgroundColor: "#E53935" }} /> <strong>Red #E53935</strong> (Aksen Penegasan)</li>
               </ul>
             </div>

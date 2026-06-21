@@ -40,7 +40,7 @@ const TIER_STYLE: Record<string, { bg: string; fg: string }> = {
   Baik: { bg: "#EAF0F5", fg: "#3D6B8F" },
   Perhatian: { bg: "#FAF0DC", fg: "#8A5A00" },
   Kritis: { bg: "#F9E9E7", fg: "#A93B30" },
-  Standard: { bg: "#F2F1EE", fg: "#555555" },
+  Standard: { bg: "var(--bg-hover)", fg: "var(--text-secondary)" },
 };
 
 function scoreColor(score: number) {
@@ -106,18 +106,18 @@ function AssessDrawer({ employee, score, onClose, onSaved }: AssessDrawerProps) 
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(17,17,17,0.4)", backdropFilter: "blur(2px)" }} />
       <div style={{
         position: "relative", width: 540, maxWidth: "92vw", height: "100%",
-        background: "#F4F5F7", boxShadow: "-16px 0 48px rgba(17,17,17,0.18)",
+        background: "var(--bg-hover)", boxShadow: "-16px 0 48px rgba(17,17,17,0.18)",
         display: "flex", flexDirection: "column",
         animation: "slideInFromRight 260ms cubic-bezier(0.16,1,0.3,1)",
       }}>
         <style>{`@keyframes slideInFromRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
 
         {/* Header */}
-        <div style={{ flexShrink: 0, padding: "18px 24px", background: "#FFFFFF", borderBottom: "1px solid #EFF1F4", display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ flexShrink: 0, padding: "18px 24px", background: "var(--bg-card)", borderBottom: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{
             width: 44, height: 44, borderRadius: "50%",
             background: "linear-gradient(135deg, #FFC107, #FFD85A)",
-            color: "#111111", display: "flex", alignItems: "center", justifyContent: "center",
+            color: "var(--text-primary)", display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 15, fontWeight: 800, flexShrink: 0,
           }}>
             {employee.profilePhoto
@@ -126,26 +126,26 @@ function AssessDrawer({ employee, score, onClose, onSaved }: AssessDrawerProps) 
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 17, fontWeight: 800 }}>{employee.fullName}</div>
-            <div style={{ fontSize: 11.5, color: "#6E6E6E", fontFamily: "monospace" }}>
+            <div style={{ fontSize: 11.5, color: "var(--text-muted)", fontFamily: "monospace" }}>
               {employee.nip} · {employee.position || "—"}
             </div>
           </div>
-          <button onClick={onClose} aria-label="Tutup" style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "#F1F2F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <button onClick={onClose} aria-label="Tutup" style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "var(--border-color)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <X size={16} />
           </button>
         </div>
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: "auto", padding: "18px 24px 28px" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", color: "#6E6E6E" }}>KUESIONER PENILAIAN PERILAKU</div>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>KUESIONER PENILAIAN PERILAKU</div>
 
           <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
             {CRITERIA.map((c) => (
-              <div key={c.key} style={{ background: "#FFFFFF", borderRadius: 14, padding: "14px 16px" }}>
+              <div key={c.key} style={{ background: "var(--bg-card)", borderRadius: 14, padding: "14px 16px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                   <div>
                     <div style={{ fontSize: 13.5, fontWeight: 800 }}>{c.label}</div>
-                    <div style={{ fontSize: 11, color: "#6E6E6E", marginTop: 1 }}>{c.desc}</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{c.desc}</div>
                   </div>
                   <span style={{ fontFamily: "monospace", fontSize: 13, fontWeight: 800, color: "#C05621" }}>
                     {ratings[c.key] ?? 0}/5
@@ -161,12 +161,12 @@ function AssessDrawer({ employee, score, onClose, onSaved }: AssessDrawerProps) 
                         aria-label={`Nilai ${star}`}
                         style={{
                           flex: 1, height: 38, borderRadius: 9,
-                          border: `1.5px solid ${filled ? "#FFC107" : "#E9EBEF"}`,
+                          border: `1.5px solid ${filled ? "#FFC107" : "var(--border-color)"}`,
                           background: filled ? "#FFF8DC" : "#FFFFFF",
                           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                         }}
                       >
-                        <Star size={18} fill={filled ? "#FFC107" : "none"} stroke={filled ? "#C05621" : "#CCCCCC"} strokeWidth={1.6} />
+                        <Star size={18} fill={filled ? "#FFC107" : "none"} stroke={filled ? "#C05621" : "var(--text-muted)"} strokeWidth={1.6} />
                       </button>
                     );
                   })}
@@ -176,20 +176,20 @@ function AssessDrawer({ employee, score, onClose, onSaved }: AssessDrawerProps) 
           </div>
 
           {/* Score impact */}
-          <div style={{ marginTop: 16, background: "#FFFFFF", borderRadius: 16, padding: "16px 18px" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", color: "#6E6E6E" }}>DAMPAK KE SKOR KENAIKAN GAJI</div>
+          <div style={{ marginTop: 16, background: "var(--bg-card)", borderRadius: 16, padding: "16px 18px" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>DAMPAK KE SKOR KENAIKAN GAJI</div>
             <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, textAlign: "center" }}>
-              <div style={{ background: "#F7F8FA", borderRadius: 12, padding: "12px 8px" }}>
+              <div style={{ background: "var(--bg-hover)", borderRadius: 12, padding: "12px 8px" }}>
                 <div style={{ fontFamily: "monospace", fontSize: 20, fontWeight: 800 }}>{objScore}</div>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#6E6E6E", marginTop: 2 }}>OBJEKTIF ×80%</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", marginTop: 2 }}>OBJEKTIF ×80%</div>
               </div>
               <div style={{ background: "#FFF8DC", borderRadius: 12, padding: "12px 8px" }}>
                 <div style={{ fontFamily: "monospace", fontSize: 20, fontWeight: 800, color: "#C05621" }}>{behaviorScore}</div>
                 <div style={{ fontSize: 9, fontWeight: 700, color: "#8A5A00", marginTop: 2 }}>PERILAKU ×20%</div>
               </div>
-              <div style={{ background: "#111111", borderRadius: 12, padding: "12px 8px" }}>
+              <div style={{ background: "var(--text-primary)", borderRadius: 12, padding: "12px 8px" }}>
                 <div style={{ fontFamily: "monospace", fontSize: 20, fontWeight: 800, color: scoreColor(finalScore) }}>{finalScore}</div>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#BBBBBB", marginTop: 2 }}>SKOR AKHIR</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", marginTop: 2 }}>SKOR AKHIR</div>
               </div>
             </div>
           </div>
@@ -202,8 +202,8 @@ function AssessDrawer({ employee, score, onClose, onSaved }: AssessDrawerProps) 
         </div>
 
         {/* Footer */}
-        <div style={{ flexShrink: 0, padding: "14px 24px", background: "#FFFFFF", borderTop: "1px solid #EFF1F4", display: "flex", gap: 10 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: 12, borderRadius: 10, border: "1px solid #E9EBEF", background: "#FFFFFF", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+        <div style={{ flexShrink: 0, padding: "14px 24px", background: "var(--bg-card)", borderTop: "1px solid var(--border-color)", display: "flex", gap: 10 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: 12, borderRadius: 10, border: "1px solid var(--border-color)", background: "var(--bg-card)", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
             Batal
           </button>
           <button
@@ -212,7 +212,7 @@ function AssessDrawer({ employee, score, onClose, onSaved }: AssessDrawerProps) 
             style={{
               flex: 1.6, padding: 12, borderRadius: 10, border: "none",
               background: "linear-gradient(135deg, #FFC93C, #FFA000)",
-              color: "#111111", fontSize: 13, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer",
+              color: "var(--text-primary)", fontSize: 13, fontWeight: 800, cursor: saving ? "not-allowed" : "pointer",
               opacity: saving ? 0.7 : 1,
             }}
           >
@@ -256,8 +256,8 @@ export default function PenilaianPerilakuPage() {
     const tier = s?.tier ?? "Standard";
     const tierStyle = TIER_STYLE[tier] ?? TIER_STYLE.Standard;
     const raiseLabel = s && s.projectedRaisePercent > 0 ? `+${s.projectedRaisePercent}%` : "—";
-    const raiseBg = s && s.projectedRaisePercent > 3 ? "#E5F2E9" : s && s.projectedRaisePercent > 0 ? "#FFF8E1" : "#F2F1EE";
-    const raiseFg = s && s.projectedRaisePercent > 3 ? "#1E6B43" : s && s.projectedRaisePercent > 0 ? "#8A5A00" : "#999999";
+    const raiseBg = s && s.projectedRaisePercent > 3 ? "#E5F2E9" : s && s.projectedRaisePercent > 0 ? "#FFF8E1" : "var(--bg-hover)";
+    const raiseFg = s && s.projectedRaisePercent > 3 ? "#1E6B43" : s && s.projectedRaisePercent > 0 ? "#8A5A00" : "var(--text-muted)";
     return { ...e, objScore, behaviorScore, finalScore, tier, tierStyle, raiseLabel, raiseBg, raiseFg, s };
   });
 
@@ -269,34 +269,34 @@ export default function PenilaianPerilakuPage() {
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", maxWidth: 1040, flexWrap: "wrap", gap: 10 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, letterSpacing: "-0.02em" }}>Penilaian Perilaku</h1>
-          <div style={{ fontSize: 13, color: "#555555", marginTop: 4 }}>
+          <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}>
             Kuesioner kebersihan, ketepatan waktu, kedisiplinan, kinerja &amp; kerja sama — berlaku untuk leader &amp; karyawan.
           </div>
         </div>
-        <span style={{ fontSize: 12, color: "#6E6E6E", whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
           {assessedCount}/{rows.length} dinilai
         </span>
       </div>
 
       {/* Weight explainer */}
       <div style={{
-        marginTop: 14, maxWidth: 1040, background: "#111111", borderRadius: 16,
+        marginTop: 14, maxWidth: 1040, background: "var(--text-primary)", borderRadius: 16,
         padding: "16px 20px", display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap",
       }}>
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: "#FFFFFF" }}>Bobot Skor Kenaikan Gaji Tahun Depan</div>
-          <div style={{ fontSize: 12, color: "#BBBBBB", marginTop: 3, lineHeight: 1.55 }}>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3, lineHeight: 1.55 }}>
             Skor akhir (0–100) = <strong style={{ color: "#FFFFFF" }}>80% objektif</strong> (absensi + KPI sistem) + <strong style={{ color: "#FFC107" }}>20% penilaian perilaku</strong> dari kuesioner ini.
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <div style={{ background: "#1D1D1D", borderRadius: 12, padding: "11px 16px", textAlign: "center" }}>
+          <div style={{ background: "var(--text-primary)", borderRadius: 12, padding: "11px 16px", textAlign: "center" }}>
             <div style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 800, color: "#FFFFFF" }}>80%</div>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.05em", color: "#999999", marginTop: 2 }}>OBJEKTIF</div>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)", marginTop: 2 }}>OBJEKTIF</div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", fontSize: 18, color: "#555555" }}>+</div>
+          <div style={{ display: "flex", alignItems: "center", fontSize: 18, color: "var(--text-secondary)" }}>+</div>
           <div style={{ background: "linear-gradient(135deg, #FFC93C, #FFA000)", borderRadius: 12, padding: "11px 16px", textAlign: "center" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 800, color: "#111111" }}>20%</div>
+            <div style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 800, color: "var(--text-primary)" }}>20%</div>
             <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.05em", color: "#6B4E00", marginTop: 2 }}>PERILAKU</div>
           </div>
         </div>
@@ -304,14 +304,14 @@ export default function PenilaianPerilakuPage() {
 
       {/* Table */}
       <div style={{
-        marginTop: 16, maxWidth: 1040, background: "#FFFFFF", border: "1px solid #FFFFFF",
+        marginTop: 16, maxWidth: 1040, background: "var(--bg-card)", border: "1px solid #FFFFFF",
         borderRadius: 20, boxShadow: "0 2px 4px rgba(28,32,38,0.03), 0 12px 32px rgba(28,32,38,0.06)",
         overflow: "hidden",
       }}>
         <div style={{
           display: "grid", gridTemplateColumns: "2fr 1.3fr 1fr 1fr 1.3fr 0.9fr",
-          padding: "9px 20px", background: "#F7F8FA", borderBottom: "1px solid #EFF1F4",
-          fontFamily: "monospace", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "#6E6E6E",
+          padding: "9px 20px", background: "var(--bg-hover)", borderBottom: "1px solid var(--border-color)",
+          fontFamily: "monospace", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "var(--text-muted)",
         }}>
           <span>NAMA</span><span>DIVISI</span><span>OBJEKTIF 80%</span><span>PERILAKU 20%</span><span>SKOR AKHIR</span><span>AKSI</span>
         </div>
@@ -327,7 +327,7 @@ export default function PenilaianPerilakuPage() {
             key={row.id}
             style={{
               display: "grid", gridTemplateColumns: "2fr 1.3fr 1fr 1fr 1.3fr 0.9fr",
-              padding: "11px 20px", borderBottom: "1px solid #F6F7F9", alignItems: "center", fontSize: 12.5,
+              padding: "11px 20px", borderBottom: "1px solid var(--bg-hover)", alignItems: "center", fontSize: 12.5,
             }}
           >
             <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -337,12 +337,12 @@ export default function PenilaianPerilakuPage() {
               }
               <span>
                 <span style={{ display: "block", fontWeight: 700 }}>{row.fullName}</span>
-                <span style={{ display: "block", fontSize: 10, color: "#999999", fontFamily: "monospace" }}>{row.nip}</span>
+                <span style={{ display: "block", fontSize: 10, color: "var(--text-muted)", fontFamily: "monospace" }}>{row.nip}</span>
               </span>
             </span>
-            <span style={{ color: "#555555", fontSize: 11.5 }}>{row.division ?? "—"}</span>
+            <span style={{ color: "var(--text-secondary)", fontSize: 11.5 }}>{row.division ?? "—"}</span>
             <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{row.objScore}</span>
-            <span style={{ fontFamily: "monospace", fontWeight: 800, color: row.behaviorScore > 0 ? "#C05621" : "#999999" }}>
+            <span style={{ fontFamily: "monospace", fontWeight: 800, color: row.behaviorScore > 0 ? "#C05621" : "var(--text-muted)" }}>
               {row.behaviorScore > 0 ? row.behaviorScore : "—"}
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -354,7 +354,7 @@ export default function PenilaianPerilakuPage() {
             <span>
               <button
                 onClick={() => setOpenEmployeeId(row.id)}
-                style={{ padding: "6px 12px", borderRadius: 7, border: "1px solid #E9EBEF", background: "#FFFFFF", fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}
+                style={{ padding: "6px 12px", borderRadius: 7, border: "1px solid var(--border-color)", background: "var(--bg-card)", fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}
               >
                 Nilai
               </button>
@@ -363,13 +363,13 @@ export default function PenilaianPerilakuPage() {
         ))}
 
         {!loading && rows.length === 0 && (
-          <div style={{ padding: "40px 20px", textAlign: "center", color: "#6E6E6E", fontSize: 13 }}>
+          <div style={{ padding: "40px 20px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>
             Tidak ada data karyawan.
           </div>
         )}
       </div>
 
-      <div style={{ marginTop: 10, fontSize: 11.5, color: "#999999", maxWidth: 1040 }}>
+      <div style={{ marginTop: 10, fontSize: 11.5, color: "var(--text-muted)", maxWidth: 1040 }}>
         Tiap kriteria dinilai 1–5 bintang → dirata-rata jadi skor perilaku 0–100. Disimpan &amp; tercatat di Audit Log.
       </div>
 
