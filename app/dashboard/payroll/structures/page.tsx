@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchApiData } from '@/hooks/useDashboardQueries';
+import { fetchApiData, fetchApiList } from '@/hooks/useDashboardQueries';
 import { SkeletonList } from '@/components/ui/Skeleton';
 
 interface PayrollStructure {
@@ -39,7 +39,7 @@ export default function PayrollStructuresPage() {
 
   const { data: structuresData, isLoading: structuresLoading } = useQuery<PayrollStructure[]>({
     queryKey: ['payroll', 'structures'],
-    queryFn: () => fetchApiData<PayrollStructure[]>('/api/payroll/structures', 'Gagal memuat struktur gaji'),
+    queryFn: () => fetchApiList<PayrollStructure>('/api/payroll/structures', 'Gagal memuat struktur gaji'),
     staleTime: 60_000,
     gcTime: 10 * 60_000,
   });

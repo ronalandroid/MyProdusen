@@ -4,7 +4,7 @@ import { useCallback, useReducer } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, MapPin } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth-client";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 import { LocationCard } from "./LocationCard";
 import { LocationFilters } from "./LocationFilters";
 import { LocationFormModal } from "./LocationFormModal";
@@ -37,7 +37,7 @@ export default function LocationsPage() {
       if (activeFilter !== "all") params.set("isActive", activeFilter === "active" ? "true" : "false");
       const trimmed = searchTerm.trim();
       if (trimmed.length >= 2) params.set("search", trimmed);
-      return fetchApiData<WorkLocationItem[]>(`/api/work-locations?${params.toString()}`, "Gagal memuat lokasi kerja");
+      return fetchApiList<WorkLocationItem>(`/api/work-locations?${params.toString()}`, "Gagal memuat lokasi kerja");
     },
     staleTime: 60_000,
     gcTime: 10 * 60_000,

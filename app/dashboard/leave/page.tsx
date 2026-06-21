@@ -12,7 +12,7 @@ import { SkeletonList } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { fetchProfile, getAuthHeaders } from "@/lib/auth-client";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 
 interface LeaveRequest {
   id: string;
@@ -101,7 +101,7 @@ export default function LeavePage() {
       if (statusFilter !== "all") {
         params.append("status", statusFilter);
       }
-      return fetchApiData<LeaveRequest[]>(`/api/leave?${params.toString()}`, "Gagal memuat data cuti");
+      return fetchApiList<LeaveRequest>(`/api/leave?${params.toString()}`, "Gagal memuat data cuti");
     },
     staleTime: 30_000,
     gcTime: 5 * 60_000,

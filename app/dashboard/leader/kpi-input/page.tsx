@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 
 type Team = { id: string; name: string };
 type Member = { id: string; nip: string; fullName: string; division?: string | null; teamId: string; teamName: string };
@@ -35,7 +35,7 @@ export default function LeaderKpiInputPage() {
 
   const { data: membersData, error: membersError } = useQuery({
     queryKey: ["leader-team-employees", teamId],
-    queryFn: () => fetchApiData<Member[]>(`/api/leader/team-employees?teamId=${encodeURIComponent(teamId)}`, "Gagal mengambil anggota tim"),
+    queryFn: () => fetchApiList<Member>(`/api/leader/team-employees?teamId=${encodeURIComponent(teamId)}`, "Gagal mengambil anggota tim"),
     enabled: Boolean(teamId),
     staleTime: 30_000,
     gcTime: 5 * 60_000,

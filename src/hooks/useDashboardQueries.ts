@@ -59,6 +59,31 @@ export async function fetchApiData<T>(url: string, fallbackMessage: string, init
   return payload.data as T;
 }
 
+/**
+ * Normalize an API payload to an array. Pure + exported for testing. Handles the
+ * shape drift that white-screens list pages: a bare array passes through, a
+ * `{ items }` or `{ data }` wrapper is unwrapped, anything else becomes `[]`.
+ */
+export function toApiList<T>(data: unknown): T[] {
+  if (Array.isArray(data)) return data as T[];
+  if (data && typeof data === "object") {
+    const items = (data as Record<string, unknown>).items ?? (data as Record<string, unknown>).data;
+    if (Array.isArray(items)) return items as T[];
+  }
+  return [];
+}
+
+/**
+ * Like fetchApiData but guarantees an array. If an endpoint ever returns a
+ * non-array shape (e.g. an aggregate object), callers that `.map()` the result
+ * would otherwise crash with "x.map is not a function" and white-screen the
+ * page — exactly the bug that hit the scores and announcements pages. This
+ * keeps list pages robust against backend shape drift.
+ */
+export async function fetchApiList<T>(url: string, fallbackMessage: string, init?: RequestInit): Promise<T[]> {
+  return toApiList<T>(await fetchApiData<unknown>(url, fallbackMessage, init));
+}
+
 export function useCachedProfile() {
   return useQuery<ClientUserProfile>({
     queryKey: dashboardQueryKeys.profile,

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 
 type AuditLog = {
   id: string;
@@ -81,7 +81,7 @@ export default function AuditPage() {
         offset: String(offset),
       });
       if (search) params.set("search", search);
-      return fetchApiData<AuditLog[]>(`/api/audit?${params.toString()}`, "Gagal mengambil audit log", { cache: "no-store" });
+      return fetchApiList<AuditLog>(`/api/audit?${params.toString()}`, "Gagal mengambil audit log", { cache: "no-store" });
     },
     staleTime: 30_000,
     gcTime: 5 * 60_000,

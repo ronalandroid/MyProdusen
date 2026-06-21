@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Target, TrendingUp, Users } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 
 type KpiResultRow = {
   result: {
@@ -62,7 +62,7 @@ export default function KPIPage() {
     queryFn: async () => {
       const [statsPayload, resultsPayload] = await Promise.all([
         fetchApiData<{ role?: string }>("/api/dashboard/stats", "Gagal mengambil role pengguna"),
-        fetchApiData<KpiResultRow[]>(`/api/kpi/results?period=${currentPeriod}`, "Gagal mengambil KPI"),
+        fetchApiList<KpiResultRow>(`/api/kpi/results?period=${currentPeriod}`, "Gagal mengambil KPI"),
       ]);
 
       const nextRole = statsPayload?.role || "EMPLOYEE";
@@ -70,7 +70,7 @@ export default function KPIPage() {
 
       let productionEntries: ProductionEntry[] = [];
       try {
-        const production = await fetchApiData<ProductionEntry[]>("/api/kpi/production/me", "Gagal mengambil produksi", { cache: "no-store" });
+        const production = await fetchApiList<ProductionEntry>("/api/kpi/production/me", "Gagal mengambil produksi", { cache: "no-store" });
         productionEntries = Array.isArray(production) ? production : [];
       } catch {
         productionEntries = [];
@@ -79,7 +79,7 @@ export default function KPIPage() {
       let employees: EmployeeRow[] = [];
       if (nextRole === "SUPERADMIN") {
         try {
-          const employeeData = await fetchApiData<EmployeeRow[]>("/api/employees?limit=100", "Gagal mengambil karyawan");
+          const employeeData = await fetchApiList<EmployeeRow>("/api/employees?limit=100", "Gagal mengambil karyawan");
           employees = Array.isArray(employeeData) ? employeeData : [];
         } catch {
           employees = [];

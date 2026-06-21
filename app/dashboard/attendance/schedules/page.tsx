@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 
 type Employee = { id: string; fullName: string; nip?: string; division?: string | null };
 type Shift = { id: string; name: string; startTime: string; endTime: string; isActive: boolean };
@@ -64,8 +64,8 @@ export default function AttendanceSchedulesPage() {
     queryFn: async () => {
       const [emp, shf, loc] = await Promise.all([
         fetchApiData<any>("/api/employees?status=ACTIVE", "Gagal memuat data master"),
-        fetchApiData<Shift[]>("/api/shifts", "Gagal memuat data master"),
-        fetchApiData<WorkLocation[]>("/api/work-locations?isActive=true", "Gagal memuat data master"),
+        fetchApiList<Shift>("/api/shifts", "Gagal memuat data master"),
+        fetchApiList<WorkLocation>("/api/work-locations?isActive=true", "Gagal memuat data master"),
       ]);
       const empItems: Employee[] = Array.isArray(emp) ? emp : Array.isArray(emp?.items) ? emp.items : [];
       return {

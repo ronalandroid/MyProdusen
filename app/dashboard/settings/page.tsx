@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Calendar, Clock, Palette, Plus, Save, ShieldAlert, RefreshCcw, Award, Check } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth-client";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 
 type Policy = {
   id: string;
@@ -121,7 +121,7 @@ export default function SettingsPage() {
 
   const { data: policiesData, isLoading: policiesLoading, error: policiesError } = useQuery({
     queryKey: ["settings", "attendance-policies"],
-    queryFn: () => fetchApiData<Policy[]>("/api/attendance/policies", "Gagal memuat konfigurasi dari server."),
+    queryFn: () => fetchApiList<Policy>("/api/attendance/policies", "Gagal memuat konfigurasi dari server."),
     enabled: activeTab === "policy",
     staleTime: 30_000,
     gcTime: 5 * 60_000,
@@ -129,7 +129,7 @@ export default function SettingsPage() {
 
   const { data: holidaysData, isLoading: holidaysLoading, error: holidaysError } = useQuery({
     queryKey: ["settings", "work-calendar"],
-    queryFn: () => fetchApiData<Holiday[]>("/api/work-calendar", "Gagal memuat konfigurasi dari server."),
+    queryFn: () => fetchApiList<Holiday>("/api/work-calendar", "Gagal memuat konfigurasi dari server."),
     enabled: activeTab === "calendar",
     staleTime: 30_000,
     gcTime: 5 * 60_000,
@@ -145,7 +145,7 @@ export default function SettingsPage() {
 
   const { data: periodsData, isLoading: periodsLoading, error: periodsError } = useQuery({
     queryKey: ["settings", "performance-periods"],
-    queryFn: () => fetchApiData<PerformancePeriod[]>("/api/performance/periods", "Gagal memuat konfigurasi dari server."),
+    queryFn: () => fetchApiList<PerformancePeriod>("/api/performance/periods", "Gagal memuat konfigurasi dari server."),
     enabled: activeTab === "gamification",
     staleTime: 30_000,
     gcTime: 5 * 60_000,

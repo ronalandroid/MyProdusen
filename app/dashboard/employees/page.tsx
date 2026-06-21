@@ -10,7 +10,7 @@ import Modal from "@/components/ui/Modal";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useToast } from "@/components/ui/Toast";
 import { getAuthHeaders } from "@/lib/auth-client";
-import { fetchApiData, useCachedProfile } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList, useCachedProfile } from "@/hooks/useDashboardQueries";
 import EmployeeDrawer from "@/components/admin/EmployeeDrawer";
 
 interface Employee {
@@ -69,7 +69,7 @@ export default function EmployeesPage() {
       if (statusFilter !== "all") params.append("status", statusFilter);
       const trimmedSearch = searchTerm.trim();
       if (trimmedSearch.length >= 2) params.append("search", trimmedSearch);
-      return fetchApiData<Employee[]>(`/api/employees?${params.toString()}`, "Gagal memuat data karyawan");
+      return fetchApiList<Employee>(`/api/employees?${params.toString()}`, "Gagal memuat data karyawan");
     },
     staleTime: 30_000,
     gcTime: 5 * 60_000,

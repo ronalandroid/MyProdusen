@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Bell, ArrowLeft, ClipboardList, Info, MapPin, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { fetchApiData, useCachedProfile } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList, useCachedProfile } from "@/hooks/useDashboardQueries";
 import { SelfieViewer } from "@/components/attendance/SelfieViewer";
 import { MyExceptionPanel } from "@/components/attendance/MyExceptionPanel";
 
@@ -146,7 +146,7 @@ export default function AttendancePage() {
   });
   const { data: historyData, isLoading: historyLoading, error: historyError, refetch: refetchHistory } = useQuery<AttendanceRecord[]>({
     queryKey: ["attendance", "history", "recent"],
-    queryFn: () => fetchApiData<AttendanceRecord[]>("/api/attendance", "Gagal mengambil riwayat absensi"),
+    queryFn: () => fetchApiList<AttendanceRecord>("/api/attendance", "Gagal mengambil riwayat absensi"),
     enabled: Boolean(profile && profile.role !== "SUPERADMIN"),
     select: (records) => records.slice(0, 5),
     staleTime: 30_000,

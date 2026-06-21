@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronDown, ChevronUp, Plus, Save, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 import { getAuthHeaders } from "@/lib/auth-client";
 
 type KpiItem = {
@@ -33,7 +33,7 @@ function useKpiTemplates() {
   const { data, isPending, error } = useQuery({
     queryKey: ["kpi-templates-full"],
     queryFn: async () => {
-      const templates = await fetchApiData<KpiTemplate[]>("/api/kpi/templates", "Gagal memuat template KPI");
+      const templates = await fetchApiList<KpiTemplate>("/api/kpi/templates", "Gagal memuat template KPI");
       const withItems = await Promise.all(
         (templates || []).map((t) =>
           fetchApiData<KpiTemplate>(`/api/kpi/templates/${t.id}`, "Gagal memuat detail template")

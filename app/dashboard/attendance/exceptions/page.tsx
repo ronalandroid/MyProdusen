@@ -7,7 +7,7 @@ import { AlertTriangle, ArrowLeft, CheckCircle2, MapPin, RefreshCcw, Search, X, 
 import Button from "@/components/ui/Button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders } from "@/lib/auth-client";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 import { type ValidityTier, validityLabel } from "@/lib/attendance/exception-validity";
 
 interface ExceptionValidity {
@@ -312,7 +312,7 @@ export default function AttendanceExceptionsPage() {
     queryFn: () => {
       const params = new URLSearchParams();
       if (status && status !== "ALL") params.set("status", status);
-      return fetchApiData<AttendanceExceptionItem[]>(
+      return fetchApiList<AttendanceExceptionItem>(
         `/api/attendance/exceptions?${params.toString()}`,
         "Exception absensi gagal dimuat",
       );

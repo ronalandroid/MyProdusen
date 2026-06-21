@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 
 type Shift = {
   id: string;
@@ -23,7 +23,7 @@ export default function ShiftsPage() {
 
   const { data: shiftsData, isLoading: shiftsLoading, error: shiftsError } = useQuery<Shift[]>({
     queryKey: ["shifts"],
-    queryFn: () => fetchApiData<Shift[]>("/api/shifts", "Gagal mengambil data shift"),
+    queryFn: () => fetchApiList<Shift>("/api/shifts", "Gagal mengambil data shift"),
     staleTime: 60_000,
     gcTime: 10 * 60_000,
   });

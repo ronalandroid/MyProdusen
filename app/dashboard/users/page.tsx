@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, RefreshCw, ShieldCheck, UserCog } from "lucide-react";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 
 type UserRole = "SUPERADMIN" | "LEADER" | "EMPLOYEE";
 type Team = { id: string; name: string; active?: boolean };
@@ -52,10 +52,10 @@ export default function UsersPage() {
     queryKey: ["users"],
     queryFn: async () => {
       const [userRows, teamRows, locationRows, shiftRows] = await Promise.all([
-        fetchApiData<any[]>("/api/users", "Gagal mengambil /api/users"),
-        fetchApiData<any[]>("/api/teams", "Gagal mengambil /api/teams"),
-        fetchApiData<any[]>("/api/work-locations?isActive=true", "Gagal mengambil /api/work-locations?isActive=true"),
-        fetchApiData<any[]>("/api/shifts?isActive=true", "Gagal mengambil /api/shifts?isActive=true"),
+        fetchApiList<any>("/api/users", "Gagal mengambil /api/users"),
+        fetchApiList<any>("/api/teams", "Gagal mengambil /api/teams"),
+        fetchApiList<any>("/api/work-locations?isActive=true", "Gagal mengambil /api/work-locations?isActive=true"),
+        fetchApiList<any>("/api/shifts?isActive=true", "Gagal mengambil /api/shifts?isActive=true"),
       ]);
       return {
         users: (rowsFrom(userRows) as any[]).map((row: any) => ({ ...row, role: normalizeRole(row.role) })) as UserRow[],

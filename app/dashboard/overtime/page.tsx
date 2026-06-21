@@ -4,7 +4,7 @@ import { useCallback, useReducer, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Clock, CheckCircle, XCircle, Zap, Plus, X } from 'lucide-react';
-import { fetchApiData } from '@/hooks/useDashboardQueries';
+import { fetchApiData, fetchApiList } from '@/hooks/useDashboardQueries';
 import { SkeletonList, SkeletonStatsGrid } from '@/components/ui/Skeleton';
 import EmptyState from '@/components/ui/EmptyState';
 
@@ -489,7 +489,7 @@ export default function OvertimePage() {
 
   const { data: requestsData, isLoading: requestsLoading } = useQuery({
     queryKey: ['overtime', 'requests', filter],
-    queryFn: () => fetchApiData<OvertimeRequest[]>(
+    queryFn: () => fetchApiList<OvertimeRequest>(
       `/api/overtime/requests${filter !== 'ALL' ? `?status=${filter}` : ''}`,
       'Gagal memuat request lembur',
     ),
@@ -499,7 +499,7 @@ export default function OvertimePage() {
 
   const { data: ratesData } = useQuery({
     queryKey: ['overtime', 'rates'],
-    queryFn: () => fetchApiData<OvertimeRate[]>('/api/overtime/rates?isActive=true', 'Gagal memuat rate lembur'),
+    queryFn: () => fetchApiList<OvertimeRate>('/api/overtime/rates?isActive=true', 'Gagal memuat rate lembur'),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });

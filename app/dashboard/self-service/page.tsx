@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { fetchProfile } from "@/lib/auth-client";
 import { buildSelfServiceSections, type SelfServiceTone } from "@/lib/employee/self-service-hub";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 
 interface Profile {
   username: string;
@@ -53,8 +53,8 @@ export default function SelfServicePage() {
       const [attendance, balance, leave, notifications, kpi] = await Promise.all([
         fetchApiData<AttendanceToday>('/api/attendance/today', 'ESS gagal dimuat'),
         fetchApiData<LeaveBalance>('/api/leave/balance', 'ESS gagal dimuat'),
-        fetchApiData<unknown[]>('/api/leave?status=PENDING', 'ESS gagal dimuat'),
-        fetchApiData<unknown[]>('/api/notifications?unread=true', 'ESS gagal dimuat'),
+        fetchApiList<unknown>('/api/leave?status=PENDING', 'ESS gagal dimuat'),
+        fetchApiList<unknown>('/api/notifications?unread=true', 'ESS gagal dimuat'),
         employeeId
           ? fetchApiData<KpiData>(`/api/kpi/employee/${employeeId}`, 'ESS gagal dimuat')
           : Promise.resolve(null),

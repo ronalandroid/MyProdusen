@@ -9,7 +9,7 @@ describe('final production UI wiring source checks', () => {
   it('audit dashboard uses API data with loading, empty, pagination, and no static dummy rows', () => {
     const source = read('app/dashboard/audit/page.tsx');
     expect(source).not.toContain('const auditData');
-    expect(source).toContain('fetchApiData<AuditLog[]>(`/api/audit?${params.toString()}`');
+    expect(source).toContain('fetchApiList<AuditLog>(`/api/audit?${params.toString()}`');
     expect(source).toContain('queryKey: ["audit", page, search, PAGE_SIZE, offset]');
     expect(source).toContain('Memuat audit log');
     expect(source).toContain('Tidak ada audit log');
@@ -21,7 +21,7 @@ describe('final production UI wiring source checks', () => {
     const source = read('app/dashboard/shifts/page.tsx');
     expect(source).not.toContain('const shiftsData');
     // List load is cached via React Query against the real endpoint; writes still go through the backend API.
-    expect(source).toContain('fetchApiData<Shift[]>("/api/shifts"');
+    expect(source).toContain('fetchApiList<Shift>("/api/shifts"');
     expect(source).toContain('queryKey: ["shifts"]');
     expect(source).toContain('invalidateQueries({ queryKey: ["shifts"] })');
     expect(source).toContain('method: editingShift ? "PUT" : "POST"');

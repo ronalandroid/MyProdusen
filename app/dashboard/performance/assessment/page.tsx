@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Star, X, ChevronRight } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth-client";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface EmployeeScore {
@@ -232,13 +232,13 @@ export default function PenilaianPerilakuPage() {
     // /scores returns the per-employee score rows; /scores/summary is a single
     // aggregate object ({ total, avgScore }) and would break scores.map below.
     queryKey: ["performance-scores-all"],
-    queryFn: () => fetchApiData<EmployeeScore[]>("/api/performance/scores", "Gagal memuat skor"),
+    queryFn: () => fetchApiList<EmployeeScore>("/api/performance/scores", "Gagal memuat skor"),
     staleTime: 60_000,
   });
 
   const { data: employees = [], isPending: empsLoading } = useQuery<Employee[]>({
     queryKey: ["employees-list-assessment"],
-    queryFn: () => fetchApiData<Employee[]>("/api/employees?limit=200", "Gagal memuat karyawan"),
+    queryFn: () => fetchApiList<Employee>("/api/employees?limit=200", "Gagal memuat karyawan"),
     staleTime: 60_000,
   });
 

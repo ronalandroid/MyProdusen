@@ -6,7 +6,7 @@ import { ArrowLeft, Calendar, TrendingDown, TrendingUp, RefreshCcw, AlertCircle 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 
 interface LeaveBalance {
   available: number;
@@ -61,7 +61,7 @@ export default function LeaveBalancePage() {
 
   const { data: transactionsData } = useQuery({
     queryKey: ["leave", "balance", "history", selectedYear],
-    queryFn: () => fetchApiData<LeaveTransaction[]>(`/api/leave/balance/history?year=${selectedYear}`, "Gagal memuat riwayat transaksi"),
+    queryFn: () => fetchApiList<LeaveTransaction>(`/api/leave/balance/history?year=${selectedYear}`, "Gagal memuat riwayat transaksi"),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });

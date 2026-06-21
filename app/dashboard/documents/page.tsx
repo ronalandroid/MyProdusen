@@ -9,7 +9,7 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders } from "@/lib/auth-client";
-import { fetchApiData } from "@/hooks/useDashboardQueries";
+import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 
 interface EmployeeDocument {
   id: string;
@@ -41,7 +41,7 @@ export default function DocumentsPage() {
 
   const { data: documentsData, isLoading: documentsLoading, error: documentsError } = useQuery<EmployeeDocument[]>({
     queryKey: ["documents"],
-    queryFn: () => fetchApiData<EmployeeDocument[]>('/api/documents', 'Dokumen gagal dimuat'),
+    queryFn: () => fetchApiList<EmployeeDocument>('/api/documents', 'Dokumen gagal dimuat'),
     staleTime: 60_000,
     gcTime: 10 * 60_000,
   });

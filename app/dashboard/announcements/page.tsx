@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Bell } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchApiData, useCachedProfile } from '@/hooks/useDashboardQueries';
+import { fetchApiData, fetchApiList, useCachedProfile } from '@/hooks/useDashboardQueries';
 import { useRealtime } from '@/hooks/useRealtime';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import GlobalEmptyState from '@/components/ui/EmptyState';
@@ -538,7 +538,7 @@ export default function AnnouncementsPage() {
       if (filter !== 'ALL') {
         params.append('category', filter);
       }
-      return fetchApiData<Announcement[]>(`/api/announcements?${params}`, 'Announcement gagal dimuat.');
+      return fetchApiList<Announcement>(`/api/announcements?${params}`, 'Announcement gagal dimuat.');
     },
     staleTime: 30_000,
     gcTime: 5 * 60_000,
