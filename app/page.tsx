@@ -39,8 +39,23 @@ const MISI_POINTS = [
 ];
 
 export default function LandingPage() {
+  const year = new Date().getFullYear();
+
   return (
-    <div className="min-h-screen bg-[#FAF9F6] font-sans text-[#111111] overflow-x-hidden flex flex-col selection:bg-[#FFC107]/30">
+    <div className="relative isolate min-h-screen bg-[#FAF9F6] font-sans text-[#111111] overflow-x-hidden flex flex-col selection:bg-[#FFC107]/30">
+      <style>{`
+        html { scroll-behavior: smooth; }
+        @keyframes lpFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+        .lp-reveal { opacity: 0; animation: lpFadeUp .7s cubic-bezier(.21,.6,.35,1) forwards; }
+        .lp-card { transition: transform .35s cubic-bezier(.21,.6,.35,1), box-shadow .35s ease; }
+        .lp-card:hover { transform: translateY(-4px); }
+        @media (prefers-reduced-motion: reduce) {
+          html { scroll-behavior: auto; }
+          .lp-reveal { opacity: 1 !important; animation: none !important; }
+          .lp-card:hover { transform: none; }
+        }
+      `}</style>
+
       {/* Ambient background */}
       <div className="pointer-events-none absolute top-0 right-0 -z-10 h-full w-1/2 rounded-full bg-[#FFC107]/10 blur-[140px]" />
       <div className="pointer-events-none absolute bottom-0 left-0 -z-10 h-1/2 w-1/3 rounded-full bg-[#FFC107]/10 blur-[120px]" />
@@ -58,16 +73,16 @@ export default function LandingPage() {
         </div>
         <Link
           href="/login"
-          className="hidden items-center justify-center rounded-full bg-[#111111] px-6 py-3 font-bold text-white shadow-lg shadow-black/10 transition-transform hover:bg-black/85 active:scale-95 sm:inline-flex"
+          className="inline-flex items-center justify-center rounded-full bg-[#111111] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-black/10 transition-transform hover:bg-black/85 active:scale-95 sm:px-6 sm:py-3 sm:text-base"
         >
-          Masuk Sistem
+          Masuk<span className="hidden sm:inline">&nbsp;Sistem</span>
         </Link>
       </nav>
 
       {/* Hero */}
       <main className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-12 px-6 py-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8 lg:px-8 lg:py-16">
         <div className="flex flex-col justify-center">
-          <div className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-[#FFC107]/40 bg-[#FFC107]/15 px-4 py-2 text-sm font-bold text-[#8A6D00] lg:mb-8">
+          <div className="lp-reveal mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-[#FFC107]/40 bg-[#FFC107]/15 px-4 py-2 text-sm font-bold text-[#8A6D00] lg:mb-8">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FFC107] opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-[#F5A800]" />
@@ -75,19 +90,19 @@ export default function LandingPage() {
             Platform Operasional Internal · TBM Group
           </div>
 
-          <h1 className="mb-6 text-[34px] font-black leading-[1.12] tracking-tight sm:text-[42px] lg:text-[52px]">
+          <h1 className="lp-reveal mb-6 text-[34px] font-black leading-[1.12] tracking-tight sm:text-[42px] lg:text-[52px]" style={{ animationDelay: "80ms" }}>
             Kelola seluruh operasional tim dalam{" "}
             <span className="relative whitespace-nowrap inline-block after:absolute after:bottom-1 after:left-0 after:-z-10 after:h-3 after:w-full after:bg-[#FFC107]/40">
               satu sistem.
             </span>
           </h1>
 
-          <p className="mb-8 max-w-lg text-base font-medium leading-relaxed text-[#5A5A5A] sm:text-lg">
+          <p className="lp-reveal mb-8 max-w-lg text-base font-medium leading-relaxed text-[#5A5A5A] sm:text-lg" style={{ animationDelay: "160ms" }}>
             Absensi, KPI, penggajian, hingga manajemen karyawan — efisien, akurat,
             dan aman. Dirancang untuk mendukung produksi dimsum beku premium yang berkelanjutan.
           </p>
 
-          <div className="mb-10 flex flex-col gap-3 sm:flex-row">
+          <div className="lp-reveal mb-10 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: "240ms" }}>
             <Link
               href="/login"
               className="flex items-center justify-center gap-2 rounded-2xl bg-[#FFC107] px-7 py-4 text-lg font-black text-[#111111] shadow-[0_10px_28px_rgba(255,193,7,0.35)] transition-transform hover:bg-[#FFCA28] active:scale-95"
@@ -97,9 +112,9 @@ export default function LandingPage() {
           </div>
 
           <div className="grid gap-6 sm:grid-cols-3 lg:gap-8">
-            {FEATURES.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="flex flex-col gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF4C6] text-[#F5A800]">
+            {FEATURES.map(({ icon: Icon, title, desc }, i) => (
+              <div key={title} className="lp-reveal group flex flex-col gap-3" style={{ animationDelay: `${320 + i * 80}ms` }}>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF4C6] text-[#F5A800] transition-transform duration-300 group-hover:scale-110 group-hover:bg-[#FFC107] group-hover:text-[#111111]">
                   <Icon size={24} strokeWidth={2.5} />
                 </div>
                 <div>
@@ -112,7 +127,7 @@ export default function LandingPage() {
         </div>
 
         {/* Phone mockup */}
-        <div className="relative mt-4 flex justify-center lg:mt-0 lg:justify-end">
+        <div className="lp-reveal relative mt-4 flex justify-center lg:mt-0 lg:justify-end" style={{ animationDelay: "200ms" }}>
           <div className="group relative flex h-[580px] w-[280px] flex-col overflow-hidden rounded-[48px] border-[8px] border-[#111111] bg-[#111111] shadow-[0_24px_80px_rgba(17,17,17,0.22)] transition-transform duration-500 hover:rotate-0 sm:h-[650px] sm:w-[320px] lg:-rotate-2">
             <div className="absolute inset-x-0 top-0 z-20 mx-auto h-6 w-32 rounded-b-[16px] bg-[#111111]" />
             <div className="relative flex flex-1 flex-col items-center justify-center bg-[#FFC107] p-6">
@@ -149,7 +164,7 @@ export default function LandingPage() {
       </main>
 
       {/* Visi & Misi */}
-      <section className="relative z-10 mx-auto w-full max-w-7xl px-6 py-12 lg:px-8 lg:py-20">
+      <section id="visi-misi" className="relative z-10 mx-auto w-full max-w-7xl scroll-mt-20 px-6 py-12 lg:px-8 lg:py-20">
         <div className="mb-10 text-center lg:mb-14">
           <span className="text-xs font-black uppercase tracking-[0.18em] text-[#F5A800]">Visi &amp; Misi</span>
           <h2 className="mx-auto mt-3 max-w-2xl text-[28px] font-black leading-tight tracking-tight sm:text-[36px]">
@@ -163,7 +178,7 @@ export default function LandingPage() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Visi */}
-          <div className="relative overflow-hidden rounded-3xl border border-[#EDE9DD] bg-white p-8 shadow-[0_12px_40px_rgba(17,17,17,0.05)] sm:p-10">
+          <div className="lp-card relative overflow-hidden rounded-3xl border border-[#EDE9DD] bg-white p-8 shadow-[0_12px_40px_rgba(17,17,17,0.05)] hover:shadow-[0_20px_50px_rgba(17,17,17,0.10)] sm:p-10">
             <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[#FFC107]/10 blur-3xl" />
             <div className="mb-5 flex items-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFC107] text-[#111111] shadow-lg shadow-[#FFC107]/30">
@@ -183,7 +198,7 @@ export default function LandingPage() {
           </div>
 
           {/* Misi */}
-          <div className="relative overflow-hidden rounded-3xl border border-[#1A1A1A] bg-[#111111] p-8 text-white shadow-[0_12px_40px_rgba(17,17,17,0.18)] sm:p-10">
+          <div className="lp-card relative overflow-hidden rounded-3xl border border-[#1A1A1A] bg-[#111111] p-8 text-white shadow-[0_12px_40px_rgba(17,17,17,0.18)] hover:shadow-[0_22px_55px_rgba(17,17,17,0.30)] sm:p-10">
             <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[#FFC107]/20 blur-3xl" />
             <div className="mb-6 flex items-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFC107] text-[#111111] shadow-lg shadow-[#FFC107]/20">
@@ -223,6 +238,54 @@ export default function LandingPage() {
           </Link>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-[#ECE7DA] bg-[#FAF9F6]">
+        <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
+          <div className="flex flex-col gap-10 sm:flex-row sm:items-start sm:justify-between">
+            <div className="max-w-sm">
+              <div className="flex items-center gap-3">
+                <Image src="/logo-fast.webp" alt="MyProdusen" width={40} height={40} className="h-10 w-10 object-contain" />
+                <span className="text-lg font-black leading-none tracking-tight">
+                  My<span className="text-[#F5A800]">Produsen</span>
+                </span>
+              </div>
+              <p className="mt-4 text-sm font-medium leading-relaxed text-[#6B6B6B]">
+                Sistem operasional internal untuk produksi dimsum beku premium —
+                absensi, KPI, penggajian, dan manajemen tim dalam satu platform.
+              </p>
+            </div>
+
+            <div className="flex gap-12 sm:gap-16">
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-[0.14em] text-[#9A9A9A]">Sistem</h4>
+                <ul className="mt-4 flex flex-col gap-3 text-sm font-semibold">
+                  <li>
+                    <Link href="/login" className="text-[#3F3F3F] transition-colors hover:text-[#111111]">Masuk Sistem</Link>
+                  </li>
+                  <li>
+                    <a href="#visi-misi" className="text-[#3F3F3F] transition-colors hover:text-[#111111]">Visi &amp; Misi</a>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-[0.14em] text-[#9A9A9A]">Perusahaan</h4>
+                <ul className="mt-4 flex flex-col gap-3 text-sm font-semibold text-[#3F3F3F]">
+                  <li>TBM Group</li>
+                  <li>Medan, Indonesia</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 flex flex-col gap-2 border-t border-[#ECE7DA] pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs font-semibold text-[#9A9A9A]">
+              © {year} MyProdusen · by TBM Group. Seluruh hak cipta dilindungi.
+            </p>
+            <p className="text-xs font-semibold text-[#9A9A9A]">Platform operasional internal</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
