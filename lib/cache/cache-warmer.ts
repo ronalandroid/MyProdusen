@@ -3,7 +3,7 @@ import { CacheKeys } from './cache-keys';
 import { CacheStrategy } from './cache-strategies';
 import { logger } from '../logger';
 import { workLocationService } from '@/features/work-locations/work-location.service';
-import { shiftService } from '@/features/shifts/shift.service';
+import { shiftService } from '@/services/shifts/shift.service';
 
 export class CacheWarmer {
   private isWarming = false;
