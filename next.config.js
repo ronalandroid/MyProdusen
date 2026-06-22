@@ -243,9 +243,17 @@ if (sentryDsn) {
     errorHandler: () => {},
     // Tunnel browser events through our origin to dodge ad-blockers.
     tunnelRoute: '/monitoring',
-    // Tree-shake Sentry's own debug logging out of the client bundle.
-    webpack: {
-      treeshake: { removeDebugLogging: true },
+    // Shrink the client SDK shipped to every visitor. We only use Sentry for
+    // error reporting — Session Replay is never enabled, and client perf
+    // tracing was sampled at just 0.05 — so strip both plus debug logging.
+    // Error capture (the actual value) is unaffected.
+    bundleSizeOptimizations: {
+      excludeDebugStatements: true,
+      excludeReplayShadowDom: true,
+      excludeReplayIframe: true,
+      excludeReplayWorker: true,
+      excludeReplayCanvas: true,
+      excludeTracing: true,
     },
     sourcemaps: {
       disable: !process.env.SENTRY_AUTH_TOKEN,
