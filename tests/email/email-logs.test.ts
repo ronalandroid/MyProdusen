@@ -61,4 +61,37 @@ describe('email send logging', () => {
       errorMessage: 'domain not verified',
     }));
   });
+
+  it('retries transient failures (5xx) then logs the eventual success', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 503, text: async () => 'service unavailable' })
+      .mockResolvedValueOnce({ ok: false, status: 429, text: async () => 'rate limited' })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'email_retry_ok' }) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { sendAuthEmail } = await import('@/lib/email');
+    await sendAuthEmail('forgot-password', 'user@example.com', {
+      resetUrl: 'https://myprodusen.online/reset-password?token=abc',
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(valuesMock).toHaveBeenCalledWith(expect.objectContaining({
+      status: 'SENT',
+      providerMessageId: 'email_retry_ok',
+    }));
+  });
+
+  it('does not retry permanent client errors (4xx)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 422, text: async () => 'invalid recipient' });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { sendAuthEmail } = await import('@/lib/email');
+    await expect(sendAuthEmail('register', 'user@example.com', { name: 'Deni' })).rejects.toThrow('Gagal mengirim email via Resend');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(valuesMock).toHaveBeenCalledWith(expect.objectContaining({
+      status: 'FAILED',
+      errorMessage: 'invalid recipient',
+    }));
+  });
 });

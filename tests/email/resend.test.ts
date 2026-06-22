@@ -96,9 +96,10 @@ describe('Resend email integration', () => {
     await sendAuthEmail('register', 'user@example.com', { name: 'Deni' });
 
     const payload = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(payload.html).toContain('background:#FFC107');
+    expect(payload.html).toContain('background:#FFC107'); // logo tile / CTA / accent bar
     expect(payload.html).toContain('https://myprodusen.online/logo-fast.webp');
-    expect(payload.html).toContain('background:#FFFFFF;color:#111111;border:1px solid rgba(17,17,17,0.12)');
+    expect(payload.html).toContain('background:#FFFFFF;border:1px solid #EFEAE0'); // clean app-style card
+    expect(payload.html).toContain('color:#F5A800'); // "Produsen" wordmark accent
     expect(payload.html).toContain('MyProdusen');
     expect(payload.html).toContain('Produsen Dimsum Medan');
     expect(payload.html).toContain('by TBM Group');
@@ -107,7 +108,7 @@ describe('Resend email integration', () => {
     expect(payload.html).toContain('Medan, Sumatera Utara');
     expect(payload.html).toContain('Semangat kerja dimulai dari langkah kecil yang rapi');
     expect(payload.html).toContain('Buka MyProdusen');
-    expect(payload.html).toContain('© MyProdusen');
+    expect(payload.html).toContain('&copy;'); // footer copyright
     expect(payload.text).toContain('Akun Anda berhasil dibuat');
   });
 

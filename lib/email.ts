@@ -66,17 +66,20 @@ function escapeHtml(value = '') {
 function renderEmail(input: BrandedEmailInput) {
   const appUrl = getAppUrl();
   const logoUrl = `${appUrl}/logo-fast.webp`;
+  const year = new Date().getFullYear();
+  // App palette: primary #FFC107, text #111111, secondary #4B5563, warm surface
+  // #FAF9F6, card #FFFFFF — matches the dashboard so the inbox feels on-brand.
   const bodyHtml = input.body
-    .map((paragraph) => `<p style="margin:0 0 14px;color:#374151;font-size:14px;line-height:1.7;">${paragraph}</p>`)
+    .map((paragraph) => `<p style="margin:0 0 16px;color:#4B5563;font-size:15px;line-height:1.75;">${paragraph}</p>`)
     .join('');
   const ctaHtml = input.cta
-    ? `<div style="margin:26px 0 10px;"><a href="${escapeHtml(input.cta.url)}" style="display:inline-block;background:#FFC107;color:#111111;text-decoration:none;font-weight:800;font-size:14px;padding:14px 22px;border-radius:12px;border:1px solid #E5AE06;box-shadow:0 8px 24px rgba(17,17,17,0.08);">${escapeHtml(input.cta.label)}</a></div>`
+    ? `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:28px 0 6px;"><tr><td style="border-radius:14px;background:#FFC107;box-shadow:0 10px 24px rgba(255,193,7,0.30);"><a href="${escapeHtml(input.cta.url)}" style="display:inline-block;padding:15px 30px;color:#111111;text-decoration:none;font-weight:800;font-size:15px;border-radius:14px;">${escapeHtml(input.cta.label)} &nbsp;&rarr;</a></td></tr></table>`
     : '';
   const fallbackLink = input.cta
-    ? `<p style="margin:14px 0 0;color:#6B7280;font-size:12px;line-height:1.6;">Jika tombol tidak bisa dibuka, salin tautan ini:<br><a href="${escapeHtml(input.cta.url)}" style="color:#B51B19;word-break:break-all;">${escapeHtml(input.cta.url)}</a></p>`
+    ? `<p style="margin:16px 0 0;color:#9CA3AF;font-size:12px;line-height:1.6;">Tombol tidak terbuka? Salin &amp; tempel tautan ini ke browser:<br><a href="${escapeHtml(input.cta.url)}" style="color:#CC9A05;word-break:break-all;text-decoration:underline;">${escapeHtml(input.cta.url)}</a></p>`
     : '';
   const noteHtml = input.note
-    ? `<div style="margin-top:22px;padding:14px 16px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:14px;color:#5F4200;font-size:13px;line-height:1.6;">${input.note}</div>`
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:24px;"><tr><td style="padding:14px 16px;background:#FFFBEB;border:1px solid #FDE68A;border-left:4px solid #FFC107;border-radius:12px;color:#7A5600;font-size:13px;line-height:1.65;">${input.note}</td></tr></table>`
     : '';
 
   return `<!doctype html>
@@ -84,60 +87,60 @@ function renderEmail(input: BrandedEmailInput) {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light">
     <title>${escapeHtml(input.title)}</title>
   </head>
-  <body style="margin:0;padding:0;background:#FFF8E1;font-family:Poppins,Arial,'Helvetica Neue',Helvetica,sans-serif;color:#111111;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FFF8E1;padding:28px 12px;">
+  <body style="margin:0;padding:0;background:#FAF9F6;font-family:'Poppins',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#111111;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(input.intro)}</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FAF9F6;padding:32px 12px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#FFFFFF;border-radius:22px;overflow:hidden;border:1px solid #F3D46B;box-shadow:0 10px 28px rgba(17,17,17,0.08);">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;">
+            <!-- Brand row -->
             <tr>
-              <td style="background:#FFC107;padding:20px 30px;border-bottom:1px solid #E5AE06;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <td style="padding:0 6px 18px;">
+                <table role="presentation" cellspacing="0" cellpadding="0">
                   <tr>
+                    <td style="vertical-align:middle;padding-right:11px;">
+                      <span style="display:block;width:44px;height:44px;background:#FFC107;border-radius:13px;text-align:center;box-shadow:0 8px 18px rgba(255,193,7,0.32);">
+                        <img src="${escapeHtml(logoUrl)}" width="30" height="30" alt="MyProdusen" style="display:block;width:30px;height:30px;border:0;object-fit:contain;margin:7px auto 0;">
+                      </span>
+                    </td>
                     <td style="vertical-align:middle;">
-                      <table role="presentation" cellspacing="0" cellpadding="0">
-                        <tr>
-                          <td style="vertical-align:middle;padding-right:12px;"><span style="display:block;width:50px;height:50px;background:#FFFFFF;border:1px solid rgba(17,17,17,0.10);border-radius:16px;text-align:center;box-shadow:0 6px 14px rgba(17,17,17,0.10);"><img src="${escapeHtml(logoUrl)}" width="34" height="34" alt="MyProdusen" style="display:block;width:34px;height:34px;border:0;object-fit:contain;margin:8px auto 0;"></span></td>
-                          <td style="vertical-align:middle;">
-                            <div style="font-size:25px;font-weight:900;letter-spacing:-0.5px;color:#111111;line-height:1;">My<span style="color:#FFFFFF;text-shadow:0 1px 1px rgba(17,17,17,0.16);">Produsen</span></div>
-                            <div style="margin-top:6px;font-size:12px;font-weight:800;color:#5F4200;">${companyName}</div>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                    <td align="right" style="vertical-align:middle;">
-                      <div style="display:inline-block;background:#FFFFFF;color:#111111;border:1px solid rgba(17,17,17,0.12);border-radius:999px;padding:8px 13px;font-size:11px;font-weight:900;letter-spacing:0.04em;box-shadow:0 4px 10px rgba(17,17,17,0.08);">by TBM Group</div>
+                      <div style="font-size:21px;font-weight:900;letter-spacing:-0.4px;color:#111111;line-height:1;">My<span style="color:#F5A800;">Produsen</span></div>
+                      <div style="margin-top:3px;font-size:11px;font-weight:700;color:#8A8A8A;letter-spacing:0.02em;">${companyName}</div>
                     </td>
                   </tr>
                 </table>
               </td>
             </tr>
+            <!-- Card -->
             <tr>
-              <td style="padding:30px 28px 28px;">
-                <div style="display:inline-block;margin-bottom:12px;padding:7px 12px;border-radius:999px;background:#FFF7CC;color:#7A5600;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.04em;border:1px solid #FDE68A;">${escapeHtml(input.eyebrow)}</div>
-                <h1 style="margin:0 0 12px;color:#111111;font-size:24px;line-height:1.25;font-weight:900;">${escapeHtml(input.title)}</h1>
-                <p style="margin:0 0 18px;color:#111111;font-size:16px;line-height:1.7;font-weight:700;">${escapeHtml(input.intro)}</p>
-                ${bodyHtml}
-                ${ctaHtml}
-                ${fallbackLink}
-                ${noteHtml}
-              </td>
-            </tr>
-            <tr>
-              <td style="background:#FFF9E6;border-top:1px solid #FDE68A;padding:20px 28px;">
+              <td style="background:#FFFFFF;border:1px solid #EFEAE0;border-radius:20px;box-shadow:0 14px 38px rgba(17,17,17,0.06);overflow:hidden;">
+                <!-- Accent bar -->
+                <div style="height:4px;background:#FFC107;line-height:4px;font-size:0;">&nbsp;</div>
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr>
-                    <td style="vertical-align:top;width:48px;"><span style="display:block;width:36px;height:36px;background:#FFFFFF;border:1px solid #FDE68A;border-radius:12px;text-align:center;"><img src="${escapeHtml(logoUrl)}" width="24" height="24" alt="" style="display:block;width:24px;height:24px;border:0;object-fit:contain;margin:6px auto 0;"></span></td>
-                    <td style="vertical-align:top;">
-                      <p style="margin:0 0 5px;color:#111111;font-size:13px;font-weight:800;">${appName}</p>
-                      <p style="margin:0;color:#6B7280;font-size:12px;line-height:1.6;">Sistem internal perusahaan by TBM Group<br>${companyName}<br>Medan, Sumatera Utara</p>
+                    <td style="padding:32px 32px 30px;">
+                      <span style="display:inline-block;margin-bottom:14px;padding:6px 13px;border-radius:999px;background:#FFF8E1;color:#8A6D00;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;border:1px solid #FDE68A;">${escapeHtml(input.eyebrow)}</span>
+                      <h1 style="margin:0 0 12px;color:#111111;font-size:25px;line-height:1.25;font-weight:900;letter-spacing:-0.3px;">${escapeHtml(input.title)}</h1>
+                      <p style="margin:0 0 20px;color:#111111;font-size:16px;line-height:1.7;font-weight:600;">${escapeHtml(input.intro)}</p>
+                      ${bodyHtml}
+                      ${ctaHtml}
+                      ${fallbackLink}
+                      ${noteHtml}
                     </td>
                   </tr>
                 </table>
-                <p style="margin:14px 0 0;color:#6B7280;font-size:12px;line-height:1.6;">Email otomatis dari ${appName}. Jangan balas email ini. Jika butuh bantuan, hubungi HRD atau Superadmin.</p>
-                <p style="margin:8px 0 0;color:#6B7280;font-size:11px;line-height:1.5;">Email ini bersifat internal. Mohon tidak membagikan informasi ini kepada pihak lain.</p>
-                <p style="margin:12px 0 0;color:#9CA3AF;font-size:11px;line-height:1.5;">© ${appName} · <a href="${escapeHtml(appUrl)}" style="color:#6B7280;text-decoration:none;">${escapeHtml(appUrl)}</a></p>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="padding:22px 10px 6px;">
+                <p style="margin:0 0 4px;color:#6B7280;font-size:12px;line-height:1.6;font-weight:700;">${appName} &middot; <span style="font-weight:500;">by TBM Group</span></p>
+                <p style="margin:0;color:#9CA3AF;font-size:12px;line-height:1.6;">${companyName}, Medan, Sumatera Utara</p>
+                <p style="margin:12px 0 0;color:#9CA3AF;font-size:11px;line-height:1.6;">Email otomatis &mdash; mohon tidak dibalas. Butuh bantuan? Hubungi HRD atau Superadmin. Email ini bersifat internal; jangan dibagikan ke pihak lain.</p>
+                <p style="margin:10px 0 0;color:#B8B8B8;font-size:11px;line-height:1.5;">&copy; ${year} ${appName} &middot; <a href="${escapeHtml(appUrl)}" style="color:#9CA3AF;text-decoration:none;">${escapeHtml(appUrl.replace(/^https?:\/\//, ''))}</a></p>
               </td>
             </tr>
           </table>
@@ -160,6 +163,15 @@ function requireProductionEmailConfig() {
   throw new Error('Email belum aktif. Set RESEND_API_KEY dan RESEND_FROM_EMAIL di Coolify.');
 }
 
+const MAX_SEND_ATTEMPTS = 3;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// 429 (rate limited) and 5xx are transient — worth retrying. 4xx (bad request,
+// invalid recipient) are permanent, so we fail fast.
+function isTransientStatus(status: number) {
+  return status === 429 || status >= 500;
+}
+
 export async function sendEmail(input: SendEmailInput) {
   requireProductionEmailConfig();
 
@@ -171,32 +183,50 @@ export async function sendEmail(input: SendEmailInput) {
     return { skipped: true };
   }
 
-  const response = await fetch(resendEndpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: process.env.RESEND_FROM_EMAIL,
-      to: input.to,
-      subject: input.subject,
-      html: input.html,
-      text: input.text,
-    }),
-  });
+  let lastError = 'Unknown Resend error';
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => 'Unknown Resend error');
-    await logEmailAttempt(input, 'FAILED', { errorMessage: detail });
-    console.error('[email:resend-error]', { to: input.to, subject: input.subject, detail });
-    throw new Error(`Gagal mengirim email via Resend: ${detail}`);
+  for (let attempt = 1; attempt <= MAX_SEND_ATTEMPTS; attempt++) {
+    try {
+      const response = await fetch(resendEndpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM_EMAIL,
+          to: input.to,
+          subject: input.subject,
+          html: input.html,
+          text: input.text,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        await logEmailAttempt(input, 'SENT', {
+          providerMessageId: typeof result?.id === 'string' ? result.id : null,
+        });
+        console.info('[email:sent]', { to: input.to, subject: input.subject, id: result?.id, attempt });
+        return result;
+      }
+
+      lastError = await response.text().catch(() => 'Unknown Resend error');
+      // Permanent error — don't waste retries.
+      if (!isTransientStatus(response.status)) break;
+    } catch (error) {
+      // Network/abort errors are transient.
+      lastError = error instanceof Error ? error.message : 'Network error';
+    }
+
+    if (attempt < MAX_SEND_ATTEMPTS) {
+      await sleep(attempt * 400); // backoff: 400ms, then 800ms
+    }
   }
 
-  const result = await response.json();
-  await logEmailAttempt(input, 'SENT', { providerMessageId: typeof result?.id === 'string' ? result.id : null });
-  console.info('[email:sent]', { to: input.to, subject: input.subject, id: result?.id });
-  return result;
+  await logEmailAttempt(input, 'FAILED', { errorMessage: lastError });
+  console.error('[email:resend-error]', { to: input.to, subject: input.subject, detail: lastError });
+  throw new Error(`Gagal mengirim email via Resend: ${lastError}`);
 }
 
 async function logEmailAttempt(
