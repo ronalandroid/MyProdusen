@@ -26,9 +26,11 @@ export async function POST(request: NextRequest) {
     const token = await authService.createPasswordResetToken(normalizedEmail);
     if (token) {
       const appUrl = getCanonicalAppUrl(request.nextUrl.origin);
+      // Best-effort: a transient mail failure must not change the response,
+      // otherwise it leaks whether the email exists (and the attempt is logged).
       await sendAuthEmail('forgot-password', normalizedEmail, {
         resetUrl: `${appUrl}/reset-password?token=${encodeURIComponent(token)}`,
-      });
+      }).catch(() => undefined);
     }
 
     return successResponse(null, 'Jika email terdaftar, link reset password akan dikirim.');

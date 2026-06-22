@@ -28,7 +28,9 @@ export async function POST(request: NextRequest) {
     if (activation) {
       const appUrl = getCanonicalAppUrl(request.nextUrl.origin);
       const activationUrl = `${appUrl}/activate-account?token=${encodeURIComponent(activation.token)}`;
-      await sendAuthEmail('register', activation.email, { activationUrl });
+      // Best-effort so a transient mail failure doesn't change the response and
+      // leak whether the account exists (the attempt is logged regardless).
+      await sendAuthEmail('register', activation.email, { activationUrl }).catch(() => undefined);
     }
 
     return successResponse(null, 'Jika akun belum aktif, link aktivasi sudah dikirim ke inbox email.');
