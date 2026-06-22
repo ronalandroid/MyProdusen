@@ -8,6 +8,7 @@ const localDevOrigins = Object.values(os.networkInterfaces())
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  poweredByHeader: false, // don't advertise the framework via X-Powered-By
   allowedDevOrigins: localDevOrigins,
   async headers() {
     const isProd = process.env.NODE_ENV === 'production';

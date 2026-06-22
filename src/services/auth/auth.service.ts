@@ -1,6 +1,6 @@
 import { db, users, employees } from '@/lib/db';
 import { hashPassword, verifyPassword, generateToken, getProductionJwtSecret } from '@/lib/auth';
-import { validatePassword } from '@/lib/password-policy';
+import { validatePassword, checkPasswordCompromised } from '@/lib/password-policy';
 import { eq, or, asc, and, sql } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { BaseService } from '@/lib/core/base-service';
@@ -72,6 +72,11 @@ export class AuthService extends BaseService {
     const passwordValidation = validatePassword(data.password);
     if (!passwordValidation.valid) {
       throw new BusinessError(passwordValidation.errors[0]);
+    }
+
+    // Best-effort breach check (fail-open) — block known-compromised passwords.
+    if (await checkPasswordCompromised(data.password)) {
+      throw new BusinessError('Password ini pernah muncul dalam kebocoran data. Gunakan password lain yang lebih aman.');
     }
 
     // Check if email already exists
@@ -282,6 +287,10 @@ export class AuthService extends BaseService {
       throw new BusinessError(passwordValidation.errors[0]);
     }
 
+    if (await checkPasswordCompromised(password)) {
+      throw new BusinessError('Password ini pernah muncul dalam kebocoran data. Gunakan password lain yang lebih aman.');
+    }
+
     const secret = getProductionJwtSecret();
     const payload = jwt.verify(token, secret) as { userId: string; email: string; purpose?: string };
 
@@ -303,6 +312,10 @@ export class AuthService extends BaseService {
     const passwordValidation = validatePassword(newPassword);
     if (!passwordValidation.valid) {
       throw AppError.validation(passwordValidation.errors[0]);
+    }
+
+    if (await checkPasswordCompromised(newPassword)) {
+      throw AppError.validation('Password ini pernah muncul dalam kebocoran data. Gunakan password lain yang lebih aman.');
     }
 
     const [user] = await db

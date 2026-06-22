@@ -3,6 +3,8 @@
  * Enforces strong password requirements for production security
  */
 
+import { createHash } from 'crypto';
+
 export interface PasswordPolicyConfig {
   minLength: number;
   requireUppercase: boolean;
@@ -138,11 +140,56 @@ export function generateStrongPassword(length: number = 16): string {
 }
 
 /**
- * Check if password has been compromised (basic check)
- * In production, integrate with Have I Been Pwned API
+ * Check if a password has appeared in a known data breach.
+ *
+ * Uses the Have I Been Pwned "range" API with k-anonymity: only the first 5
+ * characters of the password's SHA-1 hash ever leave this process — never the
+ * password itself. The `Add-Padding` header obscures the response size.
+ *
+ * Best-effort and FAIL-OPEN: any network error, timeout, or non-200 response
+ * resolves to `false`, so a slow or unreachable HIBP can never block a
+ * legitimate registration or password change. A fast local check against the
+ * embedded common-password list runs first.
  */
-export async function checkPasswordCompromised(password: string): Promise<boolean> {
-  // For now, just check against common passwords
-  // TODO: Integrate with Have I Been Pwned API in production
-  return COMMON_PASSWORDS.has(password.toLowerCase());
+export async function checkPasswordCompromised(
+  password: string,
+  timeoutMs = 2500,
+): Promise<boolean> {
+  if (COMMON_PASSWORDS.has(password.toLowerCase())) return true;
+
+  // Keep the test suite hermetic: skip the external HIBP call under the test
+  // runner (the local common-password check above still applies). The dedicated
+  // unit test stubs VITEST off to exercise the network path against a mock.
+  if (process.env.VITEST) return false;
+
+  try {
+    const sha1 = createHash('sha1').update(password).digest('hex').toUpperCase();
+    const prefix = sha1.slice(0, 5);
+    const suffix = sha1.slice(5);
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let body: string;
+    try {
+      const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, {
+        signal: controller.signal,
+        headers: { 'Add-Padding': 'true' },
+      });
+      if (!res.ok) return false; // fail open on non-200
+      body = await res.text();
+    } finally {
+      clearTimeout(timer);
+    }
+
+    for (const line of body.split('\n')) {
+      const [hashSuffix, countRaw] = line.trim().split(':');
+      if (hashSuffix === suffix) {
+        const count = parseInt(countRaw, 10);
+        return Number.isFinite(count) && count > 0;
+      }
+    }
+    return false;
+  } catch {
+    return false; // network error / timeout / abort → fail open
+  }
 }
