@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { offlineDb, generateClientId } from '@/lib/offline/db';
+import { offlineDb, generateClientId } from '@/hooks/offline/db';
 
 describe('Offline Sync Manager', () => {
   beforeEach(async () => {

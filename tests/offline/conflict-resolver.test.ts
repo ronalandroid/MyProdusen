@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { conflictResolver } from '@/lib/offline/conflict-resolver';
+import { conflictResolver } from '@/hooks/offline/conflict-resolver';
 
 describe('Conflict Resolver', () => {
   describe('detectConflict', () => {
