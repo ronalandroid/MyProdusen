@@ -1,4 +1,4 @@
-import type { ApiResponse } from './utils/response';
+import type { ApiResponse } from '@/utils/response';
 import { parseJsonResponse } from './api/safe-json';
 
 // Deprecated: kept for backward compatibility with existing pages

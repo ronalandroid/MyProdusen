@@ -6,7 +6,7 @@ import { db, badgeDefinitions, companySettings, companyThemeSettings, employeeBa
 import { logAudit } from '@/lib/audit';
 import { requireAuth } from '@/lib/middleware';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
-import { errorResponse, forbiddenResponse, successResponse, unauthorizedResponse } from '@/lib/utils/response';
+import { errorResponse, forbiddenResponse, successResponse, unauthorizedResponse } from '@/utils/response';
 import {
   DEFAULT_GAMIFICATION_SETTINGS,
   calculateCultureDisciplineScore,

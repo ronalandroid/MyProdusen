@@ -22,7 +22,7 @@ describe('gamification API route security source contracts', () => {
 
   it('keeps leader score RBAC and private response no-store contracts', () => {
     const api = read('lib/gamification/api.ts');
-    const response = read('lib/utils/response.ts');
+    const response = read('src/utils/response.ts');
     expect(api).toContain("!isLeader(user.role) && !isSuperadmin(user.role)");
     expect(api).toContain("target.supervisorId !== reviewer.id");
     expect(api).toContain("target.id === reviewer.id");
