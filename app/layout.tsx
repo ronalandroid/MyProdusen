@@ -35,6 +35,17 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
+  manifest: "/manifest.webmanifest",
+  applicationName: "MyProdusen",
+  appleWebApp: {
+    capable: true,
+    title: "MyProdusen",
+    statusBarStyle: "default",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+  },
   openGraph: {
     title: "MyProdusen — Sistem Internal Produsen Dimsum Medan",
     description: "MyProdusen adalah sistem internal Produsen Dimsum Medan by TBM Group untuk absensi, cuti, payroll, KPI produksi, dan koordinasi tim.",
