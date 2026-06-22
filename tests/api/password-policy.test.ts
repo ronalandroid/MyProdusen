@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { registerSchema, changePasswordSchema } from '@/lib/validations/auth';
+import { registerSchema, changePasswordSchema } from '@/utils/validation/auth';
 
 describe('Password Policy Validation', () => {
   describe('Register Schema - Password Validation', () => {

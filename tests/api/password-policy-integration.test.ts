@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { registerSchema, changePasswordSchema } from '@/lib/validations/auth';
+import { registerSchema, changePasswordSchema } from '@/utils/validation/auth';
 
 describe('Password Policy Integration Tests', () => {
   describe('API Route Validation Error Responses', () => {
