@@ -1,161 +1,225 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Users, Clock, ShieldCheck, ChevronRight } from "lucide-react";
+import {
+  Users,
+  Clock,
+  ShieldCheck,
+  ChevronRight,
+  Eye,
+  Sparkles,
+  BadgeCheck,
+  Leaf,
+  Handshake,
+  ArrowRight,
+} from "lucide-react";
+
+const FEATURES = [
+  {
+    icon: Users,
+    title: "Terintegrasi",
+    desc: "Absensi, KPI, cuti, dan penggajian terpusat dalam satu sistem yang rapi.",
+  },
+  {
+    icon: Clock,
+    title: "Praktis & Cepat",
+    desc: "Akses kehadiran, slip gaji, dan pengajuan kapan saja, di mana saja.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Aman & Terpercaya",
+    desc: "Data karyawan terlindungi dengan standar keamanan modern.",
+  },
+];
+
+const MISI_POINTS = [
+  { icon: BadgeCheck, text: "Menyediakan produk dimsum beku berkualitas tinggi secara konsisten." },
+  { icon: ShieldCheck, text: "Menjaga standar kebersihan dan keamanan pangan yang tinggi." },
+  { icon: Sparkles, text: "Terus berinovasi dalam pengembangan produk." },
+  { icon: Handshake, text: "Menjalin kemitraan strategis yang saling menguntungkan." },
+];
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#FAFAFA] font-sans selection:bg-[#FFC107]/30 text-[#111111] overflow-x-hidden flex flex-col">
-      {/* Background decorations */}
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-[#FFC107]/5 blur-[120px] rounded-full -z-10 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-1/3 h-1/2 bg-[#FFC107]/10 blur-[100px] rounded-full -z-10 pointer-events-none" />
+    <div className="min-h-screen bg-[#FAF9F6] font-sans text-[#111111] overflow-x-hidden flex flex-col selection:bg-[#FFC107]/30">
+      {/* Ambient background */}
+      <div className="pointer-events-none absolute top-0 right-0 -z-10 h-full w-1/2 rounded-full bg-[#FFC107]/10 blur-[140px]" />
+      <div className="pointer-events-none absolute bottom-0 left-0 -z-10 h-1/2 w-1/3 rounded-full bg-[#FFC107]/10 blur-[120px]" />
 
       {/* Navigation */}
-      <nav className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-6 flex items-center justify-between w-full">
+      <nav className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
         <div className="flex items-center gap-3">
-          <Image src="/logo-fast.webp" alt="MyProdusen Logo" width={56} height={56} className="w-12 h-12 lg:w-14 lg:h-14 object-contain" priority />
+          <Image src="/logo-fast.webp" alt="MyProdusen" width={56} height={56} className="h-12 w-12 object-contain lg:h-14 lg:w-14" priority />
           <div className="flex flex-col">
-            <span className="text-xl lg:text-2xl font-black tracking-tight leading-none text-[#111111]">
-              My<span className="text-[#FFC107]">Produsen</span>
+            <span className="text-xl font-black leading-none tracking-tight lg:text-2xl">
+              My<span className="text-[#F5A800]">Produsen</span>
             </span>
-            <span className="text-xs font-bold text-gray-500 mt-0.5">Produsen Dimsum Medan</span>
+            <span className="mt-0.5 text-xs font-semibold tracking-wide text-[#6B6B6B]">Produsen Dimsum Beku Premium</span>
           </div>
         </div>
-        <div>
-          <Link
-            href="/login"
-            className="hidden sm:inline-flex items-center justify-center bg-[#111111] text-white px-6 py-3 rounded-full font-bold hover:bg-black/80 transition-transform active:scale-95 shadow-lg shadow-black/10"
-          >
-            Masuk Sistem
-          </Link>
-        </div>
+        <Link
+          href="/login"
+          className="hidden items-center justify-center rounded-full bg-[#111111] px-6 py-3 font-bold text-white shadow-lg shadow-black/10 transition-transform hover:bg-black/85 active:scale-95 sm:inline-flex"
+        >
+          Masuk Sistem
+        </Link>
       </nav>
 
-      {/* Hero Section */}
-      <main className="flex-1 relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-10 lg:py-16 grid lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-8 items-center w-full">
-        {/* Left Content */}
+      {/* Hero */}
+      <main className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-12 px-6 py-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8 lg:px-8 lg:py-16">
         <div className="flex flex-col justify-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FFC107]/15 text-[#8A6D00] font-bold text-sm w-fit mb-6 lg:mb-8 border border-[#FFC107]/30">
+          <div className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-[#FFC107]/40 bg-[#FFC107]/15 px-4 py-2 text-sm font-bold text-[#8A6D00] lg:mb-8">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FFC107] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F5A800]"></span>
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FFC107] opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#F5A800]" />
             </span>
-            Khusus TBM Mania 🚀
+            Platform Operasional Internal · TBM Group
           </div>
-          
-          <h1 className="text-[34px] sm:text-[42px] lg:text-[52px] font-black text-[#111111] leading-[1.15] tracking-tight mb-6">
-            Aplikasi HRIS kebanggaan <span className="text-[#F5A800]">TBM Mania</span> untuk mempermudah operasional, absensi, cuti, dan penggajian dalam <span className="relative whitespace-nowrap inline-block after:absolute after:bottom-1 after:left-0 after:w-full after:h-3 after:bg-[#FFC107]/40 after:-z-10">satu genggaman.</span>
+
+          <h1 className="mb-6 text-[34px] font-black leading-[1.12] tracking-tight sm:text-[42px] lg:text-[52px]">
+            Kelola seluruh operasional tim dalam{" "}
+            <span className="relative whitespace-nowrap inline-block after:absolute after:bottom-1 after:left-0 after:-z-10 after:h-3 after:w-full after:bg-[#FFC107]/40">
+              satu sistem.
+            </span>
           </h1>
 
-          <div className="flex sm:hidden mt-2 mb-10">
+          <p className="mb-8 max-w-lg text-base font-medium leading-relaxed text-[#5A5A5A] sm:text-lg">
+            Absensi, KPI, penggajian, hingga manajemen karyawan — efisien, akurat,
+            dan aman. Dirancang untuk mendukung produksi dimsum beku premium yang berkelanjutan.
+          </p>
+
+          <div className="mb-10 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/login"
-              className="flex-1 flex items-center justify-center bg-[#FFC107] text-[#111111] px-6 py-4 rounded-[16px] font-black text-lg hover:bg-[#FFCA28] transition-transform active:scale-95 shadow-[0_8px_24px_rgba(255,193,7,0.3)]"
+              className="flex items-center justify-center gap-2 rounded-2xl bg-[#FFC107] px-7 py-4 text-lg font-black text-[#111111] shadow-[0_10px_28px_rgba(255,193,7,0.35)] transition-transform hover:bg-[#FFCA28] active:scale-95"
             >
-              Mulai Sekarang
+              Masuk Sistem <ArrowRight size={20} strokeWidth={2.5} />
             </Link>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-6 lg:gap-8 mt-4 lg:mt-12">
-            {/* Feature 1 */}
-            <div className="flex flex-col gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#FFF4C6] flex items-center justify-center text-[#F5A800]">
-                <Users size={24} strokeWidth={2.5} />
+          <div className="grid gap-6 sm:grid-cols-3 lg:gap-8">
+            {FEATURES.map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="flex flex-col gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF4C6] text-[#F5A800]">
+                  <Icon size={24} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black">{title}</h3>
+                  <p className="mt-1 text-sm font-medium leading-relaxed text-[#6B6B6B]">{desc}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-black text-lg text-[#111111]">Terintegrasi</h3>
-                <p className="text-sm font-medium text-gray-500 mt-1 leading-relaxed">
-                  Semua kebutuhan HR TBM Mania terpusat dalam satu sistem.
-                </p>
-              </div>
-            </div>
-            
-            {/* Feature 2 */}
-            <div className="flex flex-col gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#FFF4C6] flex items-center justify-center text-[#F5A800]">
-                <Clock size={24} strokeWidth={2.5} />
-              </div>
-              <div>
-                <h3 className="font-black text-lg text-[#111111]">Praktis & Cepat</h3>
-                <p className="text-sm font-medium text-gray-500 mt-1 leading-relaxed">
-                  Akses absen, slip gaji, dan cuti kapan saja di mana saja.
-                </p>
-              </div>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="flex flex-col gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#FFF4C6] flex items-center justify-center text-[#F5A800]">
-                <ShieldCheck size={24} strokeWidth={2.5} />
-              </div>
-              <div>
-                <h3 className="font-black text-lg text-[#111111]">Aman</h3>
-                <p className="text-sm font-medium text-gray-500 mt-1 leading-relaxed">
-                  Data karyawan terlindungi dengan keamanan terbaik.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Right Content - Mobile Mockup */}
-        <div className="relative flex justify-center lg:justify-end mt-4 lg:mt-0">
-          <div className="relative w-[280px] sm:w-[320px] h-[580px] sm:h-[650px] bg-[#111111] rounded-[48px] shadow-[0_24px_80px_rgba(17,17,17,0.2)] border-[8px] border-[#111111] overflow-hidden flex flex-col transform lg:-rotate-2 transition-transform hover:rotate-0 duration-500 group">
-            {/* Notch */}
-            <div className="absolute top-0 inset-x-0 h-6 bg-[#111111] w-32 mx-auto rounded-b-[16px] z-20"></div>
-            
-            {/* Screen Content - Mimicking the Splash/Onboarding */}
-            <div className="flex-1 bg-[#FFC107] flex flex-col items-center justify-center p-6 relative">
-              <div className="absolute top-8 left-6 flex items-center gap-2">
-                 <Image src="/logo-fast.webp" width={28} height={28} alt="Logo" className="w-7 h-7" />
-                 <div className="flex flex-col">
-                   <span className="text-[10px] font-black leading-tight text-[#111111]">My<span className="text-white">Produsen</span></span>
-                   <span className="text-[6px] font-bold text-[#111111]">Produsen Dimsum Medan</span>
-                 </div>
+        {/* Phone mockup */}
+        <div className="relative mt-4 flex justify-center lg:mt-0 lg:justify-end">
+          <div className="group relative flex h-[580px] w-[280px] flex-col overflow-hidden rounded-[48px] border-[8px] border-[#111111] bg-[#111111] shadow-[0_24px_80px_rgba(17,17,17,0.22)] transition-transform duration-500 hover:rotate-0 sm:h-[650px] sm:w-[320px] lg:-rotate-2">
+            <div className="absolute inset-x-0 top-0 z-20 mx-auto h-6 w-32 rounded-b-[16px] bg-[#111111]" />
+            <div className="relative flex flex-1 flex-col items-center justify-center bg-[#FFC107] p-6">
+              <div className="absolute left-6 top-8 flex items-center gap-2">
+                <Image src="/logo-fast.webp" width={28} height={28} alt="Logo" className="h-7 w-7" />
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black leading-tight text-[#111111]">My<span className="text-white">Produsen</span></span>
+                  <span className="text-[6px] font-bold text-[#111111]">Produsen Dimsum Medan</span>
+                </div>
               </div>
 
-              <Image src="/logo-fast.webp" width={160} height={160} alt="MyProdusen chicken mascot" className="mt-12 drop-shadow-xl w-32 sm:w-40 transform transition-transform duration-700 group-hover:scale-105" />
-              
+              <Image src="/logo-fast.webp" width={160} height={160} alt="MyProdusen mascot" className="mt-12 w-32 drop-shadow-xl transition-transform duration-700 group-hover:scale-105 sm:w-40" />
+
               <div className="mt-auto w-full pb-8">
-                <h3 className="text-[22px] sm:text-2xl font-black text-[#111111] leading-tight text-center tracking-tight">
-                  Kelola HR, Lebih Mudah<br />Lebih Cepat, Lebih Baik
+                <h3 className="text-center text-[22px] font-black leading-tight tracking-tight text-[#111111] sm:text-2xl">
+                  Operasional Tertata,<br />Keputusan Lebih Cepat
                 </h3>
-                <p className="text-xs text-center font-bold text-[#111111]/70 mt-3 px-2">
-                  Satu sistem untuk semua kebutuhan manajemen karyawan.
+                <p className="mt-3 px-2 text-center text-xs font-bold text-[#111111]/70">
+                  Satu sistem untuk seluruh kebutuhan manajemen tim.
                 </p>
-                <div className="flex justify-center gap-1.5 mt-6 mb-8">
-                  <div className="w-6 h-1.5 bg-[#111111] rounded-full"></div>
-                  <div className="w-1.5 h-1.5 bg-[#111111]/20 rounded-full"></div>
-                  <div className="w-1.5 h-1.5 bg-[#111111]/20 rounded-full"></div>
-                  <div className="w-1.5 h-1.5 bg-[#111111]/20 rounded-full"></div>
+                <div className="mb-8 mt-6 flex justify-center gap-1.5">
+                  <div className="h-1.5 w-6 rounded-full bg-[#111111]" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#111111]/20" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#111111]/20" />
                 </div>
-                <Link href="/login" className="block w-full bg-[#111111] text-white text-center py-3.5 rounded-[12px] font-bold text-sm hover:bg-black/80 transition-colors">
+                <Link href="/login" className="block w-full rounded-[12px] bg-[#111111] py-3.5 text-center text-sm font-bold text-white transition-colors hover:bg-black/85">
                   Mulai
                 </Link>
               </div>
             </div>
           </div>
-          
-          {/* Decorative floating elements behind mockup */}
-          <div className="absolute top-20 -right-10 w-24 h-24 bg-[#FFC107] rounded-full blur-[40px] -z-10 opacity-50"></div>
-          <div className="absolute bottom-20 -left-10 w-32 h-32 bg-[#22C55E] rounded-full blur-[60px] -z-10 opacity-20"></div>
+          <div className="absolute -right-10 top-20 -z-10 h-24 w-24 rounded-full bg-[#FFC107] opacity-50 blur-[40px]" />
         </div>
       </main>
 
-      {/* Bottom Banner */}
-      <div className="bg-[#FFC107] py-8 sm:py-10 mt-auto">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
-          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-            <Image src="/logo-fast.webp" width={64} height={64} alt="MyProdusen chicken mascot" className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-md" />
+      {/* Visi & Misi */}
+      <section className="relative z-10 mx-auto w-full max-w-7xl px-6 py-12 lg:px-8 lg:py-20">
+        <div className="mb-10 text-center lg:mb-14">
+          <span className="text-xs font-black uppercase tracking-[0.18em] text-[#F5A800]">Visi &amp; Misi</span>
+          <h2 className="mx-auto mt-3 max-w-2xl text-[28px] font-black leading-tight tracking-tight sm:text-[36px]">
+            Komitmen kami menghadirkan dimsum beku premium
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-base font-medium leading-relaxed text-[#6B6B6B]">
+            Bertumbuh secara berkelanjutan bersama mitra, dengan kualitas dan
+            keamanan pangan sebagai prioritas utama.
+          </p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Visi */}
+          <div className="relative overflow-hidden rounded-3xl border border-[#EDE9DD] bg-white p-8 shadow-[0_12px_40px_rgba(17,17,17,0.05)] sm:p-10">
+            <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[#FFC107]/10 blur-3xl" />
+            <div className="mb-5 flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFC107] text-[#111111] shadow-lg shadow-[#FFC107]/30">
+                <Eye size={26} strokeWidth={2.5} />
+              </div>
+              <h3 className="text-2xl font-black tracking-tight">Visi</h3>
+            </div>
+            <p className="text-base leading-relaxed text-[#3F3F3F] sm:text-lg">
+              Menjadi penyedia <strong className="font-bold text-[#111111]">dimsum beku premium terkemuka di Indonesia</strong> yang
+              dikenal karena kualitas produk yang unggul dan solusi produksi yang
+              mempermudah mitra bisnis, serta berkontribusi pada perkembangan
+              industri makanan beku secara berkelanjutan.
+            </p>
+            <div className="mt-6 flex items-center gap-2 text-sm font-bold text-[#8A6D00]">
+              <Leaf size={16} strokeWidth={2.5} /> Pertumbuhan berkelanjutan
+            </div>
+          </div>
+
+          {/* Misi */}
+          <div className="relative overflow-hidden rounded-3xl border border-[#1A1A1A] bg-[#111111] p-8 text-white shadow-[0_12px_40px_rgba(17,17,17,0.18)] sm:p-10">
+            <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[#FFC107]/20 blur-3xl" />
+            <div className="mb-6 flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFC107] text-[#111111] shadow-lg shadow-[#FFC107]/20">
+                <Sparkles size={26} strokeWidth={2.5} />
+              </div>
+              <h3 className="text-2xl font-black tracking-tight">Misi</h3>
+            </div>
+            <ul className="flex flex-col gap-4">
+              {MISI_POINTS.map(({ icon: Icon, text }) => (
+                <li key={text} className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg bg-[#FFC107]/15 text-[#FFC107]">
+                    <Icon size={15} strokeWidth={2.5} />
+                  </span>
+                  <span className="text-[15px] leading-relaxed text-white/85">{text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Bottom CTA */}
+      <div className="mt-auto bg-[#FFC107] py-8 sm:py-10">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 text-center sm:flex-row sm:text-left lg:px-8">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
+            <Image src="/logo-fast.webp" width={64} height={64} alt="MyProdusen mascot" className="h-14 w-14 object-contain drop-shadow-md sm:h-16 sm:w-16" />
             <div>
-              <h2 className="text-xl sm:text-[26px] font-black text-[#111111] tracking-tight">Halo TBM Mania, Siap Gaspol? 🔥</h2>
-              <p className="text-sm sm:text-base font-bold text-[#3A2C00] mt-1 sm:mt-2">Mari kerja lebih cerdas, cepat, dan makin solid bersama-sama.</p>
+              <h2 className="text-xl font-black tracking-tight text-[#111111] sm:text-[26px]">Siap memulai hari yang lebih produktif?</h2>
+              <p className="mt-1 text-sm font-semibold text-[#3A2C00] sm:mt-2 sm:text-base">Masuk ke sistem dan kelola operasional tim Anda dengan lebih mudah.</p>
             </div>
           </div>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 bg-[#111111] text-white px-8 py-4 rounded-full font-black hover:bg-black/80 transition-transform active:scale-95 shadow-lg shadow-black/20 whitespace-nowrap"
+            className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-[#111111] px-8 py-4 font-black text-white shadow-lg shadow-black/20 transition-transform hover:bg-black/85 active:scale-95"
           >
-            Ayo Mulai Sekarang <ChevronRight size={18} strokeWidth={3} />
+            Masuk Sistem <ChevronRight size={18} strokeWidth={3} />
           </Link>
         </div>
       </div>
