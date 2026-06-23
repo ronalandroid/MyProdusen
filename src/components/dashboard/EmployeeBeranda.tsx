@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useReducer } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
@@ -332,6 +332,10 @@ export default function EmployeeBeranda({ profile }: Props) {
   const perfProgressState = dashboardFetching ? "Memuat skor performa… Menghitung proyeksi kenaikan…" : "";
 
   const [gpsState, setGpsState] = useReducer(gpsReducer, initialGpsState);
+  // Progressive disclosure: keep the beranda focused on attendance + score;
+  // the heavy performance detail (streak calendar, history chart, badges) is
+  // collapsed by default and revealed on demand.
+  const [showPerformanceDetail, setShowPerformanceDetail] = useState(false);
   const { position: gpsPosition, error: gpsError, isGetting: isGettingGps } = gpsState;
 
   // eslint-disable-next-line react-doctor/no-cascading-set-state
@@ -776,6 +780,18 @@ export default function EmployeeBeranda({ profile }: Props) {
 
 
 
+            <button
+              type="button"
+              onClick={() => setShowPerformanceDetail((value) => !value)}
+              aria-expanded={showPerformanceDetail}
+              className="flex items-center justify-center gap-1.5 rounded-2xl border border-[var(--border-color)] bg-white px-4 py-2.5 text-xs font-extrabold text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)] hover:text-[var(--primary-dark)] min-h-[44px]"
+            >
+              {showPerformanceDetail ? "Sembunyikan detail kinerja" : "Lihat detail kinerja"}
+              <ChevronRight size={14} className="transition-transform" style={{ transform: showPerformanceDetail ? "rotate(90deg)" : "rotate(0deg)" }} aria-hidden="true" />
+            </button>
+
+            {showPerformanceDetail && (
+            <>
             {/* Attendance Streak Calendar */}
             <div className="card p-5 bg-white border border-[var(--border-color)] shadow-sm flex flex-col gap-4" data-testid="attendance-streak-calendar">
               <div className="flex items-start justify-between gap-3 border-b border-[var(--border-color)] pb-3">
@@ -941,6 +957,8 @@ export default function EmployeeBeranda({ profile }: Props) {
                 </div>
               )}
             </div>
+            </>
+            )}
           </div>
         )}
       </section>
