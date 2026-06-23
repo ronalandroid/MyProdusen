@@ -4,6 +4,10 @@ import {
   calculateLateMinutes,
   calculateMinutesDifference,
   dateRangesOverlap,
+  formatDate,
+  formatDateTime,
+  formatTime,
+  getCurrentPeriod,
   getPeriodDateRange,
 } from './date';
 
@@ -43,5 +47,36 @@ describe('date utilities', () => {
         new Date(2026, 0, 7)
       )
     ).toBe(true);
+  });
+
+  it('reports non-overlapping ranges', () => {
+    expect(
+      dateRangesOverlap(
+        new Date(2026, 0, 1),
+        new Date(2026, 0, 5),
+        new Date(2026, 0, 6),
+        new Date(2026, 0, 7)
+      )
+    ).toBe(false);
+  });
+
+  it('formats a date from both Date and string input', () => {
+    expect(formatDate(new Date(2026, 5, 15))).toContain('2026');
+    expect(formatDate('2026-06-15')).toContain('2026');
+  });
+
+  it('formats a datetime including the year', () => {
+    expect(formatDateTime(new Date(2026, 5, 15, 9, 30))).toContain('2026');
+    expect(formatDateTime('2026-06-15T09:30:00')).toContain('2026');
+  });
+
+  it('formats a time as a non-empty digit string', () => {
+    const t = formatTime(new Date(2026, 5, 15, 9, 30));
+    expect(t).toMatch(/\d/);
+    expect(formatTime('2026-06-15T09:30:00')).toMatch(/\d/);
+  });
+
+  it('returns the current period as YYYY-MM', () => {
+    expect(getCurrentPeriod()).toMatch(/^\d{4}-\d{2}$/);
   });
 });
