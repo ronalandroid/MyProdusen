@@ -1,5 +1,11 @@
 import { db } from '@/lib/db';
 import {
+  calculateAttendanceDeduction,
+  calculateBPJSKesehatan,
+  calculateBPJSKetenagakerjaan,
+  calculateTax,
+} from '@/lib/payroll/calculations';
+import {
   payrollStructures,
   payrollComponents,
   employeePayrolls,
@@ -405,7 +411,7 @@ export class PayrollService {
       }
 
       // Calculate attendance deduction (late days)
-      const attendanceDeduction = this.calculateAttendanceDeduction(
+      const attendanceDeduction = calculateAttendanceDeduction(
         baseSalary,
         attendanceData
       );
@@ -470,12 +476,12 @@ export class PayrollService {
       }
 
       // Calculate BPJS
-      const bpjsKesehatan = this.calculateBPJSKesehatan(baseSalary);
-      const bpjsKetenagakerjaan = this.calculateBPJSKetenagakerjaan(baseSalary);
+      const bpjsKesehatan = calculateBPJSKesehatan(baseSalary);
+      const bpjsKetenagakerjaan = calculateBPJSKetenagakerjaan(baseSalary);
 
       // Calculate tax (PPh 21) - simplified
       const grossIncome = baseSalary + totalAllowances + overtimePay + bonusPay;
-      const taxAmount = this.calculateTax(grossIncome);
+      const taxAmount = calculateTax(grossIncome);
 
       const grossPay = baseSalary + totalAllowances + overtimePay + bonusPay;
       const totalDeductionsItem =
@@ -586,57 +592,6 @@ export class PayrollService {
     const totalPay = records.reduce((sum, r) => sum + r.calculatedPay, 0);
 
     return { totalHours, totalPay };
-  }
-
-  private calculateAttendanceDeduction(
-    baseSalary: number,
-    attendanceData: { workDays: number; absentDays: number; lateDays: number }
-  ) {
-    // Deduct 1 day salary per absent day
-    const dailySalary = baseSalary / 22; // Assuming 22 working days per month
-    return attendanceData.absentDays * dailySalary;
-  }
-
-  private calculateBPJSKesehatan(baseSalary: number) {
-    // BPJS Kesehatan: 5% (4% company, 1% employee)
-    const total = baseSalary * 0.05;
-    return {
-      employee: baseSalary * 0.01,
-      company: baseSalary * 0.04,
-    };
-  }
-
-  private calculateBPJSKetenagakerjaan(baseSalary: number) {
-    // BPJS Ketenagakerjaan: 5.7% (3.7% company, 2% employee)
-    return {
-      employee: baseSalary * 0.02,
-      company: baseSalary * 0.037,
-    };
-  }
-
-  private calculateTax(grossIncome: number) {
-    // Simplified PPh 21 calculation
-    // PTKP (Tax-free income): Rp 54,000,000 per year = Rp 4,500,000 per month
-    const ptkp = 4500000;
-    const taxableIncome = Math.max(0, grossIncome - ptkp);
-
-    // Progressive tax rates
-    let tax = 0;
-    if (taxableIncome <= 5000000) {
-      tax = taxableIncome * 0.05;
-    } else if (taxableIncome <= 25000000) {
-      tax = 5000000 * 0.05 + (taxableIncome - 5000000) * 0.15;
-    } else if (taxableIncome <= 50000000) {
-      tax = 5000000 * 0.05 + 20000000 * 0.15 + (taxableIncome - 25000000) * 0.25;
-    } else {
-      tax =
-        5000000 * 0.05 +
-        20000000 * 0.15 +
-        25000000 * 0.25 +
-        (taxableIncome - 50000000) * 0.3;
-    }
-
-    return tax;
   }
 
   async approvePayrollRun(runId: string, approvedBy: string) {
