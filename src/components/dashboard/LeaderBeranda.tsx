@@ -161,6 +161,9 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
   const [gpsError, setGpsError] = useState("");
   const [isGettingGps, setIsGettingGps] = useState(false);
   const [dateText, setDateText] = useState({ long: "", short: "" });
+  // Progressive disclosure: surface attendance + team content first; the
+  // gamification quest board is collapsed by default.
+  const [showLeaderQuest, setShowLeaderQuest] = useState(false);
 
   async function saveKpiCetak() {
     if (teams.length === 0) return;
@@ -401,6 +404,17 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
         </div>
       )}
 
+      <button
+        type="button"
+        onClick={() => setShowLeaderQuest((value) => !value)}
+        aria-expanded={showLeaderQuest}
+        className="flex items-center justify-center gap-1.5 self-start rounded-2xl border border-[var(--border-color)] bg-white px-4 py-2.5 text-xs font-extrabold text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)] hover:text-[var(--primary-dark)] min-h-[44px]"
+      >
+        {showLeaderQuest ? "Sembunyikan papan misi tim" : "Lihat papan misi tim"}
+        <ChevronRight size={14} className="transition-transform" style={{ transform: showLeaderQuest ? "rotate(90deg)" : "rotate(0deg)" }} aria-hidden="true" />
+      </button>
+
+      {showLeaderQuest && (
       <section className="gamification-hub leader-quest-board" aria-labelledby="leader-quest-title">
         <div>
           <p className="eyebrow">Gamification</p>
@@ -425,6 +439,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
           </li>
         </menu>
       </section>
+      )}
 
       {/* Primary Attendance Card */}
       <section className="card shadow-md overflow-hidden bg-gradient-to-br from-[#FFFDEB] to-white border border-[#FFECB3] p-5 relative" aria-labelledby="leader-attendance-card-title">
