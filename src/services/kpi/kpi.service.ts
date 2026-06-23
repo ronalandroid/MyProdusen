@@ -3,6 +3,7 @@ import { eq, and, desc, sql, ne } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { notifyUser } from '@/lib/notifications/dispatch';
 import { logAudit } from '@/lib/audit';
+import { summarizeKpiResults } from '@/utils/kpi';
 import { BusinessError } from '@/lib/core/business-error';
 
 export type KpiScoringType = 'HIGHER_IS_BETTER' | 'LOWER_IS_BETTER' | 'BOOLEAN';
@@ -513,41 +514,10 @@ export class KpiService {
         )
       );
 
-    if (results.length === 0) {
-      return {
-        employeeId,
-        period,
-        totalScore: 0,
-        weightedScore: 0,
-        itemCount: 0,
-        approvedCount: 0,
-        items: [],
-      };
-    }
-
-    let totalWeightedScore = 0;
-    let totalWeight = 0;
-    let approvedCount = 0;
-
-    results.forEach(({ result, item }) => {
-      if (item) {
-        totalWeightedScore += result.score * item.weight;
-        totalWeight += item.weight;
-      }
-      if (result.isApproved) {
-        approvedCount++;
-      }
-    });
-
-    const weightedScore = totalWeight > 0 ? totalWeightedScore / totalWeight : 0;
-
     return {
       employeeId,
       period,
-      totalScore: results.reduce((sum, r) => sum + r.result.score, 0) / results.length,
-      weightedScore,
-      itemCount: results.length,
-      approvedCount,
+      ...summarizeKpiResults(results),
       items: results,
     };
   }
