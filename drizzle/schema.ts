@@ -1421,6 +1421,8 @@ export const attendanceDailySummaries = pgTable('AttendanceDailySummary', {
   gpsAccuracyMeters: real('gpsAccuracyMeters'),
   selfieRequired: boolean('selfieRequired').default(true).notNull(),
   selfieVerified: boolean('selfieVerified').default(false).notNull(),
+  selfieLivenessScore: real('selfieLivenessScore'),
+  selfieNeedsReview: boolean('selfieNeedsReview').default(false).notNull(),
   payrollImpactStatus: text('payrollImpactStatus').default('NO_IMPACT').notNull(),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),

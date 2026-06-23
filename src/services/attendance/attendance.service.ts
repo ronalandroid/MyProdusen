@@ -306,6 +306,8 @@ export class AttendanceService {
           gpsAccuracyMeters: data.accuracy,
           selfieRequired: true,
           selfieVerified: selfieVerdict.verified,
+          selfieLivenessScore: data.livenessScore ?? null,
+          selfieNeedsReview: selfieVerdict.needsReview,
           payrollImpactStatus: policyImpact.payrollImpactStatus,
         }).onConflictDoUpdate({
           target: [attendanceDailySummaries.employeeId, attendanceDailySummaries.workDate],
@@ -319,6 +321,8 @@ export class AttendanceService {
             geofenceDistanceMeters: distance,
             gpsAccuracyMeters: data.accuracy,
             selfieVerified: selfieVerdict.verified,
+            selfieLivenessScore: data.livenessScore ?? null,
+            selfieNeedsReview: selfieVerdict.needsReview,
             payrollImpactStatus: policyImpact.payrollImpactStatus,
             updatedAt: new Date(),
           },
