@@ -33,7 +33,10 @@ export async function POST(request: NextRequest) {
     }
 
     user = await requireAuth(request);
-    const rl = await rateLimit(request, RATE_LIMITS.ATTENDANCE, 'attendance:check-in');
+    // Key per-employee, not per-IP: at shift start the whole workforce shares
+    // one office wifi IP, so a global/IP bucket would 429 everyone after a few
+    // clock-ins. Each employee gets their own limit instead.
+    const rl = await rateLimit(request, RATE_LIMITS.ATTENDANCE, `attendance:check-in:${user.userId}`);
     if (rl.limited) {
       return errorResponse('Terlalu banyak permintaan absensi. Coba lagi sebentar.', 429);
     }

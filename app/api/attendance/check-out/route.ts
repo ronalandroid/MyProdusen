@@ -27,7 +27,9 @@ export async function POST(request: NextRequest) {
   let employee: Awaited<ReturnType<typeof employeeService.getEmployeeByUserId>> | null = null;
   try {
     user = await requireAuth(request);
-    const rl = await rateLimit(request, RATE_LIMITS.ATTENDANCE, 'attendance:check-out');
+    // Per-employee key (see check-in): avoids 429-ing the whole shift when the
+    // workforce clocks out from one shared office IP.
+    const rl = await rateLimit(request, RATE_LIMITS.ATTENDANCE, `attendance:check-out:${user.userId}`);
     if (rl.limited) {
       return errorResponse('Terlalu banyak permintaan absensi. Coba lagi sebentar.', 429);
     }

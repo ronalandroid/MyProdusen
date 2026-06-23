@@ -163,10 +163,12 @@ export const RATE_LIMIT_PRESETS = {
     maxRequests: 20,
   },
   
-  // Attendance check-in: 5 per hour (prevent spam)
+  // Attendance check-in/out: keyed per-employee (see attendance routes), so
+  // this is a per-user cap. 10/hour leaves headroom for retries, flaky GPS,
+  // and double shifts while still blocking abuse.
   ATTENDANCE: {
     windowMs: 60 * 60 * 1000,
-    maxRequests: 5,
+    maxRequests: 10,
   },
 };
 
