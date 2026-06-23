@@ -15,6 +15,24 @@ import { BusinessError } from '@/lib/core/business-error';
 
 export type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'SICK' | 'PERMISSION';
 
+/** One reviewable check-in row for the admin selfie-review grid. */
+export interface SelfieReviewItem {
+  attendanceId: string;
+  employeeId: string;
+  employeeName: string;
+  checkInTime: Date;
+  selfieUrl: string | null;
+  geoStatus: string | null;
+  distanceMeters: number | null;
+  livenessScore: number | null;
+  selfieVerified: boolean;
+  needsReview: boolean;
+  workDate: string;
+}
+
+/** Bound the admin review query so it can never run unbounded. */
+const SELFIE_REVIEW_MAX_ROWS = 500;
+
 export class AttendanceService {
   private buildShiftStartAt(workDate: Date, startTime: string): Date {
     const [hours = '8', minutes = '0'] = startTime.split(':');
@@ -691,6 +709,54 @@ export class AttendanceService {
     }
 
     return await query;
+  }
+
+  /**
+   * Admin selfie-review list: joins the daily summary (liveness verdict) with
+   * the attendance row (selfie + geo) and the employee (name). Used by the
+   * admin review grid to surface low-confidence / flagged check-ins.
+   */
+  async getSelfieReviewList(filters?: {
+    startDate?: Date;
+    endDate?: Date;
+    needsReviewOnly?: boolean;
+    employeeId?: string;
+  }): Promise<SelfieReviewItem[]> {
+    const conditions = [];
+
+    if (filters?.needsReviewOnly) {
+      conditions.push(eq(attendanceDailySummaries.selfieNeedsReview, true));
+    }
+    if (filters?.employeeId) {
+      conditions.push(eq(attendanceDailySummaries.employeeId, filters.employeeId));
+    }
+    if (filters?.startDate) {
+      conditions.push(gte(attendances.checkInTime, filters.startDate));
+    }
+    if (filters?.endDate) {
+      conditions.push(lt(attendances.checkInTime, filters.endDate));
+    }
+
+    return await db
+      .select({
+        attendanceId: attendances.id,
+        employeeId: employees.id,
+        employeeName: employees.fullName,
+        checkInTime: attendances.checkInTime,
+        selfieUrl: attendances.checkInSelfieUrl,
+        geoStatus: attendances.checkInGeoStatus,
+        distanceMeters: attendances.checkInDistance,
+        livenessScore: attendanceDailySummaries.selfieLivenessScore,
+        selfieVerified: attendanceDailySummaries.selfieVerified,
+        needsReview: attendanceDailySummaries.selfieNeedsReview,
+        workDate: attendanceDailySummaries.workDate,
+      })
+      .from(attendanceDailySummaries)
+      .innerJoin(attendances, eq(attendanceDailySummaries.attendanceId, attendances.id))
+      .innerJoin(employees, eq(attendanceDailySummaries.employeeId, employees.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(attendances.checkInTime))
+      .limit(SELFIE_REVIEW_MAX_ROWS);
   }
 
   private async invalidateAttendanceCaches(employeeId?: string): Promise<void> {
