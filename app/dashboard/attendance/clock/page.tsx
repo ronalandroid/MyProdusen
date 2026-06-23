@@ -105,7 +105,7 @@ function AttendanceClockContent() {
   const [gpsError, setGpsError] = useState(() => (typeof navigator !== "undefined" && !navigator.geolocation ? "Lokasi tidak dapat diakses. Izinkan lokasi di browser Anda." : ""));
   const [selfieBlob, setSelfieBlob] = useState<Blob | null>(null);
   const [selfiePreviewUrl, setSelfiePreviewUrl] = useState("");
-  const livenessRef = useRef({ score: 0, passed: false, unsupported: false });
+  const livenessRef = useRef({ score: 0, passed: false, unsupported: false, faceDetected: false });
   const selfieFilenameRef = useRef("attendance-selfie.webp");
   const todayAttendanceRef = useRef<AttendanceRecord | null>(null);
   const { step, note, manualReason, isSubmitting, statusText, message, error } = ui;
@@ -130,7 +130,7 @@ function AttendanceClockContent() {
 
   const clearSelfie = useCallback(() => {
     setSelfieBlob(null);
-    livenessRef.current = { score: 0, passed: false, unsupported: false };
+    livenessRef.current = { score: 0, passed: false, unsupported: false, faceDetected: false };
     setSelfiePreviewUrl((current) => {
       if (current) URL.revokeObjectURL(current);
       return "";
@@ -212,6 +212,8 @@ function AttendanceClockContent() {
       formData.set("deviceInfo", navigator.userAgent);
       formData.set("livenessScore", String(livenessRef.current.score));
       formData.set("livenessPassed", String(livenessRef.current.passed));
+      formData.set("faceDetected", String(livenessRef.current.faceDetected));
+      formData.set("livenessUnsupported", String(livenessRef.current.unsupported));
       const selfieFilename = selfieFilenameRef.current;
       formData.set("selfie", selfieBlob, selfieFilename);
       if (note.trim()) formData.set("note", note.trim());

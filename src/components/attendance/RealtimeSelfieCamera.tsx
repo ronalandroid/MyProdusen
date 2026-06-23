@@ -7,13 +7,15 @@ import {
   captureSelfieFromVideo,
   type CompressedSelfie,
 } from "@/lib/attendance/selfie-compressor";
+import { evaluateFacePosition } from "@/lib/attendance/face-metrics";
+import { loadFaceDetector, type RealtimeFaceDetector } from "@/lib/attendance/face-detector";
 
 type LivenessState = "searching" | "detected" | "passed" | "failed" | "unsupported";
 
 type RealtimeSelfieCameraProps = {
   capturedPreviewUrl: string;
   disabled?: boolean;
-  onCapture: (selfie: { blob: Blob; previewUrl: string; meta: CompressedSelfie; liveness: { score: number; passed: boolean; unsupported: boolean } }) => void;
+  onCapture: (selfie: { blob: Blob; previewUrl: string; meta: CompressedSelfie; liveness: { score: number; passed: boolean; unsupported: boolean; faceDetected: boolean } }) => void;
   onClear: () => void;
   autoStart?: boolean;
   captureLabel?: string;
@@ -25,6 +27,14 @@ const CAMERA_PERMISSION_ERROR = "Kamera tidak dapat diakses. Izinkan kamera di b
 const CAMERA_NOT_FOUND = "Perangkat tidak memiliki kamera yang tersedia.";
 const CAPTURE_FAILED = "Gagal mengambil selfie. Silakan coba lagi.";
 const SELFIE_TOO_LARGE_HARD = "Ukuran selfie masih terlalu besar. Coba ambil ulang dengan pencahayaan lebih baik.";
+const LIVENESS_NOT_READY = "Wajah belum terverifikasi. Posisikan wajah di tengah lalu tahan sebentar.";
+const LIVENESS_UNSUPPORTED = "Deteksi wajah tidak didukung di perangkat ini — selfie tetap bisa diambil.";
+
+// Sustained correct positioning before liveness is considered passed, and how
+// often we run detection (throttle so old phones stay responsive).
+const GOOD_FRAMES_TO_PASS = 8;
+const DETECT_INTERVAL_MS = 120;
+const PASSED_MIN_SCORE = 0.85;
 
 function formatKb(bytes: number) {
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -47,17 +57,79 @@ export function RealtimeSelfieCamera({
   const [cameraError, setCameraError] = useState("");
   const [captureInfo, setCaptureInfo] = useState<CompressedSelfie | null>(null);
   const [livenessState, setLivenessState] = useState<LivenessState>("searching");
-  const livenessScoreRef = useRef(0);
-  const livenessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [feedback, setFeedback] = useState("");
 
-  const clearLivenessTimer = useCallback(() => {
-    if (livenessTimerRef.current) {
-      clearTimeout(livenessTimerRef.current);
-      livenessTimerRef.current = null;
+  // Real liveness signals (refs so the rAF loop doesn't re-trigger renders).
+  const livenessScoreRef = useRef(0);
+  const detectorRef = useRef<RealtimeFaceDetector | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const goodFramesRef = useRef(0);
+  const hasPassedRef = useRef(false);
+  const unsupportedRef = useRef(false);
+  const faceDetectedRef = useRef(false);
+  const lastDetectAtRef = useRef(0);
+
+  const stopDetection = useCallback(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
   }, []);
 
+  const resetLiveness = useCallback(() => {
+    livenessScoreRef.current = 0;
+    goodFramesRef.current = 0;
+    hasPassedRef.current = false;
+    unsupportedRef.current = false;
+    faceDetectedRef.current = false;
+    lastDetectAtRef.current = 0;
+    setLivenessState("searching");
+    setFeedback("");
+  }, []);
+
+  // Per-frame detection: real face presence + position drives the verdict.
+  const runDetectionLoop = useCallback(() => {
+    const video = videoRef.current;
+    const detector = detectorRef.current;
+    if (!video || !detector) return;
+
+    const now = performance.now();
+    if (now - lastDetectAtRef.current >= DETECT_INTERVAL_MS && video.readyState >= 2 && video.videoWidth > 0) {
+      lastDetectAtRef.current = now;
+      try {
+        const box = detector.detect(video, now);
+        const metrics = evaluateFacePosition(box, { width: video.videoWidth, height: video.videoHeight });
+        faceDetectedRef.current = box !== null;
+        setFeedback(metrics.feedback);
+
+        if (metrics.status === "good") {
+          goodFramesRef.current += 1;
+          if (goodFramesRef.current >= GOOD_FRAMES_TO_PASS) hasPassedRef.current = true;
+        } else if (!hasPassedRef.current) {
+          goodFramesRef.current = 0;
+        }
+
+        if (hasPassedRef.current) {
+          livenessScoreRef.current = Math.max(metrics.score, PASSED_MIN_SCORE);
+          setLivenessState("passed");
+        } else {
+          livenessScoreRef.current = metrics.score;
+          setLivenessState(box ? "detected" : "searching");
+        }
+      } catch {
+        // Transient per-frame detection error — skip this frame, keep going.
+      }
+    }
+    rafRef.current = requestAnimationFrame(runDetectionLoop);
+  }, []);
+
+  const startDetectionLoop = useCallback(() => {
+    stopDetection();
+    rafRef.current = requestAnimationFrame(runDetectionLoop);
+  }, [runDetectionLoop, stopDetection]);
+
   const stopCamera = useCallback(() => {
+    stopDetection();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) {
@@ -65,11 +137,12 @@ export function RealtimeSelfieCamera({
       videoRef.current.srcObject = null;
     }
     setIsCameraOpen(false);
-  }, []);
+  }, [stopDetection]);
 
   const openCamera = useCallback(async () => {
     setCameraError("");
     stopCamera();
+    resetLiveness();
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError(CAMERA_NOT_SUPPORTED);
@@ -96,13 +169,19 @@ export function RealtimeSelfieCamera({
       }
 
       setIsCameraOpen(true);
-      setLivenessState("detected");
-      livenessScoreRef.current = 0.35;
-      clearLivenessTimer();
-      livenessTimerRef.current = setTimeout(() => {
-        setLivenessState("passed");
-        livenessScoreRef.current = 0.92;
-      }, 1400);
+
+      // Real liveness via MediaPipe. If it can't load (old device, offline,
+      // blocked), fall back to "unsupported" — capture is still allowed and the
+      // server flags it for admin review.
+      try {
+        detectorRef.current = await loadFaceDetector();
+        startDetectionLoop();
+      } catch {
+        unsupportedRef.current = true;
+        livenessScoreRef.current = 0;
+        setLivenessState("unsupported");
+        setFeedback(LIVENESS_UNSUPPORTED);
+      }
     } catch (error) {
       const name = error instanceof DOMException ? error.name : "";
       if (name === "NotFoundError" || name === "DevicesNotFoundError") {
@@ -114,7 +193,7 @@ export function RealtimeSelfieCamera({
     } finally {
       setIsStarting(false);
     }
-  }, [clearLivenessTimer, stopCamera]);
+  }, [resetLiveness, startDetectionLoop, stopCamera]);
 
   async function captureSelfie() {
     setCameraError("");
@@ -123,6 +202,15 @@ export function RealtimeSelfieCamera({
 
     if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
       setCameraError(CAPTURE_FAILED);
+      return;
+    }
+
+    // Liveness is advisory: unsupported devices may always capture; supported
+    // devices must reach a verified (sustained-good) state first.
+    const livenessAllowsCapture = unsupportedRef.current || livenessState === "passed";
+    if (!livenessAllowsCapture) {
+      setLivenessState("failed");
+      setCameraError(LIVENESS_NOT_READY);
       return;
     }
 
@@ -136,15 +224,19 @@ export function RealtimeSelfieCamera({
       }
 
       setCaptureInfo(result);
-      if (livenessState !== "passed") {
-        setLivenessState("failed");
-        setCameraError("Liveness belum lolos. Kedipkan mata sekali lalu coba lagi.");
-        return;
-      }
-
       const previewUrl = URL.createObjectURL(result.blob);
       stopCamera();
-      onCapture({ blob: result.blob, previewUrl, meta: result, liveness: { score: livenessScoreRef.current, passed: true, unsupported: false } });
+      onCapture({
+        blob: result.blob,
+        previewUrl,
+        meta: result,
+        liveness: {
+          score: livenessScoreRef.current,
+          passed: !unsupportedRef.current && livenessState === "passed",
+          unsupported: unsupportedRef.current,
+          faceDetected: faceDetectedRef.current,
+        },
+      });
     } catch (error) {
       setCameraError(error instanceof Error ? error.message : CAPTURE_FAILED);
     } finally {
@@ -154,19 +246,17 @@ export function RealtimeSelfieCamera({
 
   const retakeSelfie = useCallback(() => {
     setCaptureInfo(null);
-    setLivenessState("searching");
-    livenessScoreRef.current = 0;
+    resetLiveness();
     onClear();
     void openCamera();
-  }, [onClear, openCamera]);
+  }, [onClear, openCamera, resetLiveness]);
 
   // Source-contract equivalent of: useEffect(() => stopCamera, [])
   useEffect(() => {
     return () => {
-      clearLivenessTimer();
       stopCamera();
     };
-  }, [clearLivenessTimer, stopCamera]);
+  }, [stopCamera]);
 
   useEffect(() => {
     if (disabled) stopCamera();
@@ -182,6 +272,22 @@ export function RealtimeSelfieCamera({
       return () => clearTimeout(t);
     }
   }, [autoStart, capturedPreviewUrl, disabled, isCameraOpen, openCamera]);
+
+  const statusMessage =
+    livenessState === "passed"
+      ? "✅ Verifikasi berhasil!"
+      : livenessState === "failed"
+        ? "❌ Belum terverifikasi. Coba lagi."
+        : livenessState === "unsupported"
+          ? LIVENESS_UNSUPPORTED
+          : feedback || "Posisikan wajah di dalam frame";
+
+  const guideColor =
+    livenessState === "passed"
+      ? "#4CAF50"
+      : livenessState === "failed"
+        ? "#F44336"
+        : "rgba(76,175,80,0.8)";
 
   return (
     <div className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -234,10 +340,10 @@ export function RealtimeSelfieCamera({
         )}
         {!capturedPreviewUrl && isCameraOpen && (
           <div aria-label="Face guide overlay" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-            <div style={{ width: "54%", maxWidth: "220px", aspectRatio: "3 / 4", border: `2px ${livenessState === "searching" ? "dashed" : "solid"} ${livenessState === "passed" ? "#4CAF50" : livenessState === "failed" ? "#F44336" : "rgba(76,175,80,0.8)"}`, borderRadius: "50%", boxShadow: "0 0 0 999px rgba(0,0,0,0.24)" }} />
+            <div style={{ width: "54%", maxWidth: "220px", aspectRatio: "3 / 4", border: `2px ${livenessState === "searching" ? "dashed" : "solid"} ${guideColor}`, borderRadius: "50%", boxShadow: "0 0 0 999px rgba(0,0,0,0.24)" }} />
             {livenessState === "detected" && <div className="liveness-pulse" aria-hidden="true" />}
             <div role="status" aria-live="assertive" style={{ position: "absolute", bottom: "14px", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.64)", color: "white", borderRadius: "999px", padding: "6px 12px", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap" }}>
-              {livenessState === "passed" ? "✅ Verifikasi berhasil!" : livenessState === "failed" ? "❌ Gagal. Coba lagi." : livenessState === "detected" ? "Wajah terdeteksi. Kedipkan mata sekali." : "Pastikan wajah terlihat jelas... Posisikan wajah di dalam frame"}
+              {statusMessage}
             </div>
           </div>
         )}
@@ -258,7 +364,7 @@ export function RealtimeSelfieCamera({
           Selfie {captureInfo.width}×{captureInfo.height}px · {formatKb(captureInfo.size)} · format {captureInfo.mimeType.replace("image/", "").toUpperCase()}
           {captureInfo.exceedsTarget && (
             <span style={{ color: "var(--warning-text)", marginLeft: "6px", fontWeight: 600 }}>
-              · sedikit di atas target 300KB
+              · sedikit di atas target 200KB
             </span>
           )}
         </div>
