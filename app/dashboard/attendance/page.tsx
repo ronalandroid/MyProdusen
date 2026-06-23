@@ -8,6 +8,7 @@ import Link from "next/link";
 import { fetchApiData, fetchApiList, useCachedProfile } from "@/hooks/useDashboardQueries";
 import { SelfieViewer } from "@/components/attendance/SelfieViewer";
 import { MyExceptionPanel } from "@/components/attendance/MyExceptionPanel";
+import SelfieReviewGrid from "@/components/attendance/SelfieReviewGrid";
 
 const fullDateFormatter = new Intl.DateTimeFormat("id-ID", {
   weekday: "long",
@@ -129,6 +130,8 @@ function SuperadminAttendanceView({ onBack }: { onBack: () => void }) {
           <Link href="/dashboard/attendance/exceptions" className="btn btn-secondary min-h-[44px]">Approval Absensi</Link>
         </div>
       </section>
+
+      <SelfieReviewGrid />
     </div>
   );
 }
