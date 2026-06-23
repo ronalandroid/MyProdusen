@@ -14,6 +14,9 @@ const STATIC_ASSETS = new Set([
 ]);
 
 function walk(dir: string, predicate: (file: string) => boolean, files: string[] = []) {
+  // Tolerate optional/absent source roots (e.g. an empty, untracked `components/`
+  // dir that is not present in a fresh CI checkout) so the scan never crashes.
+  if (!fs.existsSync(dir)) return files;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const file = path.join(dir, entry.name);
     if (entry.isDirectory()) {
