@@ -157,10 +157,11 @@ export async function checkPasswordCompromised(
 ): Promise<boolean> {
   if (COMMON_PASSWORDS.has(password.toLowerCase())) return true;
 
-  // Keep the test suite hermetic: skip the external HIBP call under the test
-  // runner (the local common-password check above still applies). The dedicated
-  // unit test stubs VITEST off to exercise the network path against a mock.
-  if (process.env.VITEST) return false;
+  // Ops knob: skip the external HIBP lookup (e.g. air-gapped deploys, or to
+  // drop the network latency); the local common-password check above still
+  // applies. The test harness sets this so the suite stays hermetic, and the
+  // HIBP unit test clears it to exercise the network path against a mock.
+  if (process.env.HIBP_NETWORK_DISABLED === 'true') return false;
 
   try {
     const sha1 = createHash('sha1').update(password).digest('hex').toUpperCase();
@@ -173,6 +174,7 @@ export async function checkPasswordCompromised(
     try {
       const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, {
         signal: controller.signal,
+        cache: 'no-store',
         headers: { 'Add-Padding': 'true' },
       });
       if (!res.ok) return false; // fail open on non-200

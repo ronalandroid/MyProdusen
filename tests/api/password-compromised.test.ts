@@ -10,10 +10,10 @@ function hibpSuffix(pw: string): string {
   return createHash('sha1').update(pw).digest('hex').toUpperCase().slice(5);
 }
 
-// The implementation skips the network call when VITEST is set; stub it off here
-// so these tests actually exercise the HIBP range logic against a mocked fetch.
+// The suite sets HIBP_NETWORK_DISABLED=true to stay hermetic; clear it here so
+// these tests actually exercise the HIBP range logic against a mocked fetch.
 beforeEach(() => {
-  vi.stubEnv('VITEST', '');
+  vi.stubEnv('HIBP_NETWORK_DISABLED', '');
 });
 
 afterEach(() => {

@@ -9,6 +9,9 @@ config();
 (process.env as any).NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
 process.env.CACHE_ENABLED = 'false';
+// Keep the suite hermetic — no live HIBP breach lookups. The dedicated HIBP
+// unit test clears this flag to exercise the network path against a mock.
+process.env.HIBP_NETWORK_DISABLED = 'true';
 
 function sanitizeDatabaseUrl(databaseUrl: string | undefined): string | undefined {
   if (!databaseUrl) {

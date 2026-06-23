@@ -74,11 +74,6 @@ export class AuthService extends BaseService {
       throw new BusinessError(passwordValidation.errors[0]);
     }
 
-    // Best-effort breach check (fail-open) — block known-compromised passwords.
-    if (await checkPasswordCompromised(data.password)) {
-      throw new BusinessError('Password ini pernah muncul dalam kebocoran data. Gunakan password lain yang lebih aman.');
-    }
-
     // Check if email already exists
     const [existingEmail] = await db
       .select()
@@ -99,6 +94,12 @@ export class AuthService extends BaseService {
 
     if (existingUsername) {
       throw new BusinessError('Username sudah terdaftar');
+    }
+
+    // Best-effort breach check (fail-open). Runs after the cheap duplicate
+    // checks so a doomed registration never pays the external HIBP round-trip.
+    if (await checkPasswordCompromised(data.password)) {
+      throw new BusinessError('Password ini pernah muncul dalam kebocoran data. Gunakan password lain yang lebih aman.');
     }
 
     const hashedPassword = await hashPassword(data.password);
