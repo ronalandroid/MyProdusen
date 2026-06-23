@@ -30,10 +30,22 @@ export type NavigationItemKey =
   | 'accounts'
   | 'profile';
 
+export type NavigationGroupKey = 'utama' | 'operasional' | 'kinerja' | 'finansial' | 'lainnya';
+
+/** Ordered, collapsible sidebar groups. Order here is the render order. */
+export const navigationGroups: readonly { key: NavigationGroupKey; label: string }[] = [
+  { key: 'utama', label: 'Utama' },
+  { key: 'operasional', label: 'Operasional' },
+  { key: 'kinerja', label: 'Kinerja' },
+  { key: 'finansial', label: 'Finansial' },
+  { key: 'lainnya', label: 'Lainnya' },
+];
+
 export interface NavigationPolicyItem {
   key: NavigationItemKey;
   name: string;
   path: string;
+  group: NavigationGroupKey;
   primaryFor: readonly UserRole[];
   allowedRoles: readonly UserRole[];
   featureFlag?: FeatureFlagKey;
@@ -43,36 +55,46 @@ export interface NavigationItem extends Omit<NavigationPolicyItem, 'primaryFor'>
   primary: boolean;
 }
 
+export interface NavigationGroup {
+  key: NavigationGroupKey;
+  label: string;
+  items: readonly NavigationItem[];
+}
+
+// NOTE: array order drives the mobile primary nav (getPrimaryNavigationForRole)
+// and within-group order; the `group` field drives desktop sidebar grouping.
+// Keep this original order — reordering changes the mobile bottom-nav sequence.
 export const navigationPolicy: readonly NavigationPolicyItem[] = [
-  { key: 'dashboard', name: 'Beranda', path: '/dashboard', primaryFor: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
-  { key: 'self-service', name: 'ESS', path: '/dashboard/self-service', primaryFor: [], allowedRoles: ['LEADER', 'EMPLOYEE'] },
-  { key: 'attendance', name: 'Absensi', path: '/dashboard/attendance', primaryFor: ['LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
-  { key: 'locations', name: 'Cabang', path: '/dashboard/locations', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'attendance-exceptions', name: 'Approval', path: '/dashboard/attendance/exceptions', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'attendance-schedules', name: 'Jadwal', path: '/dashboard/attendance/schedules', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'users', name: 'Pengguna', path: '/dashboard/users', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'employees', name: 'Karyawan', path: '/dashboard/employees', primaryFor: ['SUPERADMIN'], allowedRoles: ['SUPERADMIN'] },
-  { key: 'shifts', name: 'Shift', path: '/dashboard/shifts', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'leave', name: 'Cuti', path: '/dashboard/leave', primaryFor: ['EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'EMPLOYEE'] },
-  { key: 'kpi', name: 'KPI', path: '/dashboard/kpi', primaryFor: ['SUPERADMIN', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
-  { key: 'leader-kpi-input', name: 'Input KPI', path: '/dashboard/leader/kpi-input', primaryFor: ['LEADER'], allowedRoles: ['LEADER'] },
-  { key: 'leader-team', name: 'Tim', path: '/dashboard/leader/team', primaryFor: ['LEADER'], allowedRoles: ['LEADER'] },
-  { key: 'leader-report', name: 'Laporan Tim', path: '/dashboard/leader/reports', primaryFor: [], allowedRoles: ['LEADER'] },
-  { key: 'reports', name: 'Laporan', path: '/dashboard/reports', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'payroll', name: 'Payroll', path: '/dashboard/payroll', primaryFor: ['SUPERADMIN'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
-  { key: 'overtime', name: 'Lembur', path: '/dashboard/overtime', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], featureFlag: 'overtime' },
-  { key: 'documents', name: 'Dokumen', path: '/dashboard/documents', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], featureFlag: 'documents' },
-  { key: 'notifications', name: 'Notifikasi', path: '/dashboard/notifications', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
-  { key: 'kpi-template', name: 'Template KPI', path: '/dashboard/kpi-template', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'performance-assessment', name: 'Penilaian', path: '/dashboard/performance/assessment', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'announcements', name: 'Pengumuman', path: '/dashboard/announcements', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
-  { key: 'audit', name: 'Audit', path: '/dashboard/audit', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'settings', name: 'Kebijakan', path: '/dashboard/settings', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'accounts', name: 'Akun & Peran', path: '/dashboard/accounts', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
-  { key: 'profile', name: 'Akun', path: '/dashboard/profile', primaryFor: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'dashboard', name: 'Beranda', path: '/dashboard', group: 'utama', primaryFor: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'self-service', name: 'ESS', path: '/dashboard/self-service', group: 'utama', primaryFor: [], allowedRoles: ['LEADER', 'EMPLOYEE'] },
+  { key: 'attendance', name: 'Absensi', path: '/dashboard/attendance', group: 'utama', primaryFor: ['LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'locations', name: 'Cabang', path: '/dashboard/locations', group: 'operasional', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'attendance-exceptions', name: 'Approval', path: '/dashboard/attendance/exceptions', group: 'operasional', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'attendance-schedules', name: 'Jadwal', path: '/dashboard/attendance/schedules', group: 'operasional', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'users', name: 'Pengguna', path: '/dashboard/users', group: 'operasional', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'employees', name: 'Karyawan', path: '/dashboard/employees', group: 'operasional', primaryFor: ['SUPERADMIN'], allowedRoles: ['SUPERADMIN'] },
+  { key: 'shifts', name: 'Shift', path: '/dashboard/shifts', group: 'operasional', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'leave', name: 'Cuti', path: '/dashboard/leave', group: 'utama', primaryFor: ['EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'EMPLOYEE'] },
+  { key: 'kpi', name: 'KPI', path: '/dashboard/kpi', group: 'kinerja', primaryFor: ['SUPERADMIN', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'leader-kpi-input', name: 'Input KPI', path: '/dashboard/leader/kpi-input', group: 'kinerja', primaryFor: ['LEADER'], allowedRoles: ['LEADER'] },
+  { key: 'leader-team', name: 'Tim', path: '/dashboard/leader/team', group: 'operasional', primaryFor: ['LEADER'], allowedRoles: ['LEADER'] },
+  { key: 'leader-report', name: 'Laporan Tim', path: '/dashboard/leader/reports', group: 'kinerja', primaryFor: [], allowedRoles: ['LEADER'] },
+  { key: 'reports', name: 'Laporan', path: '/dashboard/reports', group: 'finansial', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'payroll', name: 'Payroll', path: '/dashboard/payroll', group: 'finansial', primaryFor: ['SUPERADMIN'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'overtime', name: 'Lembur', path: '/dashboard/overtime', group: 'utama', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], featureFlag: 'overtime' },
+  { key: 'documents', name: 'Dokumen', path: '/dashboard/documents', group: 'lainnya', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], featureFlag: 'documents' },
+  { key: 'notifications', name: 'Notifikasi', path: '/dashboard/notifications', group: 'lainnya', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'kpi-template', name: 'Template KPI', path: '/dashboard/kpi-template', group: 'kinerja', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'performance-assessment', name: 'Penilaian', path: '/dashboard/performance/assessment', group: 'kinerja', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'announcements', name: 'Pengumuman', path: '/dashboard/announcements', group: 'lainnya', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
+  { key: 'audit', name: 'Audit', path: '/dashboard/audit', group: 'lainnya', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'settings', name: 'Kebijakan', path: '/dashboard/settings', group: 'lainnya', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'accounts', name: 'Akun & Peran', path: '/dashboard/accounts', group: 'lainnya', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'profile', name: 'Akun', path: '/dashboard/profile', group: 'lainnya', primaryFor: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
 ];
 
-const sensitiveRoutePolicy: readonly NavigationPolicyItem[] = [
+// Route-access-only entries (not rendered in the sidebar), so no group needed.
+const sensitiveRoutePolicy: readonly Omit<NavigationPolicyItem, 'group'>[] = [
   { key: 'accounts', name: 'Pengguna', path: '/dashboard/accounts', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'kpi-template', name: 'KPI Templates', path: '/dashboard/kpi/template', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'kpi-template', name: 'KPI Templates', path: '/dashboard/kpi/templates', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
@@ -92,6 +114,22 @@ export function getNavigationForRole(role: UserRole | string): readonly Navigati
 
 export function getPrimaryNavigationForRole(role: UserRole | string): readonly NavigationItem[] {
   return getNavigationForRole(role).filter((item) => item.primary).slice(0, MAX_PRIMARY_SLOTS);
+}
+
+/**
+ * Role-filtered navigation arranged into ordered, collapsible groups. Empty
+ * groups are dropped. Drives the desktop sidebar so each role sees a small,
+ * scannable set of groups instead of one long flat list.
+ */
+export function getGroupedNavigationForRole(role: UserRole | string): readonly NavigationGroup[] {
+  const items = getNavigationForRole(role);
+  return navigationGroups
+    .map((group) => ({
+      key: group.key,
+      label: group.label,
+      items: items.filter((item) => item.group === group.key),
+    }))
+    .filter((group) => group.items.length > 0);
 }
 
 export function canAccessNavigationPath(role: UserRole | string, path: string): boolean {
