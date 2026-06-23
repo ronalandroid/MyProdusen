@@ -7,7 +7,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Bell,
   Camera,
-  CheckCircle2,
   FileWarning,
   MapPin,
   ArrowRight,
@@ -1018,28 +1017,6 @@ export default function EmployeeBeranda({ profile }: Props) {
             <Link href="/dashboard/leave/balance" className="text-[11px] font-bold text-[var(--primary-dark)] hover:underline mt-1 flex items-center gap-0.5">
               <span>Detail Saldo</span> <ChevronRight size={10} />
             </Link>
-          </article>
-
-          {/* Attendance Status */}
-          <article className="card p-4 flex flex-col justify-between gap-1.5 shadow-sm min-h-[96px]">
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)]">
-              <CheckCircle2 size={14} className="text-[var(--success)]" />
-              <span>Status Absen</span>
-            </span>
-            <div className="mt-1">
-              <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${
-                hasCheckedOut
-                  ? "bg-gray-100 text-gray-600"
-                  : hasCheckedIn
-                    ? "bg-green-50 text-[var(--success)] border border-green-200"
-                    : "bg-amber-50 text-[var(--warning)] border border-amber-200"
-              }`}>
-                {hasCheckedOut ? "Selesai" : hasCheckedIn ? "Aktif Kerja" : "Belum Absen"}
-              </span>
-            </div>
-            <span className="text-[10px] text-[var(--text-muted)] font-medium mt-1">
-              {todayRecord?.checkInTime ? `Masuk: ${formatTime(todayRecord.checkInTime)}` : "Belum check-in"}
-            </span>
           </article>
 
           {/* Payroll Status */}
