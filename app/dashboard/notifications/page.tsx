@@ -271,7 +271,7 @@ export default function NotificationsPage() {
         <div className="overlay" onClick={() => (!processing ? setPendingDelete(null) : undefined)}>
           <div className="modal" role="dialog" aria-modal="true" aria-labelledby="delete-notification-title" onClick={(event) => event.stopPropagation()}>
             <h2 id="delete-notification-title" className="text-lg font-bold mb-2">Hapus notifikasi?</h2>
-            <p className="text-sm text-[var(--text-secondary)] mb-4">Notifikasi "{pendingDelete.title}" akan dihapus dari daftar Anda.</p>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">Notifikasi &quot;{pendingDelete.title}&quot; akan dihapus dari daftar Anda.</p>
             <div className="flex flex-wrap justify-end gap-3">
               <Button variant="secondary" onClick={() => setPendingDelete(null)} disabled={processing}>Batal</Button>
               <Button variant="danger" onClick={() => deleteNotification(pendingDelete.id)} disabled={processing} loading={processing}>Hapus</Button>

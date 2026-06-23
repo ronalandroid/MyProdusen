@@ -232,7 +232,7 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
                           <div style={{ fontSize: 12, fontWeight: 700, color }}>{label}</div>
                           <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{new Date(date).toLocaleString("id-ID")}</div>
                           {detail.reviewNote && idx === 1 && (
-                            <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4, fontStyle: "italic" }}>"{detail.reviewNote}"</div>
+                            <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4, fontStyle: "italic" }}>&quot;{detail.reviewNote}&quot;</div>
                           )}
                         </div>
                       </div>
