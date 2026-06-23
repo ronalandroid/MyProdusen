@@ -6,14 +6,14 @@
  * NEXT_PUBLIC_SELFIE_* env vars or the documented defaults:
  *   - max 720x720
  *   - quality 0.75
- *   - target ~300KB
+ *   - target ~200KB
  *   - prefer WebP, fallback JPEG
  */
 
 const DEFAULT_MAX_WIDTH = 720;
 const DEFAULT_MAX_HEIGHT = 720;
 const DEFAULT_QUALITY = 0.75;
-const DEFAULT_TARGET_KB = 300;
+const DEFAULT_TARGET_KB = 200;
 const HARD_MAX_KB = 500;
 
 function readEnvNumber(key: string, fallback: number): number {
