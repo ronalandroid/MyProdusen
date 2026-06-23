@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCircle, Clock, Users, AlertTriangle, RefreshCcw, ShieldCheck, BarChart3, ThumbsUp, ThumbsDown, Eye, UserCog, MapPin, Calendar, FileText, Banknote, TrendingUp, Sparkles, Settings, ClipboardList } from "lucide-react";
+import { Bell, CheckCircle, Clock, Users, AlertTriangle, RefreshCcw, ShieldCheck, BarChart3, ThumbsUp, ThumbsDown, Eye, UserCog, MapPin, Calendar, FileText, Banknote, TrendingUp, Sparkles, Settings, ClipboardList, ChevronDown } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
 import { useCachedProfile, useDashboardStats, usePerformanceAnomalies, usePerformanceScores } from "@/hooks/useDashboardQueries";
@@ -273,6 +273,9 @@ function SuperadminGamificationHub({
   const [overrideFeedback, setOverrideFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // Superadmin subcriteria states
+  // Progressive disclosure: lead with the actionable summary; the dense
+  // gamification + performance cluster is collapsed by default.
+  const [showCompanyDetail, setShowCompanyDetail] = useState(false);
   const [adminSubcriteriaEnabled, setAdminSubcriteriaEnabled] = useState(false);
   const [adminCleanliness, setAdminCleanliness] = useState(80);
   const [adminDiscipline, setAdminDiscipline] = useState(80);
@@ -358,6 +361,18 @@ function SuperadminGamificationHub({
 
   return (
     <section className="flex flex-col gap-5 mb-6" aria-labelledby="superadmin-gamification-title">
+      <button
+        type="button"
+        onClick={() => setShowCompanyDetail((value) => !value)}
+        aria-expanded={showCompanyDetail}
+        className="flex items-center justify-center gap-1.5 self-start rounded-2xl border border-[var(--border-color)] bg-white px-4 py-2.5 text-xs font-extrabold text-[var(--text-secondary)] transition-colors hover:border-[var(--primary)] hover:text-[var(--primary-dark)] min-h-[44px]"
+      >
+        {showCompanyDetail ? "Sembunyikan detail kinerja & gamifikasi" : "Lihat detail kinerja & gamifikasi"}
+        <ChevronDown size={14} className="transition-transform" style={{ transform: showCompanyDetail ? "rotate(0deg)" : "rotate(-90deg)" }} aria-hidden="true" />
+      </button>
+
+      {showCompanyDetail && (
+      <>
       {/* Company Quest Board */}
       <div className="gamification-hub animate-slide-up" style={{ animationDelay: "160ms" }}>
         <div>
@@ -574,6 +589,8 @@ function SuperadminGamificationHub({
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* Override Score Modal Form */}
       {activeOverrideMemberId && (
