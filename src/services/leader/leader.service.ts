@@ -2,20 +2,7 @@ import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { db, employees, employeeTeamAssignments, kpiProductionEntries, leaderAssignments, teams, users } from '@/lib/db';
 import { AppError } from '@/lib/core/app-error';
 import { logAudit } from '@/lib/audit';
-
-function id(prefix: string) {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function assertIsoDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(new Date(`${value}T00:00:00Z`).getTime())) {
-    throw new AppError('KPI_DATE_INVALID', 'Tanggal KPI tidak valid', 422);
-  }
-}
+import { id, todayIso, assertIsoDate } from './leader-helpers';
 
 export class LeaderService {
   async getLeaderEmployeeProfile(userId: string) {
