@@ -8,6 +8,7 @@ import { CacheStrategy } from '@/lib/cache/cache-strategies';
 import { saveAttendanceSelfie } from '@/lib/upload';
 import { payrollPeriodLockService } from '@/features/payroll/payroll-period-lock.service';
 import { validateGpsAttendance } from '@/lib/attendance/gps-validation';
+import { evaluateLiveness } from '@/lib/attendance/liveness';
 import { nanoid } from 'nanoid';
 import { calculateAttendancePayrollImpact, DEFAULT_ATTENDANCE_POLICY } from '@/services/attendance/attendance-payroll-impact.service';
 import { BusinessError } from '@/lib/core/business-error';
@@ -68,7 +69,21 @@ export class AttendanceService {
     userAgent?: string;
     capturedAt?: Date | string | number | null;
     note?: string;
+    livenessScore?: number;
+    livenessPassed?: boolean;
+    faceDetected?: boolean;
+    livenessUnsupported?: boolean;
   }) {
+    // Real selfie verdict (replaces the previous hardcoded selfieVerified:true).
+    // faceDetected falls back to livenessPassed so current clients (which don't
+    // yet send it) keep working until the MediaPipe client ships.
+    const selfieVerdict = evaluateLiveness({
+      score: data.livenessScore ?? 0,
+      passed: data.livenessPassed ?? false,
+      faceDetected: data.faceDetected ?? data.livenessPassed ?? false,
+      unsupported: data.livenessUnsupported ?? false,
+    });
+
     // Get employee data
     const [employee] = await db
       .select()
@@ -290,7 +305,7 @@ export class AttendanceService {
           geofenceDistanceMeters: distance,
           gpsAccuracyMeters: data.accuracy,
           selfieRequired: true,
-          selfieVerified: true,
+          selfieVerified: selfieVerdict.verified,
           payrollImpactStatus: policyImpact.payrollImpactStatus,
         }).onConflictDoUpdate({
           target: [attendanceDailySummaries.employeeId, attendanceDailySummaries.workDate],
@@ -303,7 +318,7 @@ export class AttendanceService {
             isHalfDay: policyImpact.isHalfDay,
             geofenceDistanceMeters: distance,
             gpsAccuracyMeters: data.accuracy,
-            selfieVerified: true,
+            selfieVerified: selfieVerdict.verified,
             payrollImpactStatus: policyImpact.payrollImpactStatus,
             updatedAt: new Date(),
           },

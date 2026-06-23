@@ -8,6 +8,11 @@ export const checkInSchema = z.object({
   accuracy: z.number().positive(),
   livenessScore: z.number().min(0).max(1).default(0),
   livenessPassed: z.boolean().default(false),
+  // Optional, additive: sent by the real (MediaPipe) client. Left optional so
+  // current clients stay backward-compatible — the service infers faceDetected
+  // from livenessPassed when these are absent.
+  faceDetected: z.boolean().optional(),
+  livenessUnsupported: z.boolean().optional(),
   deviceInfo: z.string().optional(),
   gpsTimestamp: z.string().optional(),
   note: z.string().max(150).optional(),
@@ -20,6 +25,8 @@ export const checkOutSchema = z.object({
   accuracy: z.number().positive(),
   livenessScore: z.number().min(0).max(1).default(0),
   livenessPassed: z.boolean().default(false),
+  faceDetected: z.boolean().optional(),
+  livenessUnsupported: z.boolean().optional(),
   deviceInfo: z.string().optional(),
   gpsTimestamp: z.string().optional(),
   note: z.string().max(150).optional(),
