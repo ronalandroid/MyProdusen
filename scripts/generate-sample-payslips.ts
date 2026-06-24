@@ -10,13 +10,15 @@
  *   • There is NO "late penalty": lateDays are tracked but never reduce pay.
  *   • There is NO resign-proration. (Both are documented gaps, not implemented.)
  *
- * Output: print-ready HTML slips in docs/payroll-signoff/. The project has no
- * PDF library, so these are HTML (open in a browser → Print → Save as PDF).
+ * Output: HTML + real PDF slips in docs/payroll-signoff/. PDFs are rendered via
+ * the project's existing Playwright/Chromium (no new dependency added).
  *
  * Run: npx tsx scripts/generate-sample-payslips.ts
  */
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { chromium } from "playwright";
 import {
   WORKING_DAYS_PER_MONTH,
   PTKP_MONTHLY,
@@ -189,16 +191,45 @@ function slipHtml(s: Scenario, c: Computed): string {
 </body></html>`;
 }
 
-const outDir = join(process.cwd(), "docs", "payroll-signoff");
-console.log(`PTKP bulanan: ${rupiah(PTKP_MONTHLY)} · Hari kerja/bulan: ${WORKING_DAYS_PER_MONTH}\n`);
-console.log("Scenario | base       | gross      | bpjsKes | bpjsKet | tax     | absentDed | NET");
-console.log("---------|------------|------------|---------|---------|---------|-----------|------------");
-for (const s of scenarios) {
-  const c = compute(s);
-  writeFileSync(join(outDir, `sample-slip-${s.key}.html`), slipHtml(s, c), "utf8");
-  const fmt = (n: number) => String(Math.round(n)).padStart(9);
-  console.log(
-    `   ${s.key}     |${fmt(s.baseSalary)} |${fmt(c.gross)} |${fmt(c.bpjsKesEmp)}|${fmt(c.bpjsKetEmp)}|${fmt(c.tax)}|${fmt(c.attendanceDeduction)}|${fmt(c.net)}`,
-  );
+async function main(): Promise<void> {
+  const outDir = join(process.cwd(), "docs", "payroll-signoff");
+  console.log(`PTKP bulanan: ${rupiah(PTKP_MONTHLY)} · Hari kerja/bulan: ${WORKING_DAYS_PER_MONTH}\n`);
+  console.log("Scenario | base       | gross      | bpjsKes | bpjsKet | tax     | absentDed | NET");
+  console.log("---------|------------|------------|---------|---------|---------|-----------|------------");
+
+  const htmlPaths: string[] = [];
+  for (const s of scenarios) {
+    const c = compute(s);
+    const htmlPath = join(outDir, `sample-slip-${s.key}.html`);
+    writeFileSync(htmlPath, slipHtml(s, c), "utf8");
+    htmlPaths.push(htmlPath);
+    const fmt = (n: number) => String(Math.round(n)).padStart(9);
+    console.log(
+      `   ${s.key}     |${fmt(s.baseSalary)} |${fmt(c.gross)} |${fmt(c.bpjsKesEmp)}|${fmt(c.bpjsKetEmp)}|${fmt(c.tax)}|${fmt(c.attendanceDeduction)}|${fmt(c.net)}`,
+    );
+  }
+  console.log(`\n✓ 3 slip HTML ditulis ke docs/payroll-signoff/sample-slip-{A,B,C}.html`);
+
+  // Render each HTML to a real PDF via the project's existing Playwright/Chromium.
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    for (const htmlPath of htmlPaths) {
+      await page.goto(pathToFileURL(htmlPath).href, { waitUntil: "networkidle" });
+      await page.pdf({
+        path: htmlPath.replace(/\.html$/, ".pdf"),
+        format: "A4",
+        printBackground: true,
+        margin: { top: "16mm", bottom: "16mm", left: "14mm", right: "14mm" },
+      });
+    }
+  } finally {
+    await browser.close();
+  }
+  console.log(`✓ 3 slip PDF ditulis ke docs/payroll-signoff/sample-slip-{A,B,C}.pdf`);
 }
-console.log(`\n✓ 3 slip HTML ditulis ke docs/payroll-signoff/sample-slip-{A,B,C}.html`);
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

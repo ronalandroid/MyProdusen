@@ -28,11 +28,10 @@ DATABASE_URL="<prod-url>" STAGING_RESTORE_DATABASE_URL="<staging-url>" \
 - **Lulus jika:** dump terbentuk, restore ke staging sukses, row count cocok.
 
 ### ☐ C3 — Payroll Sign-off Packet · ~1 hari · _Eksekutor: Owner_
-Artefak (sudah dibuat): [`docs/payroll-signoff/`](payroll-signoff/) → `sample-slip-A/B/C.html` + [`FORMULA-SUMMARY.md`](payroll-signoff/FORMULA-SUMMARY.md)
-1. Regenerate bila perlu: `npx tsx scripts/generate-sample-payslips.ts`
-2. Buka tiap `sample-slip-*.html` di browser → **Print → Save as PDF**.
-3. Owner review FORMULA-SUMMARY.md + 3 slip, tanda tangan.
-4. Putuskan 2 gap: **late penalty** & **prorate resign** (lihat §5 FORMULA-SUMMARY) — pakai apa adanya atau minta fitur baru.
+Artefak (sudah dibuat): [`docs/payroll-signoff/`](payroll-signoff/) → `sample-slip-A/B/C.pdf` (+ `.html`) + [`FORMULA-SUMMARY.md`](payroll-signoff/FORMULA-SUMMARY.md)
+1. Buka 3 PDF siap-pakai: `sample-slip-A/B/C.pdf` (regenerate bila perlu: `npx tsx scripts/generate-sample-payslips.ts`).
+2. Owner review FORMULA-SUMMARY.md + 3 slip PDF, tanda tangan.
+3. Putuskan 2 gap: **late penalty** & **prorate resign** (lihat §5 FORMULA-SUMMARY) — pakai apa adanya atau minta fitur baru.
 - **Lulus jika:** owner tanda tangan rumus + 3 slip; keputusan 2 gap tercatat.
 
 ### ☐ C4 — Staging Authenticated E2E · ~1 jam · _Eksekutor: QA/DevOps_

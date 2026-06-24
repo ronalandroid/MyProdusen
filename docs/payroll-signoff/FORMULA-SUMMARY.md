@@ -6,7 +6,7 @@ bawah = persetujuan bahwa rumus ini benar untuk dipakai produksi.
 
 > Sumber kebenaran: `lib/payroll/calculations.ts` (teruji di
 > `lib/payroll/calculations.test.ts` + `tests/payroll/payroll-orchestrator.integration.test.ts`).
-> Angka di 3 slip contoh (`sample-slip-A/B/C.html`) dihitung dengan rumus persis ini.
+> Angka di 3 slip contoh (`sample-slip-A/B/C.pdf`) dihitung dengan rumus persis ini.
 
 ## 1. Konstanta
 
