@@ -10,7 +10,7 @@ import {
   overtimeRequests,
 } from '@/lib/db';
 import { payrollService } from '@/services/payroll/payroll.service';
-import { eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 /**
  * Integration test for the payroll ORCHESTRATOR (calculatePayroll), against a
@@ -61,7 +61,10 @@ describe('Payroll orchestrator integration (real DB)', () => {
     });
     seeded.runs.push(run.id);
     await payrollService.calculatePayroll(run.id);
-    const items = await db.select().from(payrollItems).where(inArray(payrollItems.employeeId, empIds));
+    // Scope to THIS run: calculatePayroll processes every active assigned employee,
+    // so a parallel suite's run may also produce an item for the same employee.
+    // Filtering by runId keeps the assertion deterministic under parallel execution.
+    const items = await db.select().from(payrollItems).where(eq(payrollItems.runId, run.id));
     return { run, items };
   }
 
