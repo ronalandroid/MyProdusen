@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
+import { readEmployeeBerandaSource } from './helpers/employee-beranda-source';
 
-const employeeDashboard = readFileSync('src/components/dashboard/EmployeeBeranda.tsx', 'utf8');
+const employeeDashboard = readEmployeeBerandaSource();
 const leaderDashboard = readFileSync('src/components/dashboard/LeaderBeranda.tsx', 'utf8');
 const capturePagePath = 'app/dashboard/attendance/clock/page.tsx';
 const capturePage = existsSync(capturePagePath) ? readFileSync(capturePagePath, 'utf8') : '';

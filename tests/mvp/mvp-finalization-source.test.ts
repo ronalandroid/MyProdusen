@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { readEmployeeBerandaSource } from '../ui/helpers/employee-beranda-source';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 
@@ -16,7 +17,7 @@ const docs = [
   'docs/CHANGELOG.md',
 ].map(read).join('\n');
 
-const employeeDashboard = read('src/components/dashboard/EmployeeBeranda.tsx');
+const employeeDashboard = readEmployeeBerandaSource();
 const leaderDashboard = read('src/components/dashboard/LeaderBeranda.tsx');
 const dashboardPage = read('app/dashboard/page.tsx');
 const attendanceRoutes = read('app/api/attendance/check-in/route.ts') + '\n' + read('app/api/attendance/check-out/route.ts');

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { readEmployeeBerandaSource } from './helpers/employee-beranda-source';
 
 const providers = readFileSync('app/providers.tsx', 'utf8');
 const rootLayout = readFileSync('app/layout.tsx', 'utf8');
-const employeeBeranda = readFileSync('src/components/dashboard/EmployeeBeranda.tsx', 'utf8');
+const employeeBeranda = readEmployeeBerandaSource();
 
 describe('React Query provider wiring (dashboard crash regression)', () => {
   it('exposes a client-side QueryClientProvider with a stable client', () => {

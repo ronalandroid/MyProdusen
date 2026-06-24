@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { readEmployeeBerandaSource } from './helpers/employee-beranda-source';
 
-const employee = readFileSync('src/components/dashboard/EmployeeBeranda.tsx', 'utf8');
+const employee = readEmployeeBerandaSource();
 const leader = readFileSync('app/dashboard/leader/team/page.tsx', 'utf8');
 const dashboard = readFileSync('features/dashboard/SuperadminDashboard.tsx', 'utf8');
 const settings = readFileSync('app/dashboard/settings/page.tsx', 'utf8');

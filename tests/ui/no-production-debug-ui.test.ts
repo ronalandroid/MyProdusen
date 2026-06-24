@@ -1,6 +1,17 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+
+// EmployeeBeranda was split into a shell plus child components/hook/helpers
+// under src/components/dashboard/employee/. The debug-UI guarantee must still
+// hold across the whole surface, so check the shell AND every split-out file.
+const employeeBerandaDir = 'src/components/dashboard/employee';
+const employeeBerandaFiles = [
+  'src/components/dashboard/EmployeeBeranda.tsx',
+  ...readdirSync(employeeBerandaDir)
+    .filter((name) => name.endsWith('.ts') || name.endsWith('.tsx'))
+    .map((name) => join(employeeBerandaDir, name)),
+];
 
 const dashboardFiles = [
   'app/dashboard/page.tsx',
@@ -23,7 +34,7 @@ const dashboardFiles = [
   'app/dashboard/reports/pdf/page.tsx',
   'app/dashboard/shifts/page.tsx',
   'app/dashboard/users/page.tsx',
-  'src/components/dashboard/EmployeeBeranda.tsx',
+  ...employeeBerandaFiles,
 ];
 
 const forbiddenSnippets = [

@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { readEmployeeBerandaSource } from './helpers/employee-beranda-source';
 
 const prd = readFileSync('docs/prd.md', 'utf8');
 const ui = readFileSync('docs/UI_UX_GUIDE.md', 'utf8');
 const security = readFileSync('docs/SECURITY.md', 'utf8');
 const testing = readFileSync('docs/TESTING_QA.md', 'utf8');
 const gamification = readFileSync('docs/gamification/README.md', 'utf8');
-const employeeDashboard = readFileSync('src/components/dashboard/EmployeeBeranda.tsx', 'utf8');
+const employeeDashboard = readEmployeeBerandaSource();
 const leaderDashboard = readFileSync('src/components/dashboard/LeaderBeranda.tsx', 'utf8');
 const css = readFileSync('app/globals.css', 'utf8');
 
