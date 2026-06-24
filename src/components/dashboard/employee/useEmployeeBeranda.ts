@@ -116,7 +116,6 @@ export function useEmployeeBeranda(profile: ClientUserProfile | null) {
   const [showPerformanceDetail, setShowPerformanceDetail] = useState(false);
   const { position: gpsPosition, error: gpsError, isGetting: isGettingGps } = gpsState;
 
-  // eslint-disable-next-line react-doctor/no-cascading-set-state
   useEffect(() => {
     let cancelled = false;
 
