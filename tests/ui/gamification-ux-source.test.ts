@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 const employeeDashboard = readFileSync('src/components/dashboard/EmployeeBeranda.tsx', 'utf8');
-const superadminDashboard = readFileSync('app/dashboard/page.tsx', 'utf8');
+const superadminDashboard = readFileSync('features/dashboard/SuperadminDashboard.tsx', 'utf8');
 const leaderDashboard = readFileSync('src/components/dashboard/LeaderBeranda.tsx', 'utf8');
 const css = readFileSync('app/globals.css', 'utf8');
 

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const employee = readFileSync('src/components/dashboard/EmployeeBeranda.tsx', 'utf8');
 const leader = readFileSync('app/dashboard/leader/team/page.tsx', 'utf8');
-const dashboard = readFileSync('app/dashboard/page.tsx', 'utf8');
+const dashboard = readFileSync('features/dashboard/SuperadminDashboard.tsx', 'utf8');
 const settings = readFileSync('app/dashboard/settings/page.tsx', 'utf8');
 
 describe('Gamification, Theme, and Perceived-Speed UX UI safeguards', () => {
