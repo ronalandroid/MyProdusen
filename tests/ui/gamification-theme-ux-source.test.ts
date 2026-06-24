@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { readEmployeeBerandaSource } from './helpers/employee-beranda-source';
+import { readSuperadminDashboardSource } from './helpers/superadmin-dashboard-source';
 
 const employee = readEmployeeBerandaSource();
 const leader = readFileSync('app/dashboard/leader/team/page.tsx', 'utf8');
-const dashboard = readFileSync('features/dashboard/SuperadminDashboard.tsx', 'utf8');
+const dashboard = readSuperadminDashboardSource();
 const settings = readFileSync('app/dashboard/settings/page.tsx', 'utf8');
 
 describe('Gamification, Theme, and Perceived-Speed UX UI safeguards', () => {
