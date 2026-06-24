@@ -71,6 +71,10 @@ describe('calculateTax (progressive PPh 21)', () => {
   });
 
   it('is continuous across bracket boundaries', () => {
+    // taxable exactly 5,000,000 (5%↔15% seam) → 5,000,000*0.05 = 250,000
+    expect(calculateTax(PTKP_MONTHLY + 5_000_000)).toBeCloseTo(250_000, 2);
+    // taxable just over 5,000,000 → 250,000 + 1*0.15 (no jump)
+    expect(calculateTax(PTKP_MONTHLY + 5_000_001)).toBeCloseTo(250_000.15, 2);
     // taxable exactly 25,000,000 → 250,000 + 20,000,000*0.15 = 3,250,000
     expect(calculateTax(PTKP_MONTHLY + 25_000_000)).toBeCloseTo(3_250_000, 2);
     // taxable exactly 50,000,000 → 250,000 + 3,000,000 + 25,000,000*0.25 = 9,500,000
