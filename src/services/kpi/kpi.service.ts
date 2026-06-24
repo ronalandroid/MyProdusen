@@ -3,44 +3,14 @@ import { eq, and, desc, sql, ne } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { notifyUser } from '@/lib/notifications/dispatch';
 import { logAudit } from '@/lib/audit';
-import { summarizeKpiResults } from '@/utils/kpi';
+import { calculateKpiScore, summarizeKpiResults } from '@/utils/kpi';
 import { BusinessError } from '@/lib/core/business-error';
 
 export type KpiScoringType = 'HIGHER_IS_BETTER' | 'LOWER_IS_BETTER' | 'BOOLEAN';
 
-function calculateKpiScore(
-  actualValue: number,
-  targetValue: number,
-  minValue: number,
-  maxValue: number,
-  scoringType: KpiScoringType
-): number {
-  if (scoringType === 'BOOLEAN') {
-    return actualValue >= targetValue ? 100 : 0;
-  }
-
-  if (scoringType === 'HIGHER_IS_BETTER') {
-    if (actualValue >= targetValue) {
-      return 100;
-    }
-    if (actualValue <= minValue) {
-      return 0;
-    }
-    return ((actualValue - minValue) / (targetValue - minValue)) * 100;
-  }
-
-  if (scoringType === 'LOWER_IS_BETTER') {
-    if (actualValue <= targetValue) {
-      return 100;
-    }
-    if (actualValue >= maxValue) {
-      return 0;
-    }
-    return ((maxValue - actualValue) / (maxValue - targetValue)) * 100;
-  }
-
-  return 0;
-}
+// calculateKpiScore lives in @/utils/kpi (single source of truth, unit-tested);
+// imported above. The previous local duplicate was byte-identical and has been
+// removed to eliminate score-formula drift risk.
 
 export class KpiService {
   // Template Management
