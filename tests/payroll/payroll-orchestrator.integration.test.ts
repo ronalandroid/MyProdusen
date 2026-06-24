@@ -7,6 +7,7 @@ import {
   employeePayrolls,
   payrollRuns,
   payrollItems,
+  overtimeRequests,
 } from '@/lib/db';
 import { payrollService } from '@/services/payroll/payroll.service';
 import { eq, inArray } from 'drizzle-orm';
@@ -31,6 +32,7 @@ describe('Payroll orchestrator integration (real DB)', () => {
   afterEach(async () => {
     for (const r of seeded.runs) await db.delete(payrollItems).where(eq(payrollItems.runId, r));
     for (const r of seeded.runs) await db.delete(payrollRuns).where(eq(payrollRuns.id, r));
+    for (const id of seeded.ids) await db.delete(overtimeRequests).where(eq(overtimeRequests.employeeId, id));
     for (const id of seeded.ids) await db.delete(employeePayrolls).where(eq(employeePayrolls.employeeId, id));
     for (const s of seeded.structures) await db.delete(payrollStructures).where(eq(payrollStructures.id, s));
     for (const id of seeded.ids) await db.delete(employees).where(eq(employees.id, id));
@@ -103,5 +105,29 @@ describe('Payroll orchestrator integration (real DB)', () => {
     seeded.runs.push(run.id);
     await payrollService.calculatePayroll(run.id);
     await expect(payrollService.calculatePayroll(run.id)).rejects.toThrow(/sudah dikalkulasi/i);
+  });
+
+  it('adds approved unpaid overtime to gross pay', async () => {
+    const emp = await seedEmployee(3_000_000);
+    await db.insert(overtimeRequests).values({
+      id: `${emp}_ot`,
+      employeeId: emp,
+      overtimeDate: new Date('2026-05-10'),
+      startTime: '17:00',
+      endTime: '21:00',
+      durationHours: 8,
+      rateId: 'itest-rate',
+      reason: 'itest overtime',
+      status: 'APPROVED',
+      calculatedPay: 400_000,
+      isPaid: false,
+    });
+    const { items } = await calcRunFor([emp]);
+    const item = items.find((i) => i.employeeId === emp)!;
+    expect(item.overtimePay).toBeCloseTo(400_000, 0);
+    expect(item.overtimeHours).toBeCloseTo(8, 0);
+    // gross = base + overtime (no allowances/bonus seeded)
+    expect(item.grossPay).toBeCloseTo(3_400_000, 0);
+    expect(item.netPay).toBeGreaterThan(3_000_000);
   });
 });
