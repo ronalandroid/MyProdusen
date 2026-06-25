@@ -28,7 +28,7 @@ describe('mobile attendance clocking UX source contract', () => {
   it('capture screen includes camera face guide GPS note manual correction and sticky submit', () => {
     expect(capturePage).toContain('Clock In');
     expect(capturePage).toContain('Clock Out');
-    expect(capturePage).toContain('Posisikan wajah di dalam frame');
+    expect(capturePage).toContain('RealtimeSelfieCamera');
     expect(capturePage).toContain('Memvalidasi lokasi');
     expect(capturePage).toContain('Akurasi');
     expect(capturePage).toContain('Jarak ke lokasi');

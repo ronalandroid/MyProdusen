@@ -52,7 +52,7 @@ describe('map-first attendance clocking flow source contract', () => {
     expect(clockPage).toContain('Daftar Absensi');
     expect(camera).toContain('Posisikan wajah di dalam frame');
     expect(camera).toContain('aria-live="assertive"');
-    expect(camera).toContain('min(60vh, 320px)');
+    expect(camera).toContain('min(68vh, 540px)');
     expect(camera).toContain('touch-manipulation');
   });
 
