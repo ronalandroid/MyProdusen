@@ -165,6 +165,14 @@ export async function calculatePayroll(runId: string) {
         .limit(1);
 
       if (metric) {
+        // M1: push the period date-range filter into SQL (was filtered in
+        // memory). The composite index KpiProductionEntry_employeeId_metricType_
+        // status_date (migration 0035) serves this directly. Dates are stored as
+        // YYYY-MM-DD strings, so the SQL range compare is identical to the prior
+        // in-memory string comparison — same rows, far less data pulled.
+        const periodStartStr = run.periodStart.toISOString().split('T')[0];
+        const periodEndStr = run.periodEnd.toISOString().split('T')[0];
+
         const entries = await db
           .select()
           .from(kpiProductionEntries)
@@ -172,17 +180,13 @@ export async function calculatePayroll(runId: string) {
             and(
               eq(kpiProductionEntries.employeeId, employee.id),
               eq(kpiProductionEntries.metricType, metric.name),
-              eq(kpiProductionEntries.status, 'SUBMITTED')
+              eq(kpiProductionEntries.status, 'SUBMITTED'),
+              gte(kpiProductionEntries.date, periodStartStr),
+              lte(kpiProductionEntries.date, periodEndStr)
             )
           );
 
-        const periodStartStr = run.periodStart.toISOString().split('T')[0];
-        const periodEndStr = run.periodEnd.toISOString().split('T')[0];
-
-        const filteredEntries = entries.filter(
-          (e) => e.date >= periodStartStr && e.date <= periodEndStr
-        );
-        const totalQty = filteredEntries.reduce(
+        const totalQty = entries.reduce(
           (sum, e) => sum + Number(e.quantity),
           0
         );
