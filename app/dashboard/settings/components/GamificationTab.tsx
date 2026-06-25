@@ -53,7 +53,7 @@ export default function GamificationTab({
                 type="number"
                 min="0"
                 max="100"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none text-center font-bold"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] text-center font-bold"
                 value={gamificationConfig.weights.attendance}
                 onChange={(e) => setGamificationConfig(prev => ({
                   ...prev,
@@ -69,7 +69,7 @@ export default function GamificationTab({
                 type="number"
                 min="0"
                 max="100"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none text-center font-bold"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] text-center font-bold"
                 value={gamificationConfig.weights.kpi}
                 onChange={(e) => setGamificationConfig(prev => ({
                   ...prev,
@@ -85,7 +85,7 @@ export default function GamificationTab({
                 type="number"
                 min="0"
                 max="100"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none text-center font-bold"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] text-center font-bold"
                 value={gamificationConfig.weights.leader}
                 onChange={(e) => setGamificationConfig(prev => ({
                   ...prev,
@@ -116,7 +116,7 @@ export default function GamificationTab({
               type="number"
               min="1"
               max="30"
-              className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none font-bold"
+              className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] font-bold"
               value={gamificationConfig.retroactiveLeaderScoreDays}
               onChange={(e) => setGamificationConfig(prev => ({
                 ...prev,
@@ -185,7 +185,7 @@ export default function GamificationTab({
                 type="text"
                 required
                 placeholder="Contoh: Penilaian Mei 2026"
-                className="min-h-[38px] rounded-lg border border-[var(--border-color)] p-2 text-xs focus:border-[var(--primary)] focus:outline-none"
+                className="min-h-[38px] rounded-lg border border-[var(--border-color)] p-2 text-xs focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 value={newPeriodName}
                 onChange={(e) => setNewPeriodName(e.target.value)}
               />
@@ -197,7 +197,7 @@ export default function GamificationTab({
                 <input
                   type="date"
                   required
-                  className="min-h-[38px] rounded-lg border border-[var(--border-color)] p-2 text-xs focus:border-[var(--primary)] focus:outline-none"
+                  className="min-h-[38px] rounded-lg border border-[var(--border-color)] p-2 text-xs focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                   value={newPeriodStart}
                   onChange={(e) => setNewPeriodStart(e.target.value)}
                 />
@@ -207,7 +207,7 @@ export default function GamificationTab({
                 <input
                   type="date"
                   required
-                  className="min-h-[38px] rounded-lg border border-[var(--border-color)] p-2 text-xs focus:border-[var(--primary)] focus:outline-none"
+                  className="min-h-[38px] rounded-lg border border-[var(--border-color)] p-2 text-xs focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                   value={newPeriodEnd}
                   onChange={(e) => setNewPeriodEnd(e.target.value)}
                 />

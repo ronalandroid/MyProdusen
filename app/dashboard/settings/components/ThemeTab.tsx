@@ -81,7 +81,7 @@ export default function ThemeTab({
               <input
                 type="text"
                 maxLength={7}
-                className="w-full text-sm font-bold focus:outline-none uppercase text-center"
+                className="w-full text-sm font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] uppercase text-center"
                 value={themeConfig.primaryColor}
                 onChange={(e) => setThemeConfig(prev => ({ ...prev, primaryColor: e.target.value }))}
               />
@@ -100,7 +100,7 @@ export default function ThemeTab({
               <input
                 type="text"
                 maxLength={7}
-                className="w-full text-sm font-bold focus:outline-none uppercase text-center"
+                className="w-full text-sm font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] uppercase text-center"
                 value={themeConfig.secondaryColor}
                 onChange={(e) => setThemeConfig(prev => ({ ...prev, secondaryColor: e.target.value }))}
               />
@@ -119,7 +119,7 @@ export default function ThemeTab({
               <input
                 type="text"
                 maxLength={7}
-                className="w-full text-sm font-bold focus:outline-none uppercase text-center"
+                className="w-full text-sm font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] uppercase text-center"
                 value={themeConfig.accentColor}
                 onChange={(e) => setThemeConfig(prev => ({ ...prev, accentColor: e.target.value }))}
               />
