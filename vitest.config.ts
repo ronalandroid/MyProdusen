@@ -19,7 +19,33 @@ export default defineConfig({
         '**/*.spec.ts',
         'drizzle/',
         '.next/',
+        // Presentational layer — validated by visual-regression / E2E, not unit
+        // tests (per testing rules: "highly visual components → visual regression,
+        // not brittle markup assertions").
+        '**/*.tsx',
+        // Browser/offline-only runtime (IndexedDB, navigator, window) — exercised
+        // by E2E, not unit-testable in the node test environment.
+        'src/hooks/offline/**',
+        'src/services/attendance/attendance.offline.ts',
+        'src/services/attendance/check-in-handler.ts',
+        'lib/auth-client.ts',
+        // Infra / config / entrypoints — no business logic to unit-test.
+        '**/*.config.{ts,js,mjs}',
+        'middleware.ts',
+        'instrumentation*.ts',
+        'sentry.*.config.ts',
+        'scripts/**',
+        '**/*.d.ts',
       ],
+      // Ratchet floor — set just below current coverage so the gate passes today
+      // and can never regress. Raise these toward 80 as DB-service integration
+      // tests land (see issue #23). Enforced by `npx vitest run --coverage`.
+      thresholds: {
+        statements: 65,
+        branches: 55,
+        functions: 66,
+        lines: 65,
+      },
     },
   },
   resolve: {
