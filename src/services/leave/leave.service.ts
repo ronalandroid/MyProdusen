@@ -310,9 +310,13 @@ export class LeaveService {
       throw new BusinessError('Hanya pengajuan dengan status PENDING yang dapat dihapus');
     }
 
-    await db
-      .delete(leaveRequests)
-      .where(eq(leaveRequests.id, id));
+    // A PENDING request always holds balance (REQUEST_HOLD). Releasing that hold
+    // and deleting the row must be atomic — deleting without releasing would
+    // permanently shrink the employee's available leave balance.
+    await db.transaction(async (tx) => {
+      await leaveBalanceService.releaseRejectedRequest(id, undefined, tx);
+      await tx.delete(leaveRequests).where(eq(leaveRequests.id, id));
+    });
 
     // Invalidate leave caches
     await this.invalidateLeaveCaches(leave.employeeId, id);
