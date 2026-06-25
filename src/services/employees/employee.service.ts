@@ -24,6 +24,15 @@ import type { UserRole } from '@/lib/permissions';
 
 export type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 
+/** True for a Postgres unique-violation (23505) on the employee NIP constraint. */
+function isUniqueNipViolation(err: unknown): boolean {
+  const candidates = [err, (err as { cause?: unknown })?.cause];
+  return candidates.some((e) => {
+    const pgErr = e as { code?: string; constraint_name?: string } | undefined;
+    return pgErr?.code === '23505' && /nip/i.test(pgErr?.constraint_name ?? '');
+  });
+}
+
 export class EmployeeService extends BaseService {
   async createEmployee(data: {
     email: string;
@@ -62,20 +71,13 @@ export class EmployeeService extends BaseService {
       throw new AppError('VALIDATION_ERROR', 'Username sudah terdaftar', 400);
     }
 
-    // Get all existing NIPs
-    const allEmployees = await db.select({ nip: employees.nip }).from(employees);
-    const existingNIPs = allEmployees.map(e => e.nip);
-
-    // Generate NIP
-    const joinDate = data.joinDate ? new Date(data.joinDate) : new Date();
-    const nip = await getNextNIP(joinDate, existingNIPs);
-
     // Hash password
     const hashedPassword = await hashPassword(data.password);
 
     // Generate IDs
     const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const employeeId = `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const joinDate = data.joinDate ? new Date(data.joinDate) : new Date();
 
     // Create user
     const [user] = await db
@@ -89,26 +91,25 @@ export class EmployeeService extends BaseService {
       })
       .returning();
 
-    // Create employee
-    const [employee] = await db
-      .insert(employees)
-      .values({
-        id: employeeId,
-        nip,
-        userId: user.id,
-        fullName: data.fullName,
-        email: data.email,
-        phone: data.phone,
-        address: data.address,
-        division: data.division,
-        position: data.position,
-        supervisorId: data.supervisorId,
-        defaultShiftId: data.defaultShiftId,
-        defaultLocationId: data.defaultLocationId,
-        joinDate: joinDate,
-        status: 'ACTIVE',
-      })
-      .returning();
+    // Create employee, deriving the NIP atomically-by-retry: getNextNIP derives
+    // from the current NIP set, so two concurrent creates can derive the same NIP.
+    // On the unique-NIP violation we re-derive against the now-updated set and
+    // retry — same NIP format, no collision.
+    const employee = await this.insertEmployeeWithUniqueNip(joinDate, {
+      id: employeeId,
+      userId: user.id,
+      fullName: data.fullName,
+      email: data.email,
+      phone: data.phone,
+      address: data.address,
+      division: data.division,
+      position: data.position,
+      supervisorId: data.supervisorId,
+      defaultShiftId: data.defaultShiftId,
+      defaultLocationId: data.defaultLocationId,
+      joinDate: joinDate,
+      status: 'ACTIVE',
+    });
 
     // Invalidate employee caches
     await this.invalidateEmployeeCaches();
@@ -149,42 +150,56 @@ export class EmployeeService extends BaseService {
       throw new AppError('VALIDATION_ERROR', 'User sudah memiliki profil karyawan', 400);
     }
 
-    // Get all existing NIPs
-    const allEmployees = await db.select({ nip: employees.nip }).from(employees);
-    const existingNIPs = allEmployees.map(e => e.nip);
-
-    // Generate NIP
-    const joinDate = data.joinDate ? new Date(data.joinDate) : new Date();
-    const nip = await getNextNIP(joinDate, existingNIPs);
-
     // Generate IDs
     const employeeId = `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const joinDate = data.joinDate ? new Date(data.joinDate) : new Date();
 
-    // Create employee
-    const [employee] = await db
-      .insert(employees)
-      .values({
-        id: employeeId,
-        nip,
-        userId: user.id,
-        fullName: data.fullName,
-        email: user.email,
-        phone: data.phone,
-        address: data.address,
-        division: data.division,
-        position: data.position,
-        supervisorId: data.supervisorId,
-        defaultShiftId: data.defaultShiftId,
-        defaultLocationId: data.defaultLocationId,
-        joinDate: joinDate,
-        status: 'ACTIVE',
-      })
-      .returning();
+    // Create employee with a collision-safe NIP (see insertEmployeeWithUniqueNip).
+    const employee = await this.insertEmployeeWithUniqueNip(joinDate, {
+      id: employeeId,
+      userId: user.id,
+      fullName: data.fullName,
+      email: user.email,
+      phone: data.phone,
+      address: data.address,
+      division: data.division,
+      position: data.position,
+      supervisorId: data.supervisorId,
+      defaultShiftId: data.defaultShiftId,
+      defaultLocationId: data.defaultLocationId,
+      joinDate: joinDate,
+      status: 'ACTIVE',
+    });
 
     // Invalidate employee caches
     await this.invalidateEmployeeCaches();
 
     return employee;
+  }
+
+  /**
+   * Inserts an employee with a uniquely-derived NIP, retrying on a unique-NIP
+   * collision. getNextNIP derives the NIP from the current NIP set, so two
+   * concurrent creates can derive the same value; on the conflict we re-derive
+   * against the now-updated set. Same NIP format, just collision-safe.
+   */
+  private async insertEmployeeWithUniqueNip(
+    joinDate: Date,
+    values: Omit<typeof employees.$inferInsert, 'nip'>,
+  ): Promise<typeof employees.$inferSelect> {
+    const MAX_ATTEMPTS = 5;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const existingNIPs = (await db.select({ nip: employees.nip }).from(employees)).map((e) => e.nip);
+      const nip = await getNextNIP(joinDate, existingNIPs);
+      try {
+        const [employee] = await db.insert(employees).values({ ...values, nip }).returning();
+        return employee;
+      } catch (err) {
+        if (attempt < MAX_ATTEMPTS - 1 && isUniqueNipViolation(err)) continue;
+        throw err;
+      }
+    }
+    throw new AppError('INTERNAL_ERROR', 'Gagal membuat NIP unik. Silakan coba lagi.', 500);
   }
 
   async getEmployees(filters?: {
