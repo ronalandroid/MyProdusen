@@ -20,6 +20,10 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["500", "700", "800"],
   variable: "--font-mono",
   display: "swap",
+  // Numbers-only font (stat figures on dashboards); never above-the-fold on the
+  // landing/auth pages. Skip preloading so its 3 weight files don't compete with
+  // the critical render path — it loads on demand when a stat view mounts.
+  preload: false,
 });
 
 export const metadata: Metadata = {
