@@ -282,36 +282,42 @@ export function RealtimeSelfieCamera({
           ? LIVENESS_UNSUPPORTED
           : feedback || "Posisikan wajah di dalam frame";
 
+  // Brand-aligned guide colours (MyProdusen tokens, auto-adapt to dark mode):
+  // verified = attendance green, failed = danger red, face found = brand yellow,
+  // still searching = neutral white so it reads on any camera background.
   const guideColor =
     livenessState === "passed"
-      ? "#4CAF50"
+      ? "var(--attn-success)"
       : livenessState === "failed"
-        ? "#F44336"
-        : "rgba(76,175,80,0.8)";
+        ? "var(--danger)"
+        : livenessState === "detected"
+          ? "var(--primary)"
+          : "rgba(255,255,255,0.92)";
+
+  const statusPillBg =
+    livenessState === "passed"
+      ? "var(--attn-success)"
+      : livenessState === "failed"
+        ? "var(--danger)"
+        : "rgba(0,0,0,0.64)";
 
   return (
-    <div className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-      <div>
-        <h2 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "4px" }}>Selfie Realtime Kehadiran</h2>
-        <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-          Selfie realtime wajib diambil untuk melanjutkan absensi. Foto akan dikompres otomatis di perangkat agar ringan untuk diunggah.
-        </p>
-      </div>
-
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       {cameraError && (
         <div role="alert" aria-live="assertive" style={{ color: "var(--danger-text)", fontSize: "12px", fontWeight: 600 }}>
           {cameraError}
         </div>
       )}
 
+      {/* Immersive camera surface with a head + shoulders silhouette guide */}
       <div
         style={{
           position: "relative",
-          borderRadius: "16px",
+          borderRadius: "20px",
           overflow: "hidden",
-          border: "1px solid var(--border-color)",
-          background: "var(--bg-secondary)",
-          minHeight: "min(60vh, 320px)",
+          background: "#000",
+          width: "100%",
+          minHeight: "min(68vh, 540px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -321,7 +327,7 @@ export function RealtimeSelfieCamera({
           <img
             src={capturedPreviewUrl}
             alt="Preview selfie realtime"
-            style={{ width: "100%", maxHeight: "320px", objectFit: "cover" }}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
           />
         ) : (
           <video
@@ -330,8 +336,10 @@ export function RealtimeSelfieCamera({
             muted
             autoPlay
             style={{
+              position: "absolute",
+              inset: 0,
               width: "100%",
-              maxHeight: "320px",
+              height: "100%",
               objectFit: "cover",
               display: isCameraOpen ? "block" : "none",
               transform: "scaleX(-1)",
@@ -339,17 +347,23 @@ export function RealtimeSelfieCamera({
           />
         )}
         {!capturedPreviewUrl && isCameraOpen && (
-          <div aria-label="Face guide overlay" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-            <div style={{ width: "54%", maxWidth: "220px", aspectRatio: "3 / 4", border: `2px ${livenessState === "searching" ? "dashed" : "solid"} ${guideColor}`, borderRadius: "50%", boxShadow: "0 0 0 999px rgba(0,0,0,0.24)" }} />
+          <div aria-label="Panduan posisi kepala dan bahu" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+            {/* Soft vignette so the silhouette reads against a bright camera feed */}
+            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 64% 72% at 50% 42%, transparent 58%, rgba(0,0,0,0.45) 100%)" }} />
+            {/* Head + shoulders silhouette; dashed while searching, solid once detected/verified */}
+            <svg viewBox="0 0 200 270" preserveAspectRatio="xMidYMid meet" style={{ position: "relative", width: "70%", maxWidth: "280px", height: "auto" }} aria-hidden="true">
+              <ellipse cx="100" cy="80" rx="46" ry="56" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeDasharray={livenessState === "searching" ? "10 10" : undefined} style={{ stroke: guideColor, transition: "stroke 200ms ease" }} />
+              <path d="M26,262 C28,196 58,160 100,160 C142,160 172,196 174,262" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeDasharray={livenessState === "searching" ? "10 10" : undefined} style={{ stroke: guideColor, transition: "stroke 200ms ease" }} />
+            </svg>
             {livenessState === "detected" && <div className="liveness-pulse" aria-hidden="true" />}
-            <div role="status" aria-live="assertive" style={{ position: "absolute", bottom: "14px", left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.64)", color: "white", borderRadius: "999px", padding: "6px 12px", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap" }}>
+            <div role="status" aria-live="assertive" style={{ position: "absolute", bottom: "18px", left: "50%", transform: "translateX(-50%)", background: statusPillBg, color: "white", borderRadius: "999px", padding: "8px 16px", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap", maxWidth: "90%", textAlign: "center", transition: "background 200ms ease" }}>
               {statusMessage}
             </div>
           </div>
         )}
         {!capturedPreviewUrl && !isCameraOpen && (
-          <div style={{ textAlign: "center", padding: "32px 16px", color: "var(--text-secondary)", fontSize: "12px" }}>
-            <Camera size={40} className="mx-auto mb-2 text-[var(--text-muted)]" />
+          <div style={{ position: "relative", textAlign: "center", padding: "32px 16px", color: "rgba(255,255,255,0.82)", fontSize: "12px" }}>
+            <Camera size={40} className="mx-auto mb-2" style={{ color: "rgba(255,255,255,0.7)" }} />
             Kamera belum aktif.
           </div>
         )}

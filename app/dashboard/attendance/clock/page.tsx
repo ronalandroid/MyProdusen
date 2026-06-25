@@ -336,15 +336,11 @@ function AttendanceClockContent() {
         <>
           <RealtimeSelfieCamera capturedPreviewUrl={selfiePreviewUrl} disabled={isSubmitting} autoStart captureLabel="Ambil Foto" retakeLabel="Ulangi Foto" onCapture={({ blob, previewUrl, meta, liveness }) => { if (selfiePreviewUrl) URL.revokeObjectURL(selfiePreviewUrl); setSelfieBlob(blob); setSelfiePreviewUrl(previewUrl); livenessRef.current = liveness; const ext = meta.mimeType.split("/")[1] || "webp"; selfieFilenameRef.current = `attendance-selfie.${ext === "jpeg" ? "jpg" : ext}`; }} onClear={clearSelfie} />
           
-          <div className="card p-4 border border-[var(--border-color)] bg-white flex items-center gap-3">
-            <ShieldCheck size={18} className="text-[var(--text-secondary)] shrink-0" />
-            <span className="text-xs font-bold text-[var(--text-secondary)]">Posisikan wajah di dalam frame. Pastikan wajah Anda terlihat jelas pada kamera.</span>
-          </div>
-
           <section className="card p-4"><label className="text-sm font-extrabold" htmlFor="attendance-note">Catatan (opsional)</label><textarea id="attendance-note" maxLength={150} className="mt-2 w-full rounded-2xl border border-[var(--border-color)] p-3 text-sm focus:outline-none" rows={3} value={note} onChange={(event) => setUi({ note: event.target.value })} placeholder="Tulis catatan jika diperlukan…" /><div className="mt-1 text-right text-[10px] font-semibold text-[var(--text-muted)]">{note.length}/150</div></section>
         </>
       )}
 
+      {step === "location" && (
       <section className="card p-4 border border-[var(--border-color)] bg-white" aria-label="Riwayat absensi terbaru">
         {history.length === 0 ? (
           <output className="text-xs font-semibold text-[var(--text-secondary)]">Belum ada riwayat absensi.</output>
@@ -359,6 +355,7 @@ function AttendanceClockContent() {
           </div>
         )}
       </section>
+      )}
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border-color)] bg-white/95 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] backdrop-blur">
         <div className="mx-auto flex max-w-[520px] flex-col gap-2">
