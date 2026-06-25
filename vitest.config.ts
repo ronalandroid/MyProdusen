@@ -37,6 +37,15 @@ export default defineConfig({
         'scripts/**',
         '**/*.d.ts',
       ],
+      // Ratchet floor — set just below current coverage so the gate passes today
+      // and can never regress. Raise these toward 80 as DB-service integration
+      // tests land (see issue #23). Enforced by `npx vitest run --coverage`.
+      thresholds: {
+        statements: 65,
+        branches: 55,
+        functions: 66,
+        lines: 65,
+      },
     },
   },
   resolve: {
