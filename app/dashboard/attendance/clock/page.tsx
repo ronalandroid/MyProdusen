@@ -250,7 +250,7 @@ function AttendanceClockContent() {
   return (
     <div className="phone-screen attendance-screen pb-[calc(96px+env(safe-area-inset-bottom))]" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <header className="flex items-center gap-3">
-        <button type="button" className="btn btn-secondary btn-icon min-h-[44px] focus:outline-none" onClick={() => (step === "location" ? router.back() : setUi({ step: "location" }))} aria-label="Kembali"><ArrowLeft size={20} /></button>
+        <button type="button" className="btn btn-secondary btn-icon min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]" onClick={() => (step === "location" ? router.back() : setUi({ step: "location" }))} aria-label="Kembali"><ArrowLeft size={20} /></button>
         <div>
           <h1 className="text-xl font-black text-[var(--text-primary)]">{isClockIn ? "Clock In" : "Clock Out"}</h1>
           <p className="text-xs font-bold text-[var(--text-secondary)]">{step === "location" ? "Langkah 1 dari 2" : "Langkah 2 dari 2"}</p>
@@ -323,7 +323,7 @@ function AttendanceClockContent() {
                 <p>Anda berada di luar radius lokasi kerja.</p>
                 <div className="mt-1 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-[var(--text-primary)]">
                   <label className="text-xs font-extrabold text-amber-800" htmlFor="manual-reason">Ajukan Koreksi Manual</label>
-                  <textarea id="manual-reason" className="mt-2 w-full rounded-2xl border border-amber-200 p-3 text-sm focus:outline-none" rows={3} value={manualReason} onChange={(event) => setUi({ manualReason: event.target.value })} minLength={10} placeholder="Alasan koreksi minimal 10 karakter dan wajib approval Superadmin." />
+                  <textarea id="manual-reason" className="mt-2 w-full rounded-2xl border border-amber-200 p-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]" rows={3} value={manualReason} onChange={(event) => setUi({ manualReason: event.target.value })} minLength={10} placeholder="Alasan koreksi minimal 10 karakter dan wajib approval Superadmin." />
                   <p className="mt-2 text-[10px] font-semibold text-amber-700">Audit log dibuat dan koreksi tidak bypass Superadmin approval.</p>
                 </div>
               </div>
@@ -336,7 +336,7 @@ function AttendanceClockContent() {
         <>
           <RealtimeSelfieCamera capturedPreviewUrl={selfiePreviewUrl} disabled={isSubmitting} autoStart captureLabel="Ambil Foto" retakeLabel="Ulangi Foto" onCapture={({ blob, previewUrl, meta, liveness }) => { if (selfiePreviewUrl) URL.revokeObjectURL(selfiePreviewUrl); setSelfieBlob(blob); setSelfiePreviewUrl(previewUrl); livenessRef.current = liveness; const ext = meta.mimeType.split("/")[1] || "webp"; selfieFilenameRef.current = `attendance-selfie.${ext === "jpeg" ? "jpg" : ext}`; }} onClear={clearSelfie} />
           
-          <section className="card p-4"><label className="text-sm font-extrabold" htmlFor="attendance-note">Catatan (opsional)</label><textarea id="attendance-note" maxLength={150} className="mt-2 w-full rounded-2xl border border-[var(--border-color)] p-3 text-sm focus:outline-none" rows={3} value={note} onChange={(event) => setUi({ note: event.target.value })} placeholder="Tulis catatan jika diperlukan…" /><div className="mt-1 text-right text-[10px] font-semibold text-[var(--text-muted)]">{note.length}/150</div></section>
+          <section className="card p-4"><label className="text-sm font-extrabold" htmlFor="attendance-note">Catatan (opsional)</label><textarea id="attendance-note" maxLength={150} className="mt-2 w-full rounded-2xl border border-[var(--border-color)] p-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]" rows={3} value={note} onChange={(event) => setUi({ note: event.target.value })} placeholder="Tulis catatan jika diperlukan…" /><div className="mt-1 text-right text-[10px] font-semibold text-[var(--text-muted)]">{note.length}/150</div></section>
         </>
       )}
 

@@ -26,7 +26,7 @@ export default function AttendancePolicyTab({ editingPolicy, setEditingPolicy, s
             Toleransi Terlambat (Menit)
             <input
               type="number"
-              className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+              className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
               value={editingPolicy?.graceMinutes ?? 0}
               onChange={(e) => setEditingPolicy(prev => ({ ...prev, graceMinutes: Number(e.target.value) }))}
               required
@@ -37,7 +37,7 @@ export default function AttendancePolicyTab({ editingPolicy, setEditingPolicy, s
             Radius Geofence (Meter)
             <input
               type="number"
-              className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+              className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
               value={editingPolicy?.geofenceRadiusMeters ?? 150}
               onChange={(e) => setEditingPolicy(prev => ({ ...prev, geofenceRadiusMeters: Number(e.target.value) }))}
               required
@@ -53,7 +53,7 @@ export default function AttendancePolicyTab({ editingPolicy, setEditingPolicy, s
               Min Menit
               <input
                 type="number"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 value={editingPolicy?.lateTier1Min ?? 1}
                 onChange={(e) => setEditingPolicy(prev => ({ ...prev, lateTier1Min: Number(e.target.value) }))}
                 required
@@ -63,7 +63,7 @@ export default function AttendancePolicyTab({ editingPolicy, setEditingPolicy, s
               Max Menit
               <input
                 type="number"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 value={editingPolicy?.lateTier1Max ?? 15}
                 onChange={(e) => setEditingPolicy(prev => ({ ...prev, lateTier1Max: Number(e.target.value) }))}
                 required
@@ -73,7 +73,7 @@ export default function AttendancePolicyTab({ editingPolicy, setEditingPolicy, s
               Potongan (Rp)
               <input
                 type="number"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 value={editingPolicy?.lateTier1Deduction ?? 5000}
                 onChange={(e) => setEditingPolicy(prev => ({ ...prev, lateTier1Deduction: Number(e.target.value) }))}
                 required
@@ -90,7 +90,7 @@ export default function AttendancePolicyTab({ editingPolicy, setEditingPolicy, s
               Min Menit
               <input
                 type="number"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 value={editingPolicy?.lateTier2Min ?? 16}
                 onChange={(e) => setEditingPolicy(prev => ({ ...prev, lateTier2Min: Number(e.target.value) }))}
                 required
@@ -100,7 +100,7 @@ export default function AttendancePolicyTab({ editingPolicy, setEditingPolicy, s
               Max Menit
               <input
                 type="number"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 value={editingPolicy?.lateTier2Max ?? 30}
                 onChange={(e) => setEditingPolicy(prev => ({ ...prev, lateTier2Max: Number(e.target.value) }))}
                 required
@@ -110,7 +110,7 @@ export default function AttendancePolicyTab({ editingPolicy, setEditingPolicy, s
               Potongan (Rp)
               <input
                 type="number"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 value={editingPolicy?.lateTier2Deduction ?? 10000}
                 onChange={(e) => setEditingPolicy(prev => ({ ...prev, lateTier2Deduction: Number(e.target.value) }))}
                 required
@@ -127,7 +127,7 @@ export default function AttendancePolicyTab({ editingPolicy, setEditingPolicy, s
               Batas Menit Terlambat Setengah Hari
               <input
                 type="number"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 value={editingPolicy?.halfDayAfterMinutes ?? 30}
                 onChange={(e) => setEditingPolicy(prev => ({ ...prev, halfDayAfterMinutes: Number(e.target.value) }))}
                 required
@@ -138,7 +138,7 @@ export default function AttendancePolicyTab({ editingPolicy, setEditingPolicy, s
               <input
                 type="number"
                 step="0.1"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 value={editingPolicy?.halfDayPayFactor ?? 0.5}
                 onChange={(e) => setEditingPolicy(prev => ({ ...prev, halfDayPayFactor: Number(e.target.value) }))}
                 required

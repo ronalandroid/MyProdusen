@@ -148,7 +148,7 @@ function AttendanceSuccessContent() {
   return (
     <div className="phone-screen attendance-screen pb-8" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <header className="flex items-center gap-3">
-        <button type="button" className="btn btn-secondary btn-icon min-h-[44px] focus:outline-none" onClick={() => router.push("/dashboard")} aria-label="Kembali ke beranda">
+        <button type="button" className="btn btn-secondary btn-icon min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]" onClick={() => router.push("/dashboard")} aria-label="Kembali ke beranda">
           <ArrowLeft size={20} />
         </button>
         <div>

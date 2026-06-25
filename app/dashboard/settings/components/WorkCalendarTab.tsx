@@ -85,7 +85,7 @@ export default function WorkCalendarTab({
               Tanggal
               <input
                 type="date"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 value={editingHoliday.date || ""}
                 onChange={(e) => setEditingHoliday(prev => ({ ...prev, date: e.target.value }))}
                 required
@@ -97,7 +97,7 @@ export default function WorkCalendarTab({
               <input
                 type="text"
                 placeholder="Contoh: Hari Buruh"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 value={editingHoliday.name || ""}
                 onChange={(e) => setEditingHoliday(prev => ({ ...prev, name: e.target.value }))}
                 required
@@ -107,7 +107,7 @@ export default function WorkCalendarTab({
             <label className="flex flex-col gap-1.5 text-xs font-bold text-[var(--text-primary)]">
               Tipe Hari
               <select
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 value={editingHoliday.type || "COMPANY_HOLIDAY"}
                 onChange={(e) => setEditingHoliday(prev => ({ ...prev, type: e.target.value }))}
                 required
@@ -124,7 +124,7 @@ export default function WorkCalendarTab({
               <input
                 type="number"
                 step="0.5"
-                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none"
+                className="min-h-[44px] rounded-xl border border-[var(--border-color)] p-3 text-sm focus:border-[var(--primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]"
                 value={editingHoliday.payMultiplier ?? 2}
                 onChange={(e) => setEditingHoliday(prev => ({ ...prev, payMultiplier: Number(e.target.value) }))}
                 required

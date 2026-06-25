@@ -84,7 +84,7 @@ function calculateDistanceMeters(
 function AttendanceHeader({ onBack, avatarName }: { onBack: () => void; avatarName: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <button type="button" className="flex cursor-pointer items-center gap-3 animate-fade-in focus:outline-none" onClick={onBack} aria-label="Kembali ke halaman sebelumnya">
+      <button type="button" className="flex cursor-pointer items-center gap-3 animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]" onClick={onBack} aria-label="Kembali ke halaman sebelumnya">
         <ArrowLeft size={24} />
         <h1 style={{ fontSize: "20px", fontWeight: 700 }}>Kehadiran</h1>
       </button>
