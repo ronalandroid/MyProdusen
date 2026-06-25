@@ -3,13 +3,13 @@ import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 
 function getVersionMetadata() {
+  // Public, unauthenticated endpoint — return only a benign liveness + version
+  // signal. Do NOT expose infrastructure recon (nodeEnv, git commit, build time):
+  // confirming prod-vs-staging and exact build is high-value to an attacker.
   return {
     appName: 'MyProdusen',
     status: 'ok' as const,
     appVersion: process.env.APP_VERSION || process.env.NEXT_PUBLIC_APP_VERSION || 'unknown',
-    gitCommitSha: process.env.GIT_COMMIT_SHA || process.env.COOLIFY_GIT_COMMIT_SHA || 'unknown',
-    buildTime: process.env.BUILD_TIME || process.env.COOLIFY_BUILD_TIME || 'unknown',
-    nodeEnv: process.env.NODE_ENV || 'unknown',
   };
 }
 

@@ -111,13 +111,16 @@ async function ensureTestSpriteCredential(email: string, password: string) {
 export const POST = withApiHandler(async (request: NextRequest) => {
   const { email, password } = await parseJsonBody(request, loginSchema);
   const normalizedEmail = email.trim().toLowerCase();
-  await ensureTestSpriteCredential(normalizedEmail, password);
-  const rateLimitResult = await rateLimit(request, RATE_LIMITS.LOGIN, `login:${normalizedEmail}`);
 
+  // Rate-limit FIRST — before any DB work (incl. the non-prod TestSprite
+  // credential setup), so the throttle actually caps repeated attempts.
+  const rateLimitResult = await rateLimit(request, RATE_LIMITS.LOGIN, `login:${normalizedEmail}`);
   if (rateLimitResult.limited) {
     const resetIn = Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000 / 60);
     throw AppError.rateLimited(`Terlalu banyak percobaan login. Coba lagi dalam ${resetIn} menit.`);
   }
+
+  await ensureTestSpriteCredential(normalizedEmail, password);
 
   const result = await authService.login(normalizedEmail, password);
 
