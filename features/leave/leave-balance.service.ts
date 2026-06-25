@@ -1,5 +1,5 @@
 import { db, leaveBalanceLedger, companySettings, employees } from '@/lib/db';
-import { and, eq, desc } from 'drizzle-orm';
+import { and, eq, desc, inArray } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { calculateLeaveDays, summarizeLeaveLedger, type LeaveBalanceTransactionType } from '@/lib/leave/balance-ledger';
 
@@ -214,19 +214,38 @@ export class LeaveBalanceService {
       .from(employees)
       .where(eq(employees.status, 'ACTIVE'));
 
-    for (const emp of activeEmployees) {
-      const entries = await db
-        .select({ transactionType: leaveBalanceLedger.transactionType, amount: leaveBalanceLedger.amount })
-        .from(leaveBalanceLedger)
-        .where(and(
-          eq(leaveBalanceLedger.employeeId, emp.id),
-          eq(leaveBalanceLedger.balanceYear, year)
-        ));
+    if (activeEmployees.length === 0) return;
+    const employeeIds = activeEmployees.map((emp) => emp.id);
 
-      const summary = summarizeLeaveLedger(entries as Array<{ transactionType: LeaveBalanceTransactionType; amount: number }>);
+    // M4: one batched read of the year's ledger for all active employees
+    // (was N per-employee queries). Served by the composite index
+    // LeaveBalanceLedger_employeeId_balanceYear (migration 0035).
+    const allEntries = await db
+      .select({
+        employeeId: leaveBalanceLedger.employeeId,
+        transactionType: leaveBalanceLedger.transactionType,
+        amount: leaveBalanceLedger.amount,
+      })
+      .from(leaveBalanceLedger)
+      .where(and(
+        inArray(leaveBalanceLedger.employeeId, employeeIds),
+        eq(leaveBalanceLedger.balanceYear, year),
+      ));
+
+    const entriesByEmployee = new Map<string, Array<{ transactionType: LeaveBalanceTransactionType; amount: number }>>();
+    for (const entry of allEntries) {
+      const list = entriesByEmployee.get(entry.employeeId) ?? [];
+      list.push({ transactionType: entry.transactionType as LeaveBalanceTransactionType, amount: entry.amount });
+      entriesByEmployee.set(entry.employeeId, list);
+    }
+
+    const rowsToInsert: Array<typeof leaveBalanceLedger.$inferInsert> = [];
+    for (const emp of activeEmployees) {
+      const entries = entriesByEmployee.get(emp.id) ?? [];
+      const summary = summarizeLeaveLedger(entries);
 
       if (entries.length === 0) {
-        await db.insert(leaveBalanceLedger).values({
+        rowsToInsert.push({
           id: uuidv4(),
           employeeId: emp.id,
           transactionType: 'ENTITLEMENT',
@@ -240,7 +259,7 @@ export class LeaveBalanceService {
 
       const delta = quota - summary.entitlement;
       if (delta !== 0) {
-        await db.insert(leaveBalanceLedger).values({
+        rowsToInsert.push({
           id: uuidv4(),
           employeeId: emp.id,
           transactionType: 'MANUAL_ADJUSTMENT',
@@ -250,6 +269,14 @@ export class LeaveBalanceService {
           createdBy: actorUserId,
         });
       }
+    }
+
+    // M4: all-or-nothing — a mid-sync failure can no longer leave a partial set
+    // of employees adjusted.
+    if (rowsToInsert.length > 0) {
+      await db.transaction(async (tx) => {
+        await tx.insert(leaveBalanceLedger).values(rowsToInsert);
+      });
     }
   }
 
