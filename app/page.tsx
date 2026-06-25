@@ -47,11 +47,17 @@ export default function LandingPage() {
         html { scroll-behavior: smooth; }
         @keyframes lpFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
         .lp-reveal { opacity: 0; animation: lpFadeUp .7s cubic-bezier(.21,.6,.35,1) forwards; }
+        /* LCP-safe reveal for the hero headline: paints at full opacity immediately
+           (no opacity:0 gate, so the largest element counts as painted at FCP),
+           while still sliding up via transform only. */
+        @keyframes lpRiseUp { from { transform: translateY(14px); } to { transform: translateY(0); } }
+        .lp-reveal-hero { animation: lpRiseUp .7s cubic-bezier(.21,.6,.35,1) both; }
         .lp-card { transition: transform .35s cubic-bezier(.21,.6,.35,1), box-shadow .35s ease; }
         .lp-card:hover { transform: translateY(-4px); }
         @media (prefers-reduced-motion: reduce) {
           html { scroll-behavior: auto; }
           .lp-reveal { opacity: 1 !important; animation: none !important; }
+          .lp-reveal-hero { animation: none !important; }
           .lp-card:hover { transform: none; }
         }
       `}</style>
@@ -90,7 +96,7 @@ export default function LandingPage() {
             Platform Operasional Internal · TBM Group
           </div>
 
-          <h1 className="lp-reveal mb-6 text-[34px] font-black leading-[1.12] tracking-tight sm:text-[42px] lg:text-[52px]" style={{ animationDelay: "80ms" }}>
+          <h1 className="lp-reveal-hero mb-6 text-[34px] font-black leading-[1.12] tracking-tight sm:text-[42px] lg:text-[52px]">
             Kelola seluruh operasional tim dalam{" "}
             <span className="relative whitespace-nowrap inline-block after:absolute after:bottom-1 after:left-0 after:-z-10 after:h-3 after:w-full after:bg-[#FFC107]/40">
               satu sistem.
