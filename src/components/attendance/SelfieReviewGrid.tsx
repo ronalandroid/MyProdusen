@@ -113,7 +113,7 @@ export default function SelfieReviewGrid() {
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<SelfieReviewItem | null>(null);
 
-  const query = useQuery({
+  const { data, refetch, isFetching, isPending, isError } = useQuery({
     queryKey: ["attendance-selfie-review", filter],
     queryFn: () =>
       fetchApiList<SelfieReviewItem>(
@@ -122,7 +122,7 @@ export default function SelfieReviewGrid() {
       ),
   });
 
-  const items = useMemo(() => query.data ?? [], [query.data]);
+  const items = useMemo(() => data ?? [], [data]);
   const reviewCount = useMemo(() => items.filter((i) => i.needsReview).length, [items]);
 
   return (
@@ -137,9 +137,9 @@ export default function SelfieReviewGrid() {
         <button
           type="button"
           className="btn btn-secondary btn-icon"
-          onClick={() => query.refetch()}
+          onClick={() => refetch()}
           aria-label="Muat ulang"
-          disabled={query.isFetching}
+          disabled={isFetching}
         >
           <RefreshCcw size={16} aria-hidden="true" />
         </button>
@@ -168,9 +168,9 @@ export default function SelfieReviewGrid() {
         ))}
       </div>
 
-      {query.isPending ? (
+      {isPending ? (
         <p style={{ fontSize: "13px", color: "var(--text-secondary)", padding: "24px 0", textAlign: "center" }}>Memuat…</p>
-      ) : query.isError ? (
+      ) : isError ? (
         <p role="alert" style={{ fontSize: "13px", color: "#b91c1c", padding: "24px 0", textAlign: "center" }}>Gagal memuat data tinjauan.</p>
       ) : items.length === 0 ? (
         <p style={{ fontSize: "13px", color: "var(--text-secondary)", padding: "24px 0", textAlign: "center" }}>

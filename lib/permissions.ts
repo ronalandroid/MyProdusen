@@ -95,6 +95,14 @@ export function canAccessOwnData(userRole: UserRole | string, userId: string, ta
   return (userRole === 'EMPLOYEE' || userRole === 'LEADER') && userId === targetUserId;
 }
 
+/**
+ * INTENTIONALLY self-access only. Supervisor/team-based access is deliberately
+ * NOT granted here (`supervisorId` is reserved and ignored on purpose) — leaders
+ * reach team data through explicit, per-route supervisorId checks instead, never
+ * through this helper. Do not "fix" this to grant supervisor access: it would
+ * silently widen access control. Behaviour is asserted by lib/permissions.test.ts
+ * ("does not expose historical supervisor team access").
+ */
 export function canAccessTeamData(
   userRole: UserRole | string,
   userId: string,

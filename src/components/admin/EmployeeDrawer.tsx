@@ -159,7 +159,7 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
         <div style={{ background: "linear-gradient(135deg, #FFC107, #FFD85A)", padding: "20px 24px 22px", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", color: "#6B4E00" }}>PROFIL KARYAWAN</span>
-            <button onClick={onClose} aria-label="Tutup" style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(17,17,17,0.12)", color: "var(--text-primary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <button type="button" onClick={onClose} aria-label="Tutup" style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(17,17,17,0.12)", color: "var(--text-primary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <X size={16} />
             </button>
           </div>
@@ -195,7 +195,7 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
           {/* Tabs */}
           <div style={{ marginTop: 16, display: "flex", gap: 6 }}>
             {(["ringkasan", "riwayat", "dokumen"] as const).map((t) => (
-              <button key={t} onClick={() => setTab(t)} style={{ padding: "7px 16px", borderRadius: 999, border: "none", background: tabBg(t), color: tabFg(t), fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+              <button type="button" key={t} onClick={() => setTab(t)} style={{ padding: "7px 16px", borderRadius: 999, border: "none", background: tabBg(t), color: tabFg(t), fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
                 {t === "ringkasan" ? "Ringkasan" : t === "riwayat" ? "Riwayat" : "Dokumen"}
               </button>
             ))}
