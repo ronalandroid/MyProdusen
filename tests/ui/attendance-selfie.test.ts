@@ -64,3 +64,28 @@ it('stops camera tracks and clears video source during cleanup', () => {
   expect(realtimeCameraSource).toContain('videoRef.current.srcObject = null');
   expect(realtimeCameraSource).toContain('useEffect(() => stopCamera, [])');
 });
+
+describe('Immersive selfie capture UI (reference-style)', () => {
+  it('uses a full-bleed camera surface instead of a small card', () => {
+    expect(realtimeCameraSource).toContain('min(68vh, 540px)');
+    expect(realtimeCameraSource).not.toContain('min(60vh, 320px)');
+  });
+
+  it('guides with a head + shoulders silhouette, not a plain oval', () => {
+    expect(realtimeCameraSource).toContain('Panduan posisi kepala dan bahu');
+    expect(realtimeCameraSource).toContain('viewBox="0 0 200 270"');
+    expect(realtimeCameraSource).toContain('<ellipse');
+    expect(realtimeCameraSource).toContain('M26,262');
+  });
+
+  it('colours liveness states with MyProdusen brand tokens', () => {
+    expect(realtimeCameraSource).toContain('var(--attn-success)');
+    expect(realtimeCameraSource).toContain('var(--primary)');
+    expect(realtimeCameraSource).toContain('var(--danger)');
+  });
+
+  it('keeps the realtime liveness gate mandatory before capture', () => {
+    expect(realtimeCameraSource).toContain('livenessAllowsCapture');
+    expect(realtimeCameraSource).toContain('GOOD_FRAMES_TO_PASS');
+  });
+});
