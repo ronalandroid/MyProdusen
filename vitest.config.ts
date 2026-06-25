@@ -42,8 +42,8 @@ export default defineConfig({
       // tests land (see issue #23). Enforced by `npx vitest run --coverage`.
       thresholds: {
         statements: 71,
-        branches: 60,
-        functions: 74,
+        branches: 61,
+        functions: 76,
         lines: 72,
       },
     },
