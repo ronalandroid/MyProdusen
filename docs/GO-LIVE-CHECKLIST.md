@@ -57,4 +57,14 @@ Isi yang kosong di **Coolify → Environment Variables** (per catatan deploy, in
 
 ---
 
-> Setelah 5 baris ✅: deploy via `npm run db:deploy` (migrasi) lalu rilis. **Baru** saat itu status "siap produksi penuh" boleh diklaim.
+## ☐ KONFIG ABSENSI — boleh absen dari mana saja + approval superadmin · ~10 menit · _Eksekutor: Superadmin/DevOps_
+Kebijakan: absen boleh dari lokasi mana pun; **dalam radius Produsen Dimsum = otomatis sah**, **di luar radius = PENDING_REVIEW** (antre approval superadmin). Approval absensi sudah **superadmin-only** (`ATTENDANCE_MANUAL_ADJUST`).
+1. **Coolify → Environment Variables**: set **`REJECT_OUTSIDE_GEOFENCE=false`** → redeploy.
+2. **Set titik lokasi pabrik**: login superadmin → menu **Lokasi** (`/dashboard/locations`) → isi koordinat (lat/lng) Produsen Dimsum + radius (mis. 150 m), pastikan **Aktif**.
+3. **Verifikasi**: absen dari dalam radius → langsung "Hadir"; absen dari luar → tercatat + muncul di **Exceptions** (`/dashboard/attendance/exceptions`) untuk di-approve/tolak superadmin.
+- **Lulus jika:** absen luar-radius tidak ditolak, masuk antrean exception, dan hanya superadmin yang bisa approve.
+- Catatan gaji (sesuai keputusan): absen pending **tetap dihitung hadir**; review superadmin bersifat audit/koreksi.
+
+---
+
+> Setelah semua ✅: deploy via `npm run db:deploy` (migrasi) lalu rilis. **Baru** saat itu status "siap produksi penuh" boleh diklaim.
