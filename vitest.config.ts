@@ -41,10 +41,10 @@ export default defineConfig({
       // and can never regress. Raise these toward 80 as DB-service integration
       // tests land (see issue #23). Enforced by `npx vitest run --coverage`.
       thresholds: {
-        statements: 73,
-        branches: 62,
-        functions: 77,
-        lines: 74,
+        statements: 74,
+        branches: 63,
+        functions: 78,
+        lines: 75,
       },
     },
   },
