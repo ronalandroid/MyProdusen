@@ -248,4 +248,36 @@ describe('Leave orchestrator integration (real DB)', () => {
     expect(after.pending).toBeCloseTo(0, 5);
     expect(after.used).toBeCloseTo(0, 5);
   });
+
+  it('delete -> release: deleting a PENDING request releases the held balance', async () => {
+    const { id, year } = await seedEmployeeWithQuota(12);
+    const { startDate, endDate } = leaveDates(year, 10, 12); // 3 days
+    const created = await leaveService.createLeaveRequest({
+      employeeId: id,
+      type: 'LEAVE',
+      startDate,
+      endDate,
+      reason: 'itest delete',
+    });
+
+    // Hold is active before delete: available = 12 - 3 = 9.
+    const before = await leaveBalanceService.getBalance(id, year);
+    expect(before.available).toBeCloseTo(9, 5);
+
+    await leaveService.deleteLeaveRequest(created.id);
+
+    // Request row is gone.
+    const [row] = await db
+      .select()
+      .from(leaveRequests)
+      .where(eq(leaveRequests.id, created.id))
+      .limit(1);
+    expect(row).toBeUndefined();
+
+    // The hold MUST be released — balance back to full entitlement, none pending.
+    const after = await leaveBalanceService.getBalance(id, year);
+    expect(after.available).toBeCloseTo(12, 5);
+    expect(after.pending).toBeCloseTo(0, 5);
+    expect(after.used).toBeCloseTo(0, 5);
+  });
 });
