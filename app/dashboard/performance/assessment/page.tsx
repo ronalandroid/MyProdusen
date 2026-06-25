@@ -130,7 +130,7 @@ function AssessDrawer({ employee, score, onClose, onSaved }: AssessDrawerProps) 
               {employee.nip} · {employee.position || "—"}
             </div>
           </div>
-          <button onClick={onClose} aria-label="Tutup" style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "var(--border-color)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <button type="button" onClick={onClose} aria-label="Tutup" style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "var(--border-color)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <X size={16} />
           </button>
         </div>
@@ -156,6 +156,7 @@ function AssessDrawer({ employee, score, onClose, onSaved }: AssessDrawerProps) 
                     const filled = (ratings[c.key] ?? 0) >= star;
                     return (
                       <button
+                        type="button"
                         key={star}
                         onClick={() => setRatings((prev) => ({ ...prev, [c.key]: star }))}
                         aria-label={`Nilai ${star}`}
@@ -203,10 +204,11 @@ function AssessDrawer({ employee, score, onClose, onSaved }: AssessDrawerProps) 
 
         {/* Footer */}
         <div style={{ flexShrink: 0, padding: "14px 24px", background: "var(--bg-card)", borderTop: "1px solid var(--border-color)", display: "flex", gap: 10 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: 12, borderRadius: 10, border: "1px solid var(--border-color)", background: "var(--bg-card)", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+          <button type="button" onClick={onClose} style={{ flex: 1, padding: 12, borderRadius: 10, border: "1px solid var(--border-color)", background: "var(--bg-card)", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
             Batal
           </button>
           <button
+            type="button"
             onClick={handleSave}
             disabled={saving}
             style={{
@@ -353,6 +355,7 @@ export default function PenilaianPerilakuPage() {
             </span>
             <span>
               <button
+                type="button"
                 onClick={() => setOpenEmployeeId(row.id)}
                 style={{ padding: "6px 12px", borderRadius: 7, border: "1px solid var(--border-color)", background: "var(--bg-card)", fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}
               >

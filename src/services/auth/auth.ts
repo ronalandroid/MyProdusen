@@ -44,12 +44,13 @@ export async function verifyPassword(
 }
 
 export function generateToken(payload: JwtPayload): string {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: '8h' });
+  return jwt.sign(payload, getJwtSecret(), { algorithm: 'HS256', expiresIn: '8h' });
 }
 
 export function verifyToken(token: string): JwtPayload | null {
   try {
-    return jwt.verify(token, getJwtSecret()) as JwtPayload;
+    // Pin the algorithm so a forged token cannot downgrade/confuse verification.
+    return jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] }) as JwtPayload;
   } catch (error) {
     return null;
   }
