@@ -36,15 +36,23 @@ export default defineConfig({
         'sentry.*.config.ts',
         'scripts/**',
         '**/*.d.ts',
+        // External-service adapters (Redis client + filesystem document store).
+        // Their success paths only execute against a live Redis/filesystem, which
+        // the unit suite intentionally does not run (REDIS_URL unset -> cache
+        // disabled). The graceful-degradation branches ARE unit-covered; the rest
+        // is integration territory, same rationale as the browser exclusions above.
+        'lib/cache/cache-manager.ts',
+        'lib/cache/redis.ts',
+        'lib/documents/document-storage.ts',
       ],
       // Ratchet floor — set just below current coverage so the gate passes today
       // and can never regress. Raise these toward 80 as DB-service integration
       // tests land (see issue #23). Enforced by `npx vitest run --coverage`.
       thresholds: {
-        statements: 74,
-        branches: 63,
-        functions: 78,
-        lines: 75,
+        statements: 76,
+        branches: 64,
+        functions: 80,
+        lines: 78,
       },
     },
   },
