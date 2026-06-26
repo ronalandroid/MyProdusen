@@ -1,6 +1,19 @@
 import { generateToken, JwtPayload } from '@/lib/auth';
-import { db, users, employees, workLocations, shifts } from '@/lib/db';
-import { eq } from 'drizzle-orm';
+import {
+  db,
+  users,
+  employees,
+  workLocations,
+  shifts,
+  leaveBalanceLedger,
+  leaveRequests,
+  attendances,
+  overtimeRequests,
+  kpiProductionEntries,
+  employeePayrolls,
+  payrollItems,
+} from '@/lib/db';
+import { eq, inArray } from 'drizzle-orm';
 
 export interface TestUser {
   id: string;
@@ -170,6 +183,20 @@ export async function createTestShift(overrides?: {
   return shift.id;
 }
 
+// Tables keyed by employeeId that test flows populate (directly or transitively,
+// e.g. a leave request provisions a leaveBalanceLedger entitlement). These must
+// be deleted before their parent employee so the cleanup stays valid once the
+// #16 foreign keys land — until then it is simply a no-op for empty tables.
+const EMPLOYEE_CHILD_TABLES = [
+  leaveBalanceLedger,
+  leaveRequests,
+  attendances,
+  overtimeRequests,
+  kpiProductionEntries,
+  payrollItems,
+  employeePayrolls,
+] as const;
+
 export async function cleanupTestData(ids: {
   userIds?: string[];
   employeeIds?: string[];
@@ -178,15 +205,15 @@ export async function cleanupTestData(ids: {
 }) {
   // Clean up in reverse order of dependencies
   if (ids.employeeIds?.length) {
-    for (const id of ids.employeeIds) {
-      await db.delete(employees).where(eq(employees.id, id));
+    // Delete employee-keyed child rows first (FK-safe), then the employees.
+    for (const table of EMPLOYEE_CHILD_TABLES) {
+      await db.delete(table).where(inArray(table.employeeId, ids.employeeIds));
     }
+    await db.delete(employees).where(inArray(employees.id, ids.employeeIds));
   }
 
   if (ids.userIds?.length) {
-    for (const id of ids.userIds) {
-      await db.delete(users).where(eq(users.id, id));
-    }
+    await db.delete(users).where(inArray(users.id, ids.userIds));
   }
 
   if (ids.locationIds?.length) {
