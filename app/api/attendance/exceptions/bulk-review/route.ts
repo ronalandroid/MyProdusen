@@ -5,7 +5,7 @@ import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { successResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse, errorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 import { BusinessError } from '@/lib/core/business-error';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
@@ -19,7 +19,7 @@ const bulkReviewSchema = z.object({
   reviewNote: z.string().min(5, 'Catatan review minimal 5 karakter'),
 });
 
-export async function POST(request: NextRequest) {
+export const POST = withApiHandler(async (request) => {
   try {
     const user = await requireAuth(request);
     if (!hasPermission(user.role, 'ATTENDANCE_MANUAL_ADJUST')) {
@@ -77,4 +77,4 @@ export async function POST(request: NextRequest) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     return handleApiError(error);
   }
-}
+});

@@ -6,7 +6,7 @@ import { hasPermission } from '@/lib/permissions';
 import { employeeService } from '@/services/employees/employee.service';
 import { logAudit } from '@/lib/audit';
 import { payrollPeriodService } from '@/features/payroll/payroll-period.service';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 
 async function canApproveLeave(user: Awaited<ReturnType<typeof requireAuth>>, employeeId: string) {
   if (user.role === 'SUPERADMIN') {
@@ -18,10 +18,10 @@ async function canApproveLeave(user: Awaited<ReturnType<typeof requireAuth>>, em
   return !!supervisor && targetEmployee.supervisorId === supervisor.id;
 }
 
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export const POST = withApiHandler<{ id: string }>(async (
+  request,
+  context,
+) => {
   try {
     const user = await requireAuth(request);
     
@@ -82,4 +82,4 @@ export async function POST(
     }
     return handleApiError(error);
   }
-}
+});
