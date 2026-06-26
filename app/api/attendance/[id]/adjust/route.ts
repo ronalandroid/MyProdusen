@@ -7,9 +7,9 @@ import { payrollPeriodService } from '@/features/payroll/payroll-period.service'
 import { db, attendances } from '@/lib/db';
 import { hasPermission } from '@/lib/permissions';
 import { eq } from 'drizzle-orm';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withApiHandler<{ id: string }>(async (request, { params }) => {
   try {
     const user = await requireAuth(request);
     if (!hasPermission(user.role, 'ATTENDANCE_MANUAL_ADJUST')) {
@@ -76,4 +76,4 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     return handleApiError(error);
   }
-}
+});

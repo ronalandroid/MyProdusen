@@ -7,7 +7,7 @@ import { employeeService } from '@/services/employees/employee.service';
 import { z } from 'zod';
 import { logAudit } from '@/lib/audit';
 import { payrollPeriodService } from '@/features/payroll/payroll-period.service';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 
 async function canRejectLeave(user: Awaited<ReturnType<typeof requireAuth>>, employeeId: string) {
   if (user.role === 'SUPERADMIN') {
@@ -24,10 +24,10 @@ const rejectLeaveSchema = z.object({
   overrideReason: z.string().optional(),
 });
 
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export const POST = withApiHandler<{ id: string }>(async (
+  request,
+  context,
+) => {
   try {
     const user = await requireAuth(request);
     
@@ -95,4 +95,4 @@ export async function POST(
     }
     return handleApiError(error);
   }
-}
+});

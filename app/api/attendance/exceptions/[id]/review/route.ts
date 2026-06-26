@@ -5,14 +5,14 @@ import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { hasPermission } from '@/lib/permissions';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 
 const reviewSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED']),
   reviewNote: z.string().min(5, 'Catatan review minimal 5 karakter'),
 });
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withApiHandler<{ id: string }>(async (request, { params }) => {
   try {
     const user = await requireAuth(request);
     if (!hasPermission(user.role, 'ATTENDANCE_MANUAL_ADJUST') ) {
@@ -37,4 +37,4 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     return handleApiError(error);
   }
-}
+});
