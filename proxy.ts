@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isTrustedMutationOrigin } from '@/lib/security/csrf-origin';
+import { generateNonce, buildReportOnlyCsp } from '@/lib/security/csp';
 import { TOKEN_COOKIE_NAME } from '@/lib/auth-response';
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const protectedRoutes = ['/dashboard'];
@@ -64,15 +65,28 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
+  // Per-request nonce + report-only CSP on document responses (audit M7 / #17).
+  // Observation-only — the enforced policy in next.config.js is unchanged, so
+  // this can't break rendering; it surfaces what a future nonce-enforced policy
+  // would reject. The nonce is forwarded on x-nonce for server components to
+  // adopt when enforcement is flipped on.
+  const nonce = generateNonce();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  response.headers.set(
+    'Content-Security-Policy-Report-Only',
+    buildReportOnlyCsp(nonce, { isProd: process.env.NODE_ENV === 'production' }),
+  );
+
   if (isProtectedRoute) {
-    const response = NextResponse.next();
     response.headers.set('Cache-Control', 'no-store, private');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
-    return response;
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
