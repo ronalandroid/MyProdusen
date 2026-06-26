@@ -5,9 +5,9 @@ import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse
 import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
 import { logAudit } from '@/lib/audit';
 import { hasPermission } from '@/lib/permissions';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withApiHandler<{ id: string }>(async (request, { params }) => {
   try {
     const user = await requireAuth(request);
     assertPayrollAccess(user.role, 'mutate');
@@ -22,4 +22,4 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (accessMessage) return forbiddenResponse(accessMessage);
     return handleApiError(error);
   }
-}
+});
