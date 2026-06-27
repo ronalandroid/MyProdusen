@@ -3,9 +3,9 @@ import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { forbiddenResponse, successResponse, unauthorizedResponse, errorResponse } from '@/utils/response';
 import { tbmPayrollService } from '@/src/services/payroll/tbm-payroll.service';
 import { logAudit } from '@/lib/audit';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 
-export async function POST(request: NextRequest) {
+export const POST = withApiHandler(async (request) => {
   try {
     const user = await requireAuth(request);
     if (user.role !== 'SUPERADMIN') return forbiddenResponse('Hanya Superadmin yang dapat mengatur penempatan payroll karyawan.');
@@ -17,6 +17,6 @@ export async function POST(request: NextRequest) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     return handleApiError(error);
   }
-}
+});
 
 export const PATCH = POST;

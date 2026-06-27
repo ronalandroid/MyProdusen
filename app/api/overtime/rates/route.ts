@@ -6,7 +6,7 @@ import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse
 import { logger } from '@/lib/logger';
 
 import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 const createRateSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi'),
   multiplier: z.number().min(1, 'Multiplier minimal 1'),
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withApiHandler(async (request) => {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -68,11 +68,11 @@ export async function POST(request: NextRequest) {
     return successResponse(rate, undefined, 201);
   } catch (error: any) {
     logger.error('Create overtime rate error', { error });
-    
+
     if (error.name === 'ZodError') {
       return validationErrorResponse(error.errors?.[0]?.message || 'Validation error');
     }
 
     return handleApiError(error);
   }
-}
+});
