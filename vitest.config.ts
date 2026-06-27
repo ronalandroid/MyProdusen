@@ -8,7 +8,11 @@ export default defineConfig({
     testTimeout: 15000,
     setupFiles: ['./tests/setup.ts'],
     include: ['**/*.test.ts', '**/*.spec.ts'],
-    exclude: ['node_modules', 'dist', '.next', 'tests/e2e/**', 'playwright-report/**', 'test-results/**'],
+    // '.claude/**' excludes git worktrees created under .claude/worktrees/ — their
+    // duplicated *.test.ts copies otherwise get globbed and run concurrently
+    // against the shared DB with the same time-based fixture IDs, cross-deleting
+    // each other's rows and producing spurious failures.
+    exclude: ['node_modules', 'dist', '.next', '.claude/**', 'tests/e2e/**', 'playwright-report/**', 'test-results/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
