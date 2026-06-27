@@ -4,12 +4,12 @@ import { requireAuth } from '@/lib/middleware';
 import { successResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
 import { hasPermission } from '@/lib/permissions';
 import { logAudit } from '@/lib/audit';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; itemId: string }> }
-) {
+export const PATCH = withApiHandler<{ id: string; itemId: string }>(async (
+  request,
+  { params },
+) => {
   try {
     const user = await requireAuth(request);
     if (!hasPermission(user.role, 'KPI_TEMPLATE_UPDATE')) return forbiddenResponse('Anda tidak memiliki akses');
@@ -26,4 +26,4 @@ export async function PATCH(
     if (error instanceof Error && error.message === 'Unauthorized') return unauthorizedResponse();
     return handleApiError(error);
   }
-}
+});

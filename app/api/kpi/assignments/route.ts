@@ -3,7 +3,7 @@ import { kpiService } from '@/services/kpi/kpi.service';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse } from '@/utils/response';
 import { hasPermission } from '@/lib/permissions';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,10 +49,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withApiHandler(async (request) => {
   try {
     const user = await requireAuth(request);
-    
+
     if (!hasPermission(user.role, 'KPI_ASSIGN')) {
       return forbiddenResponse('Anda tidak memiliki akses');
     }
@@ -78,4 +78,4 @@ export async function POST(request: NextRequest) {
     }
     return handleApiError(error);
   }
-}
+});
