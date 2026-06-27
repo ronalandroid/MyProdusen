@@ -11,17 +11,17 @@ const checkOutRoute = readFileSync('app/api/attendance/check-out/route.ts', 'utf
 
 const officialLocation = {
   id: 'loc_produsen_dimsum_medan_tbm_grup',
-  latitude: 3.6009125,
-  longitude: 98.6964954,
-  radius: 100,
+  latitude: 3.6009345479119634,
+  longitude: 98.69649918030287,
+  radius: 150,
   isActive: true,
 };
 
 describe('official work location and geofence contract', () => {
   it('ships a safe official work-location upsert script', () => {
     expect(seedScript).toContain('Produsen Dimsum Medan | TBM GRUP');
-    expect(seedScript).toContain('3.6009125');
-    expect(seedScript).toContain('98.6964954');
+    expect(seedScript).toContain('3.6009345479119634');
+    expect(seedScript).toContain('98.69649918030287');
     expect(seedScript).toContain('radius = ${OFFICIAL_LOCATION.radius}');
     expect(seedScript).toContain('"isActive" = true');
     expect(seedScript).not.toMatch(/delete\s+from\s+"WorkLocation"/i);
@@ -30,14 +30,14 @@ describe('official work location and geofence contract', () => {
 
   it('accepts official coordinate and rejects spoofed outside coordinate on backend validation', () => {
     const inside = validateGpsAttendance(
-      { latitude: 3.6009125, longitude: 98.6964954, accuracy: 10 },
+      { latitude: 3.6009345479119634, longitude: 98.69649918030287, accuracy: 10 },
       officialLocation,
       { rejectOutsideGeofence: true, maxAccuracyMeters: 100 },
     );
     expect(inside.decision).toBe('accept');
 
     const outside = validateGpsAttendance(
-      { latitude: 3.5909125, longitude: 98.6964954, accuracy: 10 },
+      { latitude: 3.5909125, longitude: 98.69649918030287, accuracy: 10 },
       officialLocation,
       { rejectOutsideGeofence: true, maxAccuracyMeters: 100 },
     );
@@ -47,7 +47,7 @@ describe('official work location and geofence contract', () => {
 
   it('rejects bad GPS accuracy and missing work location through backend validator', () => {
     const badAccuracy = validateGpsAttendance(
-      { latitude: 3.6009125, longitude: 98.6964954, accuracy: 150 },
+      { latitude: 3.6009345479119634, longitude: 98.69649918030287, accuracy: 150 },
       officialLocation,
       { maxAccuracyMeters: 100 },
     );
@@ -55,7 +55,7 @@ describe('official work location and geofence contract', () => {
     if (badAccuracy.decision === 'reject') expect(badAccuracy.geoStatus).toBe('ACCURACY_TOO_LOW');
 
     const inactive = validateGpsAttendance(
-      { latitude: 3.6009125, longitude: 98.6964954, accuracy: 10 },
+      { latitude: 3.6009345479119634, longitude: 98.69649918030287, accuracy: 10 },
       { ...officialLocation, isActive: false },
     );
     expect(inactive.decision).toBe('reject');
