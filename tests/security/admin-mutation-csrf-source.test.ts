@@ -41,6 +41,15 @@ const ADMIN_MUTATION_ROUTES = [
   'app/api/payroll/rules/route.ts',
   'app/api/payroll/periods/[id]/lock/route.ts',
   'app/api/payroll/periods/[id]/unlock/route.ts',
+  // Pay-affecting config: overtime rates + TBM payroll (rules, assignments,
+  // divisions, positions) — all SUPERADMIN (role !== 'SUPERADMIN' guards).
+  // The TBM routes alias `export const PATCH = POST`, so wrapping POST covers
+  // PATCH too.
+  'app/api/overtime/rates/route.ts',
+  'app/api/payroll/tbm/rules/route.ts',
+  'app/api/payroll/tbm/assignments/route.ts',
+  'app/api/payroll/tbm/divisions/route.ts',
+  'app/api/payroll/tbm/positions/route.ts',
 ];
 
 describe('admin mutation routes enforce CSRF origin-check', () => {
