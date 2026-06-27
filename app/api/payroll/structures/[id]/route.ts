@@ -6,7 +6,7 @@ import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse
 import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
 import { logAudit } from '@/lib/audit';
 import { hasPermission } from '@/lib/permissions';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 
 const updateStructureSchema = z.object({
   name: z.string().min(1).optional(),
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withApiHandler<{ id: string }>(async (request, { params }) => {
   try {
     const user = await requireAuth(request);
     assertPayrollAccess(user.role, 'mutate');
@@ -47,9 +47,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (accessMessage) return forbiddenResponse(accessMessage);
     return handleApiError(error);
   }
-}
+});
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withApiHandler<{ id: string }>(async (request, { params }) => {
   try {
     const user = await requireAuth(request);
     assertPayrollAccess(user.role, 'mutate');
@@ -64,4 +64,4 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (accessMessage) return forbiddenResponse(accessMessage);
     return handleApiError(error);
   }
-}
+});

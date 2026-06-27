@@ -5,17 +5,17 @@ import { requireAuth, getRequestBody } from '@/lib/middleware';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse, validationErrorResponse } from '@/utils/response';
 import { logAudit } from '@/lib/audit';
 import { hasPermission } from '@/lib/permissions';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 
 const lockSchema = z.object({
   reason: z.string().min(10, 'Reason must be at least 10 characters'),
 });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withApiHandler<{ id: string }>(async (request, { params }) => {
   try {
     const user = await requireAuth(request);
     const { id } = await params;
-    
+
     if (!hasPermission(user.role, 'PAYROLL_READ')) {
       return forbiddenResponse('Anda tidak memiliki akses payroll');
     }
@@ -41,4 +41,4 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     return handleApiError(error);
   }
-}
+});
