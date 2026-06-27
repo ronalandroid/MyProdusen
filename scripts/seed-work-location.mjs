@@ -9,9 +9,11 @@ try {
 const OFFICIAL_LOCATION = {
   id: 'loc_produsen_dimsum_medan_tbm_grup',
   name: 'Produsen Dimsum Medan | TBM GRUP',
-  latitude: 3.6009125,
-  longitude: 98.6964954,
-  radius: 100,
+  latitude: 3.6009345479119634,
+  longitude: 98.69649918030287,
+  // Attendance within 150 m of the coordinate is accepted directly; beyond it
+  // routes to admin geo-review.
+  radius: 150,
 };
 
 const databaseUrl = process.env.DATABASE_URL;
