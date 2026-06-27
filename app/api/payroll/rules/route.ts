@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { payrollService } from '@/src/services/payroll/payroll.service';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, unauthorizedResponse, forbiddenResponse, validationErrorResponse } from '@/utils/response';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 
 // Strict validation so malformed numbers can't become NaN in salary columns.
 const createRuleSchema = z.object({
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withApiHandler(async (request) => {
   try {
     const user = await requireAuth(request);
     if (user.role !== 'SUPERADMIN') {
@@ -74,9 +74,9 @@ export async function POST(request: NextRequest) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     return handleApiError(error);
   }
-}
+});
 
-export async function PUT(request: NextRequest) {
+export const PUT = withApiHandler(async (request) => {
   try {
     const user = await requireAuth(request);
     if (user.role !== 'SUPERADMIN') {
@@ -121,4 +121,4 @@ export async function PUT(request: NextRequest) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
     return handleApiError(error);
   }
-}
+});

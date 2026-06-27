@@ -6,7 +6,7 @@ import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse
 import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
 import { logAudit } from '@/lib/audit';
 import { hasPermission } from '@/lib/permissions';
-import { handleApiError } from '@/lib/core/route-handler';
+import { handleApiError, withApiHandler } from '@/lib/core/route-handler';
 
 const createStructureSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi'),
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withApiHandler(async (request) => {
   try {
     const user = await requireAuth(request);
     assertPayrollAccess(user.role, 'mutate');
@@ -46,4 +46,4 @@ export async function POST(request: NextRequest) {
     if (accessMessage) return forbiddenResponse(accessMessage);
     return handleApiError(error);
   }
-}
+});

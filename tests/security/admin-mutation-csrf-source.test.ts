@@ -33,6 +33,14 @@ const ADMIN_MUTATION_ROUTES = [
   'app/api/kpi/templates/[id]/items/[itemId]/route.ts',
   'app/api/kpi/assignments/route.ts',
   'app/api/kpi/results/[id]/approve/route.ts',
+  // Payroll config: structures CRUD, rules, period lock/unlock — all
+  // SUPERADMIN (assertPayrollAccess('mutate') / PAYROLL_MUTATE / PAYROLL_READ,
+  // all SUPERADMIN-only). These directly control pay computation.
+  'app/api/payroll/structures/route.ts',
+  'app/api/payroll/structures/[id]/route.ts',
+  'app/api/payroll/rules/route.ts',
+  'app/api/payroll/periods/[id]/lock/route.ts',
+  'app/api/payroll/periods/[id]/unlock/route.ts',
 ];
 
 describe('admin mutation routes enforce CSRF origin-check', () => {
