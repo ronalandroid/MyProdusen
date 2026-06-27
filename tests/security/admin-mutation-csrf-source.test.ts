@@ -25,6 +25,14 @@ const ADMIN_MUTATION_ROUTES = [
   // Leave approval (LEAVE_APPROVE / LEAVE_REJECT — SUPERADMIN)
   'app/api/leave/[id]/approve/route.ts',
   'app/api/leave/[id]/reject/route.ts',
+  // KPI admin: templates CRUD, assignment, result approval — all SUPERADMIN
+  // (KPI_TEMPLATE_CREATE/UPDATE/DELETE, KPI_ASSIGN, KPI_APPROVE). KPI feeds
+  // payroll bonuses, so a forged mutation here could manipulate pay.
+  'app/api/kpi/templates/route.ts',
+  'app/api/kpi/templates/[id]/route.ts',
+  'app/api/kpi/templates/[id]/items/[itemId]/route.ts',
+  'app/api/kpi/assignments/route.ts',
+  'app/api/kpi/results/[id]/approve/route.ts',
 ];
 
 describe('admin mutation routes enforce CSRF origin-check', () => {
