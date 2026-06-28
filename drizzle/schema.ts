@@ -705,6 +705,10 @@ export const payrollItems = pgTable('PayrollItem', {
   grossPay: decimal('grossPay', { precision: 15, scale: 2, mode: 'number' }).notNull(),
   netPay: decimal('netPay', { precision: 15, scale: 2, mode: 'number' }).notNull(),
   bonusPay: decimal('bonusPay', { precision: 15, scale: 2, mode: 'number' }).default(0).notNull(),
+  // Kasbon (cash advance) repayment: post-tax net deduction. Amount is locked
+  // at calculation time; cashAdvanceId points at the advance settled on approval.
+  cashAdvanceDeduction: decimal('cashAdvanceDeduction', { precision: 15, scale: 2, mode: 'number' }).default(0).notNull(),
+  cashAdvanceId: text('cashAdvanceId'),
   workDays: integer('workDays').default(0).notNull(),
   absentDays: integer('absentDays').default(0).notNull(),
   lateDays: integer('lateDays').default(0).notNull(),

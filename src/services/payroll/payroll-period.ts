@@ -6,9 +6,10 @@ import {
   employees,
   overtimeRequests,
 } from '@/drizzle/schema';
-import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, gt, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { BusinessError } from '@/lib/core/business-error';
+import { settleInstallment } from './cash-advance.service';
 
 export async function createPayrollRun(data: {
   period: string; // YYYY-MM
@@ -81,6 +82,24 @@ export async function approvePayrollRun(runId: string, approvedBy: string) {
       gte(overtimeRequests.overtimeDate, run.periodStart),
       lte(overtimeRequests.overtimeDate, run.periodEnd)
     ));
+
+  // Settle Kasbon (cash advance) installments deducted in this run. The
+  // per-item amount was locked at calculation time; approval is the one-time
+  // CALCULATED->APPROVED transition (guarded above), so each installment
+  // settles exactly once and remainingBalance never double-counts.
+  const kasbonItems = await db
+    .select({
+      cashAdvanceId: payrollItems.cashAdvanceId,
+      cashAdvanceDeduction: payrollItems.cashAdvanceDeduction,
+    })
+    .from(payrollItems)
+    .where(and(eq(payrollItems.runId, runId), gt(payrollItems.cashAdvanceDeduction, 0)));
+
+  for (const item of kasbonItems) {
+    if (item.cashAdvanceId) {
+      await settleInstallment(item.cashAdvanceId, item.cashAdvanceDeduction);
+    }
+  }
 
   return updated;
 }
