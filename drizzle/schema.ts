@@ -1630,4 +1630,29 @@ export const payrollRulesRelations = relations(payrollRules, ({ one }) => ({
 }));
 
 
+// ============================================
+// Shift swap — employee requests to exchange a scheduled shift with a colleague.
+// On approval the two EmployeeSchedule rows exchange their shiftId. One workflow
+// row per request; PENDING -> APPROVED/REJECTED/CANCELLED.
+// ============================================
+export const shiftSwapRequests = pgTable('ShiftSwapRequest', {
+  id: text('id').primaryKey(),
+  requesterId: text('requesterId').notNull(),
+  requesterDate: timestamp('requesterDate', { mode: 'date' }).notNull(),
+  targetId: text('targetId').notNull(),
+  targetDate: timestamp('targetDate', { mode: 'date' }).notNull(),
+  reason: text('reason').notNull(),
+  status: text('status').default('PENDING').notNull(),
+  reviewedBy: text('reviewedBy'),
+  reviewedAt: timestamp('reviewedAt', { mode: 'date' }),
+  rejectionReason: text('rejectionReason'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  requesterIdx: index('ShiftSwapRequest_requesterId_idx').on(table.requesterId),
+  targetIdx: index('ShiftSwapRequest_targetId_idx').on(table.targetId),
+  statusIdx: index('ShiftSwapRequest_status_idx').on(table.status),
+}));
+
+
 // Phase 2: Payroll Period
