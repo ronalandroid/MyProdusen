@@ -1361,7 +1361,7 @@ export const payrollRules = pgTable('PayrollRule', {
   trainingDurationDays: integer('trainingDurationDays'),
   targetMetricId: text('targetMetricId'),
   targetQuantity: real('targetQuantity'),
-  bonusType: text('bonusType').default('PER_EXTRA_UNIT').notNull(), // PER_EXTRA_UNIT / FIXED / PERCENTAGE
+  bonusType: text('bonusType').default('PER_EXTRA_UNIT').notNull(), // PER_UNIT (piece-rate, no target) / PER_EXTRA_UNIT / FIXED / PERCENTAGE
   bonusAmountPerUnit: decimal('bonusAmountPerUnit', { precision: 15, scale: 2, mode: 'number' }),
   attendancePolicyId: text('attendancePolicyId'),
   holidayMultiplierEnabled: boolean('holidayMultiplierEnabled').default(true).notNull(),
@@ -1652,6 +1652,56 @@ export const shiftSwapRequests = pgTable('ShiftSwapRequest', {
   requesterIdx: index('ShiftSwapRequest_requesterId_idx').on(table.requesterId),
   targetIdx: index('ShiftSwapRequest_targetId_idx').on(table.targetId),
   statusIdx: index('ShiftSwapRequest_status_idx').on(table.status),
+}));
+
+
+// ============================================
+// Kasbon — employee cash advance (request -> approve -> repay via payroll)
+// monthlyDeduction = amount / installments; remainingBalance counts down as
+// payroll settles installments; status SETTLED when it reaches 0.
+// ============================================
+export const cashAdvances = pgTable('CashAdvance', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId').notNull(),
+  amount: decimal('amount', { precision: 15, scale: 2, mode: 'number' }).notNull(),
+  reason: text('reason').notNull(),
+  installments: integer('installments').default(1).notNull(),
+  monthlyDeduction: decimal('monthlyDeduction', { precision: 15, scale: 2, mode: 'number' }).default(0).notNull(),
+  remainingBalance: decimal('remainingBalance', { precision: 15, scale: 2, mode: 'number' }).default(0).notNull(),
+  status: text('status').default('PENDING').notNull(),
+  requestedBy: text('requestedBy'),
+  reviewedBy: text('reviewedBy'),
+  reviewedAt: timestamp('reviewedAt', { mode: 'date' }),
+  rejectionReason: text('rejectionReason'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  employeeIdx: index('CashAdvance_employeeId_idx').on(table.employeeId),
+  statusIdx: index('CashAdvance_status_idx').on(table.status),
+}));
+
+
+// ============================================
+// THR — Tunjangan Hari Raya (mandatory religious-holiday allowance)
+// Permenaker: >=12 months service = 1 month salary; 1-12 months = pro-rata
+// (months/12 * salary); <1 month = not eligible. One row per employee per year.
+// ============================================
+export const thrPayments = pgTable('ThrPayment', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId').notNull(),
+  year: integer('year').notNull(),
+  religiousHoliday: text('religiousHoliday').notNull(),
+  baseSalary: decimal('baseSalary', { precision: 15, scale: 2, mode: 'number' }).notNull(),
+  monthsOfService: integer('monthsOfService').notNull(),
+  amount: decimal('amount', { precision: 15, scale: 2, mode: 'number' }).notNull(),
+  status: text('status').default('CALCULATED').notNull(),
+  calculatedBy: text('calculatedBy'),
+  paidAt: timestamp('paidAt', { mode: 'date' }),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  employeeYearIdx: uniqueIndex('ThrPayment_employeeId_year_unique').on(table.employeeId, table.year),
+  yearIdx: index('ThrPayment_year_idx').on(table.year),
 }));
 
 

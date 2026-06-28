@@ -214,6 +214,45 @@ describe('Payroll Rules and KPI Target Bonus Calculator', () => {
     }
   });
 
+  it('calculates PER_UNIT (straight piece-rate) bonus with no target gate', async () => {
+    // Piece-rate: no targetQuantity; pay 5000 per unit produced from unit 1.
+    await db.insert(payrollRules).values({
+      id: ruleId,
+      employeeId,
+      periodType: 'MONTHLY',
+      baseSalary: 3500000,
+      targetMetricId: metricId,
+      targetQuantity: null,
+      bonusType: 'PER_UNIT',
+      bonusAmountPerUnit: 5000,
+      active: true,
+    });
+
+    await db.insert(kpiProductionEntries).values([
+      { id: `entry_pu1_${Date.now()}`, employeeId, teamId, leaderUserId: 'test_leader', date: '3026-05-10', metricType: `Cetak Dimsum ${metricId}`, quantity: '50', status: 'SUBMITTED', createdBy: 'test_leader' },
+      { id: `entry_pu2_${Date.now()}`, employeeId, teamId, leaderUserId: 'test_leader', date: '3026-05-15', metricType: `Cetak Dimsum ${metricId}`, quantity: '70', status: 'SUBMITTED', createdBy: 'test_leader' },
+    ]);
+
+    const runId = `run_pu_${Date.now()}`;
+    await db.insert(payrollRuns).values({
+      id: runId, period: '3026-05', periodStart: new Date('3026-05-01'), periodEnd: new Date('3026-05-31'), status: 'DRAFT', calculatedBy: 'test_admin',
+    });
+
+    try {
+      await payrollService.calculatePayroll(runId);
+      const [item] = await db
+        .select()
+        .from(payrollItems)
+        .where(and(eq(payrollItems.runId, runId), eq(payrollItems.employeeId, employeeId)))
+        .limit(1);
+      expect(item).not.toBeUndefined();
+      expect(item.bonusPay).toBe(600000); // 120 units * 5000, no target subtracted
+    } finally {
+      await db.delete(payrollItems).where(eq(payrollItems.runId, runId));
+      await db.delete(payrollRuns).where(eq(payrollRuns.id, runId));
+    }
+  });
+
   it('calculates FIXED bonus correctly based on KPI entries', async () => {
     // Seed rule: target = 100, fixed bonus = 250000
     await db.insert(payrollRules).values({
