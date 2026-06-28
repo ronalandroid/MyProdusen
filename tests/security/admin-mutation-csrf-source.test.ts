@@ -50,6 +50,8 @@ const ADMIN_MUTATION_ROUTES = [
   'app/api/payroll/tbm/assignments/route.ts',
   'app/api/payroll/tbm/divisions/route.ts',
   'app/api/payroll/tbm/positions/route.ts',
+  // THR generation (SUPERADMIN payroll mutate)
+  'app/api/payroll/thr/route.ts',
 ];
 
 describe('admin mutation routes enforce CSRF origin-check', () => {
