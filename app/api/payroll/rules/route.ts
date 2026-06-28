@@ -14,7 +14,7 @@ const createRuleSchema = z.object({
   baseSalary: z.coerce.number().finite().nonnegative('Gaji pokok harus angka >= 0'),
   targetMetricId: z.string().min(1).nullish(),
   targetQuantity: z.coerce.number().finite().nonnegative().nullish(),
-  bonusType: z.enum(['PER_EXTRA_UNIT', 'FIXED', 'PERCENTAGE']).optional(),
+  bonusType: z.enum(['PER_UNIT', 'PER_EXTRA_UNIT', 'FIXED', 'PERCENTAGE']).optional(),
   bonusAmountPerUnit: z.coerce.number().finite().nonnegative().nullish(),
   attendancePolicyId: z.string().min(1).nullish(),
   holidayMultiplierEnabled: z.boolean().optional(),
