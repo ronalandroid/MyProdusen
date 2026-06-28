@@ -21,6 +21,7 @@ import { eq, and, gte, lte, isNull } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { BusinessError } from '@/lib/core/business-error';
 import { resolveActivePayrollRule } from './payroll-config';
+import { getActiveInstallment } from './cash-advance.service';
 
 async function getAttendanceData(
   employeeId: string,
@@ -114,7 +115,7 @@ export async function calculatePayroll(runId: string) {
 
   for (const { employee, payroll, structure } of activeEmployees) {
     // Load independent payroll inputs in parallel to avoid per-employee waterfalls.
-    const [attendanceData, overtimeData, components, activeRule] = await Promise.all([
+    const [attendanceData, overtimeData, components, activeRule, activeInstallment] = await Promise.all([
       getAttendanceData(employee.id, run.periodStart, run.periodEnd),
       getOvertimeData(employee.id, run.periodStart, run.periodEnd),
       db
@@ -122,6 +123,7 @@ export async function calculatePayroll(runId: string) {
         .from(payrollComponents)
         .where(eq(payrollComponents.structureId, structure.id)),
       resolveActivePayrollRule(employee.id, run.periodEnd),
+      getActiveInstallment(employee.id),
     ]);
 
     // Calculate salary components
@@ -224,12 +226,18 @@ export async function calculatePayroll(runId: string) {
     const taxAmount = calculateTax(grossIncome);
 
     const grossPay = baseSalary + totalAllowances + overtimePay + bonusPay;
+    // Kasbon (cash advance) repayment is a POST-TAX net deduction: tax/BPJS are
+    // computed on gross above (unchanged); the installment only reduces
+    // take-home. Amount is locked here and settled when the run is approved.
+    const cashAdvanceDeduction = activeInstallment ? activeInstallment.deduction : 0;
+    const cashAdvanceId = activeInstallment ? activeInstallment.advanceId : null;
     const totalDeductionsItem =
       totalDeductionsEmp +
       attendanceDeduction +
       taxAmount +
       bpjsKesehatan.employee +
-      bpjsKetenagakerjaan.employee;
+      bpjsKetenagakerjaan.employee +
+      cashAdvanceDeduction;
     const netPay = grossPay - totalDeductionsItem;
 
     // Collect the line item; persisted in the atomic block after the loop.
@@ -250,6 +258,8 @@ export async function calculatePayroll(runId: string) {
       grossPay,
       netPay,
       bonusPay,
+      cashAdvanceDeduction,
+      cashAdvanceId,
       workDays: attendanceData.workDays,
       absentDays: attendanceData.absentDays,
       lateDays: attendanceData.lateDays,
