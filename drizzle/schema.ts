@@ -1361,7 +1361,7 @@ export const payrollRules = pgTable('PayrollRule', {
   trainingDurationDays: integer('trainingDurationDays'),
   targetMetricId: text('targetMetricId'),
   targetQuantity: real('targetQuantity'),
-  bonusType: text('bonusType').default('PER_EXTRA_UNIT').notNull(), // PER_EXTRA_UNIT / FIXED / PERCENTAGE
+  bonusType: text('bonusType').default('PER_EXTRA_UNIT').notNull(), // PER_UNIT (piece-rate, no target) / PER_EXTRA_UNIT / FIXED / PERCENTAGE
   bonusAmountPerUnit: decimal('bonusAmountPerUnit', { precision: 15, scale: 2, mode: 'number' }),
   attendancePolicyId: text('attendancePolicyId'),
   holidayMultiplierEnabled: boolean('holidayMultiplierEnabled').default(true).notNull(),
