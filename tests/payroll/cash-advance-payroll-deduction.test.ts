@@ -18,6 +18,14 @@ import { requestAdvance, approveAdvance } from '@/src/services/payroll/cash-adva
  * deduction: tax/BPJS stay computed on gross (unchanged), the active monthly
  * installment only reduces take-home. The outstanding balance settles when the
  * run is APPROVED (one-time CALCULATED->APPROVED transition), not at calc time.
+ *
+ * Parallel-safety note: calculatePayroll scans EVERY active assigned employee,
+ * and approvePayrollRun settles every kasbon installment in the run. Under
+ * vitest's parallel workers against the shared DB, another payroll test's
+ * approve could otherwise settle this test's advance. So the settlement case
+ * uses a borrower with no payroll assignment (invisible to the global scan),
+ * and the deduction case uses a large-balance advance whose per-month
+ * installment stays stable even if the suite settles a few months against it.
  */
 describe('Kasbon -> payroll auto-deduction', () => {
   const ids = {
@@ -58,6 +66,32 @@ describe('Kasbon -> payroll auto-deduction', () => {
     return id;
   }
 
+  // No employeePayroll/structure => excluded from calculatePayroll's active
+  // assigned-employee join, so no other concurrent run can settle its advance.
+  async function seedBareEmployee(suffix: string) {
+    const id = `cad_emp_${suffix}_${Date.now()}`;
+    await db.insert(users).values({
+      id,
+      email: `${id}@myprodusen.local`,
+      username: id,
+      password: 'password',
+      role: 'EMPLOYEE',
+      isActive: true,
+    });
+    await db.insert(employees).values({
+      id,
+      nip: `MPD-${id.slice(0, 10)}`,
+      userId: id,
+      fullName: 'Kasbon Settle Employee',
+      email: `${id}@myprodusen.local`,
+      status: 'ACTIVE',
+      position: 'Staff',
+    });
+    userIds.push(id);
+    employeeIds.push(id);
+    return id;
+  }
+
   afterEach(async () => {
     for (const runId of runIds) {
       await db.delete(payrollItems).where(eq(payrollItems.runId, runId));
@@ -75,7 +109,7 @@ describe('Kasbon -> payroll auto-deduction', () => {
     employeeIds.length = 0;
   });
 
-  it('deducts the active installment from net pay and settles the balance on approval', async () => {
+  it('deducts the active installment from net pay (post-tax) at calculation time', async () => {
     await db.insert(payrollStructures).values({
       id: ids.structure,
       name: `Structure ${ids.structure}`,
@@ -84,12 +118,14 @@ describe('Kasbon -> payroll auto-deduction', () => {
     });
     const empId = await seedEmployeeWithPayroll('borrower', 3_000_000);
 
-    // 3,000,000 over 3 installments => monthlyDeduction 1,000,000
+    // 60,000,000 over 60 installments => monthlyDeduction 1,000,000. The large
+    // balance keeps the per-month installment stable even if the parallel suite
+    // settles a few months against this employee mid-run.
     const req = await requestAdvance({
       employeeId: empId,
-      amount: 3_000_000,
-      reason: 'Biaya sekolah anak',
-      installments: 3,
+      amount: 60_000_000,
+      reason: 'Renovasi rumah',
+      installments: 60,
       requestedBy: empId,
     });
     await approveAdvance(req.id, 'itest-admin');
@@ -128,16 +164,6 @@ describe('Kasbon -> payroll auto-deduction', () => {
     );
     // ...and net = gross - total deductions still holds (post-tax reduction).
     expect(item.netPay).toBe(item.grossPay - item.totalDeductions);
-
-    // Balance is untouched until approval (settle on CALCULATED->APPROVED).
-    const [beforeApprove] = await db.select().from(cashAdvances).where(eq(cashAdvances.id, req.id)).limit(1);
-    expect(beforeApprove.remainingBalance).toBe(3_000_000);
-
-    await payrollService.approvePayrollRun(runId, 'itest-admin');
-
-    const [afterApprove] = await db.select().from(cashAdvances).where(eq(cashAdvances.id, req.id)).limit(1);
-    expect(afterApprove.remainingBalance).toBe(2_000_000);
-    expect(afterApprove.status).toBe('APPROVED');
   });
 
   it('leaves pay unchanged for an employee with no active advance', async () => {
@@ -172,5 +198,52 @@ describe('Kasbon -> payroll auto-deduction', () => {
     expect(item.cashAdvanceDeduction).toBe(0);
     expect(item.cashAdvanceId).toBeNull();
     expect(item.netPay).toBe(item.grossPay - item.totalDeductions);
+  });
+
+  it('settles the outstanding balance once when the run is approved', async () => {
+    // Isolated borrower: no payroll assignment, so no concurrent run's scan can
+    // include it -> its advance is only ever settled by this test's approve.
+    const empId = await seedBareEmployee('settle');
+
+    const req = await requestAdvance({
+      employeeId: empId,
+      amount: 3_000_000,
+      reason: 'Biaya sekolah anak',
+      installments: 3,
+      requestedBy: empId,
+    });
+    await approveAdvance(req.id, 'itest-admin');
+
+    const runId = `cad_run_${Date.now()}`;
+    runIds.push(runId);
+    await db.insert(payrollRuns).values({
+      id: runId,
+      period: '3026-09',
+      periodStart: new Date('3026-09-01'),
+      periodEnd: new Date('3026-09-30'),
+      status: 'CALCULATED',
+      calculatedBy: 'itest-admin',
+    });
+    // Hand-build the single line item the way calculatePayroll would, so the
+    // settlement path runs deterministically without the global employee scan.
+    await db.insert(payrollItems).values({
+      id: `cad_item_${Date.now()}`,
+      runId,
+      employeeId: empId,
+      baseSalary: 3_000_000,
+      grossPay: 3_000_000,
+      netPay: 2_000_000,
+      cashAdvanceDeduction: 1_000_000,
+      cashAdvanceId: req.id,
+    });
+
+    const [before] = await db.select().from(cashAdvances).where(eq(cashAdvances.id, req.id)).limit(1);
+    expect(before.remainingBalance).toBe(3_000_000);
+
+    await payrollService.approvePayrollRun(runId, 'itest-admin');
+
+    const [after] = await db.select().from(cashAdvances).where(eq(cashAdvances.id, req.id)).limit(1);
+    expect(after.remainingBalance).toBe(2_000_000);
+    expect(after.status).toBe('APPROVED');
   });
 });
