@@ -1630,4 +1630,30 @@ export const payrollRulesRelations = relations(payrollRules, ({ one }) => ({
 }));
 
 
+// ============================================
+// Kasbon — employee cash advance (request -> approve -> repay via payroll)
+// monthlyDeduction = amount / installments; remainingBalance counts down as
+// payroll settles installments; status SETTLED when it reaches 0.
+// ============================================
+export const cashAdvances = pgTable('CashAdvance', {
+  id: text('id').primaryKey(),
+  employeeId: text('employeeId').notNull(),
+  amount: decimal('amount', { precision: 15, scale: 2, mode: 'number' }).notNull(),
+  reason: text('reason').notNull(),
+  installments: integer('installments').default(1).notNull(),
+  monthlyDeduction: decimal('monthlyDeduction', { precision: 15, scale: 2, mode: 'number' }).default(0).notNull(),
+  remainingBalance: decimal('remainingBalance', { precision: 15, scale: 2, mode: 'number' }).default(0).notNull(),
+  status: text('status').default('PENDING').notNull(),
+  requestedBy: text('requestedBy'),
+  reviewedBy: text('reviewedBy'),
+  reviewedAt: timestamp('reviewedAt', { mode: 'date' }),
+  rejectionReason: text('rejectionReason'),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  employeeIdx: index('CashAdvance_employeeId_idx').on(table.employeeId),
+  statusIdx: index('CashAdvance_status_idx').on(table.status),
+}));
+
+
 // Phase 2: Payroll Period
