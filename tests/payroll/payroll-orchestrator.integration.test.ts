@@ -51,12 +51,12 @@ describe('Payroll orchestrator integration (real DB)', () => {
     return id;
   }
 
-  async function calcRunFor(empIds: string[]) {
+  async function calcRunFor(empIds: string[], range?: { start: Date; end: Date }) {
     const period = `itest_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const run = await payrollService.createPayrollRun({
       period,
-      periodStart: new Date('2026-05-01'),
-      periodEnd: new Date('2026-05-31'),
+      periodStart: range?.start ?? new Date('2026-05-01'),
+      periodEnd: range?.end ?? new Date('2026-05-31'),
       calculatedBy: empIds[0],
     });
     seeded.runs.push(run.id);
@@ -112,10 +112,14 @@ describe('Payroll orchestrator integration (real DB)', () => {
 
   it('adds approved unpaid overtime to gross pay', async () => {
     const emp = await seedEmployee(3_000_000);
+    // Unique far-future window: approvePayrollRun marks every approved-unpaid
+    // overtime in its run's DATE RANGE as paid (no employee filter), so a
+    // parallel test approving an overlapping 2026-05 run would otherwise flip
+    // this record to paid before this run's calc reads it.
     await db.insert(overtimeRequests).values({
       id: `${emp}_ot`,
       employeeId: emp,
-      overtimeDate: new Date('2026-05-10'),
+      overtimeDate: new Date('3055-03-10'),
       startTime: '17:00',
       endTime: '21:00',
       durationHours: 8,
@@ -125,7 +129,7 @@ describe('Payroll orchestrator integration (real DB)', () => {
       calculatedPay: 400_000,
       isPaid: false,
     });
-    const { items } = await calcRunFor([emp]);
+    const { items } = await calcRunFor([emp], { start: new Date('3055-03-01'), end: new Date('3055-03-31') });
     const item = items.find((i) => i.employeeId === emp)!;
     expect(item.overtimePay).toBeCloseTo(400_000, 0);
     expect(item.overtimeHours).toBeCloseTo(8, 0);
