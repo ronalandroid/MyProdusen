@@ -332,7 +332,7 @@ export async function createPayrollRule(actorUserId: string, data: {
   baseSalary: number;
   targetMetricId?: string | null;
   targetQuantity?: number | null;
-  bonusType?: 'PER_EXTRA_UNIT' | 'FIXED' | 'PERCENTAGE';
+  bonusType?: 'PER_UNIT' | 'PER_EXTRA_UNIT' | 'FIXED' | 'PERCENTAGE';
   bonusAmountPerUnit?: number | null;
   attendancePolicyId?: string | null;
   holidayMultiplierEnabled?: boolean;
@@ -401,7 +401,7 @@ export async function updatePayrollRule(actorUserId: string, id: string, data: P
   divisionId: string | null;
   targetMetricId: string | null;
   targetQuantity: number | null;
-  bonusType: 'PER_EXTRA_UNIT' | 'FIXED' | 'PERCENTAGE';
+  bonusType: 'PER_UNIT' | 'PER_EXTRA_UNIT' | 'FIXED' | 'PERCENTAGE';
   bonusAmountPerUnit: number | null;
   attendancePolicyId: string | null;
   holidayMultiplierEnabled: boolean;

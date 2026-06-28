@@ -155,7 +155,6 @@ export async function calculatePayroll(runId: string) {
     if (
       activeRule &&
       activeRule.targetMetricId &&
-      activeRule.targetQuantity !== null &&
       activeRule.bonusAmountPerUnit !== null
     ) {
       const [metric] = await db
@@ -191,20 +190,26 @@ export async function calculatePayroll(runId: string) {
           0
         );
 
-        const targetQty = activeRule.targetQuantity;
         const amountPerUnit = activeRule.bonusAmountPerUnit;
 
-        if (activeRule.bonusType === 'PER_EXTRA_UNIT') {
-          if (totalQty > targetQty) {
-            bonusPay = (totalQty - targetQty) * amountPerUnit;
-          }
-        } else if (activeRule.bonusType === 'FIXED') {
-          if (totalQty >= targetQty) {
-            bonusPay = amountPerUnit;
-          }
-        } else if (activeRule.bonusType === 'PERCENTAGE') {
-          if (totalQty >= targetQty) {
-            bonusPay = (amountPerUnit * baseSalary) / 100;
+        if (activeRule.bonusType === 'PER_UNIT') {
+          // Straight piece-rate: pay for every unit produced, no target gate.
+          bonusPay = totalQty * amountPerUnit;
+        } else if (activeRule.targetQuantity !== null) {
+          // Target-based modes are unchanged and still require a target.
+          const targetQty = activeRule.targetQuantity;
+          if (activeRule.bonusType === 'PER_EXTRA_UNIT') {
+            if (totalQty > targetQty) {
+              bonusPay = (totalQty - targetQty) * amountPerUnit;
+            }
+          } else if (activeRule.bonusType === 'FIXED') {
+            if (totalQty >= targetQty) {
+              bonusPay = amountPerUnit;
+            }
+          } else if (activeRule.bonusType === 'PERCENTAGE') {
+            if (totalQty >= targetQty) {
+              bonusPay = (amountPerUnit * baseSalary) / 100;
+            }
           }
         }
       }
