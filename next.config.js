@@ -150,7 +150,12 @@ const nextConfig = {
         hostname: '*.myprodusen.online',
       },
     ],
-    unoptimized: true,
+    // No Next static export here (output: 'standalone'); the Capacitor app
+    // loads the live server, not an exported bundle — so the on-demand image
+    // optimizer is safe to run on the standalone server (needs sharp, a
+    // declared dependency). Default ON; set IMAGE_OPTIMIZATION_DISABLED=true to
+    // instantly roll back without a code change if the runtime lacks sharp.
+    unoptimized: process.env.IMAGE_OPTIMIZATION_DISABLED === 'true',
   },
 
   experimental: {
