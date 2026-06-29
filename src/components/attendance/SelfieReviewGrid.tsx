@@ -85,7 +85,7 @@ function SelfieDetailModal({ item, onClose }: { item: SelfieReviewItem; onClose:
         </div>
         {item.selfieUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.selfieUrl} alt={`Selfie ${item.employeeName}`} style={{ width: "100%", maxHeight: 360, objectFit: "cover", display: "block" }} />
+          <img src={item.selfieUrl} loading="lazy" decoding="async" alt={`Selfie ${item.employeeName}`} style={{ width: "100%", maxHeight: 360, objectFit: "cover", display: "block" }} />
         ) : (
           <div style={{ padding: "32px", textAlign: "center", color: "var(--text-secondary)", fontSize: "13px" }}>Selfie tidak tersedia</div>
         )}
@@ -200,7 +200,7 @@ export default function SelfieReviewGrid() {
                 <div style={{ position: "relative", aspectRatio: "1 / 1", backgroundColor: "#f3f4f6" }}>
                   {item.selfieUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.selfieUrl} alt={`Selfie ${item.employeeName}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    <img src={item.selfieUrl} loading="lazy" decoding="async" alt={`Selfie ${item.employeeName}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                   ) : (
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-secondary)", fontSize: "12px" }}>—</div>
                   )}
