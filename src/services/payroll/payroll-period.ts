@@ -6,7 +6,7 @@ import {
   employees,
   overtimeRequests,
 } from '@/drizzle/schema';
-import { eq, and, gte, lte, gt, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, gt, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { BusinessError } from '@/lib/core/business-error';
 import { settleInstallment } from './cash-advance.service';
@@ -69,19 +69,33 @@ export async function approvePayrollRun(runId: string, approvedBy: string) {
     .where(eq(payrollRuns.id, runId))
     .returning();
 
-  await db
-    .update(overtimeRequests)
-    .set({
-      isPaid: true,
-      paidInPayrollRunId: runId,
-      updatedAt: new Date(),
-    })
-    .where(and(
-      eq(overtimeRequests.status, 'APPROVED'),
-      eq(overtimeRequests.isPaid, false),
-      gte(overtimeRequests.overtimeDate, run.periodStart),
-      lte(overtimeRequests.overtimeDate, run.periodEnd)
-    ));
+  // Only settle overtime for employees who are actually in THIS run (have a
+  // payroll item). calculatePayroll sums each item's overtime from the same
+  // employee+period set, so approving must not flip the overtime of employees
+  // excluded from the run (inactive, or left out of a correction/supplemental
+  // run for the same period) — that run never computed or paid their overtime.
+  const runEmployeeRows = await db
+    .select({ employeeId: payrollItems.employeeId })
+    .from(payrollItems)
+    .where(eq(payrollItems.runId, runId));
+  const runEmployeeIds = runEmployeeRows.map((r) => r.employeeId);
+
+  if (runEmployeeIds.length > 0) {
+    await db
+      .update(overtimeRequests)
+      .set({
+        isPaid: true,
+        paidInPayrollRunId: runId,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(overtimeRequests.status, 'APPROVED'),
+        eq(overtimeRequests.isPaid, false),
+        inArray(overtimeRequests.employeeId, runEmployeeIds),
+        gte(overtimeRequests.overtimeDate, run.periodStart),
+        lte(overtimeRequests.overtimeDate, run.periodEnd)
+      ));
+  }
 
   // Settle Kasbon (cash advance) installments deducted in this run. The
   // per-item amount was locked at calculation time; approval is the one-time
