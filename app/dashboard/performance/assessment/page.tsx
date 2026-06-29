@@ -334,7 +334,7 @@ export default function PenilaianPerilakuPage() {
           >
             <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {row.profilePhoto
-                ? <img src={row.profilePhoto} alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
+                ? <img src={row.profilePhoto} loading="lazy" decoding="async" alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
                 : <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#FFF8DC", color: "#C05621", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{initials(row.fullName)}</div>
               }
               <span>

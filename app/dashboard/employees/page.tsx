@@ -293,7 +293,7 @@ export default function EmployeesPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1 }}>
                 <div className="avatar" style={{ width: "40px", height: "40px", fontSize: "14px" }}>
                   {emp.profilePhoto ? (
-                    <img src={emp.profilePhoto} alt={`Foto profil ${emp.fullName}`} onError={(event) => { event.currentTarget.style.display = 'none'; }} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+                    <img src={emp.profilePhoto} loading="lazy" decoding="async" alt={`Foto profil ${emp.fullName}`} onError={(event) => { event.currentTarget.style.display = 'none'; }} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
                   ) : (
                     emp.fullName.substring(0, 2).toUpperCase()
                   )}

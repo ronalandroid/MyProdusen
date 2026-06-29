@@ -168,7 +168,7 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
             <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 16 }}>
               <div style={{ width: 64, height: 64, borderRadius: "50%", overflow: "hidden", flexShrink: 0, border: "2px solid rgba(255,255,255,0.8)", background: "rgba(255,255,255,0.55)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, color: "var(--text-primary)" }}>
                 {emp.profilePhoto
-                  ? <img src={emp.profilePhoto} alt="" style={{ width: 64, height: 64, objectFit: "cover" }} />
+                  ? <img src={emp.profilePhoto} loading="lazy" decoding="async" alt="" style={{ width: 64, height: 64, objectFit: "cover" }} />
                   : initials(emp.fullName)}
               </div>
               <div style={{ flex: 1 }}>
