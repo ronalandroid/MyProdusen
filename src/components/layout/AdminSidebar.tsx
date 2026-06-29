@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -83,7 +84,7 @@ export default function AdminSidebar({
       <div style={{ margin: "16px 14px 8px", padding: "0 6px", display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ width: 34, height: 34, borderRadius: 9, flexShrink: 0, background: "linear-gradient(180deg, #FFC107, #FFD85A)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
+          <Image src="/logo-fast.webp" alt="" width={24} height={24} style={{ width: 24, height: 24, objectFit: "contain" }} />
         </div>
         <div>
           <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>MyProdusen</div>

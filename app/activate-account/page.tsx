@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Suspense } from "react";
 import ActivateAccountClient from "./activate-account-client";
 
@@ -16,7 +17,7 @@ export function ActivationCard({ title, message }: { title: string; message: str
         <div className="auth-panel animate-scale-in">
           <div className="auth-card text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-[1.35rem] bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] flex items-center justify-center shadow-lg">
-              <img src="/logo-fast.webp" alt="" className="w-10 h-10" />
+              <Image src="/logo-fast.webp" alt="" width={40} height={40} className="w-10 h-10" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-2">{title}</h1>
             <p className="text-sm text-[var(--text-secondary)]">{message}</p>

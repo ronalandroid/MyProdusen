@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -107,7 +108,7 @@ export default function LoginPage() {
             {/* Logo */}
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-[1.35rem] bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] flex items-center justify-center shadow-lg">
-                <img src="/logo.png" alt="" className="w-10 h-10" />
+                <Image src="/logo-fast.webp" alt="" width={40} height={40} className="w-10 h-10" />
               </div>
               <div>
                 <div className="flex items-center gap-1">
@@ -153,7 +154,7 @@ export default function LoginPage() {
               {/* Mobile Logo */}
               <div className="lg:hidden mb-8 text-center">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-[1.35rem] bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] flex items-center justify-center shadow-lg">
-                  <img src="/logo.png" alt="" className="w-10 h-10" />
+                  <Image src="/logo-fast.webp" alt="" width={40} height={40} className="w-10 h-10" />
                 </div>
                 <div className="flex items-center justify-center gap-1 mb-2">
                   <span className="text-2xl font-extrabold text-[var(--text-primary)]">My</span>
