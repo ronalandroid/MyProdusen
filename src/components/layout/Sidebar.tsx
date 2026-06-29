@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { fetchApiData } from "@/hooks/useDashboardQueries";
@@ -94,7 +95,7 @@ export default function Sidebar({ role }: SidebarProps) {
     <>
       <div className="desktop-logo">
         <div className="flex flex-col items-center gap-3 px-5 py-6 text-center">
-          <img src="/logo.png" alt="MyProdusen Logo" className="w-24 h-24 object-contain drop-shadow-sm" />
+          <Image src="/logo-fast.webp" alt="MyProdusen Logo" width={96} height={96} className="w-24 h-24 object-contain drop-shadow-sm" />
           <div className="flex flex-col min-w-0">
             <span className="text-2xl font-black leading-tight text-[#1f2937] drop-shadow-sm">
               My<span className="text-[#6b3f00]">Produsen</span>

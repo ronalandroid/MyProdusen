@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle, Eye, EyeOff, Lock, ShieldCheck } from "lucide-react";
@@ -66,7 +67,7 @@ export default function ResetPasswordForm() {
           <div className="hidden lg:flex flex-col justify-center space-y-8 animate-fade-in">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-[1.35rem] bg-gradient-to-br from-[var(--primary)] to-[var(--primary-hover)] flex items-center justify-center shadow-lg">
-                <img src="/logo.png" alt="" className="w-10 h-10" />
+                <Image src="/logo-fast.webp" alt="" width={40} height={40} className="w-10 h-10" />
               </div>
               <div>
                 <div className="flex items-center gap-1">
