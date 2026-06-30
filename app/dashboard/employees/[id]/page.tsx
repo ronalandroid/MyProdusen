@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
+import { sizedImageSrc } from "@/lib/images/sized-image-src";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, User, Mail, Phone, Briefcase, MapPin, Calendar, Shield } from "lucide-react";
@@ -145,7 +146,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
           <div className="avatar" style={{ width: "80px", height: "80px", fontSize: "24px" }}>
             {employee.profilePhoto ? (
-              <img src={employee.profilePhoto} alt={employee.fullName} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+              <img src={sizedImageSrc(employee.profilePhoto, 256)} alt={employee.fullName} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
             ) : (
               employee.fullName.substring(0, 2).toUpperCase()
             )}

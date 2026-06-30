@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { sizedImageSrc } from "@/lib/images/sized-image-src";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -81,7 +82,7 @@ function SuccessSelfieThumbnail({ attendanceId, kind }: { attendanceId: string; 
   if (error || !imageUrl) {
     return <div className="text-[10px] text-[var(--danger)] font-bold">Gagal</div>;
   }
-  return <img src={imageUrl} alt="Selfie" className="size-full object-cover" />;
+  return <img src={sizedImageSrc(imageUrl, 720)} alt="Selfie" className="size-full object-cover" />;
 }
 
 export default function AttendanceSuccessPage() {

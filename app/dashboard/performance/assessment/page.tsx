@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { sizedImageSrc } from "@/lib/images/sized-image-src";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Star, X, ChevronRight } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth-client";
@@ -121,7 +122,7 @@ function AssessDrawer({ employee, score, onClose, onSaved }: AssessDrawerProps) 
             fontSize: 15, fontWeight: 800, flexShrink: 0,
           }}>
             {employee.profilePhoto
-              ? <img src={employee.profilePhoto} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }} />
+              ? <img src={sizedImageSrc(employee.profilePhoto, 96)} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }} />
               : initials(employee.fullName)}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -334,7 +335,7 @@ export default function PenilaianPerilakuPage() {
           >
             <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {row.profilePhoto
-                ? <img src={row.profilePhoto} loading="lazy" decoding="async" alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
+                ? <img src={sizedImageSrc(row.profilePhoto, 64)} loading="lazy" decoding="async" alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
                 : <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#FFF8DC", color: "#C05621", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{initials(row.fullName)}</div>
               }
               <span>

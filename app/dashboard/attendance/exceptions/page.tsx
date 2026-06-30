@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { sizedImageSrc } from "@/lib/images/sized-image-src";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowLeft, CheckCircle2, MapPin, RefreshCcw, Search, X, XCircle } from "lucide-react";
@@ -189,7 +190,7 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
                 <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Foto Selfie</div>
                 <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid var(--border-color)", background: "var(--bg-hover)", minHeight: 180, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {att?.checkInSelfieUrl ? (
-                    <img src={att.checkInSelfieUrl} alt="Selfie absensi" style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
+                    <img src={sizedImageSrc(att.checkInSelfieUrl, 400)} alt="Selfie absensi" style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
                   ) : (
                     <div style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>
                       <div style={{ fontSize: 32, marginBottom: 8 }}>📷</div>
