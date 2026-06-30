@@ -2,6 +2,7 @@
 /* eslint-disable react-doctor/prefer-useReducer */
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { sizedImageSrc } from "@/lib/images/sized-image-src";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ChevronRight, LogOut, Settings } from "lucide-react";
@@ -178,7 +179,7 @@ export default function ProfilePage() {
             minHeight: 64,
           }}
         >
-          {employee?.profilePhoto ? <img src={employee.profilePhoto} alt="Foto profil pengguna" /> : initials}
+          {employee?.profilePhoto ? <img src={sizedImageSrc(employee.profilePhoto, 256)} alt="Foto profil pengguna" /> : initials}
         </button>
         <div className="min-w-0">
           <h2 className="text-base font-bold truncate">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { sizedImageSrc } from "@/lib/images/sized-image-src";
 import { Bell, AlertTriangle, RefreshCcw } from "lucide-react";
 import { type ClientUserProfile } from "@/lib/auth-client";
 import type { DashboardStats } from "@/lib/dashboard/dashboard-types";
@@ -66,7 +67,7 @@ export function SuperadminDashboard({
             {stats.unreadNotifications > 0 && <span className="notification-dot" aria-hidden="true" />}
           </Link>
           <Link href="/dashboard/profile" className="avatar avatar-link border-2 border-white" aria-label="Buka profil pengguna">
-            {profile?.employee?.profilePhoto ? <img src={profile.employee.profilePhoto} alt="" /> : initials}
+            {profile?.employee?.profilePhoto ? <img src={sizedImageSrc(profile.employee.profilePhoto, 96)} alt="" /> : initials}
           </Link>
         </div>
       </header>

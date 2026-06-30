@@ -13,6 +13,7 @@ import {
 import { hasPermission } from '@/lib/permissions';
 import { employeeService } from '@/services/employees/employee.service';
 import { resolveSelfieStoragePath } from '@/lib/upload';
+import { parseImageWidth, resizeImageToWebp } from '@/lib/images/resize-image';
 import { logAudit } from '@/lib/audit';
 
 const SELFIE_ROUTE_PREFIX = '/api/attendance/selfie/';
@@ -121,11 +122,26 @@ export async function GET(
       );
     }
 
-    return new NextResponse(file, {
+    // Optional on-the-fly thumbnail (auth/authz already enforced above). The
+    // ?w value is snapped to an allowlist; any resize error falls back to the
+    // original file so the image never breaks.
+    const width = parseImageWidth(request.nextUrl.searchParams);
+    let body: Buffer = file;
+    let contentType = MIME_BY_EXTENSION[extension] || 'application/octet-stream';
+    if (width !== null) {
+      try {
+        body = await resizeImageToWebp(file, width);
+        contentType = 'image/webp';
+      } catch {
+        body = file;
+      }
+    }
+
+    return new NextResponse(new Uint8Array(body), {
       headers: {
-        'Content-Type': MIME_BY_EXTENSION[extension] || 'application/octet-stream',
+        'Content-Type': contentType,
         'Cache-Control': 'no-store, private',
-        'Content-Length': String(stats.size),
+        'Content-Length': String(body.length),
         'X-Content-Type-Options': 'nosniff',
       },
     });
