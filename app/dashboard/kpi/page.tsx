@@ -141,9 +141,14 @@ export default function KPIPage() {
           </div>
         </button>
         {canViewTeam && (
-          <button type="button" className="btn btn-primary" onClick={() => router.push("/dashboard/kpi/template")}>
-            Template KPI
-          </button>
+          <div className="flex items-center gap-2">
+            <button type="button" className="btn btn-secondary" onClick={() => router.push("/dashboard/kpi/by-division")}>
+              Per Divisi
+            </button>
+            <button type="button" className="btn btn-primary" onClick={() => router.push("/dashboard/kpi/template")}>
+              Template KPI
+            </button>
+          </div>
         )}
       </div>
 

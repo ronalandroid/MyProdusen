@@ -4,6 +4,7 @@ import { forbiddenResponse, successResponse, unauthorizedResponse, errorResponse
 import { leaderService } from '@/services/leader/leader.service';
 import { logAudit } from '@/lib/audit';
 import { handleApiError } from '@/lib/core/route-handler';
+import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,6 +29,19 @@ export async function POST(request: NextRequest) {
       results.push(await leaderService.createOrUpdateProductionEntry(user.userId, row));
     }
     await logAudit(user.userId, 'KPI_PRODUCTION_ENTRY_UPSERT', 'KpiProductionEntry', undefined, undefined, { count: results.length, results }, request);
+
+    // Realtime sync: refresh KPI dashboards (incl. per-division roll-up) now.
+    if (results.length > 0) {
+      await publishRealtimeEvent(createRealtimeEvent({
+        type: 'dashboard.updated', scope: 'global',
+        payload: { source: 'kpi-production.entry', count: results.length },
+      }));
+      await publishRealtimeEvent(createRealtimeEvent({
+        type: 'sync.updated', scope: 'user', target: user.userId,
+        payload: { source: 'kpi-production.entry', count: results.length },
+      }));
+    }
+
     return successResponse(results, 'KPI tim berhasil disimpan');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
