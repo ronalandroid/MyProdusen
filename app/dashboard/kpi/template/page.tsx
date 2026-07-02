@@ -180,6 +180,7 @@ export default function KpiTemplateEditorPage() {
             value={createName}
             onChange={(e) => setCreateName(e.target.value)}
             placeholder="Nama template KPI..."
+            aria-label="Nama template KPI baru"
             onKeyDown={(e) => e.key === "Enter" && createTemplate()}
           />
           <Button onClick={createTemplate} loading={creating} disabled={!createName.trim()}>
@@ -204,8 +205,18 @@ export default function KpiTemplateEditorPage() {
               <article key={template.id} className="card" style={{ padding: 0, overflow: "hidden" }}>
                 {/* Card header */}
                 <div
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
+                  aria-label={`Template ${draft.name}`}
                   style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", borderBottom: isExpanded ? "1px solid #EBEBEB" : "none" }}
                   onClick={() => setExpanded(isExpanded ? null : template.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setExpanded(isExpanded ? null : template.id);
+                    }
+                  }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -236,8 +247,9 @@ export default function KpiTemplateEditorPage() {
                   <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 14 }}>
                     {/* Template name field */}
                     <div>
-                      <label style={{ fontSize: 11, fontWeight: 700, color: "#6E6E6E", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>Nama Template</label>
+                      <label htmlFor={`tpl-name-${template.id}`} style={{ fontSize: 11, fontWeight: 700, color: "#6E6E6E", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>Nama Template</label>
                       <input
+                        id={`tpl-name-${template.id}`}
                         className="input"
                         value={draft.name}
                         onChange={(e) => setDraft(template.id, (d) => ({ ...d, name: e.target.value }))}
@@ -253,24 +265,27 @@ export default function KpiTemplateEditorPage() {
                             <div style={{ fontSize: 13, fontWeight: 700, color: "#111111" }}>{item.name}</div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                               <div>
-                                <label style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Bobot (%)</label>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Bobot (%)</span>
                                 <div style={{ display: "flex", alignItems: "center", gap: 0, border: "1px solid #EBEBEB", borderRadius: 8, overflow: "hidden", background: "#FFF" }}>
                                   <button
                                     type="button"
                                     style={{ width: 32, height: 36, border: "none", background: "none", cursor: "pointer", fontSize: 16, color: "#555" }}
+                                    aria-label={`Kurangi bobot ${item.name}`}
                                     onClick={() => setDraft(template.id, (d) => ({ ...d, itemDrafts: d.itemDrafts.map((it, i) => i === idx ? { ...it, weight: Math.max(0, it.weight - 5) } : it) }))}
                                   >−</button>
                                   <span style={{ flex: 1, textAlign: "center", fontSize: 13, fontWeight: 800, fontFamily: "var(--font-mono, monospace)" }}>{Math.round(item.weight)}</span>
                                   <button
                                     type="button"
                                     style={{ width: 32, height: 36, border: "none", background: "none", cursor: "pointer", fontSize: 16, color: "#555" }}
+                                    aria-label={`Tambah bobot ${item.name}`}
                                     onClick={() => setDraft(template.id, (d) => ({ ...d, itemDrafts: d.itemDrafts.map((it, i) => i === idx ? { ...it, weight: Math.min(100, it.weight + 5) } : it) }))}
                                   >+</button>
                                 </div>
                               </div>
                               <div>
-                                <label style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Target</label>
+                                <label htmlFor={`tpl-${template.id}-target-${item.id}`} style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Target</label>
                                 <input
+                                  id={`tpl-${template.id}-target-${item.id}`}
                                   className="input"
                                   type="number"
                                   value={item.targetValue ?? ""}
@@ -279,8 +294,9 @@ export default function KpiTemplateEditorPage() {
                                 />
                               </div>
                               <div>
-                                <label style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Satuan</label>
+                                <label htmlFor={`tpl-${template.id}-unit-${item.id}`} style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Satuan</label>
                                 <input
+                                  id={`tpl-${template.id}-unit-${item.id}`}
                                   className="input"
                                   value={item.unit ?? ""}
                                   onChange={(e) => setDraft(template.id, (d) => ({ ...d, itemDrafts: d.itemDrafts.map((it, i) => i === idx ? { ...it, unit: e.target.value || null } : it) }))}
