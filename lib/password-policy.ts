@@ -170,6 +170,10 @@ export async function checkPasswordCompromised(
   if (process.env.HIBP_NETWORK_DISABLED === 'true') return false;
 
   try {
+    // SHA-1 is REQUIRED by the HIBP k-anonymity range API (its dataset is
+    // keyed on SHA-1 prefixes) — it is a lookup key here, not password
+    // storage/verification (bcrypt handles that). Only the 5-char prefix ever
+    // leaves the server. Scanners flagging "weak crypto" here: false positive.
     const sha1 = createHash('sha1').update(password).digest('hex').toUpperCase();
     const prefix = sha1.slice(0, 5);
     const suffix = sha1.slice(5);

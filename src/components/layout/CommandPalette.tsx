@@ -24,6 +24,14 @@ export default function CommandPalette({ role }: { role: UserRole | string }) {
   const navItems = useMemo(() => getNavigationForRole(role), [role]);
   const canSearchEmployees = role === "SUPERADMIN";
 
+  // Clear stale employee hits the moment the query drops below the search
+  // threshold. Adjusted during render (conditional + converging) instead of an
+  // effect, so users never see a frame of old results against the new query.
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  if (query.trim().length < 2 && employees.length > 0) {
+    setEmployees([]);
+  }
+
   // Toggle on Cmd/Ctrl+K from anywhere, plus a custom event for the visible
   // sidebar trigger so mouse users can open it too.
   useEffect(() => {
@@ -59,7 +67,7 @@ export default function CommandPalette({ role }: { role: UserRole | string }) {
     if (!open || !canSearchEmployees) return;
     const q = query.trim();
     if (q.length < 2) {
-      setEmployees([]);
+      // Clearing stale hits is handled during render above.
       return;
     }
     let cancelled = false;
