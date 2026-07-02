@@ -486,16 +486,18 @@ export async function resolveActiveTarget(employeeId: string, metricId: string, 
   const [emp] = await db.select().from(employees).where(eq(employees.id, employeeId)).limit(1);
   if (!emp) return null;
 
-  const [teamAssignment] = await db
-    .select()
-    .from(employeeTeamAssignments)
-    .where(and(eq(employeeTeamAssignments.employeeId, employeeId), eq(employeeTeamAssignments.active, true)))
-    .limit(1);
-
-  const allTargets = await db
-    .select()
-    .from(kpiTargets)
-    .where(and(eq(kpiTargets.metricId, metricId), eq(kpiTargets.active, true)));
+  // Independent reads — fetch the assignment and targets in parallel.
+  const [[teamAssignment], allTargets] = await Promise.all([
+    db
+      .select()
+      .from(employeeTeamAssignments)
+      .where(and(eq(employeeTeamAssignments.employeeId, employeeId), eq(employeeTeamAssignments.active, true)))
+      .limit(1),
+    db
+      .select()
+      .from(kpiTargets)
+      .where(and(eq(kpiTargets.metricId, metricId), eq(kpiTargets.active, true))),
+  ]);
 
   const activeTargets = allTargets.filter((t) => {
     if (t.effectiveFrom && t.effectiveFrom > targetDate) return false;

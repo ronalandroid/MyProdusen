@@ -33,10 +33,14 @@ export async function POST(request: NextRequest) {
     if (user.role !== 'EMPLOYEE' && user.role !== 'LEADER') {
       return forbiddenResponse('Pengajuan kasbon hanya untuk Karyawan dan Leader');
     }
-    const employee = await employeeService.getEmployeeByUserId(user.userId);
+    // Employee lookup and body read are independent — run them in parallel.
+    const [employee, rawBody] = await Promise.all([
+      employeeService.getEmployeeByUserId(user.userId),
+      request.json().catch(() => undefined),
+    ]);
     if (!employee) return errorResponse('Profil karyawan tidak ditemukan', 404);
 
-    const parsed = requestSchema.safeParse(await request.json().catch(() => undefined));
+    const parsed = requestSchema.safeParse(rawBody);
     if (!parsed.success) return validationErrorResponse(parsed.error.errors[0]?.message || 'Payload kasbon tidak valid');
 
     const advance = await requestAdvance({

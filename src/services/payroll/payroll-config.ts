@@ -434,16 +434,18 @@ export async function resolveActivePayrollRule(employeeId: string, targetDate = 
   const [emp] = await db.select().from(employees).where(eq(employees.id, employeeId)).limit(1);
   if (!emp) return null;
 
-  const [teamAssignment] = await db
-    .select()
-    .from(employeeTeamAssignments)
-    .where(and(eq(employeeTeamAssignments.employeeId, employeeId), eq(employeeTeamAssignments.active, true)))
-    .limit(1);
-
-  const allRules = await db
-    .select()
-    .from(payrollRules)
-    .where(eq(payrollRules.active, true));
+  // Independent reads — fetch the assignment and rules in parallel.
+  const [[teamAssignment], allRules] = await Promise.all([
+    db
+      .select()
+      .from(employeeTeamAssignments)
+      .where(and(eq(employeeTeamAssignments.employeeId, employeeId), eq(employeeTeamAssignments.active, true)))
+      .limit(1),
+    db
+      .select()
+      .from(payrollRules)
+      .where(eq(payrollRules.active, true)),
+  ]);
 
   const activeRules = allRules.filter((r) => {
     if (r.effectiveFrom && r.effectiveFrom > targetDate) return false;
