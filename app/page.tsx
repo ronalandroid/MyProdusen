@@ -88,11 +88,7 @@ export default function LandingPage() {
       {/* Hero */}
       <main className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-12 px-6 py-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8 lg:px-8 lg:py-16">
         <div className="flex flex-col justify-center">
-          <div className="lp-reveal mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-[#FFC107]/40 bg-[#FFC107]/15 px-4 py-2 text-sm font-bold text-[#8A6D00] lg:mb-8">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FFC107] opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#F5A800]" />
-            </span>
+          <div className="lp-reveal mb-6 inline-flex w-fit items-center rounded-full border border-[#FFC107]/40 bg-[#FFC107]/15 px-4 py-2 text-sm font-bold text-[#8A6D00] lg:mb-8">
             Platform Operasional Internal · TBM Group
           </div>
 
@@ -104,14 +100,14 @@ export default function LandingPage() {
           </h1>
 
           <p className="lp-reveal mb-8 max-w-lg text-base font-medium leading-relaxed text-[#5A5A5A] sm:text-lg" style={{ animationDelay: "160ms" }}>
-            Absensi, KPI, penggajian, hingga manajemen karyawan — efisien, akurat,
-            dan aman. Dirancang untuk mendukung produksi dimsum beku premium yang berkelanjutan.
+            Absensi, KPI, penggajian, dan manajemen karyawan yang efisien, akurat,
+            dan aman untuk mendukung produksi dimsum beku premium.
           </p>
 
           <div className="lp-reveal mb-10 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: "240ms" }}>
             <Link
               href="/login"
-              className="flex items-center justify-center gap-2 rounded-2xl bg-[#FFC107] px-7 py-4 text-lg font-black text-[#111111] shadow-[0_10px_28px_rgba(255,193,7,0.35)] transition-transform hover:bg-[#FFCA28] active:scale-95"
+              className="flex items-center justify-center gap-2 rounded-full bg-[#FFC107] px-8 py-4 text-lg font-black text-[#111111] shadow-[0_10px_28px_rgba(255,193,7,0.35)] transition-transform hover:bg-[#FFCA28] active:scale-95"
             >
               Masuk Sistem <ArrowRight size={20} strokeWidth={2.5} />
             </Link>
@@ -257,7 +253,7 @@ export default function LandingPage() {
                 </span>
               </div>
               <p className="mt-4 text-sm font-medium leading-relaxed text-[#6B6B6B]">
-                Sistem operasional internal untuk produksi dimsum beku premium —
+                Sistem operasional internal untuk produksi dimsum beku premium:
                 absensi, KPI, penggajian, dan manajemen tim dalam satu platform.
               </p>
             </div>
