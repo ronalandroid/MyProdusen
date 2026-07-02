@@ -290,6 +290,7 @@ function RejectModal({
       aria-modal="true"
       aria-labelledby="reject-modal-title"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
     >
       <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl" style={{ background: 'var(--bg-card)' }}>
         <div className="flex items-center justify-between mb-4">
@@ -364,6 +365,7 @@ function CreateModal({
       aria-modal="true"
       aria-labelledby="create-ot-title"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
     >
       <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto" style={{ background: 'var(--bg-card)' }}>
         <div className="flex items-center justify-between mb-5">

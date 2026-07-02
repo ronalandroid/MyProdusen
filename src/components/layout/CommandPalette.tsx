@@ -138,6 +138,9 @@ export default function CommandPalette({ role }: { role: UserRole | string }) {
       onClick={(e) => {
         if (e.target === e.currentTarget) setOpen(false);
       }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") setOpen(false);
+      }}
       style={{
         position: "fixed",
         inset: 0,
