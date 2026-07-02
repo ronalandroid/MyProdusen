@@ -104,7 +104,7 @@ function AssessDrawer({ employee, score, onClose, onSaved }: AssessDrawerProps) 
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 90, display: "flex", justifyContent: "flex-end" }}>
-      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(17,17,17,0.4)", backdropFilter: "blur(2px)" }} />
+      <button type="button" aria-label="Tutup panel" onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(17,17,17,0.4)", backdropFilter: "blur(2px)", border: "none", padding: 0, cursor: "default" }} />
       <div style={{
         position: "relative", width: 540, maxWidth: "92vw", height: "100%",
         background: "var(--bg-hover)", boxShadow: "-16px 0 48px rgba(17,17,17,0.18)",

@@ -62,6 +62,7 @@ function SelfieDetailModal({ item, onClose }: { item: SelfieReviewItem; onClose:
       aria-modal="true"
       aria-label={`Detail selfie ${item.employeeName}`}
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
       style={{
         position: "fixed",
         inset: 0,
