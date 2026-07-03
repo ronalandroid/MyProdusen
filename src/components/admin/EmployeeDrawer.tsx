@@ -161,7 +161,7 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
         {/* Header (yellow gradient) */}
         <div style={{ background: "linear-gradient(135deg, #FFC107, #FFD85A)", padding: "20px 24px 22px", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", color: "#6B4E00" }}>PROFIL KARYAWAN</span>
+            <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", color: "#6B4E00" }}>PROFIL KARYAWAN</span>
             <button type="button" onClick={onClose} aria-label="Tutup" style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(17,17,17,0.12)", color: "var(--text-primary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <X size={16} />
             </button>
@@ -180,17 +180,17 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
                   {emp.nip} · {emp.position ?? "—"}
                 </div>
                 <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
-                  <span style={{ padding: "3px 11px", borderRadius: 999, fontSize: 10.5, fontWeight: 800, background: "rgba(255,255,255,0.65)", color: "var(--text-primary)", whiteSpace: "nowrap" }}>
+                  <span style={{ padding: "3px 11px", borderRadius: 999, fontSize: 12, fontWeight: 800, background: "rgba(255,255,255,0.65)", color: "var(--text-primary)", whiteSpace: "nowrap" }}>
                     {emp.division ?? "—"}
                   </span>
-                  <span style={{ padding: "3px 11px", borderRadius: 999, fontSize: 10.5, fontWeight: 800, background: st.bg, color: st.fg }}>
+                  <span style={{ padding: "3px 11px", borderRadius: 999, fontSize: 12, fontWeight: 800, background: st.bg, color: st.fg }}>
                     {st.label}
                   </span>
                 </div>
               </div>
               <div style={{ textAlign: "center", background: "rgba(255,255,255,0.6)", borderRadius: 16, padding: "10px 18px" }}>
                 <div style={{ fontFamily: "monospace", fontSize: 30, fontWeight: 800, lineHeight: 1, color: scoreColor(score) }}>{score}</div>
-                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.04em", color: "#6B4E00", marginTop: 4 }}>{tier.label}</div>
+                <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.04em", color: "#6B4E00", marginTop: 4 }}>{tier.label}</div>
               </div>
             </div>
           )}
@@ -211,7 +211,7 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
 
           {!empLoading && emp && tab === "ringkasan" && (
             <>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, fontWeight: 700, color: "#1E6B43" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "#1E6B43" }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#34A06A", display: "inline-block" }} />
                 DATA SINKRON REALTIME DARI APLIKASI
               </div>
@@ -225,7 +225,7 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
                   { label: "MASA KERJA", value: workDuration(emp.workDurationDays) },
                 ].map((tile) => (
                   <div key={tile.label} style={{ background: "var(--bg-card)", borderRadius: 14, padding: "12px 14px" }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>{tile.label}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>{tile.label}</div>
                     <div style={{ fontFamily: "monospace", fontSize: 18, fontWeight: 800, marginTop: 3 }}>{tile.value}</div>
                   </div>
                 ))}
@@ -234,13 +234,13 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
               {/* Attendance heatmap */}
               {attendance?.heatmap && attendance.heatmap.length > 0 && (
                 <div style={{ marginTop: 14, background: "var(--bg-card)", borderRadius: 16, padding: "16px 18px" }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>KEHADIRAN HARIAN (27 HARI KERJA)</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>KEHADIRAN HARIAN (27 HARI KERJA)</div>
                   <div style={{ display: "flex", gap: 3, marginTop: 9 }}>
                     {attendance.heatmap.slice(0, 27).map((d, i) => (
                       <span key={i} style={{ flex: 1, height: 18, borderRadius: 4, background: DAY_COLOR[d.status] ?? "var(--border-color)" }} />
                     ))}
                   </div>
-                  <div style={{ marginTop: 10, display: "flex", gap: 12, flexWrap: "wrap", fontSize: 9, fontWeight: 700, color: "var(--text-muted)" }}>
+                  <div style={{ marginTop: 10, display: "flex", gap: 12, flexWrap: "wrap", fontSize: 12, fontWeight: 700, color: "var(--text-muted)" }}>
                     {[["Hadir", "#34A06A"], ["Telat", "#FFC107"], ["Sakit", "#F0871F"], ["Cuti", "#3D6B8F"], ["Izin", "#9DB6C9"], ["Alpha", "#D8432F"]].map(([label, color]) => (
                       <span key={label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         <span style={{ width: 9, height: 9, borderRadius: 2, background: color }} />
@@ -254,9 +254,9 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
               {/* Payroll + Contact */}
               <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div style={{ background: "var(--bg-card)", borderRadius: 16, padding: "16px 18px" }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>PAYROLL TERAKHIR</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>PAYROLL TERAKHIR</div>
                   {latestPayslip ? (
-                    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6, fontSize: 11.5 }}>
+                    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ color: "var(--text-secondary)" }}>Bruto</span>
                         <span style={{ fontFamily: "monospace" }}>Rp {rupiah(latestPayslip.netPay ?? 0)}</span>
@@ -265,15 +265,15 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
                         <span>Neto</span>
                         <span style={{ fontFamily: "monospace" }}>Rp {rupiah(latestPayslip.netPay ?? 0)}</span>
                       </div>
-                      <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{latestPayslip.period}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{latestPayslip.period}</div>
                     </div>
                   ) : (
                     <div style={{ marginTop: 10, fontSize: 12, color: "var(--text-muted)" }}>Belum ada data payroll.</div>
                   )}
                 </div>
                 <div style={{ background: "var(--bg-card)", borderRadius: 16, padding: "16px 18px" }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>KONTAK &amp; KEPEGAWAIAN</div>
-                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 7, fontSize: 11 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>KONTAK &amp; KEPEGAWAIAN</div>
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 7, fontSize: 12 }}>
                     {[
                       { label: "BERGABUNG", value: emp.workStartDate ? new Date(emp.workStartDate).toLocaleDateString("id-ID") : "—" },
                       { label: "SHIFT", value: emp.shift ?? "—" },
@@ -281,7 +281,7 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
                       { label: "EMAIL", value: emp.email ?? "—" },
                     ].map((item) => (
                       <div key={item.label}>
-                        <span style={{ display: "block", fontSize: 8.5, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.04em" }}>{item.label}</span>
+                        <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.04em" }}>{item.label}</span>
                         <span style={{ fontWeight: 600, fontFamily: item.label === "TELEPON" ? "monospace" : undefined }}>{item.value}</span>
                       </div>
                     ))}
@@ -293,7 +293,7 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
 
           {!empLoading && emp && tab === "riwayat" && (
             <>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>RIWAYAT PAYROLL</div>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>RIWAYAT PAYROLL</div>
               <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
                 {payslips.length === 0 && <div style={{ color: "var(--text-muted)", fontSize: 13 }}>Tidak ada riwayat payroll.</div>}
                 {payslips.map((p) => (
@@ -304,7 +304,7 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
                         Neto: <span style={{ fontFamily: "monospace" }}>Rp {rupiah(p.netPay ?? 0)}</span>
                       </div>
                     </div>
-                    <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 10, fontWeight: 700, background: p.status === "PAID" ? "#E5F2E9" : "#FAF0DC", color: p.status === "PAID" ? "#1E6B43" : "#8A5A00" }}>
+                    <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: p.status === "PAID" ? "#E5F2E9" : "#FAF0DC", color: p.status === "PAID" ? "#1E6B43" : "#8A5A00" }}>
                       {p.status === "PAID" ? "Dibayar" : p.status}
                     </span>
                   </div>
@@ -315,20 +315,20 @@ export default function EmployeeDrawer({ employeeId, onClose }: EmployeeDrawerPr
 
           {!empLoading && emp && tab === "dokumen" && (
             <>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>DOKUMEN KARYAWAN</div>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", color: "var(--text-muted)" }}>DOKUMEN KARYAWAN</div>
               <div style={{ marginTop: 10, color: "var(--text-muted)", fontSize: 13 }}>
                 Dokumen dikelola melalui halaman <a href={`/dashboard/documents`} style={{ color: "#8A5A00", fontWeight: 700 }}>Dokumen</a>.
               </div>
 
               {emp.address && (
                 <div style={{ marginTop: 16, background: "var(--bg-card)", borderRadius: 14, padding: "14px 16px" }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.04em" }}>ALAMAT</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.04em" }}>ALAMAT</div>
                   <div style={{ marginTop: 6, fontSize: 13, fontWeight: 600 }}>{emp.address}</div>
                 </div>
               )}
               {emp.bankAccount && (
                 <div style={{ marginTop: 10, background: "var(--bg-card)", borderRadius: 14, padding: "14px 16px" }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.04em" }}>REKENING PAYROLL</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.04em" }}>REKENING PAYROLL</div>
                   <div style={{ marginTop: 6, fontSize: 13, fontFamily: "monospace", fontWeight: 700 }}>{emp.bankAccount}</div>
                 </div>
               )}
