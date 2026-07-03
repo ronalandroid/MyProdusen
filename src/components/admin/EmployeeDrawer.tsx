@@ -91,8 +91,10 @@ function initials(name: string) {
   return name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
 
+const rupiahFormatter = new Intl.NumberFormat("id-ID");
+
 function rupiah(n: number) {
-  return new Intl.NumberFormat("id-ID").format(n);
+  return rupiahFormatter.format(n);
 }
 
 function workDuration(days: number | null | undefined) {

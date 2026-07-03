@@ -2,6 +2,8 @@ import { Users, MapPin, Calendar, FileText, Banknote, BarChart3, Settings, Clipb
 
 export const numberFormatter = new Intl.NumberFormat("id-ID");
 
+export const currencyFormatter = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
+
 export const SUPERADMIN_QUICK_ACTIONS = [
   { name: "Karyawan", path: "/dashboard/employees", icon: Users, bg: "rgba(59,130,246,0.1)", text: "var(--info)" },
   { name: "Lokasi/Shift", path: "/dashboard/locations", icon: MapPin, bg: "rgba(251,191,36,0.15)", text: "#D97706" },
