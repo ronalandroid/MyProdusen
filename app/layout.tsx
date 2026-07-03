@@ -26,7 +26,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || "https://myprodusen.online"),
-  title: "MyProdusen — Sistem Internal Produsen Dimsum Medan",
+  title: "MyProdusen · Sistem Internal Produsen Dimsum Medan",
   description: "MyProdusen adalah sistem internal Produsen Dimsum Medan by TBM Group untuk absensi, cuti, payroll, KPI produksi, dan koordinasi tim.",
   keywords: ["hris", "mobile app", "employee management", "attendance", "dimsum medan", "hr system"],
   authors: [{ name: "MyProdusen Team" }],
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     "apple-mobile-web-app-capable": "yes",
   },
   openGraph: {
-    title: "MyProdusen — Sistem Internal Produsen Dimsum Medan",
+    title: "MyProdusen · Sistem Internal Produsen Dimsum Medan",
     description: "MyProdusen adalah sistem internal Produsen Dimsum Medan by TBM Group untuk absensi, cuti, payroll, KPI produksi, dan koordinasi tim.",
     type: "website",
     locale: "id_ID",
