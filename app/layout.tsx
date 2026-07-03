@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Poppins, JetBrains_Mono } from "next/font/google";
 import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
@@ -79,11 +80,15 @@ export const viewport: Viewport = {
   themeColor: "#FFC107",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Opt every route into dynamic rendering. Static prerendering bakes HTML at
+  // build time without the per-request CSP nonce, so the enforced nonce policy
+  // (proxy.ts, audit M7 / #17) would block scripts on prerendered pages.
+  await headers();
   return (
     <html lang="id" className={`${poppins.variable} ${jetbrainsMono.variable}`}>
       <head>

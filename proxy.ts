@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isTrustedMutationOrigin } from '@/lib/security/csrf-origin';
-import { generateNonce, buildReportOnlyCsp } from '@/lib/security/csp';
+import { generateNonce, buildNonceCsp } from '@/lib/security/csp';
 import { TOKEN_COOKIE_NAME } from '@/lib/auth-response';
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const protectedRoutes = ['/dashboard'];
@@ -65,19 +65,25 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  // Per-request nonce + report-only CSP on document responses (audit M7 / #17).
-  // Observation-only — the enforced policy in next.config.js is unchanged, so
-  // this can't break rendering; it surfaces what a future nonce-enforced policy
-  // would reject. The nonce is forwarded on x-nonce for server components to
-  // adopt when enforcement is flipped on.
+  // Per-request nonce CSP on document responses (audit M7 / #17).
+  // The nonce policy rides on the request CSP header so Next.js attaches the
+  // nonce to its own inline bootstrap scripts — without that, enforcement
+  // would block hydration. The baseline policy in next.config.js still
+  // applies; browsers enforce the intersection of both headers.
+  // Enforced in production; report-only in dev (React Refresh needs eval) or
+  // with CSP_NONCE_REPORT_ONLY=true as the production rollback switch.
+  const isProd = process.env.NODE_ENV === 'production';
   const nonce = generateNonce();
+  const cspValue = buildNonceCsp(nonce, { isProd });
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);
+  requestHeaders.set('content-security-policy', cspValue);
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
+  const enforceNonceCsp = isProd && process.env.CSP_NONCE_REPORT_ONLY !== 'true';
   response.headers.set(
-    'Content-Security-Policy-Report-Only',
-    buildReportOnlyCsp(nonce, { isProd: process.env.NODE_ENV === 'production' }),
+    enforceNonceCsp ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only',
+    cspValue,
   );
 
   if (isProtectedRoute) {
