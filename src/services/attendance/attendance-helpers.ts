@@ -64,14 +64,13 @@ export async function getActivePayrollRule(employee: typeof employees.$inferSele
 }
 
 export async function invalidateAttendanceCaches(employeeId?: string): Promise<void> {
-  await cacheManager.invalidateByTag(CacheTags.attendance);
-
-  if (employeeId) {
-    await cacheManager.delete(CacheKeys.attendance.today(employeeId));
-  }
-
-  await cacheManager.delete(CacheKeys.attendance.today());
-  await cacheManager.deletePattern('attendance:list:*');
-  await cacheManager.deletePattern('attendance:stats:*');
-  await cacheManager.invalidateByTag(CacheTags.dashboard);
+  // All deletions are independent; order doesn't matter for invalidation.
+  await Promise.all([
+    cacheManager.invalidateByTag(CacheTags.attendance),
+    ...(employeeId ? [cacheManager.delete(CacheKeys.attendance.today(employeeId))] : []),
+    cacheManager.delete(CacheKeys.attendance.today()),
+    cacheManager.deletePattern('attendance:list:*'),
+    cacheManager.deletePattern('attendance:stats:*'),
+    cacheManager.invalidateByTag(CacheTags.dashboard),
+  ]);
 }

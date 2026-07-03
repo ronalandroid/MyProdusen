@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { SuperadminInsights } from "@/lib/dashboard/dashboard-types";
-import { numberFormatter } from "./constants";
+import { currencyFormatter, numberFormatter } from "./constants";
 import { mapToneToColor } from "./helpers";
 
 export function ManagementCard({ card, delay }: { card: SuperadminInsights['managementCards'][number]; delay?: string }) {
@@ -9,7 +9,7 @@ export function ManagementCard({ card, delay }: { card: SuperadminInsights['mana
       <span className="flex flex-col">
         <strong className="text-xs sm:text-sm text-[var(--text-secondary)] font-semibold uppercase tracking-wide">{card.label}</strong>
         <strong className="text-2xl sm:text-3xl mt-1 text-[var(--text-primary)]">
-          {card.isCurrency ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(card.value) : numberFormatter.format(card.value)}
+          {card.isCurrency ? currencyFormatter.format(card.value) : numberFormatter.format(card.value)}
         </strong>
       </span>
       <small className="text-xs sm:text-sm font-medium mt-auto" style={{ color: mapToneToColor(card.tone) }}>{card.detail}</small>
