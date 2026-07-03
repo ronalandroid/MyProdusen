@@ -13,7 +13,7 @@ export function DecisionQueuePanel({ stats }: { stats: DashboardStats }) {
     <section className="card mb-5" style={{ padding: "16px 20px" }} aria-labelledby="decision-queue-title">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", color: "var(--text-muted)", textTransform: "uppercase" }}>Antrian Keputusan</div>
+          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", color: "var(--text-muted)", textTransform: "uppercase" }}>Antrian Keputusan</div>
           <h3 id="decision-queue-title" style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", marginTop: 2 }}>
             {totalPending > 0 ? `${totalPending} pengajuan menunggu` : "Tidak ada pengajuan pending"}
           </h3>

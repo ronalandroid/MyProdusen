@@ -160,7 +160,7 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
                         href={`https://www.openstreetmap.org/?mlat=${att!.checkInLatitude}&mlon=${att!.checkInLongitude}&zoom=17`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ fontSize: 11, color: "#3D6B8F", textDecoration: "underline" }}
+                        style={{ fontSize: 12, color: "#3D6B8F", textDecoration: "underline" }}
                       >
                         Buka di peta ↗
                       </a>
@@ -178,7 +178,7 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
                     { label: "Status Geo", value: att?.checkInGeoStatus || "–" },
                   ].map(({ label, value }) => (
                     <div key={label} style={{ padding: "10px 12px", textAlign: "center", borderRight: "1px solid var(--border-color)" }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
                       <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)", marginTop: 2, fontFamily: "var(--font-mono, monospace)" }}>{value}</div>
                     </div>
                   ))}
@@ -187,7 +187,7 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
 
               {/* Selfie */}
               <section>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Foto Selfie</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>Foto Selfie</div>
                 <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid var(--border-color)", background: "var(--bg-hover)", minHeight: 180, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {att?.checkInSelfieUrl ? (
                     <img src={sizedImageSrc(att.checkInSelfieUrl, 400)} alt="Selfie absensi" style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
@@ -202,7 +202,7 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
 
               {/* Exception Info */}
               <section style={{ background: "var(--bg-hover)", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Detail Pengajuan</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Detail Pengajuan</div>
                 <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: "6px 12px", fontSize: 13 }}>
                   <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>Tipe</span>
                   <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>{detail.type}</span>
@@ -218,7 +218,7 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
               {/* Decision Timeline */}
               {detail.reviewedAt && (
                 <section>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Timeline Keputusan</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Timeline Keputusan</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                     {[
                       { label: "Diajukan", date: detail.createdAt, color: "#3D6B8F" },
@@ -231,7 +231,7 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
                         </div>
                         <div style={{ paddingBottom: 16 }}>
                           <div style={{ fontSize: 12, fontWeight: 700, color }}>{label}</div>
-                          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{new Date(date).toLocaleString("id-ID")}</div>
+                          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{new Date(date).toLocaleString("id-ID")}</div>
                           {detail.reviewNote && idx === 1 && (
                             <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4, fontStyle: "italic" }}>&quot;{detail.reviewNote}&quot;</div>
                           )}
@@ -245,7 +245,7 @@ function EvidenceDrawer({ exceptionId, onClose, onReviewed }: { exceptionId: str
               {/* Review actions for pending */}
               {detail.status === "PENDING" && (
                 <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Keputusan</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Keputusan</div>
                   {actionError && (
                     <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(179,54,43,0.08)", color: "#B3362B", fontSize: 12, fontWeight: 600 }}>
                       {actionError}
@@ -542,7 +542,7 @@ export default function AttendanceExceptionsPage() {
       {!loading && status === "PENDING" && (pendingByTier.VALID.length + pendingByTier.REVIEW.length + pendingByTier.INVALID.length) > 0 && (
         <div className="card" style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", color: "var(--text-muted)", textTransform: "uppercase" }}>Proses Massal Berdasarkan Validitas Data</div>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", color: "var(--text-muted)", textTransform: "uppercase" }}>Proses Massal Berdasarkan Validitas Data</div>
             <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>Dikelompokkan dari akurasi GPS, jarak ke lokasi, dan bukti selfie.</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
@@ -568,8 +568,8 @@ export default function AttendanceExceptionsPage() {
                   title={`Pilih semua ${label.toLowerCase()}`}
                 >
                   <span style={{ fontSize: 22, fontWeight: 900, color: count > 0 ? tone.color : "var(--text-muted)", fontFamily: "var(--font-mono, monospace)" }}>{count}</span>
-                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-primary)" }}>{label}</span>
-                  <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{hint}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)" }}>{label}</span>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{hint}</span>
                 </button>
               );
             })}

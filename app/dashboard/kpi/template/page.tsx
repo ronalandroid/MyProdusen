@@ -172,7 +172,7 @@ export default function KpiTemplateEditorPage() {
 
       {/* New Template */}
       <section className="card" style={{ padding: "16px 20px" }}>
-        <div style={{ fontSize: 11, fontWeight: 800, color: "#6E6E6E", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Buat Template Baru</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#6E6E6E", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>Buat Template Baru</div>
         <div style={{ display: "flex", gap: 8 }}>
           <input
             className="input"
@@ -222,7 +222,7 @@ export default function KpiTemplateEditorPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 14, fontWeight: 800, color: "#111111" }}>{draft.name}</span>
                       {draft.isDirty && (
-                        <span style={{ fontSize: 10, fontWeight: 800, color: "#8A5A00", background: "rgba(138,90,0,0.1)", padding: "2px 8px", borderRadius: 6 }}>Belum disimpan</span>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: "#8A5A00", background: "rgba(138,90,0,0.1)", padding: "2px 8px", borderRadius: 6 }}>Belum disimpan</span>
                       )}
                     </div>
                     <div style={{ fontSize: 12, color: "#6E6E6E", marginTop: 2 }}>{draft.itemDrafts.length} metrik</div>
@@ -247,7 +247,7 @@ export default function KpiTemplateEditorPage() {
                   <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 14 }}>
                     {/* Template name field */}
                     <div>
-                      <label htmlFor={`tpl-name-${template.id}`} style={{ fontSize: 11, fontWeight: 700, color: "#6E6E6E", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>Nama Template</label>
+                      <label htmlFor={`tpl-name-${template.id}`} style={{ fontSize: 12, fontWeight: 700, color: "#6E6E6E", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>Nama Template</label>
                       <input
                         id={`tpl-name-${template.id}`}
                         className="input"
@@ -258,14 +258,14 @@ export default function KpiTemplateEditorPage() {
 
                     {/* Items */}
                     <div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#6E6E6E", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Metrik KPI</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#6E6E6E", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Metrik KPI</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         {draft.itemDrafts.map((item, idx) => (
                           <div key={item.id} style={{ background: "#FAFAFA", borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
                             <div style={{ fontSize: 13, fontWeight: 700, color: "#111111" }}>{item.name}</div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                               <div>
-                                <span style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Bobot (%)</span>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Bobot (%)</span>
                                 <div style={{ display: "flex", alignItems: "center", gap: 0, border: "1px solid #EBEBEB", borderRadius: 8, overflow: "hidden", background: "#FFF" }}>
                                   <button
                                     type="button"
@@ -283,7 +283,7 @@ export default function KpiTemplateEditorPage() {
                                 </div>
                               </div>
                               <div>
-                                <label htmlFor={`tpl-${template.id}-target-${item.id}`} style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Target</label>
+                                <label htmlFor={`tpl-${template.id}-target-${item.id}`} style={{ fontSize: 12, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Target</label>
                                 <input
                                   id={`tpl-${template.id}-target-${item.id}`}
                                   className="input"
@@ -294,7 +294,7 @@ export default function KpiTemplateEditorPage() {
                                 />
                               </div>
                               <div>
-                                <label htmlFor={`tpl-${template.id}-unit-${item.id}`} style={{ fontSize: 10, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Satuan</label>
+                                <label htmlFor={`tpl-${template.id}-unit-${item.id}`} style={{ fontSize: 12, fontWeight: 700, color: "#6E6E6E", display: "block", marginBottom: 4 }}>Satuan</label>
                                 <input
                                   id={`tpl-${template.id}-unit-${item.id}`}
                                   className="input"
