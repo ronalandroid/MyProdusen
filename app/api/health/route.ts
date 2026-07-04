@@ -6,6 +6,7 @@ import { env } from '@/lib/env';
 import { isRedisConfigured, pingRedis } from '@/lib/cache/redis';
 import { cacheMetrics } from '@/lib/cache/cache-metrics';
 import { getAllCircuitBreakers } from '@/lib/resilience/circuit-breaker';
+import packageJson from '@/package.json';
 
 export const runtime = 'nodejs';
 
@@ -141,7 +142,7 @@ function getAppMetadata() {
   return {
     name: 'MyProdusen',
     status: 'ok' as CheckStatus,
-    version: process.env.APP_VERSION || process.env.NEXT_PUBLIC_APP_VERSION || 'unknown',
+    version: process.env.APP_VERSION || process.env.NEXT_PUBLIC_APP_VERSION || packageJson.version || 'unknown',
     commit: process.env.GIT_COMMIT_SHA || process.env.COOLIFY_GIT_COMMIT_SHA || 'unknown',
     buildTime: process.env.BUILD_TIME || process.env.COOLIFY_BUILD_TIME || 'unknown',
     nodeEnv: process.env.NODE_ENV || 'unknown',
