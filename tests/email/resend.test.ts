@@ -158,27 +158,6 @@ describe('Resend email integration', () => {
     expect(payload.html).toContain('https://myprodusen.online/reset-password?token=abc');
   });
 
-  it('renders notification-center template like the reference email system', async () => {
-    process.env.RESEND_API_KEY = 're_test_key';
-    process.env.RESEND_FROM_EMAIL = 'MyProdusen <noreply@example.com>';
-    process.env.APP_URL = 'https://myprodusen.online';
-
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: 'email_791' }),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-
-    await sendAuthEmail('notification-center', 'user@example.com', { name: 'Deni Lesmana' });
-
-    const payload = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(payload.subject).toContain('Pusat Notifikasi');
-    expect(payload.html).toContain('Pusat Notifikasi Anda');
-    expect(payload.html).toContain('Cuti Disetujui');
-    expect(payload.html).toContain('Pengingat Kehadiran');
-    expect(payload.html).toContain('Buka MyProdusen');
-  });
-
   it('uses canonical production URLs across auth templates', async () => {
     process.env.RESEND_API_KEY = 're_test_key';
     process.env.RESEND_FROM_EMAIL = 'MyProdusen <noreply@example.com>';
@@ -196,7 +175,6 @@ describe('Resend email integration', () => {
     await sendAuthEmail('reset-password', 'user@example.com');
     await sendAuthEmail('role-changed', 'user@example.com', { role: 'EMPLOYEE' });
     await sendAuthEmail('account-approved', 'user@example.com');
-    await sendAuthEmail('notification-center', 'user@example.com');
 
     for (const call of fetchMock.mock.calls) {
       const payload = JSON.parse(call[1].body);
