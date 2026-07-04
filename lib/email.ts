@@ -2,7 +2,7 @@ import { db, emailLogs } from '@/lib/db';
 import { getCanonicalAppUrl } from '@/lib/app-url';
 import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 
-export type EmailTemplate = 'register' | 'forgot-password' | 'reset-password' | 'role-changed' | 'account-approved' | 'notification-center';
+export type EmailTemplate = 'register' | 'forgot-password' | 'reset-password' | 'role-changed' | 'account-approved';
 type UserEmailEvent = Extract<EmailTemplate, 'account-approved' | 'role-changed'>;
 type EmailStatus = 'SKIPPED' | 'SENT' | 'FAILED';
 
@@ -364,26 +364,6 @@ export async function sendAuthEmail(template: EmailTemplate, to: string, data: R
         text: `Akun Anda sudah aktif. Login: ${loginUrl}`,
       }),
       text: `Akun Anda sudah aktif. Login: ${loginUrl}`,
-    },
-    'notification-center': {
-      to,
-      template,
-      metadata: { name: data.name || null },
-      subject: `${appName} - Pusat Notifikasi Anda`,
-      html: renderEmail({
-        eyebrow: 'Pusat notifikasi',
-        title: 'Pusat Notifikasi Anda',
-        intro: `Halo${displayName || ', Tim'}! Berikut ringkasan notifikasi terbaru yang perlu Anda ketahui.`,
-        body: [
-          '<strong>Cuti Disetujui</strong><br>Pengajuan cuti Anda telah disetujui oleh atasan.',
-          '<strong>Akun Ditugaskan</strong><br>Super Admin telah menugaskan akses kerja Anda di MyProdusen.',
-          '<strong>Pengingat Kehadiran</strong><br>Jangan lupa melakukan check-in sesuai jam kerja.',
-        ],
-        cta: { label: 'Buka MyProdusen', url: loginUrl },
-        note: 'Notifikasi penting tetap tersimpan di pusat notifikasi aplikasi.',
-        text: `Pusat Notifikasi Anda. Buka MyProdusen: ${loginUrl}`,
-      }),
-      text: `Pusat Notifikasi Anda. Buka MyProdusen: ${loginUrl}`,
     },
   };
 
