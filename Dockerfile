@@ -62,6 +62,11 @@ RUN --mount=type=cache,target=/app/.next/cache \
 FROM node:22-alpine AS runner
 WORKDIR /app
 
+# Coolify passes the deployed commit as the SOURCE_COMMIT build arg; bridge it
+# to the env var /api/health reports so a deploy is verifiable by commit sha.
+ARG SOURCE_COMMIT=unknown
+ENV GIT_COMMIT_SHA=$SOURCE_COMMIT
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
