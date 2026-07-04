@@ -26,6 +26,7 @@ export type NavigationItemKey =
   | 'documents'
   | 'notifications'
   | 'audit'
+  | 'email-logs'
   | 'settings'
   | 'accounts'
   | 'profile';
@@ -88,6 +89,7 @@ export const navigationPolicy: readonly NavigationPolicyItem[] = [
   { key: 'performance-assessment', name: 'Penilaian', path: '/dashboard/performance/assessment', group: 'kinerja', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'announcements', name: 'Pengumuman', path: '/dashboard/announcements', group: 'lainnya', primaryFor: [], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },
   { key: 'audit', name: 'Audit', path: '/dashboard/audit', group: 'lainnya', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
+  { key: 'email-logs', name: 'Log Email', path: '/dashboard/email-logs', group: 'lainnya', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'settings', name: 'Kebijakan', path: '/dashboard/settings', group: 'lainnya', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'accounts', name: 'Akun & Peran', path: '/dashboard/accounts', group: 'lainnya', primaryFor: [], allowedRoles: ['SUPERADMIN'] },
   { key: 'profile', name: 'Akun', path: '/dashboard/profile', group: 'lainnya', primaryFor: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'], allowedRoles: ['SUPERADMIN', 'LEADER', 'EMPLOYEE'] },

@@ -17,6 +17,7 @@ import {
   Home,
   MapPin,
   Shield,
+  Mail,
   User,
   UserCog,
   Users,
@@ -46,6 +47,7 @@ const iconMap: Record<string, LucideIcon> = {
   "/dashboard/documents": FileText,
   "/dashboard/notifications": Bell,
   "/dashboard/audit": Shield,
+  "/dashboard/email-logs": Mail,
   "/dashboard/settings": Settings,
   "/dashboard/profile": User,
 };
