@@ -1,5 +1,6 @@
 import { db, emailLogs } from '@/lib/db';
 import { getCanonicalAppUrl } from '@/lib/app-url';
+import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 
 export type EmailTemplate = 'register' | 'forgot-password' | 'reset-password' | 'role-changed' | 'account-approved' | 'notification-center';
 type UserEmailEvent = Extract<EmailTemplate, 'account-approved' | 'role-changed'>;
@@ -139,7 +140,7 @@ function renderEmail(input: BrandedEmailInput) {
               <td style="padding:22px 10px 6px;">
                 <p style="margin:0 0 4px;color:#6B7280;font-size:12px;line-height:1.6;font-weight:700;">${appName} &middot; <span style="font-weight:500;">by TBM Group</span></p>
                 <p style="margin:0;color:#9CA3AF;font-size:12px;line-height:1.6;">${companyName}, Medan, Sumatera Utara</p>
-                <p style="margin:12px 0 0;color:#9CA3AF;font-size:11px;line-height:1.6;">Email otomatis &mdash; mohon tidak dibalas. Butuh bantuan? Hubungi HRD atau Superadmin. Email ini bersifat internal; jangan dibagikan ke pihak lain.</p>
+                <p style="margin:12px 0 0;color:#9CA3AF;font-size:11px;line-height:1.6;">Email otomatis, mohon tidak dibalas. Butuh bantuan? Hubungi HRD atau Superadmin. Email ini bersifat internal; jangan dibagikan ke pihak lain.</p>
                 <p style="margin:10px 0 0;color:#B8B8B8;font-size:11px;line-height:1.5;">&copy; ${year} ${appName} &middot; <a href="${escapeHtml(appUrl)}" style="color:#9CA3AF;text-decoration:none;">${escapeHtml(appUrl.replace(/^https?:\/\//, ''))}</a></p>
               </td>
             </tr>
@@ -251,6 +252,13 @@ async function logEmailAttempt(
     const message = error instanceof Error ? error.message : 'Unknown email log error';
     console.error('[email:log-error]', { status, template: input.template || 'custom', message });
   }
+
+  // Realtime: the admin Log Email page listens for email.* sources so failed
+  // sends surface immediately. Never let a Redis hiccup break email sending.
+  await publishRealtimeEvent(createRealtimeEvent({
+    type: 'dashboard.updated', scope: 'role', target: 'SUPERADMIN',
+    payload: { source: `email.${status.toLowerCase()}`, template: input.template || 'custom' },
+  })).catch(() => undefined);
 }
 
 export async function sendAuthEmail(template: EmailTemplate, to: string, data: Record<string, string> = {}) {

@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, UserCog, Clock, AlertTriangle, Calendar, CalendarClock,
   CalendarRange, MapPin, Timer, BarChart3, ClipboardList, Star, Wallet, FileText,
   Megaphone, Folder, Bell, Shield, Settings, KeyRound, UserCircle, Circle,
-  ChevronDown, Search,
+  ChevronDown, Search, Mail,
 } from "lucide-react";
 import {
   getGroupedNavigationForRole,
@@ -44,6 +44,7 @@ const ICONS: Partial<Record<NavigationItemKey, React.ElementType>> = {
   documents: Folder,
   notifications: Bell,
   audit: Shield,
+  "email-logs": Mail,
   settings: Settings,
   accounts: KeyRound,
   profile: UserCircle,
