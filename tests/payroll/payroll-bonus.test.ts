@@ -61,7 +61,7 @@ describe('Payroll Rules and KPI Target Bonus Calculator', () => {
 
     await db.insert(employees).values({
       id: employeeId,
-      nip: `MPD-${employeeId.slice(0, 10)}`,
+      nip: `MPD-${employeeId}`,
       userId: employeeId,
       fullName: 'Test Payroll Employee',
       email: `${employeeId}@myprodusen.local`,
@@ -99,12 +99,15 @@ describe('Payroll Rules and KPI Target Bonus Calculator', () => {
   });
 
   afterEach(async () => {
-    // Clean up
+    // Clean up. PayrollItems must go before the employee: a test that fails
+    // before its inline run cleanup leaks items, and the FK (migration 0042)
+    // would otherwise block the employee delete and cascade NIP collisions.
     await db.delete(payrollRules).where(eq(payrollRules.id, ruleId));
     await db.delete(kpiProductionEntries).where(eq(kpiProductionEntries.employeeId, employeeId));
     await db.delete(kpiMetrics).where(eq(kpiMetrics.id, metricId));
     await db.delete(employeeTeamAssignments).where(eq(employeeTeamAssignments.employeeId, employeeId));
     await db.delete(teams).where(eq(teams.id, teamId));
+    await db.delete(payrollItems).where(eq(payrollItems.employeeId, employeeId));
     await db.delete(employeePayrolls).where(eq(employeePayrolls.employeeId, employeeId));
     await db.delete(payrollStructures).where(eq(payrollStructures.id, structureId));
     await db.delete(employees).where(eq(employees.id, employeeId));

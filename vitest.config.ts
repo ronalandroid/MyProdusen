@@ -7,12 +7,44 @@ export default defineConfig({
     environment: 'node',
     testTimeout: 15000,
     setupFiles: ['./tests/setup.ts'],
-    include: ['**/*.test.ts', '**/*.spec.ts'],
-    // '.claude/**' excludes git worktrees created under .claude/worktrees/ — their
-    // duplicated *.test.ts copies otherwise get globbed and run concurrently
-    // against the shared DB with the same time-based fixture IDs, cross-deleting
-    // each other's rows and producing spurious failures.
-    exclude: ['node_modules', 'dist', '.next', '.claude/**', 'tests/e2e/**', 'playwright-report/**', 'test-results/**'],
+    // include/exclude live on the projects below, NOT here: `extends: true`
+    // MERGES root arrays into each project, so a root include would make every
+    // project collect the whole suite again (observed: 366 files instead of 192).
+    // tests/payroll/** must never run in parallel with each other:
+    // calculatePayroll sweeps EVERY active employee holding an open
+    // employeePayrolls assignment (endDate IS NULL), so two payroll files
+    // running concurrently include each other's fixture employees mid-teardown.
+    // Before the core FKs (migration 0042) this silently wrote orphaned
+    // PayrollItem rows; with FKs it fails loudly. Only payroll files create
+    // open assignments (verified: test-utils only cleans them), so serializing
+    // this directory removes the race while the rest of the suite stays
+    // parallel.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'payroll-serial',
+          include: ['tests/payroll/**/*.test.ts'],
+          // Explicitly serialize FILES in this project (per-file module
+          // isolation stays on). poolOptions maxForks/singleFork are not
+          // honored per-project here — verified empirically: five files'
+          // fixtures coexisted in one calculatePayroll sweep.
+          fileParallelism: false,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'general',
+          include: ['**/*.test.ts', '**/*.spec.ts'],
+          // '.claude/**' excludes git worktrees created under .claude/worktrees/ —
+          // their duplicated *.test.ts copies otherwise get globbed and run
+          // concurrently against the shared DB with the same time-based fixture
+          // IDs, cross-deleting each other's rows.
+          exclude: ['node_modules', 'dist', '.next', '.claude/**', 'tests/e2e/**', 'playwright-report/**', 'test-results/**', 'tests/payroll/**'],
+        },
+      },
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

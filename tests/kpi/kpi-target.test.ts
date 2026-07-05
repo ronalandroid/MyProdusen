@@ -41,7 +41,7 @@ describe('KPI Targets and Active Target Resolution Hierarchy', () => {
 
     await db.insert(employees).values({
       id: employeeId,
-      nip: `MPD-${employeeId.slice(0, 10)}`,
+      nip: `MPD-${employeeId}`,
       userId: employeeId,
       fullName: 'Test Employee Target',
       email: `${employeeId}@myprodusen.local`,
