@@ -47,7 +47,7 @@ describe('Kasbon -> payroll auto-deduction', () => {
     });
     await db.insert(employees).values({
       id,
-      nip: `MPD-${id.slice(0, 10)}`,
+      nip: `MPD-${id}`,
       userId: id,
       fullName: 'Kasbon Test Employee',
       email: `${id}@myprodusen.local`,
@@ -80,7 +80,7 @@ describe('Kasbon -> payroll auto-deduction', () => {
     });
     await db.insert(employees).values({
       id,
-      nip: `MPD-${id.slice(0, 10)}`,
+      nip: `MPD-${id}`,
       userId: id,
       fullName: 'Kasbon Settle Employee',
       email: `${id}@myprodusen.local`,
@@ -99,6 +99,9 @@ describe('Kasbon -> payroll auto-deduction', () => {
     }
     if (employeeIds.length) {
       await db.delete(cashAdvances).where(inArray(cashAdvances.employeeId, employeeIds));
+      // Leaked items (test failed before its run cleanup) would block the
+      // employee delete under the core FKs (migration 0042).
+      await db.delete(payrollItems).where(inArray(payrollItems.employeeId, employeeIds));
       await db.delete(employeePayrolls).where(inArray(employeePayrolls.employeeId, employeeIds));
       await db.delete(employees).where(inArray(employees.id, employeeIds));
       await db.delete(users).where(inArray(users.id, employeeIds));

@@ -1,18 +1,24 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import { db, leaveBalanceLedger } from '@/lib/db';
-import { eq } from 'drizzle-orm';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { leaveBalanceService } from '@/features/leave/leave-balance.service';
+import { createTestUser, createTestEmployee, cleanupTestData } from '../helpers/test-utils';
 
 /**
- * Integration test for adjustIndividualQuota against a real DB — isolated to a
- * unique employee + far-future year, cleaned up afterwards.
+ * Integration test for adjustIndividualQuota against a real DB — uses a real
+ * Employee fixture (FK-enforced ledger) in a far-future year, cleaned up after.
  */
 describe('LeaveBalanceService.adjustIndividualQuota (real DB)', () => {
-  const emp = `itest-adj-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const YEAR = 9600 + Math.floor(Math.random() * 300);
+  let userId: string;
+  let emp: string;
 
-  afterEach(async () => {
-    await db.delete(leaveBalanceLedger).where(eq(leaveBalanceLedger.employeeId, emp));
+  beforeAll(async () => {
+    const user = await createTestUser('EMPLOYEE');
+    userId = user.id;
+    emp = await createTestEmployee(userId);
+  });
+
+  afterAll(async () => {
+    await cleanupTestData({ employeeIds: [emp], userIds: [userId] });
   });
 
   it('provisions an individual quota then adjusts it to a new value', async () => {

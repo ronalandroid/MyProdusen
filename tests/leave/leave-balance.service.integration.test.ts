@@ -1,19 +1,26 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import { db, leaveBalanceLedger } from '@/lib/db';
-import { eq } from 'drizzle-orm';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { leaveBalanceService } from '@/features/leave/leave-balance.service';
+import { createTestUser, createTestEmployee, cleanupTestData } from '../helpers/test-utils';
 
 /**
  * Integration tests for LeaveBalanceService read paths against a real DB.
- * getBalance/getBalanceHistory auto-provision an annual entitlement, so each
- * test cleans up the ledger rows it creates for its unique employee id.
+ * getBalance/getBalanceHistory auto-provision an annual entitlement, so the
+ * suite uses a real Employee fixture (FK-enforced ledger) in a far-future
+ * year and cleans up its rows afterwards.
  */
 describe('LeaveBalanceService integration (real DB, read paths)', () => {
-  const emp = `itest-lbal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const YEAR = 9500 + Math.floor(Math.random() * 400);
+  let userId: string;
+  let emp: string;
 
-  afterEach(async () => {
-    await db.delete(leaveBalanceLedger).where(eq(leaveBalanceLedger.employeeId, emp));
+  beforeAll(async () => {
+    const user = await createTestUser('EMPLOYEE');
+    userId = user.id;
+    emp = await createTestEmployee(userId);
+  });
+
+  afterAll(async () => {
+    await cleanupTestData({ employeeIds: [emp], userIds: [userId] });
   });
 
   it('getBalance: auto-provisions an entitlement and returns a zero-usage summary', async () => {
