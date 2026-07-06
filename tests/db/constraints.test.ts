@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { db, users, employees, attendances, workLocations } from '@/lib/db';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 describe('Database Constraints', () => {
   const userIds: string[] = [];
@@ -231,5 +231,29 @@ describe('Database Constraints', () => {
         isActive: true,
       })
     ).rejects.toThrow();
+  });
+});
+
+describe('Core foreign keys (migration 0042 / issue #16)', () => {
+  // These FKs are added by a hand-authored SQL migration, not drizzle-kit
+  // generate (schema.ts declares relations() only, no .references()). This
+  // guards against a future schema regen or migration accidentally dropping
+  // them: the DB, not just the ORM model, must enforce referential integrity.
+  const EXPECTED_FKS = [
+    'Attendance_employeeId_fkey',
+    'PayrollItem_runId_fkey',
+    'PayrollItem_employeeId_fkey',
+    'LeaveRequest_employeeId_fkey',
+    'LeaveBalanceLedger_employeeId_fkey',
+  ] as const;
+
+  it('has all five core FK constraints present in the database', async () => {
+    const rows = await db.execute<{ conname: string }>(sql`
+      SELECT conname FROM pg_constraint WHERE contype = 'f'
+    `);
+    const present = new Set((rows as unknown as Array<{ conname: string }>).map((r) => r.conname));
+    for (const fk of EXPECTED_FKS) {
+      expect(present.has(fk), `missing FK constraint: ${fk}`).toBe(true);
+    }
   });
 });
