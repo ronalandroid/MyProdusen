@@ -37,6 +37,10 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+# ...but keep committed *.example templates (real secrets live in the
+# unignored copies above).
+!.env.example
+!.env.staging.example
 
 # Vercel
 .vercel

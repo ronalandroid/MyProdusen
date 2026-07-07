@@ -1,0 +1,81 @@
+# On-demand full staging stack for MyProdusen (app + Postgres + Redis).
+#
+# Zero production risk: isolated containers, isolated volumes, isolated network.
+# Not meant to run always-on — bring it up to rehearse a release, run E2E, or
+# reproduce a bug against a production-like build, then tear it down.
+#
+#   cp .env.staging.example .env.staging   # then fill the secrets
+#   docker compose -f docker-compose.staging.yml --env-file .env.staging up -d --build
+#   # app on http://localhost:${STAGING_APP_PORT:-3100}
+#   docker compose -f docker-compose.staging.yml --env-file .env.staging down        # keep data
+#   docker compose -f docker-compose.staging.yml --env-file .env.staging down -v      # wipe data
+#
+# The app image is the SAME Dockerfile that ships to production, so the
+# standalone build, entrypoint migrations, and superadmin bootstrap all run
+# exactly as they do in prod.
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${STAGING_DB_USER:-myprodusen}
+      POSTGRES_PASSWORD: ${STAGING_DB_PASSWORD:?set STAGING_DB_PASSWORD in .env.staging}
+      POSTGRES_DB: ${STAGING_DB_NAME:-myprodusen_staging}
+    volumes:
+      - staging_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${STAGING_DB_USER:-myprodusen} -d ${STAGING_DB_NAME:-myprodusen_staging}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Not published to the host by default — only the app needs it. Uncomment to
+    # inspect with a local client.
+    # ports: ["${STAGING_DB_PORT:-55432}:5432"]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - staging_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${STAGING_DB_USER:-myprodusen}:${STAGING_DB_PASSWORD}@postgres:5432/${STAGING_DB_NAME:-myprodusen_staging}
+      REDIS_URL: redis://redis:6379
+      APP_URL: http://localhost:${STAGING_APP_PORT:-3100}
+      NEXT_PUBLIC_APP_URL: http://localhost:${STAGING_APP_PORT:-3100}
+      JWT_SECRET: ${STAGING_JWT_SECRET:?set STAGING_JWT_SECRET (>=32 chars) in .env.staging}
+      NEXTAUTH_SECRET: ${STAGING_NEXTAUTH_SECRET:?set STAGING_NEXTAUTH_SECRET (>=32 chars) in .env.staging}
+      SUPERADMIN_EMAIL: ${STAGING_SUPERADMIN_EMAIL:-}
+      SUPERADMIN_PASSWORD: ${STAGING_SUPERADMIN_PASSWORD:-}
+      # Image optimizer on by default; flip to 'true' to mirror a rollback test.
+      IMAGE_OPTIMIZATION_DISABLED: ${STAGING_IMAGE_OPTIMIZATION_DISABLED:-false}
+      # CSP: report-only in staging so a nonce misconfig never blanks the page
+      # while rehearsing. Prod stays enforced.
+      CSP_NONCE_REPORT_ONLY: "true"
+    ports:
+      - "${STAGING_APP_PORT:-3100}:3000"
+    volumes:
+      - staging_uploads:/app/uploads
+
+volumes:
+  staging_pgdata:
+  staging_redisdata:
+  staging_uploads:

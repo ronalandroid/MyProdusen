@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:ready": "bash scripts/dev-ready.sh",
+    "staging:up": "docker compose -f docker-compose.staging.yml --env-file .env.staging up -d --build",
+    "staging:down": "docker compose -f docker-compose.staging.yml --env-file .env.staging down",
+    "staging:logs": "docker compose -f docker-compose.staging.yml --env-file .env.staging logs -f app",
     "build": "npm run build:next",
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
     "start:testsprite": "TESTSPRITE_DISABLE_RATE_LIMITS=true TESTSPRITE_DISABLE_CSRF_ORIGIN=true TESTSPRITE_DISABLE_SECURE_COOKIES=true TESTSPRITE_COMPAT_RESPONSE=true npm run start",
