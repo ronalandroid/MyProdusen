@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Camera, RefreshCcw, XCircle } from "lucide-react";
 import {
   SELFIE_COMPRESSOR_LIMITS,
@@ -36,6 +36,15 @@ const GOOD_FRAMES_TO_PASS = 8;
 const DETECT_INTERVAL_MS = 120;
 const PASSED_MIN_SCORE = 0.85;
 
+// One continuous head→neck→shoulders outline (200×270 viewBox). Used twice:
+// as the cutout in the scrim mask, and as the state-coloured stroke on top.
+// Head centre sits at ~30% height, matching what evaluateFacePosition treats
+// as a well-positioned face, so the visual guide and the detector agree.
+const SILHOUETTE_PATH =
+  "M100,26 C128,26 149,50 149,81 C149,103 138,122 122,132 L122,148 " +
+  "C160,161 183,199 187,270 L13,270 C17,199 40,161 78,148 L78,132 " +
+  "C62,122 51,103 51,81 C51,50 72,26 100,26 Z";
+
 function formatKb(bytes: number) {
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
@@ -49,6 +58,7 @@ export function RealtimeSelfieCamera({
   captureLabel = "Ambil Selfie",
   retakeLabel = "Ambil Ulang Selfie",
 }: RealtimeSelfieCameraProps) {
+  const maskId = useId();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -348,12 +358,26 @@ export function RealtimeSelfieCamera({
         )}
         {!capturedPreviewUrl && isCameraOpen && (
           <div aria-label="Panduan posisi kepala dan bahu" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-            {/* Soft vignette so the silhouette reads against a bright camera feed */}
-            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 64% 72% at 50% 42%, transparent 58%, rgba(0,0,0,0.45) 100%)" }} />
-            {/* Head + shoulders silhouette; dashed while searching, solid once detected/verified */}
-            <svg viewBox="0 0 200 270" preserveAspectRatio="xMidYMid meet" style={{ position: "relative", width: "70%", maxWidth: "280px", height: "auto" }} aria-hidden="true">
-              <ellipse cx="100" cy="80" rx="46" ry="56" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeDasharray={livenessState === "searching" ? "10 10" : undefined} style={{ stroke: guideColor, transition: "stroke 200ms ease" }} />
-              <path d="M26,262 C28,196 58,160 100,160 C142,160 172,196 174,262" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeDasharray={livenessState === "searching" ? "10 10" : undefined} style={{ stroke: guideColor, transition: "stroke 200ms ease" }} />
+            {/* eKYC-style guide: a dark scrim with a person-shaped cutout, so the
+                user literally fills the silhouette. The outline is dashed while
+                searching and turns brand-yellow/green as liveness progresses. */}
+            <svg viewBox="0 0 200 270" preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} aria-hidden="true">
+              <defs>
+                <mask id={maskId}>
+                  <rect width="200" height="270" fill="white" />
+                  <path d={SILHOUETTE_PATH} fill="black" />
+                </mask>
+              </defs>
+              <rect width="200" height="270" fill="rgba(0,0,0,0.55)" mask={`url(#${maskId})`} />
+              <path
+                d={SILHOUETTE_PATH}
+                fill="none"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray={livenessState === "searching" ? "10 10" : undefined}
+                style={{ stroke: guideColor, transition: "stroke 200ms ease" }}
+              />
             </svg>
             {livenessState === "detected" && <div className="liveness-pulse" aria-hidden="true" />}
             <div role="status" aria-live="assertive" style={{ position: "absolute", bottom: "18px", left: "50%", transform: "translateX(-50%)", background: statusPillBg, color: "white", borderRadius: "999px", padding: "8px 16px", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap", maxWidth: "90%", textAlign: "center", transition: "background 200ms ease" }}>
