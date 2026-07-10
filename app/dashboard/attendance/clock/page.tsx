@@ -248,7 +248,7 @@ function AttendanceClockContent() {
   }
 
   return (
-    <div className="phone-screen attendance-screen pb-[calc(96px+env(safe-area-inset-bottom))]" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="phone-screen attendance-screen pb-[calc(232px+env(safe-area-inset-bottom))] lg:pb-[calc(160px+env(safe-area-inset-bottom))]" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <header className="flex items-center gap-3">
         <button type="button" className="btn btn-secondary btn-icon min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]" onClick={() => (step === "location" ? router.back() : setUi({ step: "location" }))} aria-label="Kembali"><ArrowLeft size={20} /></button>
         <div>
@@ -357,7 +357,10 @@ function AttendanceClockContent() {
       </section>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border-color)] bg-white/95 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] backdrop-blur">
+      {/* Mobile: sits above the fixed bottom nav (~76px tall, z-1030) — at
+          bottom-0 the nav covers the CTA and it can't be tapped. Desktop
+          (lg+) moves the nav to a sidebar, so bottom-0 is safe again. */}
+      <div className="fixed inset-x-0 bottom-[calc(80px+env(safe-area-inset-bottom))] lg:bottom-0 z-30 border-t border-[var(--border-color)] bg-white/95 p-4 lg:pb-[calc(16px+env(safe-area-inset-bottom))] backdrop-blur">
         <div className="mx-auto flex max-w-[520px] flex-col gap-2">
           <output className="flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)]" aria-live="polite"><ShieldCheck size={14} />{isSubmitting ? statusText : step === "location" ? (gpsError || (gpsPosition ? "Memvalidasi lokasi…" : "Mengambil lokasi Anda…")) : canSubmit ? "Siap dikirim" : (missingRequirements.join(", ") || "Ambil foto untuk melanjutkan")}</output>
           {step === "location" ? <button type="button" className="min-h-[52px] w-full rounded-2xl font-extrabold text-white bg-[var(--attn-red)] hover:bg-[var(--attn-red-hover)] disabled:bg-gray-200 disabled:text-gray-400 transition-all" disabled={!canContinue} onClick={() => setUi({ step: "selfie" })}>Lanjutkan</button> : <button type="button" className="min-h-[52px] w-full rounded-2xl font-extrabold text-white bg-[var(--attn-red)] hover:bg-[var(--attn-red-hover)] disabled:bg-gray-200 disabled:text-gray-400 transition-all" disabled={!canSubmit} onClick={submitAttendance}>{isSubmitting ? statusText : submitLabel}</button>}
