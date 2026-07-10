@@ -8,6 +8,7 @@ import { ArrowLeft, CalendarClock, LocateFixed, ShieldCheck } from "lucide-react
 import { fetchProfile, getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { AttendanceMap } from "@/components/attendance/AttendanceMap";
+import { submitAttendanceWithRetry } from "@/lib/attendance/submit-attendance";
 
 const RealtimeSelfieCamera = dynamic(
   () => import("@/components/attendance/RealtimeSelfieCamera").then((mod) => mod.RealtimeSelfieCamera),
@@ -108,6 +109,9 @@ function AttendanceClockContent() {
   const livenessRef = useRef({ score: 0, passed: false, unsupported: false, faceDetected: false });
   const selfieFilenameRef = useRef("attendance-selfie.webp");
   const todayAttendanceRef = useRef<AttendanceRecord | null>(null);
+  // One key per physical attendance act, reused across retries so a resend on
+  // flaky mobile data can't create a double clock-in (server dedups on it).
+  const idempotencyKeyRef = useRef("");
   const { step, note, manualReason, isSubmitting, statusText, message, error } = ui;
 
   const employee = profile?.employee;
@@ -130,6 +134,7 @@ function AttendanceClockContent() {
 
   const clearSelfie = useCallback(() => {
     setSelfieBlob(null);
+    idempotencyKeyRef.current = ""; // new photo = new attendance act = new key
     livenessRef.current = { score: 0, passed: false, unsupported: false, faceDetected: false };
     setSelfiePreviewUrl((current) => {
       if (current) URL.revokeObjectURL(current);
@@ -230,9 +235,22 @@ function AttendanceClockContent() {
       }
       
       setUi({ statusText: "Mengirim absensi…" });
-      const response = await fetch(`/api/attendance/${isClockIn ? "check-in" : "check-out"}`, { method: "POST", headers: getAuthHeaders(), body: formData });
-      const result = (await response.json()) as ApiResponse<AttendanceRecord & { isPendingGeoReview?: boolean }>;
-      if (!response.ok || !result.success) throw new Error(result.error || result.message || "Gagal menyimpan absensi");
+      // Stable key across retries: a resend on weak data dedups server-side
+      // instead of creating a second clock event.
+      if (!idempotencyKeyRef.current) {
+        idempotencyKeyRef.current =
+          typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `att-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      }
+      const outcome = await submitAttendanceWithRetry<AttendanceRecord & { isPendingGeoReview?: boolean }>(
+        `/api/attendance/${isClockIn ? "check-in" : "check-out"}`,
+        formData,
+        idempotencyKeyRef.current,
+        getAuthHeaders() as Record<string, string>,
+      );
+      if (!outcome.ok) throw new Error(outcome.error);
+      const result = { success: true as const, data: outcome.data };
       setUi({ statusText: "Menyimpan riwayat…", message: isClockIn ? "Clock In berhasil." : "Clock Out berhasil." });
       clearSelfie();
       // Invalidate the dashboard cache so beranda reflects this clock event
