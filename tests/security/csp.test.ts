@@ -22,8 +22,15 @@ describe('buildNonceCsp', () => {
     const csp = buildNonceCsp(nonce, { isProd: true });
     const scriptSrc = csp.split('; ').find((d) => d.startsWith('script-src')) ?? '';
     expect(scriptSrc).not.toContain('unsafe-inline');
-    expect(scriptSrc).not.toContain('unsafe-eval');
+    // Token match: 'wasm-unsafe-eval' is allowed, bare 'unsafe-eval' is not.
+    expect(scriptSrc).not.toMatch(/(^|\s)'unsafe-eval'/);
     expect(scriptSrc).toContain("'strict-dynamic'");
+  });
+
+  it('allows WebAssembly compilation for the MediaPipe liveness detector', () => {
+    const csp = buildNonceCsp(nonce, { isProd: true });
+    const scriptSrc = csp.split('; ').find((d) => d.startsWith('script-src')) ?? '';
+    expect(scriptSrc).toContain("'wasm-unsafe-eval'");
   });
 
   it('keeps the documented style-src unsafe-inline tradeoff', () => {
