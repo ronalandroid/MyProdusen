@@ -1,4 +1,4 @@
-import { db, users, employees } from '@/lib/db';
+import { db, users, employees, shifts, workLocations } from '@/lib/db';
 import { hashPassword, verifyPassword, generateToken, getProductionJwtSecret } from '@/lib/auth';
 import { validatePassword, checkPasswordCompromised } from '@/lib/password-policy';
 import { eq, or, asc, and, sql } from 'drizzle-orm';
@@ -369,9 +369,27 @@ export class AuthService extends BaseService {
       .where(eq(employees.userId, user.id))
       .limit(1);
 
+    if (!employee) {
+      return { ...user, employee: null };
+    }
+
+    // ClientUserProfile promises the resolved defaultShift/defaultLocation
+    // objects (the attendance clock wizard computes its geofence from them),
+    // so return the relations, not just the id columns.
+    const [defaultShift] = employee.defaultShiftId
+      ? await db.select().from(shifts).where(eq(shifts.id, employee.defaultShiftId)).limit(1)
+      : [];
+    const [defaultLocation] = employee.defaultLocationId
+      ? await db.select().from(workLocations).where(eq(workLocations.id, employee.defaultLocationId)).limit(1)
+      : [];
+
     return {
       ...user,
-      employee: employee || null,
+      employee: {
+        ...employee,
+        defaultShift: defaultShift || null,
+        defaultLocation: defaultLocation || null,
+      },
     };
   }
 }
