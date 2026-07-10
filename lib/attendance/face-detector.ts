@@ -44,8 +44,9 @@ export function pickLargestFaceBox(detections: readonly Detection[] | undefined 
 
 // ---- Browser-only runtime wrapper (not unit-tested) --------------------------
 
-const MEDIAPIPE_VERSION = '0.10.35';
-const WASM_BASE = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/wasm`;
+// Self-hosted (scripts/copy-mediapipe-assets.mjs) — the production CSP only
+// allows same-origin scripts, so the CDN copy never loaded.
+const WASM_BASE = '/mediapipe/wasm';
 const FACE_MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite';
 

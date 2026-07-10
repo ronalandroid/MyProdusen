@@ -36,7 +36,9 @@ export function buildNonceCsp(nonce: string, options: { isProd: boolean }): stri
     // No 'unsafe-inline' / 'unsafe-eval' here — that is the whole point of the
     // report-only preview. 'strict-dynamic' lets a nonced script load its own
     // chunks without each needing an explicit allowlist entry.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    // 'wasm-unsafe-eval' permits WebAssembly.instantiate only (no JS eval):
+    // the MediaPipe face detector behind attendance liveness is wasm.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
