@@ -97,3 +97,11 @@ temp/
 .metadata_never_index
 .env.sentry-build-plugin
 .sentryclirc
+
+# Local Claude Code / agent tooling (personal setup, not part of the app)
+.claude/
+.mcp.json
+CLAUDE.md
+skills-lock.json
+docs/inspect-and-fix-prompt.md
+.github/workflows/react-doctor.yml
