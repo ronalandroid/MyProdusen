@@ -1,5 +1,6 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, after } from 'next/server';
 import { payrollService } from '@/src/services/payroll/payroll.service';
+import { sendPayslipEmailsForRun } from '@/lib/payroll/payslip-email';
 import { requireAuth } from '@/lib/middleware';
 import { successResponse, errorResponse, forbiddenResponse, unauthorizedResponse } from '@/utils/response';
 import { assertPayrollAccess, payrollAccessErrorMessage } from '@/lib/payroll/access';
@@ -22,6 +23,12 @@ export const POST = withApiHandler<{ id: string }>(async (request, { params }) =
       message: `Payroll periode ${before.period} sudah disetujui.`,
       type: 'PAYROLL_APPROVED',
     })));
+    // Payslip emails run after the response — a slow/failing provider must
+    // never block or fail the approval itself. Outcomes land in Log Email.
+    after(async () => {
+      const summary = await sendPayslipEmailsForRun(before.period, before.items).catch(() => null);
+      if (summary) console.info('[payslip-email]', { runId: id, period: before.period, ...summary });
+    });
     return successResponse(run, 'Payroll berhasil disetujui');
   } catch (error: any) {
     if (error.message === 'Unauthorized') return unauthorizedResponse();
