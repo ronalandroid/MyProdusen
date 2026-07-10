@@ -71,11 +71,14 @@ describe('Immersive selfie capture UI (reference-style)', () => {
     expect(realtimeCameraSource).not.toContain('min(60vh, 320px)');
   });
 
-  it('guides with a head + shoulders silhouette, not a plain oval', () => {
+  it('guides with a head + shoulders silhouette cutout, not a plain oval', () => {
     expect(realtimeCameraSource).toContain('Panduan posisi kepala dan bahu');
     expect(realtimeCameraSource).toContain('viewBox="0 0 200 270"');
-    expect(realtimeCameraSource).toContain('<ellipse');
-    expect(realtimeCameraSource).toContain('M26,262');
+    // Single continuous body path masked out of a dimming scrim.
+    expect(realtimeCameraSource).toContain('SILHOUETTE_PATH');
+    expect(realtimeCameraSource).toContain('"M100,26 C128,26 149,50 149,81');
+    expect(realtimeCameraSource).toContain('<mask id={maskId}>');
+    expect(realtimeCameraSource).not.toContain('<ellipse');
   });
 
   it('colours liveness states with MyProdusen brand tokens', () => {
