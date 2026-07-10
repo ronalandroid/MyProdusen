@@ -35,6 +35,7 @@ const TEMPLATE_LABELS: Record<string, string> = {
   "reset-password": "Reset Password",
   "role-changed": "Role Diubah",
   "account-approved": "Akun Aktif",
+  "payslip-ready": "Slip Gaji",
   custom: "Lainnya",
 };
 

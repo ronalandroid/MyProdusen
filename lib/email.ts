@@ -2,7 +2,8 @@ import { db, emailLogs } from '@/lib/db';
 import { getCanonicalAppUrl } from '@/lib/app-url';
 import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 
-export type EmailTemplate = 'register' | 'forgot-password' | 'reset-password' | 'role-changed' | 'account-approved';
+type AuthEmailTemplate = 'register' | 'forgot-password' | 'reset-password' | 'role-changed' | 'account-approved';
+export type EmailTemplate = AuthEmailTemplate | 'payslip-ready';
 type UserEmailEvent = Extract<EmailTemplate, 'account-approved' | 'role-changed'>;
 type EmailStatus = 'SKIPPED' | 'SENT' | 'FAILED';
 
@@ -261,12 +262,43 @@ async function logEmailAttempt(
   })).catch(() => undefined);
 }
 
-export async function sendAuthEmail(template: EmailTemplate, to: string, data: Record<string, string> = {}) {
+/**
+ * Notify one employee that their payslip for a period is ready. Deliberately
+ * amount-free: salary figures stay behind login at /dashboard/payroll/me.
+ */
+export async function sendPayslipEmail(to: string, data: { name?: string; period: string }) {
+  const appUrl = getAppUrl();
+  const payslipUrl = `${appUrl}/dashboard/payroll/me`;
+  const displayName = data.name ? `, ${data.name}` : '';
+  const text = `Slip gaji periode ${data.period} sudah tersedia. Lihat: ${payslipUrl}`;
+
+  return sendEmail({
+    to,
+    template: 'payslip-ready',
+    metadata: { period: data.period },
+    subject: `${appName} - Slip gaji ${data.period} tersedia`,
+    html: renderEmail({
+      eyebrow: 'Slip gaji',
+      title: `Slip gaji ${data.period} sudah tersedia`,
+      intro: `Halo${displayName}! Payroll periode ${data.period} sudah disetujui.`,
+      body: [
+        'Slip gaji Anda sudah bisa dilihat dan diunduh dari halaman Payroll Saya setelah login.',
+        'Demi keamanan, rincian gaji tidak dicantumkan di email ini.',
+      ],
+      cta: { label: 'Lihat slip gaji', url: payslipUrl },
+      note: 'Ada pertanyaan tentang perhitungan gaji? Hubungi HRD atau Superadmin.',
+      text,
+    }),
+    text,
+  });
+}
+
+export async function sendAuthEmail(template: AuthEmailTemplate, to: string, data: Record<string, string> = {}) {
   const appUrl = getAppUrl();
   const loginUrl = `${appUrl}/login`;
   const displayName = data.name ? `, ${data.name}` : '';
   const isActivationRegister = template === 'register' && Boolean(data.activationUrl);
-  const templates: Record<EmailTemplate, SendEmailInput> = {
+  const templates: Record<AuthEmailTemplate, SendEmailInput> = {
     register: {
       to,
       template,
