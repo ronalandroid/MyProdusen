@@ -1,0 +1,87 @@
+# Nightly E2E against the on-demand staging stack (docker-compose.staging.yml).
+#
+# Boots the SAME image that ships to production (standalone build, entrypoint
+# migrations, superadmin bootstrap) with throwaway secrets, then runs the
+# Playwright smoke suites against it. Leader/employee staging specs skip
+# themselves when their fixture credentials are absent — extend this job with
+# a seed step (scripts/setup-uat-leader-flow.mjs) to unlock them later.
+name: Nightly E2E (staging stack)
+
+on:
+  schedule:
+    - cron: '30 18 * * *' # 01:30 WIB
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-e2e
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate throwaway staging secrets
+        run: |
+          SUPERADMIN_PASSWORD="Aa1!$(openssl rand -base64 18 | tr -d '=+/')"
+          echo "::add-mask::$SUPERADMIN_PASSWORD"
+          echo "E2E_SUPERADMIN_PASSWORD=$SUPERADMIN_PASSWORD" >> "$GITHUB_ENV"
+          cat > .env.staging <<EOF
+          STAGING_DB_PASSWORD=$(openssl rand -hex 16)
+          STAGING_JWT_SECRET=$(openssl rand -base64 48 | tr -d '\n')
+          STAGING_NEXTAUTH_SECRET=$(openssl rand -base64 48 | tr -d '\n')
+          STAGING_SUPERADMIN_EMAIL=e2e-superadmin@nightly.local
+          STAGING_SUPERADMIN_PASSWORD=$SUPERADMIN_PASSWORD
+          EOF
+
+      - name: Build and start staging stack
+        run: npm run staging:up
+
+      - name: Wait for /api/health
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3100/api/health | grep -q '"status":"ok"'; then
+              echo "Staging healthy after ~$((i * 5))s"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Staging stack never became healthy" >&2
+          docker compose -f docker-compose.staging.yml --env-file .env.staging logs --tail=200 app >&2
+          exit 1
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run smoke suites against staging
+        env:
+          E2E_BASE_URL: http://localhost:3100
+          E2E_SUPERADMIN_EMAIL: e2e-superadmin@nightly.local
+          # E2E_SUPERADMIN_PASSWORD comes from GITHUB_ENV above
+        run: npx playwright test tests/e2e/public-smoke.spec.ts tests/e2e/staging-smoke.spec.ts
+
+      - name: App logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.staging.yml --env-file .env.staging logs --tail=300 app
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-e2e-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Tear down staging stack
+        if: always()
+        run: docker compose -f docker-compose.staging.yml --env-file .env.staging down -v
