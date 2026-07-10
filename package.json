@@ -25,6 +25,7 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "ts-node --transpile-only --compiler-options '{\"module\":\"CommonJS\",\"types\":[\"node\"],\"rootDir\":\".\"}' drizzle/seed.ts",
     "perf:explain": "node scripts/explain-attendance-queries.mjs",
+    "load:test": "node scripts/load-test-checkin.mjs",
     "release:env": "node scripts/check-production-env.mjs",
     "release:migrations": "node scripts/check-migrations-coverage.mjs",
     "release:references": "node scripts/check-references.mjs",
