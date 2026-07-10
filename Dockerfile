@@ -55,7 +55,11 @@ COPY . .
 
 # Build Next.js only. Drizzle schema sync runs at runtime, not during image build.
 # Cache Next build artifacts so Coolify rebuilds are faster and less likely to hit resource limits.
+# The MediaPipe wasm copy must run explicitly: calling build:next directly
+# skips npm's prebuild hook, and without these assets in public/ the
+# attendance liveness detector has nothing to load in production.
 RUN --mount=type=cache,target=/app/.next/cache \
+    node scripts/copy-mediapipe-assets.mjs && \
     npm run build:next
 
 # ---------- Stage 3: Production runtime ----------------------
