@@ -1,8 +1,22 @@
 # Uptime monitoring & alerting
 
-MyProdusen has no external watcher today: if the VPS or the app dies, the team
-finds out from employees who cannot clock in. This guide wires a free external
-monitor to the health endpoint so a human is paged within minutes instead.
+If the VPS or the app dies, the team should be told within minutes — not find
+out from employees who cannot clock in. Two layers cover this:
+
+1. **Built-in (already active, zero signup)** — the
+   `.github/workflows/uptime-monitor.yml` GitHub Action probes `/api/health`
+   every ~10 minutes. On failure it opens a GitHub issue labelled `uptime`
+   (notifying repo watchers) and fails the run; when health recovers it
+   comments and auto-closes the issue. Nothing to configure — it runs from
+   this repo. Caveat: GitHub's cron can lag under load and pauses after 60
+   days of repo inactivity, and the alert is only as loud as your GitHub
+   notification settings.
+2. **External (recommended, louder + faster)** — UptimeRobot or Better Stack
+   below, for 1–5 minute checks with e-mail/Telegram/phone alerts. Needs a
+   free account.
+
+Run both: the built-in monitor is a dependable free baseline, the external one
+adds fast, loud paging.
 
 ## What to monitor
 
@@ -72,3 +86,23 @@ common silent failure in small deployments.
    dashboard → application → logs; redeploy last good image if needed.
 4. Follow [PRODUCTION_BLOCKER_RUNBOOK.md](PRODUCTION_BLOCKER_RUNBOOK.md) for
    deeper incidents.
+
+## Single-VPS recovery (no redundancy — mitigate with speed)
+
+MyProdusen runs on one VPS with no hot standby, so availability rests on
+**fast detection + fast restart**, not failover. The monitors above give
+detection; this is the restart drill:
+
+1. **App down, VPS up** (health times out or 5xx): Coolify dashboard →
+   `myprodusen-web-app` → **Restart** (seconds). If it won't start, **Redeploy**
+   the last good image. The DB and uploads survive — they are separate volumes.
+2. **VPS unreachable** (SSH + health both dead): reboot the VPS from the host
+   provider's panel; Coolify autostarts the stack (`restart: unless-stopped`).
+3. **Disk full** (`df -h` ~100%): the selfie folder grows unbounded — prune or
+   offload old attendance selfies (see the backup/retention note in
+   [backup-restore-drill.md](backup-restore-drill.md)), then restart.
+4. **Data intact check** after any recovery: `/api/health` → `"status":"ok"`
+   and a spot login. Nightly R2 backups mean worst-case data loss is ≤24h.
+
+Recovery objective: **detect ≤10 min** (monitors), **restart ≤5 min** (steps
+1–2). A permanent standby is out of scope until the workforce outgrows one VPS.
