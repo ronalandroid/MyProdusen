@@ -16,6 +16,8 @@ export const checkInSchema = z.object({
   deviceInfo: z.string().optional(),
   gpsTimestamp: z.string().optional(),
   note: z.string().max(150).optional(),
+  // Written justification required to attend from OUTSIDE the geo-fence radius.
+  manualReason: z.string().max(300).optional(),
 });
 
 export const checkOutSchema = z.object({
@@ -30,6 +32,8 @@ export const checkOutSchema = z.object({
   deviceInfo: z.string().optional(),
   gpsTimestamp: z.string().optional(),
   note: z.string().max(150).optional(),
+  // Written justification required to attend from OUTSIDE the geo-fence radius.
+  manualReason: z.string().max(300).optional(),
 });
 
 export const manualAttendanceSchema = z.object({

@@ -3,6 +3,7 @@ import { eq, and, gte, lt } from 'drizzle-orm';
 import { saveAttendanceSelfie } from '@/lib/upload';
 import { payrollPeriodLockService } from '@/features/payroll/payroll-period-lock.service';
 import { validateGpsAttendance } from '@/lib/attendance/gps-validation';
+import { resolveOutsideGeofencePolicy, hasValidManualReason, OUTSIDE_GEOFENCE_REASON_REQUIRED } from '@/lib/attendance/manual-reason-policy';
 import { evaluateLiveness } from '@/lib/attendance/liveness';
 import { nanoid } from 'nanoid';
 import { calculateAttendancePayrollImpact, DEFAULT_ATTENDANCE_POLICY } from '@/services/attendance/attendance-payroll-impact.service';
@@ -29,6 +30,8 @@ export async function checkIn(data: {
   userAgent?: string;
   capturedAt?: Date | string | number | null;
   note?: string;
+  /** Required to clock in from OUTSIDE the geo-fence; queues admin review. */
+  manualReason?: string;
   livenessScore?: number;
   livenessPassed?: boolean;
   faceDetected?: boolean;
@@ -119,6 +122,10 @@ export async function checkIn(data: {
   const attendancePolicy = await getActiveAttendancePolicy(employee);
   const effectiveRadius = attendancePolicy?.geofenceRadiusMeters ?? Math.max(workLocation.radius, DEFAULT_ATTENDANCE_POLICY.geofenceRadiusMeters);
 
+  // Inside radius auto-approves; outside radius is allowed ONLY with a written
+  // reason (then queued for admin review), otherwise blocked with a clear ask.
+  const { rejectOutsideGeofence } = resolveOutsideGeofencePolicy(data.manualReason);
+
   // Hardened GPS + geo-fence validation. Server is the only source of truth.
   const validation = validateGpsAttendance(
     {
@@ -134,9 +141,14 @@ export async function checkIn(data: {
       radius: effectiveRadius,
       isActive: workLocation.isActive,
     },
+    { rejectOutsideGeofence },
   );
 
   if (validation.decision === 'reject') {
+    // Outside radius with no reason → tell the employee to add one.
+    if (validation.geoStatus === 'OUTSIDE_RADIUS') {
+      throw new BusinessError(OUTSIDE_GEOFENCE_REASON_REQUIRED);
+    }
     throw new BusinessError(validation.reason);
   }
 

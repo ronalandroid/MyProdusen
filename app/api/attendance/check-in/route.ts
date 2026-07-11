@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
       ipAddress,
       userAgent,
       note: data.note,
+      manualReason: data.manualReason,
     });
 
     await logAudit(
@@ -99,6 +100,7 @@ export async function POST(request: NextRequest) {
         attendanceId: attendance.id,
         type: 'check-in',
         validation: attendance.geoValidation,
+        manualReason: data.manualReason,
       });
     }
 

@@ -15,6 +15,7 @@ import { eq } from 'drizzle-orm';
 import { db, notifications, users } from '@/lib/db';
 import { logAudit } from '@/lib/audit';
 import { attendanceExceptionService } from '@/services/attendance/attendance-exception.service';
+import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 import type { GpsValidationResult } from '@/lib/attendance/gps-validation';
 import type { JwtPayload } from '@/lib/auth';
 import type { NextRequest } from 'next/server';
@@ -34,6 +35,8 @@ interface AfterAttendanceArgs {
   attendanceId: string;
   type: 'check-in' | 'check-out';
   validation: GpsValidationResult;
+  /** The employee's written justification for attending outside the radius. */
+  manualReason?: string;
 }
 
 /**
@@ -42,6 +45,14 @@ interface AfterAttendanceArgs {
  */
 export async function recordGeoOutcome(args: AfterAttendanceArgs) {
   const { request, user, employeeId, attendanceId, type, validation } = args;
+  const employeeReason = args.manualReason?.trim();
+  // Store the employee's own words first, keeping the system distance detail
+  // for context; fall back to the system message if they gave none.
+  const reviewReason = employeeReason
+    ? `${employeeReason} — ${validation.decision === 'pending' ? validation.reason : ''}`.trim().replace(/—\s*$/, '').trim()
+    : validation.decision === 'pending'
+      ? validation.reason
+      : '';
 
   const auditAction: GpsAuditAction =
     type === 'check-in'
@@ -75,7 +86,7 @@ export async function recordGeoOutcome(args: AfterAttendanceArgs) {
         attendanceId,
         employeeId,
         type: 'OUTSIDE_GEOFENCE',
-        reason: validation.reason,
+        reason: reviewReason || validation.reason,
         requestedBy: user.userId,
       })
       .catch(() => {
@@ -86,10 +97,28 @@ export async function recordGeoOutcome(args: AfterAttendanceArgs) {
     await notifyAdminsForPendingGeo({
       attendanceId,
       employeeId,
-      reason: validation.reason,
+      reason: reviewReason || validation.reason,
     }).catch(() => {
       // Notifications must not block the attendance response.
     });
+
+    // Realtime: push a live event to every Superadmin so an outside-radius
+    // attendance shows up on their screen the instant it happens, no refresh.
+    await publishRealtimeEvent(
+      createRealtimeEvent({
+        type: 'dashboard.updated',
+        scope: 'role',
+        target: 'SUPERADMIN',
+        payload: {
+          source: 'attendance.geo-review',
+          attendanceId,
+          employeeId,
+          attendanceType: type,
+          distanceMeters: validation.distanceMeters,
+          reason: reviewReason || validation.reason,
+        },
+      }),
+    ).catch(() => undefined);
   }
 }
 
