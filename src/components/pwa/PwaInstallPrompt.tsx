@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Download, X } from "lucide-react";
+import { resolveInstallGuide } from "./install-platform";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -32,12 +33,9 @@ export default function PwaInstallPrompt() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
 
-  const platformInstruction = useMemo(() => {
-    if (typeof navigator === "undefined") return "Gunakan menu browser untuk menambahkan MyProdusen ke layar utama.";
-    const ua = navigator.userAgent.toLowerCase();
-    if (/iphone|ipad|ipod/.test(ua)) return "iOS Safari: Tap Share lalu pilih Add to Home Screen.";
-    if (/android/.test(ua)) return "Android Chrome: Buka menu ⋮ lalu pilih Tambahkan ke layar utama.";
-    return "Gunakan menu browser untuk install atau tambahkan MyProdusen ke layar utama.";
+  const guide = useMemo(() => {
+    if (typeof navigator === "undefined") return resolveInstallGuide({ userAgent: "", maxTouchPoints: 0 });
+    return resolveInstallGuide({ userAgent: navigator.userAgent, maxTouchPoints: navigator.maxTouchPoints ?? 0 });
   }, []);
 
   useEffect(() => {
@@ -110,6 +108,10 @@ export default function PwaInstallPrompt() {
 
   if (!isVisible) return null;
 
+  // Safari (iOS/iPadOS/macOS) never fires beforeinstallprompt, so the only
+  // honest UI there is the manual how-to; Chromium keeps the one-tap install.
+  const showSteps = showInstructions && !deferredPrompt;
+
   return (
     <aside className="pwa-install-banner" aria-label="Install MyProdusen">
       <button type="button" className="pwa-install-close" onClick={dismiss} aria-label="Tutup popup install">
@@ -119,17 +121,31 @@ export default function PwaInstallPrompt() {
         <Download size={22} />
       </div>
       <div className="pwa-install-copy">
-        <h2>Install MyProdusen</h2>
+        <h2>{guide.expectsInstallPrompt ? "Install MyProdusen" : "Pasang MyProdusen di Layar Utama"}</h2>
         <p>Akses absensi, KPI, payroll, dan laporan lebih cepat dari perangkat Anda.</p>
-        {showInstructions && !deferredPrompt && <p className="pwa-install-help">{platformInstruction}</p>}
+        {showSteps && (
+          <ol className="pwa-install-steps" aria-label="Langkah pemasangan manual">
+            {guide.steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        )}
       </div>
-      <div className="pwa-install-actions">
-        <button type="button" className="btn btn-primary" onClick={installApp} disabled={isInstalling}>
-          {isInstalling ? "Membuka..." : "Install App"}
-        </button>
-        <button type="button" className="btn btn-secondary" onClick={dismiss}>
-          Nanti
-        </button>
+      <div className={showSteps ? "pwa-install-actions single" : "pwa-install-actions"}>
+        {showSteps ? (
+          <button type="button" className="btn btn-primary" onClick={dismiss}>
+            Mengerti
+          </button>
+        ) : (
+          <>
+            <button type="button" className="btn btn-primary" onClick={installApp} disabled={isInstalling}>
+              {isInstalling ? "Membuka..." : deferredPrompt ? "Install App" : guide.buttonLabel}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={dismiss}>
+              Nanti
+            </button>
+          </>
+        )}
       </div>
     </aside>
   );

@@ -3339,10 +3339,22 @@ button.btn {
   color: var(--text-secondary);
 }
 
-.pwa-install-help {
-  margin-top: 0.5rem !important;
-  font-weight: 600;
-  color: var(--text-primary) !important;
+.pwa-install-steps {
+  margin: 0.6rem 0 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.35rem;
+  list-style: decimal; /* Tailwind preflight strips ol markers */
+}
+
+.pwa-install-steps li {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.pwa-install-steps li::marker {
+  font-weight: 700;
 }
 
 .pwa-install-actions {
@@ -3350,6 +3362,10 @@ button.btn {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
+}
+
+.pwa-install-actions.single {
+  grid-template-columns: 1fr;
 }
 
 @media (max-width: 420px), (min-resolution: 1.5dppx) and (max-width: 768px) {
