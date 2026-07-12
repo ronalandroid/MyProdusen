@@ -174,7 +174,7 @@ kbd.pill {
 .content.wide { right: 640px; }
 
 /* cover */
-.cover-band { position: absolute; inset: 0; background: linear-gradient(180deg, #fff 0%, #fdfcf9 55%, var(--yellow-soft) 130%); }
+.cover-band { position: absolute; inset: 0; background: #fffdf6; }
 .cover-rule { position: absolute; left: 0; top: 0; bottom: 0; width: 16px; background: var(--yellow); }
 .cover-meta { display: flex; gap: 12px; margin-top: 44px; flex-wrap: wrap; }
 .meta-card {
