@@ -18,7 +18,7 @@ for (const f of fs.readdirSync(ASSETS).filter((f) => f.endsWith(".png"))) {
   fs.copyFileSync(path.join(ASSETS, f), path.join(shotsDir, f));
 }
 
-const html = `<!doctype html>
+let html = `<!doctype html>
 <html lang="id"><head><meta charset="utf-8">
 <title>Panduan Lengkap MyProdusen</title>
 <style>${read("fonts/fonts-local.css")}</style>
@@ -27,6 +27,15 @@ const html = `<!doctype html>
 ${read("slides-a.html")}
 ${read("slides-b.html")}
 </body></html>`;
+
+// Progress rail: a top strip on every slide showing position in the deck.
+const totalSlides = (html.match(/<section class="slide">/g) || []).length;
+let slideNo = 0;
+html = html.replace(/<section class="slide">/g, () => {
+  slideNo += 1;
+  const w = ((slideNo / totalSlides) * 100).toFixed(1);
+  return `<section class="slide"><div class="rail"><i style="width:${w}%"></i></div>`;
+});
 fs.writeFileSync(path.join(SRC, "index.html"), html);
 
 const browser = await chromium.launch();

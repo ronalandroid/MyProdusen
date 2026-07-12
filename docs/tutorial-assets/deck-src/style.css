@@ -286,3 +286,44 @@ kbd.pill {
   background: var(--yellow); color: var(--ink); border-radius: 10px; padding: 12px 20px;
 }
 .band-soft { position: absolute; inset: 0; background: var(--band); }
+
+/* ---------- v2 · depth & information layers ---------- */
+.rail { position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--band); z-index: 5; }
+.rail i { display: block; height: 100%; background: var(--yellow); }
+
+.step, .toc-card, .faq-card, .feat, .duo-card, .meta-card, .flow-node {
+  box-shadow: 0 1px 2px rgba(23, 24, 28, 0.04), 0 14px 30px -20px rgba(23, 24, 28, 0.20);
+}
+.laptop { box-shadow: 0 32px 64px -30px rgba(23, 24, 28, 0.38); border-radius: 14px; }
+
+.next-hint {
+  display: inline-flex; align-items: center; gap: 10px; margin-top: 24px;
+  font-size: 15.5px; font-weight: 500; color: var(--muted);
+  background: var(--card); border: 1px solid var(--line); border-radius: 999px;
+  padding: 11px 20px; box-shadow: 0 1px 2px rgba(23, 24, 28, 0.04);
+}
+.next-hint b { color: var(--ink); font-weight: 700; }
+.next-hint::before { content: "Berikutnya"; font-size: 12px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: var(--faint); }
+.next-hint::after { content: "→"; font-weight: 800; font-size: 18px; color: var(--yellow-deep); }
+
+.flow-title { font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-top: 40px; }
+.flow { display: flex; align-items: stretch; margin-top: 16px; }
+.flow-node { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 15px; text-align: center; }
+.flow-node .fn { font-family: var(--mono); font-size: 11.5px; font-weight: 700; letter-spacing: 1px; color: var(--faint); }
+.flow-node h5 { font-size: 15px; font-weight: 700; margin-top: 4px; letter-spacing: -0.1px; }
+.flow-node p { font-size: 12.5px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.flow-node.hot { background: var(--yellow-soft); border-color: #eeda9e; }
+.flow-node.hot .fn { color: #8a6d10; }
+.flow-node.ok { background: var(--green-soft); border-color: #c4e3cd; }
+.flow-node.ok .fn { color: var(--green); }
+.flow-sep { flex: 0 0 30px; display: grid; place-items: center; color: var(--faint); font-weight: 800; font-size: 17px; }
+
+.cheat { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 28px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(23,24,28,.04), 0 14px 30px -20px rgba(23,24,28,.2); }
+.cheat th { text-align: left; font-size: 12.5px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--muted); background: var(--band); padding: 13px 22px; border-bottom: 1px solid var(--line); font-weight: 700; }
+.cheat td { padding: 12px 22px; font-size: 15.5px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.cheat tr:last-child td { border-bottom: none; }
+.cheat td.act { font-weight: 600; width: 42%; }
+.cheat td.path { color: var(--muted); }
+.cheat td.path b { color: var(--ink-2); font-weight: 600; }
+
+.fi svg, .bn svg { display: block; }
