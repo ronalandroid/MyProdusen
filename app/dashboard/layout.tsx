@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import AdminSidebar from "@/components/layout/AdminSidebar";
@@ -25,6 +26,11 @@ const missingMessages = {
 };
 
 const DASHBOARD_REALTIME_EVENTS: RealtimeEventType[] = ["dashboard.updated", "sync.updated"];
+
+// Offline attendance sync widget — loaded only in the browser (IndexedDB/Dexie),
+// kept out of SSR + the initial layout bundle. Mounting it keeps the sync
+// manager alive so queued clock events flush automatically on reconnect.
+const SyncStatusWidget = dynamic(() => import("@/components/offline/SyncStatus").then((m) => m.SyncStatus), { ssr: false });
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -123,6 +129,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
         {profileMe && profile.role !== "SUPERADMIN" && !profileMe.profileCompleted && <ProfileCompletionModal initialFullName={profileMe.fullName} initialPhone={profileMe.phone} initialAddress={profileMe.address} initialProfilePhoto={profileMe.profilePhoto} onSaved={() => loadProfileState(true)} />}
+        {profile.role !== "SUPERADMIN" && <SyncStatusWidget />}
       </div>
     </ToastProvider>
   );

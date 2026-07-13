@@ -79,6 +79,8 @@ export function buildAttendanceFormData(data: any): FormData {
   if (data?.deviceInfo != null) form.append('deviceInfo', String(data.deviceInfo));
   if (data?.note != null) form.append('note', String(data.note));
   if (data?.notes != null) form.append('note', String(data.notes));
+  if (data?.manualReason != null) form.append('manualReason', String(data.manualReason));
+  if (data?.lateReason != null) form.append('lateReason', String(data.lateReason));
   if (data?.timestamp != null) {
     form.append('gpsTimestamp', new Date(data.timestamp).toISOString());
   }
@@ -239,7 +241,13 @@ export class SyncManager {
       let response: Response;
       const baseHeaders: Record<string, string> = {
         'X-Sync-Timestamp': item.timestamp.toString(),
-        'X-Client-ID': item.clientId
+        'X-Client-ID': item.clientId,
+        // Reuse the stable clientId as the server dedup key (lib/core/idempotency).
+        // Without this a re-sync after a partial success (server recorded it, but
+        // the response was lost) would DOUBLE-record attendance. The online path
+        // (submit-attendance.ts) uses the same key, so an online attempt that the
+        // server processed before we fell back to the queue also dedups here.
+        'Idempotency-Key': item.clientId,
       };
 
       // Build API endpoint and method based on operation
