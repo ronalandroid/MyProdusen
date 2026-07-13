@@ -11,6 +11,14 @@ export interface OfflineCheckInData {
   locationId?: string;
   shiftId?: string;
   notes?: string;
+  manualReason?: string;
+  deviceInfo?: string;
+  /**
+   * Stable idempotency key. Pass the SAME key the online submit used so the
+   * server dedups the two attempts (see sync-manager Idempotency-Key). Defaults
+   * to a fresh clientId when omitted.
+   */
+  clientId?: string;
 }
 
 export interface OfflineCheckOutData {
@@ -20,6 +28,10 @@ export interface OfflineCheckOutData {
   accuracy: number;
   selfieDataUrl: string;
   notes?: string;
+  manualReason?: string;
+  lateReason?: string;
+  deviceInfo?: string;
+  clientId?: string;
 }
 
 export class OfflineAttendanceService {
@@ -27,7 +39,7 @@ export class OfflineAttendanceService {
    * Check-in offline
    */
   async checkIn(data: OfflineCheckInData): Promise<{ clientId: string; offline: boolean }> {
-    const clientId = generateClientId();
+    const clientId = data.clientId || generateClientId();
     const timestamp = Date.now();
 
     // Store in offline attendance table
@@ -63,6 +75,8 @@ export class OfflineAttendanceService {
         locationId: data.locationId,
         shiftId: data.shiftId,
         notes: data.notes,
+        manualReason: data.manualReason,
+        deviceInfo: data.deviceInfo,
         timestamp
       }
     });
@@ -77,7 +91,7 @@ export class OfflineAttendanceService {
    * Check-out offline
    */
   async checkOut(data: OfflineCheckOutData): Promise<{ clientId: string; offline: boolean }> {
-    const clientId = generateClientId();
+    const clientId = data.clientId || generateClientId();
     const timestamp = Date.now();
 
     // Store in offline attendance table
@@ -109,6 +123,9 @@ export class OfflineAttendanceService {
         accuracy: data.accuracy,
         selfieDataUrl: data.selfieDataUrl,
         notes: data.notes,
+        manualReason: data.manualReason,
+        lateReason: data.lateReason,
+        deviceInfo: data.deviceInfo,
         timestamp
       }
     });

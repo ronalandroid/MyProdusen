@@ -99,6 +99,7 @@ function AttendanceSuccessContent() {
   const type = (searchParams.get("type") === "clock-out" ? "clock-out" : "clock-in") as ClockType;
   const isClockIn = type === "clock-in";
   const pendingReview = searchParams.get("pending") === "1";
+  const savedOffline = searchParams.get("offline") === "1";
 
   const { data: profileData, isLoading: profileLoading } = useCachedProfile();
   const { data: todayData, isLoading: todayLoading } = useQuery<AttendanceRecord | null>({
@@ -166,9 +167,11 @@ function AttendanceSuccessContent() {
           <CheckCircle2 size={48} className="text-[var(--attn-success)] transition-transform duration-500 ease-out motion-safe:scale-105" />
         </div>
         <div>
-          <h2 className="text-lg font-extrabold text-[var(--text-primary)]">{title}</h2>
+          <h2 className="text-lg font-extrabold text-[var(--text-primary)]">{savedOffline ? `${isClockIn ? "Clock In" : "Clock Out"} Tersimpan Lokal` : title}</h2>
           <p className="mt-1 text-sm font-semibold text-[var(--text-secondary)]">
-            {loading ? "Menyimpan absensi…" : `${isClockIn ? "Tercatat masuk" : "Tercatat pulang"} pukul ${stampedTime}`}
+            {savedOffline
+              ? "Tersimpan di perangkat Anda. Absensi otomatis terkirim ke server saat koneksi kembali — tidak perlu mengulang."
+              : loading ? "Menyimpan absensi…" : `${isClockIn ? "Tercatat masuk" : "Tercatat pulang"} pukul ${stampedTime}`}
           </p>
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold" style={{ background: geo.bg, color: geo.color }}>

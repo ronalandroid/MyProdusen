@@ -191,4 +191,34 @@ describe('Offline Sync Manager', () => {
       expect(remaining[0].timestamp).toBe(recentTimestamp);
     });
   });
+
+  describe('Idempotency on sync', () => {
+    it('sends Idempotency-Key equal to the clientId so a re-sync cannot double-record', async () => {
+      const { syncManager } = await import('@/hooks/offline/sync-manager');
+      const { networkDetector } = await import('@/hooks/offline/network-detector');
+      Object.defineProperty(networkDetector, '_isOnline', { value: true, writable: true, configurable: true });
+
+      const clientId = generateClientId();
+      await offlineDb.syncQueue.add({
+        clientId,
+        operation: 'create',
+        entity: 'attendance',
+        data: { type: 'check-in', employeeId: 'e1', latitude: 1, longitude: 2, accuracy: 5, selfieDataUrl: 'data:image/jpeg;base64,/9j/', timestamp: Date.now() },
+        timestamp: Date.now(),
+        status: 'pending',
+        retries: 0,
+      });
+
+      const fetchMock = vi.fn(async () => new Response(JSON.stringify({ success: true, id: 'srv-1' }), { status: 200, headers: { 'content-type': 'application/json' } }));
+      vi.stubGlobal('fetch', fetchMock);
+
+      await syncManager.syncAll();
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toContain('/api/attendance/check-in');
+      expect((init.headers as Record<string, string>)['Idempotency-Key']).toBe(clientId);
+      vi.unstubAllGlobals();
+    });
+  });
 });

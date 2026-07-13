@@ -9,6 +9,8 @@ import { fetchProfile, getAuthHeaders, type ClientUserProfile } from "@/lib/auth
 import { useQueryClient } from "@tanstack/react-query";
 import { AttendanceMap } from "@/components/attendance/AttendanceMap";
 import { submitAttendanceWithRetry } from "@/lib/attendance/submit-attendance";
+import { shouldQueueOffline } from "@/lib/attendance/offline-fallback";
+import { offlineAttendanceService } from "@/services/attendance/attendance.offline";
 
 const RealtimeSelfieCamera = dynamic(
   () => import("@/components/attendance/RealtimeSelfieCamera").then((mod) => mod.RealtimeSelfieCamera),
@@ -85,6 +87,16 @@ function cleanError(error: unknown) {
   if (/camera|kamera/i.test(message)) return "Kamera tidak dapat diakses. Izinkan kamera di browser Anda.";
   if (!message || /TypeError|ReferenceError|Cannot read/i.test(message)) return "Absensi belum dapat dikirim. Coba lagi.";
   return message;
+}
+
+/** Selfie Blob → data URL so it survives in IndexedDB until the queue syncs. */
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }
 
 export default function AttendanceClockPage() {
@@ -257,6 +269,39 @@ function AttendanceClockContent() {
         idempotencyKeyRef.current,
         getAuthHeaders() as Record<string, string>,
       );
+      // Genuine "no server reached" (offline/network/timeout) → save locally and
+      // let the sync manager flush it when the connection is back. A real server
+      // rejection (4xx/5xx) is NOT queued — it must be shown to the user.
+      if (shouldQueueOffline(outcome) && employee?.id) {
+        const selfieDataUrl = await blobToDataUrl(selfieBlob);
+        const common = {
+          employeeId: employee.id,
+          latitude: gpsPosition!.coords.latitude,
+          longitude: gpsPosition!.coords.longitude,
+          accuracy: gpsPosition!.coords.accuracy,
+          selfieDataUrl,
+          notes: note.trim() || undefined,
+          manualReason: insideRadius === false && manualReason.trim() ? manualReason.trim() : undefined,
+          deviceInfo: navigator.userAgent,
+          clientId: idempotencyKeyRef.current,
+        };
+        if (isClockIn) {
+          await offlineAttendanceService.checkIn({
+            ...common,
+            locationId: employee.defaultLocation?.id,
+            shiftId: employee.defaultShift?.id,
+          });
+        } else {
+          await offlineAttendanceService.checkOut({
+            ...common,
+            lateReason: lateReason.trim() || undefined,
+          });
+        }
+        clearSelfie();
+        void queryClient.invalidateQueries({ queryKey: ["employee-beranda"] });
+        router.push(`/dashboard/attendance/success?type=${type}&offline=1`);
+        return;
+      }
       if (!outcome.ok) throw new Error(outcome.error);
       const result = { success: true as const, data: outcome.data };
       setUi({ statusText: "Menyimpan riwayat…", message: isClockIn ? "Clock In berhasil." : "Clock Out berhasil." });
