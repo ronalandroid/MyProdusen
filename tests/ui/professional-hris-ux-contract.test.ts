@@ -31,7 +31,8 @@ describe('professional HRIS UX source contract', () => {
 
   it('dashboard attendance copy matches map-first flow, not direct selfie wording', () => {
     for (const source of [employeeDashboard, leaderDashboard]) {
-      expect(source).toContain('Validasi lokasi dulu, lalu ambil selfie realtime.');
+      // Map-first order (location before selfie) now lives in the calm card caption.
+      expect(source).toContain('Dua langkah singkat: cek lokasi, lalu selfie');
       expect(source).not.toContain('Selfie dan GPS akan terbuka langsung');
       expect(source).toContain('/dashboard/attendance/clock?type=clock-in');
       expect(source).toContain('/dashboard/attendance/clock?type=clock-out');

@@ -1,13 +1,11 @@
 "use client";
 
-import { MapPin, Clock, Check, AlertTriangle } from "lucide-react";
+import { MapPin, Clock, Check } from "lucide-react";
 import { formatDistance } from "./helpers";
 import { AttendanceCTA } from "./AttendanceCTA";
 import type { AttendanceRecord, WorkLocationDetail } from "./types";
-import type { ClientUserProfile } from "@/lib/auth-client";
 
 interface ShiftStatusBannerProps {
-  profile: ClientUserProfile | null;
   workLocation: WorkLocationDetail | null;
   todayLabel: string;
   shiftTimeText: string;
@@ -22,7 +20,6 @@ interface ShiftStatusBannerProps {
 }
 
 export function ShiftStatusBanner({
-  profile,
   workLocation,
   todayLabel,
   shiftTimeText,
@@ -94,28 +91,6 @@ export function ShiftStatusBanner({
             </div>
           )}
         </div>
-
-        {/* Geofence outside radius warnings */}
-        {workLocation && gpsPosition && !isInsideRadius && (
-          <div className="flex items-start gap-2 rounded-2xl bg-[var(--danger-bg)] border border-red-200 p-3 text-xs text-[var(--danger)] font-semibold leading-relaxed">
-            <AlertTriangle size={15} className="shrink-0 mt-0.5" />
-            <span>Anda berada di luar radius lokasi kerja diizinkan (maks. {workLocation.radius}m).</span>
-          </div>
-        )}
-
-        {!profile?.employee?.defaultLocation && (
-          <div className="flex items-start gap-2 rounded-2xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 font-semibold leading-relaxed">
-            <AlertTriangle size={15} className="shrink-0 mt-0.5" />
-            <span>Lokasi kerja belum tersedia. Hubungi Superadmin.</span>
-          </div>
-        )}
-
-        {!profile?.employee?.defaultShift && (
-          <div className="flex items-start gap-2 rounded-2xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 font-semibold leading-relaxed">
-            <AlertTriangle size={15} className="shrink-0 mt-0.5" />
-            <span>Shift belum tersedia. Hubungi Superadmin.</span>
-          </div>
-        )}
 
         <AttendanceCTA todayRecord={todayRecord} hasCheckedIn={hasCheckedIn} hasCheckedOut={hasCheckedOut} />
       </div>

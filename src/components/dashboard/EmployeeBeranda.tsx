@@ -9,6 +9,7 @@ import { PerformanceSection } from "./employee/PerformanceSection";
 import { QuickActionsGrid } from "./employee/QuickActionsGrid";
 import { PersonalSummaryCards } from "./employee/PersonalSummaryCards";
 import { RecentActivityList } from "./employee/RecentActivityList";
+import { BerandaReminderToasts } from "./employee/BerandaReminderToasts";
 
 export default function EmployeeBeranda({ profile }: Props) {
   const {
@@ -23,6 +24,19 @@ export default function EmployeeBeranda({ profile }: Props) {
 
   return (
     <div className="flex flex-col gap-5 pb-6">
+      <BerandaReminderToasts
+        hasShift={Boolean(profile?.employee?.defaultShift)}
+        hasLocation={Boolean(profile?.employee?.defaultLocation)}
+        hasProfilePhoto={Boolean(profile?.employee?.profilePhoto)}
+        hasPhone={Boolean(profile?.employee?.phone)}
+        hasAddress={Boolean(profile?.employee?.address)}
+        hasCheckedIn={hasCheckedIn}
+        hasCheckedOut={hasCheckedOut}
+        shiftStartTime={profile?.employee?.defaultShift?.startTime ?? null}
+        shiftEndTime={profile?.employee?.defaultShift?.endTime ?? null}
+        isOutsideRadius={Boolean(workLocation && gpsPosition && isInsideRadius === false)}
+      />
+
       <EmployeeHeader
         profile={profile}
         notifications={notifications}
@@ -35,7 +49,6 @@ export default function EmployeeBeranda({ profile }: Props) {
       <MonthlyStatsStrip hadir={monthCounts.hadir} currentStreak={currentStreak} currentScoreOutOfTen={currentScoreOutOfTen} />
 
       <ShiftStatusBanner
-        profile={profile}
         workLocation={workLocation}
         todayLabel={todayLabel}
         shiftTimeText={shiftTimeText}

@@ -14,7 +14,13 @@ describe('mobile attendance clocking UX source contract', () => {
   it('dashboard attendance card exposes Clock In and Clock Out capture routes', () => {
     for (const source of [employeeDashboard, leaderDashboard]) {
       expect(source).toContain('Selamat pagi');
-      expect(source).toContain('Jangan lupa absen hari ini!');
+      // Static beranda nagging was replaced by conditional pop-up reminders
+      // (BerandaReminderToasts); the card keeps only a calm two-step caption.
+      expect(source).toContain('Dua langkah singkat: cek lokasi, lalu selfie');
+      expect(source).toContain('BerandaReminderToasts');
+      expect(source).not.toContain('Jangan lupa absen hari ini!');
+      expect(source).not.toContain('Lokasi kerja belum tersedia. Hubungi Superadmin.');
+      expect(source).not.toContain('Shift belum tersedia. Hubungi Superadmin.');
       expect(source).toContain('Clock In');
       expect(source).toContain('Clock Out');
       expect(source).toContain('/dashboard/attendance/clock?type=clock-in');
