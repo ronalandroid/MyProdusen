@@ -6,6 +6,7 @@ import { ArrowLeft, Calendar, TrendingDown, TrendingUp, RefreshCcw, AlertCircle 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Button from "@/components/ui/Button";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import UpcomingHolidaysCard from "./UpcomingHolidaysCard";
 import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
 
 interface LeaveBalance {
@@ -153,6 +154,9 @@ export default function LeaveBalancePage() {
           </div>
         </div>
       )}
+
+      {/* Upcoming national holidays & cuti bersama (read-only, synced from Superadmin) */}
+      <UpcomingHolidaysCard />
 
       {/* Transaction History */}
       <section className="card" style={{ padding: "24px" }}>
