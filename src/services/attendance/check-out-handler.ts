@@ -135,7 +135,11 @@ export async function checkOut(data: {
   // written reason; then queued for Superadmin review.
   const shiftEnd = shift ? resolveShiftEndFor(attendance.checkInTime, shift.startTime, shift.endTime) : null;
   const isFromPreviousDay = attendance.checkInTime < today;
-  const isLate = shiftEnd ? isLateCheckOut(checkOutTime, shiftEnd) : isFromPreviousDay;
+  // A shift end only counts when it falls AFTER the check-in — someone who
+  // checked in past their shift's end (or has no shift) is judged by whether
+  // the attendance was left open since a previous day.
+  const shiftEndApplies = shiftEnd !== null && shiftEnd.getTime() > attendance.checkInTime.getTime();
+  const isLate = shiftEndApplies ? isLateCheckOut(checkOutTime, shiftEnd!) : isFromPreviousDay;
   const trimmedLateReason = data.lateReason?.trim();
 
   if (isLate && !trimmedLateReason) {
@@ -160,7 +164,7 @@ export async function checkOut(data: {
     type: 'check-out',
   });
   const checkOutNote = data.note?.trim();
-  const lateCheckOutMinutes = isLate && shiftEnd ? lateMinutes(checkOutTime, shiftEnd) : 0;
+  const lateCheckOutMinutes = isLate && shiftEndApplies ? lateMinutes(checkOutTime, shiftEnd!) : 0;
   const lateNote = isLate && trimmedLateReason
     ? `Clock-out terlambat${lateCheckOutMinutes ? ` (+${lateCheckOutMinutes} menit)` : ''}: ${trimmedLateReason}`
     : undefined;

@@ -151,6 +151,18 @@ describe('late clock-out with Superadmin review', () => {
     expect(result.isLateCheckOut ?? false).toBe(false);
   });
 
+  it('check-in AFTER shift end (e.g. night worker on a day shift) is NOT late', async () => {
+    // Regression: CI runs at arbitrary hours — a fresh check-in past the
+    // shift's end must clock out freely; "late" only means staying past a
+    // shift end that comes AFTER the check-in.
+    freezeAt('2026-07-14T22:20:00');
+    await seedAttendance(new Date('2026-07-14T22:15:00'), dayShiftId);
+
+    const result = await checkOut(checkOutInput());
+    expect(result.checkOutTime).toBeTruthy();
+    expect(result.isLateCheckOut ?? false).toBe(false);
+  });
+
   it('still rejects a second clock-out for today with the same message', async () => {
     freezeAt('2026-07-14T17:10:00');
     await seedAttendance(new Date('2026-07-14T08:05:00'), dayShiftId);
