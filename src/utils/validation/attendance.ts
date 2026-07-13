@@ -34,6 +34,8 @@ export const checkOutSchema = z.object({
   note: z.string().max(150).optional(),
   // Written justification required to attend from OUTSIDE the geo-fence radius.
   manualReason: z.string().max(300).optional(),
+  // Written justification required when clocking out past the grace window.
+  lateReason: z.string().max(300).optional(),
 });
 
 export const manualAttendanceSchema = z.object({

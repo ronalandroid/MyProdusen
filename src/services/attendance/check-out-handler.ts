@@ -1,6 +1,16 @@
-import { db, attendances, workLocations, shifts, attendanceDailySummaries } from '@/lib/db';
+import { db, attendances, workLocations, shifts, attendanceDailySummaries, employees, users } from '@/lib/db';
 import { calculateEarlyLeaveMinutes, calculateMinutesDifference } from '@/utils/date';
-import { eq, and, gte, lt, isNull } from 'drizzle-orm';
+import { eq, and, gte, lt, isNull, desc } from 'drizzle-orm';
+import {
+  LATE_CHECKOUT_REASON_REQUIRED,
+  OPEN_ATTENDANCE_LOOKBACK_HOURS,
+  isLateCheckOut,
+  lateMinutes,
+  resolveShiftEndFor,
+} from '@/lib/attendance/late-checkout-policy';
+import { attendanceExceptionService } from '@/services/attendance/attendance-exception.service';
+import { notifyUser } from '@/lib/notifications/dispatch';
+import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 import { saveAttendanceSelfie } from '@/lib/upload';
 import { payrollPeriodLockService } from '@/features/payroll/payroll-period-lock.service';
 import { validateGpsAttendance } from '@/lib/attendance/gps-validation';
@@ -22,12 +32,18 @@ export async function checkOut(data: {
   note?: string;
   /** Required to clock out from OUTSIDE the geo-fence; queues admin review. */
   manualReason?: string;
+  /** Required when clocking out past the grace window; queues admin review. */
+  lateReason?: string;
 }) {
-  // Get today's attendance
-  const today = new Date();
+  // Latest OPEN attendance within the lookback window — covers today, an
+  // overnight shift started yesterday, and a forgotten clock-out from
+  // yesterday (owner policy #4: lupa clock-out tetap bisa clock-out).
+  const now = new Date();
+  const today = new Date(now);
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
+  const lookbackStart = new Date(now.getTime() - OPEN_ATTENDANCE_LOOKBACK_HOURS * 60 * 60 * 1000);
 
   const [attendance] = await db
     .select()
@@ -35,18 +51,30 @@ export async function checkOut(data: {
     .where(
       and(
         eq(attendances.employeeId, data.employeeId),
-        gte(attendances.checkInTime, today),
-        lt(attendances.checkInTime, tomorrow)
+        gte(attendances.checkInTime, lookbackStart),
+        isNull(attendances.checkOutTime)
       )
     )
+    .orderBy(desc(attendances.checkInTime))
     .limit(1);
 
   if (!attendance) {
-    throw new BusinessError('Anda belum melakukan check-in hari ini');
-  }
+    const [todayAttendance] = await db
+      .select({ checkOutTime: attendances.checkOutTime })
+      .from(attendances)
+      .where(
+        and(
+          eq(attendances.employeeId, data.employeeId),
+          gte(attendances.checkInTime, today),
+          lt(attendances.checkInTime, tomorrow)
+        )
+      )
+      .limit(1);
 
-  if (attendance.checkOutTime) {
-    throw new BusinessError('Anda sudah melakukan check-out hari ini');
+    if (todayAttendance?.checkOutTime) {
+      throw new BusinessError('Anda sudah melakukan check-out hari ini');
+    }
+    throw new BusinessError('Anda belum melakukan check-in hari ini');
   }
 
   // Guard against mutating a locked payroll period (uses the work-date the
@@ -98,18 +126,26 @@ export async function checkOut(data: {
 
   const checkOutTime = new Date();
 
+  const [shift] = attendance.shiftId
+    ? await db.select().from(shifts).where(eq(shifts.id, attendance.shiftId)).limit(1)
+    : [undefined];
+
+  // Late clock-out: past the grace window after shift end (or, without a
+  // shift, an attendance left open since a previous day). Allowed only with a
+  // written reason; then queued for Superadmin review.
+  const shiftEnd = shift ? resolveShiftEndFor(attendance.checkInTime, shift.startTime, shift.endTime) : null;
+  const isFromPreviousDay = attendance.checkInTime < today;
+  const isLate = shiftEnd ? isLateCheckOut(checkOutTime, shiftEnd) : isFromPreviousDay;
+  const trimmedLateReason = data.lateReason?.trim();
+
+  if (isLate && !trimmedLateReason) {
+    throw new BusinessError(LATE_CHECKOUT_REASON_REQUIRED);
+  }
+
   // Calculate early leave minutes
   let earlyLeaveMinutes = 0;
-  if (attendance.shiftId) {
-    const [shift] = await db
-      .select()
-      .from(shifts)
-      .where(eq(shifts.id, attendance.shiftId))
-      .limit(1);
-
-    if (shift) {
-      earlyLeaveMinutes = calculateEarlyLeaveMinutes(checkOutTime, shift.endTime);
-    }
+  if (shift) {
+    earlyLeaveMinutes = calculateEarlyLeaveMinutes(checkOutTime, shift.endTime);
   }
 
   // Calculate total work minutes
@@ -124,9 +160,13 @@ export async function checkOut(data: {
     type: 'check-out',
   });
   const checkOutNote = data.note?.trim();
-  const mergedNote = checkOutNote
-    ? [attendance.adjustmentReason, `Clock-out: ${checkOutNote}`].filter(Boolean).join('\n')
-    : attendance.adjustmentReason;
+  const lateCheckOutMinutes = isLate && shiftEnd ? lateMinutes(checkOutTime, shiftEnd) : 0;
+  const lateNote = isLate && trimmedLateReason
+    ? `Clock-out terlambat${lateCheckOutMinutes ? ` (+${lateCheckOutMinutes} menit)` : ''}: ${trimmedLateReason}`
+    : undefined;
+  const mergedNote = [attendance.adjustmentReason, lateNote, checkOutNote ? `Clock-out: ${checkOutNote}` : undefined]
+    .filter(Boolean)
+    .join('\n') || attendance.adjustmentReason;
 
   // Update attendance + daily-summary atomically. The WHERE additionally
   // guards on checkOutTime IS NULL so a concurrent double-submit can only
@@ -175,6 +215,14 @@ export async function checkOut(data: {
     return row;
   });
 
+  if (isLate && trimmedLateReason) {
+    await queueLateCheckOutReview({
+      attendanceId: attendance.id,
+      employeeId: data.employeeId,
+      reason: lateNote || trimmedLateReason,
+    });
+  }
+
   // Invalidate attendance caches
   await invalidateAttendanceCaches(data.employeeId);
 
@@ -183,5 +231,51 @@ export async function checkOut(data: {
     checkOutGeoStatus,
     geoValidation: validation,
     isPendingGeoReview: validation.decision === 'pending',
+    isLateCheckOut: isLate,
+    lateCheckOutMinutes,
   };
+}
+
+/**
+ * Queue a LATE_CORRECTION exception and wake the Superadmin console. Failures
+ * here must never undo an already-recorded clock-out, so they are logged via
+ * the caller's Sentry wiring rather than thrown.
+ */
+async function queueLateCheckOutReview(data: { attendanceId: string; employeeId: string; reason: string }) {
+  const [employee] = await db
+    .select({ userId: employees.userId, fullName: employees.fullName })
+    .from(employees)
+    .where(eq(employees.id, data.employeeId))
+    .limit(1);
+
+  await attendanceExceptionService.createException({
+    attendanceId: data.attendanceId,
+    employeeId: data.employeeId,
+    type: 'LATE_CORRECTION',
+    reason: data.reason,
+    requestedBy: employee?.userId || data.employeeId,
+  });
+
+  const superadmins = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.role, 'SUPERADMIN'), eq(users.isActive, true)));
+
+  await Promise.all(
+    superadmins.map((admin) =>
+      notifyUser({
+        userId: admin.id,
+        title: 'Clock-out terlambat menunggu review',
+        message: `${employee?.fullName || 'Karyawan'} — ${data.reason}`,
+        type: 'ATTENDANCE_EXCEPTION',
+      }).catch(() => undefined),
+    ),
+  );
+
+  await publishRealtimeEvent(createRealtimeEvent({
+    type: 'dashboard.updated',
+    scope: 'role',
+    target: 'SUPERADMIN',
+    payload: { source: 'attendance.late-checkout', attendanceId: data.attendanceId },
+  })).catch(() => undefined);
 }
