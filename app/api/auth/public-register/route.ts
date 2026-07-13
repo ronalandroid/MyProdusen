@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { authService } from '@/services/auth/auth.service';
 import { registerInstantEmployee } from '@/services/auth/instant-registration';
+import { isPublicRegistrationOpen } from '@/services/settings/registration-settings';
 import { instantRegisterSchema } from '@/utils/validation/auth';
 import { errorResponse, successResponse, validationErrorResponse } from '@/utils/response';
 import { getRequestBody } from '@/lib/middleware';
@@ -19,6 +20,11 @@ export async function POST(request: NextRequest) {
     if (rateLimitResult.limited) {
       const resetIn = Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000 / 60);
       return errorResponse(`Terlalu banyak percobaan registrasi. Coba lagi dalam ${resetIn} menit.`, 429);
+    }
+
+    // Superadmin can close public sign-up entirely (anti registrasi liar).
+    if (!(await isPublicRegistrationOpen())) {
+      return errorResponse('Pendaftaran sedang ditutup oleh perusahaan. Hubungi HRD/Superadmin untuk dibuatkan akun.', 403);
     }
 
     const body = await getRequestBody<Record<string, unknown>>(request);

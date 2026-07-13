@@ -48,13 +48,17 @@ export default function RegisterPage() {
   }
 
   const [options, setOptions] = useState<{ divisions: string[]; positions: string[]; leaders: Array<{ id: string; fullName: string; division: string | null }> }>({ divisions: [], positions: [], leaders: [] });
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/auth/register-options")
       .then((res) => res.json())
       .then((payload) => {
-        if (!cancelled && payload?.success && payload.data) setOptions(payload.data);
+        if (!cancelled && payload?.success && payload.data) {
+          setOptions(payload.data);
+          setIsRegistrationOpen(payload.data.registrationOpen !== false);
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -205,6 +209,16 @@ export default function RegisterPage() {
               </div>
             )}
 
+            {!isRegistrationOpen && (
+              <div role="status" className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 text-center space-y-2">
+                <p className="text-base font-bold text-amber-900">Pendaftaran sedang ditutup</p>
+                <p className="text-sm font-medium text-amber-800">
+                  Perusahaan sedang tidak menerima pendaftaran akun baru. Hubungi HRD/Superadmin agar akun Anda dibuatkan langsung.
+                </p>
+              </div>
+            )}
+
+            {isRegistrationOpen && (
             <form onSubmit={handleRegister} className="space-y-5" noValidate>
               {/* Honeypot anti-bot: tersembunyi dari manusia, diisi oleh bot. */}
               <div aria-hidden="true" className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden">
@@ -318,6 +332,7 @@ export default function RegisterPage() {
                 {isSubmitting ? "Memproses..." : "Daftar"}
               </button>
             </form>
+            )}
 
             <div className="mt-8 pt-6 border-t border-[var(--border-color)] text-center">
               <p className="text-sm text-[var(--text-secondary)]">
