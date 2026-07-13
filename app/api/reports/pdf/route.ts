@@ -11,9 +11,10 @@ import {
   buildPdfReportData,
   type PdfReportType,
 } from '@/lib/reports/pdf-report';
+import { buildComprehensiveReport } from '@/lib/reports/comprehensive-report';
 
 const pdfReportSchema = z.object({
-  reportType: z.enum(['attendance_summary', 'kpi_performance', 'payroll_summary', 'executive_hr']),
+  reportType: z.enum(['attendance_summary', 'kpi_performance', 'payroll_summary', 'executive_hr', 'comprehensive']),
   from: z.string().optional(),
   to: z.string().optional(),
   division: z.string().optional(),
@@ -34,11 +35,17 @@ export async function POST(request: NextRequest) {
     const validation = pdfReportSchema.safeParse(body);
     if (!validation.success) return validationErrorResponse(validation.error.errors[0].message);
 
-    const reportData = await buildPdfReportData(
-      validation.data as { reportType: PdfReportType; from?: string; to?: string; division?: string },
-      user.email,
-    );
-    const pdf = buildPdfDocument(reportData);
+    const pdf = validation.data.reportType === 'comprehensive'
+      ? await buildComprehensiveReport(
+          { from: validation.data.from, to: validation.data.to, division: validation.data.division },
+          user.email,
+        )
+      : buildPdfDocument(
+          await buildPdfReportData(
+            validation.data as { reportType: PdfReportType; from?: string; to?: string; division?: string },
+            user.email,
+          ),
+        );
 
     await logAudit(
       user.userId,
