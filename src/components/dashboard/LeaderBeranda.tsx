@@ -17,13 +17,13 @@ import {
   TimerReset,
   FileText,
   User,
-  AlertTriangle,
   BarChart3,
   Check,
   ChevronRight,
   ClipboardList,
   Users,
 } from "lucide-react";
+import { BerandaReminderToasts } from "./employee/BerandaReminderToasts";
 import { getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
 
 interface AttendanceRecord {
@@ -489,33 +489,24 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
             )}
           </div>
 
-          {/* Geofence outside radius warnings */}
-          {workLocation && gpsPosition && !isInsideRadius && (
-            <div className="flex items-start gap-2 rounded-2xl bg-[var(--danger-bg)] border border-red-200 p-3 text-xs text-[var(--danger)] font-semibold leading-relaxed">
-              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
-              <span>Anda berada di luar radius lokasi kerja diizinkan (maks. {workLocation.radius}m).</span>
-            </div>
-          )}
-
-          {!profile?.employee?.defaultLocation && (
-            <div className="flex items-start gap-2 rounded-2xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 font-semibold leading-relaxed">
-              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
-              <span>Lokasi kerja belum tersedia. Hubungi Superadmin.</span>
-            </div>
-          )}
-
-          {!profile?.employee?.defaultShift && (
-            <div className="flex items-start gap-2 rounded-2xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 font-semibold leading-relaxed">
-              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
-              <span>Shift belum tersedia. Hubungi Superadmin.</span>
-            </div>
-          )}
+          <BerandaReminderToasts
+            hasShift={Boolean(profile?.employee?.defaultShift)}
+            hasLocation={Boolean(profile?.employee?.defaultLocation)}
+            hasProfilePhoto={Boolean(profile?.employee?.profilePhoto)}
+            hasPhone={Boolean(profile?.employee?.phone)}
+            hasAddress={Boolean(profile?.employee?.address)}
+            hasCheckedIn={hasCheckedIn}
+            hasCheckedOut={hasCheckedOut}
+            shiftStartTime={profile?.employee?.defaultShift?.startTime ?? null}
+            shiftEndTime={profile?.employee?.defaultShift?.endTime ?? null}
+            isOutsideRadius={Boolean(workLocation && gpsPosition && isInsideRadius === false)}
+          />
 
           <section className="rounded-3xl border border-yellow-200 bg-white p-4 shadow-sm" aria-label="Absensi Hari Ini">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-extrabold text-[var(--text-primary)]">Absensi Hari Ini</h3>
-                <p className="text-xs font-medium text-[var(--text-secondary)]">Jangan lupa absen hari ini! Validasi lokasi dulu, lalu ambil selfie realtime. Validasi lokasi dulu, lalu ambil selfie realtime setelah tombol Clock In atau Clock Out ditekan.</p>
+                <p className="text-xs font-medium text-[var(--text-secondary)]">Dua langkah singkat: cek lokasi, lalu selfie — selesai.</p>
               </div>
               <Camera size={20} className="text-[var(--primary-dark)]" aria-hidden="true" />
             </div>

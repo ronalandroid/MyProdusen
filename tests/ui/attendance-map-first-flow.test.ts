@@ -17,7 +17,9 @@ describe('map-first attendance clocking flow source contract', () => {
       expect(source).toContain('Clock Out');
       expect(source).toContain('/dashboard/attendance/clock?type=clock-in');
       expect(source).toContain('/dashboard/attendance/clock?type=clock-out');
-      expect(source).toContain('Jangan lupa absen hari ini!');
+      // The permanent reminder line became conditional pop-up reminders.
+      expect(source).toContain('Dua langkah singkat: cek lokasi, lalu selfie');
+      expect(source).not.toContain('Jangan lupa absen hari ini!');
     }
   });
 
