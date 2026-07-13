@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Calendar, Clock, Palette, Award } from "lucide-react";
+import { AlertTriangle, Calendar, Clock, Palette, Award, UserPlus } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth-client";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
@@ -12,11 +12,12 @@ import AttendancePolicyTab from "./components/AttendancePolicyTab";
 import WorkCalendarTab from "./components/WorkCalendarTab";
 import GamificationTab from "./components/GamificationTab";
 import ThemeTab from "./components/ThemeTab";
+import RegistrationTab from "./components/RegistrationTab";
 
 // eslint-disable-next-line react-doctor/no-giant-component, react-doctor/prefer-useReducer
 export default function SettingsPage() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"policy" | "calendar" | "gamification" | "theme">("policy");
+  const [activeTab, setActiveTab] = useState<"policy" | "calendar" | "gamification" | "theme" | "registration">("policy");
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [progressState, setProgressState] = useState("");
@@ -78,6 +79,14 @@ export default function SettingsPage() {
     queryKey: ["settings", "performance-periods"],
     queryFn: () => fetchApiList<PerformancePeriod>("/api/performance/periods", "Gagal memuat konfigurasi dari server."),
     enabled: activeTab === "gamification",
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+
+  const { data: registrationData, isLoading: registrationLoading, error: registrationError } = useQuery({
+    queryKey: ["settings", "registration"],
+    queryFn: () => fetchApiData<{ open: boolean }>("/api/settings/registration", "Gagal memuat konfigurasi dari server."),
+    enabled: activeTab === "registration",
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
@@ -145,7 +154,9 @@ export default function SettingsPage() {
         ? holidaysLoading
         : activeTab === "gamification"
           ? (gamificationLoading ? gamificationLoading : periodsLoading)
-          : themeLoading;
+          : activeTab === "registration"
+            ? registrationLoading
+            : themeLoading;
   const loadError =
     activeTab === "policy"
       ? policiesError
@@ -153,7 +164,9 @@ export default function SettingsPage() {
         ? holidaysError
         : activeTab === "gamification"
           ? (gamificationLoading ? gamificationError : periodsError)
-          : themeError;
+          : activeTab === "registration"
+            ? registrationError
+            : themeError;
   const error = actionError || loadError?.message || "";
   const displayFeedback = feedback || (error ? { type: "error" as const, message: error } : null);
   const loadSettingsData = () => queryClient.invalidateQueries({ queryKey: ["settings"] });
@@ -376,6 +389,28 @@ export default function SettingsPage() {
     }
   };
 
+  const handleToggleRegistration = async (nextOpen: boolean) => {
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/settings/registration", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ open: nextOpen }),
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) {
+        throw new Error(payload.error || "Gagal mengubah status pendaftaran.");
+      }
+      setFeedback({ type: "success", message: payload.message || "Status pendaftaran diperbarui." });
+      loadSettingsData();
+    } catch (err) {
+      setFeedback({ type: "error", message: err instanceof Error ? err.message : "Gagal mengubah status pendaftaran." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleCreateHoliday = () => {
     todayDateRef.current = new Date().toISOString().slice(0, 10);
     setEditingHoliday({ date: todayDateRef.current, name: "", type: "COMPANY_HOLIDAY", isPaidHoliday: true, payMultiplier: 2 });
@@ -426,6 +461,16 @@ export default function SettingsPage() {
         >
           <Award size={16} />
           Gamifikasi
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("registration")}
+          className={`flex-1 min-h-[40px] px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all ${
+            activeTab === "registration" ? "bg-white text-[var(--primary-dark)] shadow-sm" : "text-[var(--text-secondary)] hover:bg-white/40"
+          }`}
+        >
+          <UserPlus size={16} />
+          Pendaftaran
         </button>
         <button
           type="button"
@@ -485,6 +530,12 @@ export default function SettingsPage() {
           handleSaveGamificationConfig={handleSaveGamificationConfig}
           handleOpenPeriod={handleOpenPeriod}
           handleClosePeriod={handleClosePeriod}
+        />
+      ) : activeTab === "registration" ? (
+        <RegistrationTab
+          isOpen={registrationData?.open !== false}
+          saving={saving}
+          onToggle={handleToggleRegistration}
         />
       ) : (
         <ThemeTab

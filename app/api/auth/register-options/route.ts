@@ -4,6 +4,7 @@ import { db, employees, users } from '@/lib/db';
 import { successResponse, errorResponse } from '@/utils/response';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { handleApiError } from '@/lib/core/route-handler';
+import { isPublicRegistrationOpen } from '@/services/settings/registration-settings';
 
 /**
  * Public options for the self-service registration form: existing divisions
@@ -17,7 +18,8 @@ export async function GET(request: NextRequest) {
       return errorResponse('Terlalu banyak permintaan. Coba lagi sebentar lagi.', 429);
     }
 
-    const [divisionRows, positionRows, leaderRows] = await Promise.all([
+    const [registrationOpen, divisionRows, positionRows, leaderRows] = await Promise.all([
+      isPublicRegistrationOpen(),
       db
         .selectDistinct({ division: employees.division })
         .from(employees)
@@ -38,6 +40,7 @@ export async function GET(request: NextRequest) {
       [...new Set(values.filter((v): v is string => Boolean(v && v.trim())))].sort((a, b) => a.localeCompare(b, 'id'));
 
     return successResponse({
+      registrationOpen,
       divisions: clean(divisionRows.map((r) => r.division)),
       positions: clean(positionRows.map((r) => r.position)),
       leaders: leaderRows.map((leader) => ({ id: leader.id, fullName: leader.fullName, division: leader.division })),
