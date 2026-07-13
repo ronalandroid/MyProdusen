@@ -743,6 +743,26 @@ export const payslips = pgTable('Payslip', {
   periodIdx: index('Payslip_period_idx').on(table.period),
 }));
 
+// Payroll Dispute — karyawan "Adukan Ketidaksesuaian Gaji" atas payslip-nya;
+// Superadmin cross-check lalu setuju (RESOLVED) / tolak (REJECTED).
+export const payrollDisputes = pgTable('PayrollDispute', {
+  id: text('id').primaryKey(),
+  payrollItemId: text('payrollItemId').notNull(),
+  employeeId: text('employeeId').notNull(),
+  period: text('period').notNull(),
+  reason: text('reason').notNull(),
+  status: text('status').default('PENDING').notNull(),
+  reviewNote: text('reviewNote'),
+  reviewedBy: text('reviewedBy'),
+  reviewedAt: timestamp('reviewedAt', { mode: 'date' }),
+  createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
+  updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
+}, (table) => ({
+  employeeIdIdx: index('PayrollDispute_employeeId_idx').on(table.employeeId),
+  payrollItemIdx: index('PayrollDispute_payrollItemId_idx').on(table.payrollItemId),
+  statusIdx: index('PayrollDispute_status_idx').on(table.status),
+}));
+
 // ============================================
 // OVERTIME MODULE
 // ============================================
