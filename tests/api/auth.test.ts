@@ -14,11 +14,13 @@ import { eq } from 'drizzle-orm';
 
 describe('Auth API', () => {
   const testUserIds: string[] = [];
+  const testEmployeeIds: string[] = [];
 
   afterEach(async () => {
     vi.unstubAllEnvs();
-    await cleanupTestData({ userIds: testUserIds });
+    await cleanupTestData({ userIds: testUserIds, employeeIds: testEmployeeIds });
     testUserIds.length = 0;
+    testEmployeeIds.length = 0;
   });
 
   describe('POST /api/auth/login', () => {
@@ -287,8 +289,11 @@ describe('Auth API', () => {
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.data.role).toBe('EMPLOYEE');
-      expect(data.data.isActive).toBe(false);
+      // Instant onboarding: langsung aktif; verifikasi jadi tugas Superadmin.
+      expect(data.data.isActive).toBe(true);
+      expect(data.data.employee?.nip).toBeTruthy();
       testUserIds.push(data.data.id);
+      if (data.data.employee?.id) testEmployeeIds.push(data.data.employee.id);
     });
 
     it('creates EMPLOYEE only when public registration payload is valid', async () => {
@@ -303,8 +308,10 @@ describe('Auth API', () => {
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.data.role).toBe('EMPLOYEE');
-      expect(data.data.isActive).toBe(false);
+      expect(data.data.isActive).toBe(true);
+      expect(data.data.employee?.fullName).toBeTruthy();
       testUserIds.push(data.data.id);
+      if (data.data.employee?.id) testEmployeeIds.push(data.data.employee.id);
     });
   });
 

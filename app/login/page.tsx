@@ -344,7 +344,7 @@ export default function LoginPage() {
                     Daftar di sini
                   </Link>
                 </p>
-                <p className="mt-2 text-xs text-[var(--text-muted)]">Akun baru perlu aktivasi Superadmin atau HRD.</p>
+                <p className="mt-2 text-xs text-[var(--text-muted)]">Akun baru langsung aktif setelah mendaftar.</p>
               </div>
             </div>
 

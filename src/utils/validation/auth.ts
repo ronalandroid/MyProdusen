@@ -23,6 +23,16 @@ export const registerSchema = z.object({
 
 export const publicRegisterSchema = registerSchema.omit({ role: true });
 
+// Self-service onboarding: karyawan mengisi identitas kerja sendiri saat
+// daftar; ROLE tetap di luar jangkauan (selalu EMPLOYEE, diatur Superadmin).
+export const instantRegisterSchema = publicRegisterSchema.extend({
+  fullName: z.string().trim().min(3, 'Nama lengkap minimal 3 karakter').max(120, 'Nama lengkap maksimal 120 karakter'),
+  phone: z.string().trim().max(30, 'Nomor HP maksimal 30 karakter').optional().or(z.literal('').transform(() => undefined)),
+  division: z.string().trim().max(100, 'Divisi maksimal 100 karakter').optional().or(z.literal('').transform(() => undefined)),
+  position: z.string().trim().max(100, 'Posisi maksimal 100 karakter').optional().or(z.literal('').transform(() => undefined)),
+  supervisorId: z.string().trim().max(64).optional().or(z.literal('').transform(() => undefined)),
+});
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Password lama wajib diisi'),
   newPassword: strongPasswordSchema,
@@ -52,6 +62,7 @@ export const resetPasswordSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type PublicRegisterInput = z.infer<typeof publicRegisterSchema>;
+export type InstantRegisterInput = z.infer<typeof instantRegisterSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResendActivationInput = z.infer<typeof resendActivationSchema>;
