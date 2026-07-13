@@ -5,9 +5,10 @@ import { Download, FileText, ShieldCheck } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
-type PdfReportType = 'attendance_summary' | 'kpi_performance' | 'payroll_summary' | 'executive_hr';
+type PdfReportType = 'comprehensive' | 'attendance_summary' | 'kpi_performance' | 'payroll_summary' | 'executive_hr';
 
 const reportTypes: { value: PdfReportType; label: string; description: string }[] = [
+  { value: 'comprehensive', label: '★ Laporan HR Menyeluruh (per Divisi)', description: 'SATU PDF lengkap: ringkasan per divisi + kehadiran, KPI, cuti, lembur, dan payroll. Rapi & siap cetak.' },
   { value: 'attendance_summary', label: 'Attendance Summary PDF', description: 'Status kehadiran, tren harian, dan ringkasan absensi.' },
   { value: 'kpi_performance', label: 'KPI Performance PDF', description: 'Performa KPI, approval, dan KPI by division chart.' },
   { value: 'payroll_summary', label: 'Payroll Summary PDF', description: 'Payroll paid/pending dan gross/deduction/net chart.' },
@@ -23,7 +24,7 @@ function currentMonthDefaults() {
 
 export default function PdfReportsPage() {
   const defaults = useMemo(() => currentMonthDefaults(), []);
-  const [reportType, setReportType] = useState<PdfReportType>('executive_hr');
+  const [reportType, setReportType] = useState<PdfReportType>('comprehensive');
   const [from, setFrom] = useState(defaults.from);
   const [to, setTo] = useState(defaults.to);
   const [division, setDivision] = useState('');
