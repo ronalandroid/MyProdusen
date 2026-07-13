@@ -6,6 +6,7 @@ import { errorResponse, successResponse, validationErrorResponse } from '@/utils
 import { getRequestBody } from '@/lib/middleware';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { sendAuthEmail } from '@/lib/email';
+import { getCanonicalAppUrl } from '@/lib/app-url';
 import { logAudit } from '@/lib/audit';
 
 import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
@@ -21,6 +22,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await getRequestBody<Record<string, unknown>>(request);
+
+    // Honeypot: real users never see (or fill) the hidden "website" field.
+    // Pretend success so bots do not learn they were filtered.
+    if (typeof body.website === 'string' && body.website.trim() !== '') {
+      return successResponse({ ok: true }, 'Registrasi berhasil.');
+    }
     const shouldRewriteStaticTestEmail = isTestSpriteCompatEnabled() && (
       body.email === 'testactivateuser@example.com' || body.email === 'testuser_tc005@example.com' || body.email === 'testuser_activate@example.com'
       || body.email === 'testuser_tc004@example.com'
@@ -65,7 +72,10 @@ export async function POST(request: NextRequest) {
       autoAssignedShiftId: defaults.defaultShiftId,
       supervisorId: employee.supervisorId,
     }, request);
-    await sendAuthEmail('register', user.email, { name: employee.fullName || user.username }).catch(() => undefined);
+    const verifyToken = authService.createEmailVerificationToken(user.id, user.email);
+    const appUrl = getCanonicalAppUrl(request.nextUrl?.origin || new URL(request.url).origin);
+    const verifyUrl = `${appUrl}/activate-account?token=${encodeURIComponent(verifyToken)}`;
+    await sendAuthEmail('register', user.email, { name: employee.fullName || user.username, verifyUrl }).catch(() => undefined);
 
     const result = {
       id: user.id,

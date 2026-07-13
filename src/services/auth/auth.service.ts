@@ -136,6 +136,7 @@ export class AuthService extends BaseService {
         username: users.username,
         role: users.role,
         isActive: users.isActive,
+        emailVerifiedAt: users.emailVerifiedAt,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
         employeeId: employees.id,
@@ -145,6 +146,7 @@ export class AuthService extends BaseService {
         division: employees.division,
         position: employees.position,
         profileCompletedAt: employees.profileCompletedAt,
+        verifiedAt: employees.verifiedAt,
         defaultLocationId: employees.defaultLocationId,
         defaultShiftId: employees.defaultShiftId,
         teamId: sql<string | null>`(
@@ -168,6 +170,8 @@ export class AuthService extends BaseService {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       hasEmployeeProfile: !!row.employeeId,
+      verifiedAt: row.verifiedAt,
+      emailVerifiedAt: row.emailVerifiedAt,
       employeeId: row.employeeId,
       fullName: row.fullName,
       phone: row.phone,
@@ -261,17 +265,28 @@ export class AuthService extends BaseService {
     return { token, email: user.email };
   }
 
+  /** Non-blocking mailbox proof for instant-active accounts (7-day link). */
+  createEmailVerificationToken(userId: string, email: string): string {
+    const secret = getProductionJwtSecret();
+    return jwt.sign({ userId, email, purpose: 'email-verification' }, secret, { expiresIn: '7d' });
+  }
+
   async activateAccount(token: string) {
     const secret = getProductionJwtSecret();
     const payload = jwt.verify(token, secret) as { userId: string; email: string; purpose?: string };
 
-    if (payload.purpose !== 'account-activation') {
+    const isEmailVerification = payload.purpose === 'email-verification';
+    if (payload.purpose !== 'account-activation' && !isEmailVerification) {
       throw new BusinessError('Token aktivasi akun tidak valid');
     }
 
     const [user] = await db
       .update(users)
-      .set({ isActive: true, updatedAt: new Date() })
+      // A verify link only proves the mailbox — it must never re-activate an
+      // account an admin has disabled. Activation links do both.
+      .set(isEmailVerification
+        ? { emailVerifiedAt: new Date(), updatedAt: new Date() }
+        : { isActive: true, emailVerifiedAt: new Date(), updatedAt: new Date() })
       .where(eq(users.id, payload.userId))
       .returning({ id: users.id, email: users.email, username: users.username, role: users.role, isActive: users.isActive });
 

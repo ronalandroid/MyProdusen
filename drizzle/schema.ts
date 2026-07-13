@@ -24,6 +24,8 @@ export const users = pgTable('User', {
   password: text('password').notNull(),
   role: userRoleEnum('role').default('EMPLOYEE').notNull(),
   isActive: boolean('isActive').default(true).notNull(),
+  // Set when the user proves the mailbox via the emailed verification link.
+  emailVerifiedAt: timestamp('emailVerifiedAt', { mode: 'date' }),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updatedAt', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
@@ -53,6 +55,9 @@ export const employees = pgTable('Employee', {
   profilePhoto: text('profilePhoto'),
   emergencyContact: text('emergencyContact'),
   profileCompletedAt: timestamp('profileCompletedAt', { mode: 'date' }),
+  // Superadmin sign-off on a self-registered newcomer; admin-created rows are
+  // verified at creation. NULL = still needs review.
+  verifiedAt: timestamp('verifiedAt', { mode: 'date' }),
   defaultShiftId: text('defaultShiftId'),
   defaultLocationId: text('defaultLocationId'),
   createdAt: timestamp('createdAt', { mode: 'date' }).defaultNow().notNull(),

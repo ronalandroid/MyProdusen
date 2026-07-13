@@ -113,6 +113,7 @@ export async function registerInstantEmployee(input: InstantRegistrationInput) {
       supervisorId,
       defaultLocationId: defaults.defaultLocationId ?? undefined,
       defaultShiftId: defaults.defaultShiftId ?? undefined,
+      verified: false,
     });
 
     await notifySuperadminsOfRegistration(employee).catch(() => undefined);

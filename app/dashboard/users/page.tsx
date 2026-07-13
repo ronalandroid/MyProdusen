@@ -23,6 +23,8 @@ type UserRow = {
   phone?: string | null;
   address?: string | null;
   profileCompletedAt?: string | null;
+  verifiedAt?: string | null;
+  emailVerifiedAt?: string | null;
   division?: string | null;
   position?: string | null;
   defaultLocationId?: string | null;
@@ -102,6 +104,19 @@ export default function UsersPage() {
     } finally { setSavingId(null); }
   }
 
+  async function verifyEmployee(user: UserRow) {
+    setSavingId(user.id); setMessage(""); setError("");
+    try {
+      const response = await fetch(`/api/users/${user.id}/verify`, { method: "POST", credentials: "include" });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) throw new Error(result?.error || result?.message || "Gagal memverifikasi karyawan");
+      await loadAll();
+      setMessage(result.message || "Karyawan ditandai terverifikasi.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memverifikasi karyawan");
+    } finally { setSavingId(null); }
+  }
+
   async function handleCreateProfile(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); if (!profileModalUser) return;
     setIsSubmittingProfile(true); setError(""); setMessage("");
@@ -120,10 +135,11 @@ export default function UsersPage() {
   return (
     <main className="phone-screen feature-screen" aria-labelledby="users-title">
       <div className="hero-card"><p className="eyebrow">Superadmin</p><h1 id="users-title">Pengguna</h1><p>Kelola role, tim/divisi, jabatan, lokasi kerja, shift, dan status aktif akun.</p></div>
-      <section className="grid gap-3 sm:grid-cols-3">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="card p-4"><p className="text-sm font-semibold text-[var(--text-secondary)]">Total User</p><strong className="text-2xl">{users.length}</strong></div>
         <div className="card p-4"><p className="text-sm font-semibold text-[var(--text-secondary)]">Leader</p><strong className="text-2xl text-[var(--primary)]">{users.filter((u) => u.role === "LEADER").length}</strong></div>
         <div className="card p-4"><p className="text-sm font-semibold text-[var(--text-secondary)]">Belum Aktif</p><strong className="text-2xl text-[var(--warning)]">{pendingUsers.length}</strong></div>
+        <div className="card p-4"><p className="text-sm font-semibold text-[var(--text-secondary)]">Perlu Verifikasi</p><strong className="text-2xl text-[var(--warning)]">{users.filter((u) => u.hasEmployeeProfile && !u.verifiedAt).length}</strong></div>
       </section>
       <section className="card">
         <div className="flex items-start justify-between gap-3"><div className="flex gap-3"><UserCog className="text-[var(--primary)]" size={24} aria-hidden="true" /><div><h2 className="text-base font-bold">Daftar User Terdaftar</h2><p className="text-sm text-[var(--text-secondary)]">Registrasi publik selalu Karyawan. Superadmin menetapkan role dan identitas kerja.</p></div></div><button type="button" className="icon-button" onClick={loadAll} aria-label="Muat ulang user"><RefreshCw size={18} aria-hidden="true" /></button></div>
@@ -133,15 +149,15 @@ export default function UsersPage() {
           <div className="mt-4 flex flex-col gap-3">
             {users.map((user) => (
               <article key={user.id} className="rounded-2xl border border-[var(--border-color)] bg-white p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold text-[var(--text-primary)]">{user.fullName || user.username}</h3><p className="text-xs text-[var(--text-secondary)]">{user.email} · {user.username}</p>{!user.hasEmployeeProfile && <p className="mt-1 text-xs font-semibold text-[var(--warning)]">Belum memiliki profil karyawan.</p>}{user.hasEmployeeProfile && !user.profileCompletedAt && <p className="mt-1 text-xs font-semibold text-[var(--warning)]">Data pribadi belum lengkap.</p>}</div><span className={`badge ${user.isActive ? "badge-success" : "badge-warning"}`}>{user.isActive ? "Aktif" : "Belum aktif"}</span></div>
-                {user.hasEmployeeProfile && <div className="mt-3 grid gap-2 rounded-2xl bg-[var(--bg-main)] p-3 text-xs text-[var(--text-secondary)] sm:grid-cols-2"><p><strong className="text-[var(--text-primary)]">Nomor HP:</strong> {user.phone || "Belum diisi"}</p><p><strong className="text-[var(--text-primary)]">Alamat:</strong> {user.address || "Belum diisi"}</p></div>}
+                <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold text-[var(--text-primary)]">{user.fullName || user.username}</h3><p className="text-xs text-[var(--text-secondary)]">{user.email} · {user.username}</p>{!user.hasEmployeeProfile && <p className="mt-1 text-xs font-semibold text-[var(--warning)]">Belum memiliki profil karyawan.</p>}{user.hasEmployeeProfile && !user.profileCompletedAt && <p className="mt-1 text-xs font-semibold text-[var(--warning)]">Data pribadi belum lengkap.</p>}</div><div className="flex flex-col items-end gap-1.5"><span className={`badge ${user.isActive ? "badge-success" : "badge-warning"}`}>{user.isActive ? "Aktif" : "Belum aktif"}</span>{user.hasEmployeeProfile && !user.verifiedAt && <span className="badge badge-warning">Perlu Verifikasi</span>}</div></div>
+                {user.hasEmployeeProfile && <div className="mt-3 grid gap-2 rounded-2xl bg-[var(--bg-main)] p-3 text-xs text-[var(--text-secondary)] sm:grid-cols-2"><p><strong className="text-[var(--text-primary)]">Nomor HP:</strong> {user.phone || "Belum diisi"}</p><p><strong className="text-[var(--text-primary)]">Alamat:</strong> {user.address || "Belum diisi"}</p><p><strong className="text-[var(--text-primary)]">Email:</strong> {user.emailVerifiedAt ? "Terverifikasi" : "Belum diverifikasi"}</p></div>}
                 <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   <label className="block text-sm font-semibold">Role<select className="mt-2 w-full rounded-xl border-2 border-[var(--border-color)] bg-white px-3 py-2" value={user.role} disabled={savingId === user.id || !user.hasEmployeeProfile && user.role !== "SUPERADMIN"} onChange={(event) => updateUser(user, { role: event.target.value as UserRole })}>{Object.entries(roleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
                   <label className="block text-sm font-semibold">Team / Divisi<select className="mt-2 w-full rounded-xl border-2 border-[var(--border-color)] bg-white px-3 py-2" value={user.teamId || ""} disabled={savingId === user.id || !user.hasEmployeeProfile} onChange={(event) => updateUser(user, { teamId: event.target.value })}><option value="">Belum ditetapkan</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
                   <label className="block text-sm font-semibold">Posisi / Jabatan<input className="input mt-2" value={user.position || ""} disabled={savingId === user.id || !user.hasEmployeeProfile} onChange={(event) => setUsers((rows) => rows.map((row) => row.id === user.id ? { ...row, position: event.target.value } : row))} onBlur={(event) => updateUser(user, { position: event.target.value })} placeholder="Karyawan Produksi / Leader Cetak" /></label>
                   <label className="block text-sm font-semibold">Lokasi Kerja<select className="mt-2 w-full rounded-xl border-2 border-[var(--border-color)] bg-white px-3 py-2" value={user.defaultLocationId || ""} disabled={savingId === user.id || !user.hasEmployeeProfile} onChange={(event) => updateUser(user, { defaultLocationId: event.target.value })}><option value="">Belum ditetapkan</option>{locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select></label>
                   <label className="block text-sm font-semibold">Shift<select className="mt-2 w-full rounded-xl border-2 border-[var(--border-color)] bg-white px-3 py-2" value={user.defaultShiftId || ""} disabled={savingId === user.id || !user.hasEmployeeProfile} onChange={(event) => updateUser(user, { defaultShiftId: event.target.value })}><option value="">Belum ditetapkan</option>{shifts.map((shift) => <option key={shift.id} value={shift.id}>{shift.name}</option>)}</select></label>
-                  <div className="flex flex-wrap items-end gap-2"><button type="button" className={user.isActive ? "btn btn-secondary" : "btn btn-primary"} disabled={savingId === user.id} onClick={() => updateUser(user, { isActive: !user.isActive })}><ShieldCheck size={16} aria-hidden="true" />{user.isActive ? "Nonaktifkan" : "Aktifkan"}</button>{!user.hasEmployeeProfile && user.role !== "SUPERADMIN" && <button type="button" className="btn btn-primary" onClick={() => setProfileModalUser(user)}>Buat Profil</button>}</div>
+                  <div className="flex flex-wrap items-end gap-2"><button type="button" className={user.isActive ? "btn btn-secondary" : "btn btn-primary"} disabled={savingId === user.id} onClick={() => updateUser(user, { isActive: !user.isActive })}><ShieldCheck size={16} aria-hidden="true" />{user.isActive ? "Nonaktifkan" : "Aktifkan"}</button>{user.hasEmployeeProfile && !user.verifiedAt && <button type="button" className="btn btn-primary" disabled={savingId === user.id} onClick={() => verifyEmployee(user)}><CheckCircle size={16} aria-hidden="true" />Tandai Terverifikasi</button>}{!user.hasEmployeeProfile && user.role !== "SUPERADMIN" && <button type="button" className="btn btn-primary" onClick={() => setProfileModalUser(user)}>Buat Profil</button>}</div>
                 </div>
                 {user.role === "LEADER" && !user.teamId && <p className="mt-3 text-xs font-semibold text-[var(--warning)]">Leader belum ditetapkan ke tim.</p>}
               </article>

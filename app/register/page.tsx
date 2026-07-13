@@ -26,6 +26,27 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [availability, setAvailability] = useState<{ username?: string; email?: string }>({});
+
+  async function checkAvailability(field: "username" | "email", value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setAvailability((current) => ({ ...current, [field]: undefined }));
+      return;
+    }
+    try {
+      const res = await fetch(`/api/auth/register-availability?${field}=${encodeURIComponent(trimmed)}`);
+      const payload = await res.json();
+      const taken = field === "username" ? payload?.data?.usernameTaken : payload?.data?.emailTaken;
+      setAvailability((current) => ({
+        ...current,
+        [field]: taken ? (field === "username" ? "Username sudah dipakai — coba yang lain ya." : "Email sudah terdaftar. Sudah punya akun? Silakan masuk.") : undefined,
+      }));
+    } catch {
+      setAvailability((current) => ({ ...current, [field]: undefined }));
+    }
+  }
+
   const [options, setOptions] = useState<{ divisions: string[]; positions: string[]; leaders: Array<{ id: string; fullName: string; division: string | null }> }>({ divisions: [], positions: [], leaders: [] });
 
   useEffect(() => {
@@ -57,6 +78,7 @@ export default function RegisterPage() {
       division: String(form.get("division") || "").trim(),
       position: String(form.get("position") || "").trim(),
       supervisorId: String(form.get("supervisorId") || "").trim(),
+      website: String(form.get("website") || ""),
     };
 
     try {
@@ -184,8 +206,13 @@ export default function RegisterPage() {
             )}
 
             <form onSubmit={handleRegister} className="space-y-5" noValidate>
-              <Field icon={<User size={20} aria-hidden="true" />} id="register-username" label="Username" name="username" placeholder="nama pengguna" autoComplete="username" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} />
-              <Field icon={<Mail size={20} aria-hidden="true" />} id="register-email" label="Email Perusahaan" name="email" type="email" placeholder="email@perusahaan.com" autoComplete="email" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} />
+              {/* Honeypot anti-bot: tersembunyi dari manusia, diisi oleh bot. */}
+              <div aria-hidden="true" className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden">
+                <label htmlFor="register-website">Website</label>
+                <input id="register-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+              </div>
+              <Field icon={<User size={20} aria-hidden="true" />} id="register-username" label="Username" name="username" placeholder="nama pengguna" autoComplete="username" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} hint={availability.username} onBlurValue={(value) => checkAvailability("username", value)} />
+              <Field icon={<Mail size={20} aria-hidden="true" />} id="register-email" label="Email Perusahaan" name="email" type="email" placeholder="email@perusahaan.com" autoComplete="email" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} hint={availability.email} onBlurValue={(value) => checkAvailability("email", value)} />
               <p className="-mt-3 text-xs text-[var(--text-muted)]">Slip gaji dan info penting dikirim ke email ini.</p>
               <Field icon={<ContactRound size={20} aria-hidden="true" />} id="register-fullname" label="Nama Lengkap" name="fullName" placeholder="Nama sesuai identitas" autoComplete="name" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} />
 
@@ -315,6 +342,8 @@ function Field({
   autoComplete,
   disabled,
   describedBy,
+  hint,
+  onBlurValue,
 }: {
   icon: React.ReactNode;
   id: string;
@@ -325,6 +354,8 @@ function Field({
   autoComplete: string;
   disabled: boolean;
   describedBy?: string;
+  hint?: string;
+  onBlurValue?: (value: string) => void;
 }) {
   return (
     <div>
@@ -341,9 +372,11 @@ function Field({
           required
           disabled={disabled}
           aria-describedby={describedBy}
-          aria-invalid={Boolean(describedBy)}
+          aria-invalid={Boolean(describedBy) || Boolean(hint)}
+          onBlur={onBlurValue ? (event) => onBlurValue(event.target.value) : undefined}
         />
       </div>
+      {hint && <p role="status" className="mt-1.5 text-xs font-semibold text-[var(--danger)]">{hint}</p>}
     </div>
   );
 }

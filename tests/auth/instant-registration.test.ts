@@ -102,6 +102,11 @@ describe('instant self-registration', () => {
     const login = await authService.login(input.email, input.password);
     expect(login.user.id).toBe(result.user.id);
     expect(login.user.employee?.id).toBe(result.employee.id);
+
+    // Verification starts pending: Superadmin sign-off + mailbox proof later.
+    expect(result.employee.verifiedAt).toBeNull();
+    const [freshUser] = await db.select({ emailVerifiedAt: users.emailVerifiedAt }).from(users).where(eq(users.id, result.user.id)).limit(1);
+    expect(freshUser?.emailVerifiedAt).toBeNull();
   });
 
   it('honors a valid supervisor pick and silently drops an invalid one', async () => {
