@@ -314,11 +314,11 @@ export async function sendAuthEmail(template: AuthEmailTemplate, to: string, dat
               'Setelah aktivasi, akun otomatis masuk daftar user aktif sehingga Superadmin dapat menempatkan role, posisi, dan akses kerja yang tepat.',
             ]
           : [
-              'Akun MyProdusen Anda sudah terdaftar. Setelah akun aktif, Anda bisa login untuk absensi, cek jadwal, ajukan cuti, dan melihat informasi kerja penting.',
+              'Akun MyProdusen Anda sudah AKTIF. Langsung login untuk absensi, cek jadwal, ajukan cuti, dan melihat informasi kerja penting.',
               'Satu sistem, banyak manfaat: data lebih tertata, kerja lebih tenang, tim lebih kompak.',
             ],
         cta: { label: isActivationRegister ? 'Aktivasi Akun' : 'Buka MyProdusen', url: isActivationRegister ? data.activationUrl : loginUrl },
-        note: isActivationRegister ? 'Link aktivasi berlaku 24 jam. Jika link kedaluwarsa, daftar ulang atau hubungi HRD/Superadmin.' : 'Jika akun belum bisa digunakan, tunggu aktivasi dari HRD atau Superadmin.',
+        note: isActivationRegister ? 'Link aktivasi berlaku 24 jam. Jika link kedaluwarsa, daftar ulang atau hubungi HRD/Superadmin.' : 'Data Anda akan diverifikasi Superadmin. Ada kendala login? Hubungi HRD/Superadmin.',
         text: isActivationRegister ? `Aktivasi akun MyProdusen Anda: ${data.activationUrl}` : `Akun Anda berhasil dibuat. Login: ${loginUrl}`,
       }),
       text: isActivationRegister ? `Aktivasi akun MyProdusen Anda: ${data.activationUrl}` : `Akun Anda berhasil dibuat. Login: ${loginUrl}`,

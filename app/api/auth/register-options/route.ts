@@ -12,7 +12,7 @@ import { handleApiError } from '@/lib/core/route-handler';
  */
 export async function GET(request: NextRequest) {
   try {
-    const rateLimitResult = await rateLimit(request, RATE_LIMITS.REGISTRATION, 'register-options');
+    const rateLimitResult = await rateLimit(request, RATE_LIMITS.API_GENERAL, 'register-options');
     if (rateLimitResult.limited) {
       return errorResponse('Terlalu banyak permintaan. Coba lagi sebentar lagi.', 429);
     }

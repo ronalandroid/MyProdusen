@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Briefcase, Building2, CheckCircle, ContactRound, Eye, EyeOff, Lock, Mail, ShieldCheck, User, UserCheck } from "lucide-react";
 
@@ -19,6 +20,7 @@ function getPasswordStrength(pw: string): { score: number; label: string; color:
 }
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,6 +72,23 @@ export default function RegisterPage() {
       }
 
       formElement.reset();
+
+      // Riset UX (NN/g, Baymard): jangan lempar user kembali ke halaman login
+      // setelah daftar — masukkan langsung ke aplikasi.
+      const loginResponse = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: payload.email, password: payload.password }),
+      }).catch(() => null);
+      const loginResult = loginResponse ? await loginResponse.json().catch(() => null) : null;
+
+      if (loginResponse?.ok && loginResult?.success) {
+        setSuccess("Akun Anda langsung aktif! Sebentar ya, kami antar ke beranda…");
+        router.replace("/dashboard");
+        return;
+      }
+
       setSuccess("Akun Anda langsung aktif! Silakan masuk dan mulai absen hari ini juga.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registrasi gagal");
@@ -167,6 +186,7 @@ export default function RegisterPage() {
             <form onSubmit={handleRegister} className="space-y-5" noValidate>
               <Field icon={<User size={20} aria-hidden="true" />} id="register-username" label="Username" name="username" placeholder="nama pengguna" autoComplete="username" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} />
               <Field icon={<Mail size={20} aria-hidden="true" />} id="register-email" label="Email Perusahaan" name="email" type="email" placeholder="email@perusahaan.com" autoComplete="email" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} />
+              <p className="-mt-3 text-xs text-[var(--text-muted)]">Slip gaji dan info penting dikirim ke email ini.</p>
               <Field icon={<ContactRound size={20} aria-hidden="true" />} id="register-fullname" label="Nama Lengkap" name="fullName" placeholder="Nama sesuai identitas" autoComplete="name" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} />
 
               <div className="grid gap-5 sm:grid-cols-2">

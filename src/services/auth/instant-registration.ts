@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { db, users, employees, workLocations, shifts } from '@/lib/db';
 import { authService } from './auth.service';
 import { employeeService } from '@/services/employees/employee.service';
@@ -50,7 +50,7 @@ async function resolveSupervisor(supervisorId: string | undefined): Promise<stri
   const [supervisor] = await db
     .select({ id: employees.id })
     .from(employees)
-    .where(eq(employees.id, supervisorId))
+    .where(and(eq(employees.id, supervisorId), eq(employees.status, 'ACTIVE')))
     .limit(1);
   return supervisor?.id;
 }
