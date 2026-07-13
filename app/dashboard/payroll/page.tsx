@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { fetchProfile } from '@/lib/auth-client';
 import { fetchApiData } from '@/hooks/useDashboardQueries';
+import PayrollDisputesReview from './PayrollDisputesReview';
 
 type PayrollStatus = 'DRAFT' | 'CALCULATED' | 'APPROVED' | 'PAID';
 
@@ -147,6 +148,8 @@ export default function PayrollPage() {
 
       {error && <div className="alert-card" role="alert"><strong>Gagal</strong><p>{error}</p></div>}
       {message && <div className="card border-[var(--success)] text-[var(--success)]" role="status">{message}</div>}
+
+      {canMutate && <PayrollDisputesReview />}
 
       <section className="card" aria-label="Payroll pribadi dan notifikasi saat ini">
         <h2 className="text-base font-bold">Slip gaji pribadi & notifikasi saat ini</h2>
