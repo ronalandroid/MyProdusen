@@ -88,6 +88,7 @@ export async function parseCheckOutRealtimeForm(request: Request): Promise<Atten
     gpsTimestamp: readString(formData, 'gpsTimestamp'),
     note: readString(formData, 'note'),
     manualReason: readString(formData, 'manualReason'),
+    lateReason: readString(formData, 'lateReason'),
   });
 
   if (!validation.success) {

@@ -32,6 +32,7 @@ type UiState = {
   step: Step;
   note: string;
   manualReason: string;
+  lateReason: string;
   isSubmitting: boolean;
   statusText: string;
   message: string;
@@ -42,6 +43,7 @@ const initialUiState: UiState = {
   step: "location",
   note: "",
   manualReason: "",
+  lateReason: "",
   isSubmitting: false,
   statusText: "Mengambil lokasi Anda…",
   message: "",
@@ -112,7 +114,8 @@ function AttendanceClockContent() {
   // One key per physical attendance act, reused across retries so a resend on
   // flaky mobile data can't create a double clock-in (server dedups on it).
   const idempotencyKeyRef = useRef("");
-  const { step, note, manualReason, isSubmitting, statusText, message, error } = ui;
+  const { step, note, manualReason, lateReason, isSubmitting, statusText, message, error } = ui;
+  const needsLateReason = error.includes("melewati jam pulang");
 
   const employee = profile?.employee;
   const location = employee?.defaultLocation;
@@ -233,6 +236,11 @@ function AttendanceClockContent() {
       if (insideRadius === false && manualReason.trim()) {
         formData.set("manualReason", manualReason.trim());
       }
+      // Clock-out past the grace window: server asks for a reason, we resend
+      // with it and the event lands in the Superadmin review queue.
+      if (!isClockIn && lateReason.trim()) {
+        formData.set("lateReason", lateReason.trim());
+      }
       
       setUi({ statusText: "Mengirim absensi…" });
       // Stable key across retries: a resend on weak data dedups server-side
@@ -280,6 +288,13 @@ function AttendanceClockContent() {
       </div>
 
       {(message || error) && <div role={error ? "alert" : "status"} className={`text-xs font-bold ${error ? "text-[var(--danger)] bg-red-50 border border-red-200 rounded-2xl p-3" : "text-[var(--success)] bg-green-50 border border-green-200 rounded-2xl p-3"}`}>{error || message}</div>}
+      {needsLateReason && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 animate-fade-in">
+          <label className="text-xs font-extrabold text-amber-800" htmlFor="late-reason">Alasan Clock-out Terlambat</label>
+          <textarea id="late-reason" className="mt-2 w-full rounded-2xl border border-amber-200 p-3 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]" rows={3} maxLength={300} value={lateReason} onChange={(event) => setUi({ lateReason: event.target.value })} placeholder="Contoh: lupa clock-out karena lanjut lembur bungkus dimsum." />
+          <p className="mt-2 text-[10px] font-semibold text-amber-700">Tulis alasan singkat lalu kirim ulang — absen pulang tetap tercatat dan masuk antrean review Superadmin.</p>
+        </div>
+      )}
 
       <section className="card flex items-center gap-3 border border-[var(--attn-warn-border-soft)] bg-gradient-to-br from-[var(--attn-warn-bg)] to-white p-3" aria-label="Shift aktif">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)] text-[var(--text-primary)]" aria-hidden="true">

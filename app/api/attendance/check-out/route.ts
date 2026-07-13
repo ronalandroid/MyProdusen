@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
       userAgent,
       note: data.note,
       manualReason: data.manualReason,
+      lateReason: data.lateReason,
     });
 
     await logAudit(
@@ -69,6 +70,8 @@ export async function POST(request: NextRequest) {
         status: attendance?.status,
         geoStatus: attendance?.checkOutGeoStatus,
         isPendingGeoReview: attendance?.isPendingGeoReview,
+        isLateCheckOut: attendance?.isLateCheckOut,
+        lateCheckOutMinutes: attendance?.lateCheckOutMinutes,
         workLocationId: attendance?.workLocationId,
         latitude: attendance?.checkOutLatitude,
         longitude: attendance?.checkOutLongitude,
