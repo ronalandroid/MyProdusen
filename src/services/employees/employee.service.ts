@@ -127,6 +127,8 @@ export class EmployeeService extends BaseService {
     defaultShiftId?: string;
     defaultLocationId?: string;
     joinDate?: Date | string;
+    /** Admin-created profiles are trusted; self-registrations start unverified. */
+    verified?: boolean;
   }) {
     // Check if user exists
     const [user] = await db
@@ -169,6 +171,7 @@ export class EmployeeService extends BaseService {
       defaultLocationId: data.defaultLocationId,
       joinDate: joinDate,
       status: 'ACTIVE',
+      verifiedAt: data.verified === false ? null : new Date(),
     });
 
     // Invalidate employee caches

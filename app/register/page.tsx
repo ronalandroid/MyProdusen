@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle, Eye, EyeOff, Lock, Mail, ShieldCheck, User } from "lucide-react";
+import { ArrowLeft, Briefcase, Building2, CheckCircle, ContactRound, Eye, EyeOff, Lock, Mail, ShieldCheck, User, UserCheck } from "lucide-react";
 
 function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
   if (!pw) return { score: 0, label: "", color: "" };
@@ -19,11 +20,47 @@ function getPasswordStrength(pw: string): { score: number; label: string; color:
 }
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [availability, setAvailability] = useState<{ username?: string; email?: string }>({});
+
+  async function checkAvailability(field: "username" | "email", value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setAvailability((current) => ({ ...current, [field]: undefined }));
+      return;
+    }
+    try {
+      const res = await fetch(`/api/auth/register-availability?${field}=${encodeURIComponent(trimmed)}`);
+      const payload = await res.json();
+      const taken = field === "username" ? payload?.data?.usernameTaken : payload?.data?.emailTaken;
+      setAvailability((current) => ({
+        ...current,
+        [field]: taken ? (field === "username" ? "Username sudah dipakai — coba yang lain ya." : "Email sudah terdaftar. Sudah punya akun? Silakan masuk.") : undefined,
+      }));
+    } catch {
+      setAvailability((current) => ({ ...current, [field]: undefined }));
+    }
+  }
+
+  const [options, setOptions] = useState<{ divisions: string[]; positions: string[]; leaders: Array<{ id: string; fullName: string; division: string | null }> }>({ divisions: [], positions: [], leaders: [] });
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/register-options")
+      .then((res) => res.json())
+      .then((payload) => {
+        if (!cancelled && payload?.success && payload.data) setOptions(payload.data);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,6 +74,11 @@ export default function RegisterPage() {
       username: String(form.get("username") || "").trim(),
       email: String(form.get("email") || "").trim(),
       password: String(form.get("password") || ""),
+      fullName: String(form.get("fullName") || "").trim(),
+      division: String(form.get("division") || "").trim(),
+      position: String(form.get("position") || "").trim(),
+      supervisorId: String(form.get("supervisorId") || "").trim(),
+      website: String(form.get("website") || ""),
     };
 
     try {
@@ -52,7 +94,24 @@ export default function RegisterPage() {
       }
 
       formElement.reset();
-      setSuccess("Akun berhasil dibuat sebagai Karyawan. Superadmin akan menetapkan divisi, posisi, lokasi kerja, dan shift.");
+
+      // Riset UX (NN/g, Baymard): jangan lempar user kembali ke halaman login
+      // setelah daftar — masukkan langsung ke aplikasi.
+      const loginResponse = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: payload.email, password: payload.password }),
+      }).catch(() => null);
+      const loginResult = loginResponse ? await loginResponse.json().catch(() => null) : null;
+
+      if (loginResponse?.ok && loginResult?.success) {
+        setSuccess("Akun Anda langsung aktif! Sebentar ya, kami antar ke beranda…");
+        router.replace("/dashboard");
+        return;
+      }
+
+      setSuccess("Akun Anda langsung aktif! Silakan masuk dan mulai absen hari ini juga.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registrasi gagal");
     } finally {
@@ -99,7 +158,7 @@ export default function RegisterPage() {
                 Mulai kelola HR, kehadiran, dan KPI dalam satu sistem
               </h1>
               <p className="text-lg text-[var(--text-secondary)] leading-relaxed max-w-lg">
-                Buat akun perusahaan, lalu tunggu persetujuan HRD atau Superadmin sebelum masuk ke dashboard.
+                Buat akun sekali jalan — langsung aktif dan bisa absen hari ini juga. Superadmin memverifikasi data Anda belakangan.
               </p>
             </div>
 
@@ -107,7 +166,7 @@ export default function RegisterPage() {
               {[
                 ["Terintegrasi", "Data HR dalam satu sistem."],
                 ["Praktis", "Akses cepat kapan saja."],
-                ["Aman", "Akun aktif setelah disetujui."],
+                ["Langsung Aktif", "Daftar dan absen hari ini juga."],
               ].map(([title, description]) => (
                 <div key={title} className="rounded-2xl border border-[var(--border-color)] bg-white/80 p-4 shadow-sm">
                   <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary)] text-[var(--text-primary)]">
@@ -127,7 +186,7 @@ export default function RegisterPage() {
                 <Image src="/logo-fast.webp" alt="" width={40} height={40} className="w-10 h-10" />
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-2">Daftar Akun</h1>
-              <p className="text-sm text-[var(--text-secondary)]">Akun baru akan masuk status nonaktif sampai disetujui Superadmin atau HRD.</p>
+              <p className="text-sm text-[var(--text-secondary)]">Isi data singkat di bawah — akun langsung aktif dan siap dipakai absen.</p>
             </div>
 
             {error && (
@@ -139,13 +198,66 @@ export default function RegisterPage() {
             {success && (
               <div role="status" className="mb-6 p-4 rounded-2xl bg-green-50 border-2 border-green-200 text-sm font-semibold text-green-800 flex gap-2">
                 <CheckCircle size={18} aria-hidden="true" />
-                <span>{success}</span>
+                <span>
+                  {success}{" "}
+                  <Link href="/login" className="font-bold underline underline-offset-2">Masuk sekarang</Link>
+                </span>
               </div>
             )}
 
             <form onSubmit={handleRegister} className="space-y-5" noValidate>
-              <Field icon={<User size={20} aria-hidden="true" />} id="register-username" label="Username" name="username" placeholder="nama pengguna" autoComplete="username" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} />
-              <Field icon={<Mail size={20} aria-hidden="true" />} id="register-email" label="Email Perusahaan" name="email" type="email" placeholder="email@perusahaan.com" autoComplete="email" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} />
+              {/* Honeypot anti-bot: tersembunyi dari manusia, diisi oleh bot. */}
+              <div aria-hidden="true" className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden">
+                <label htmlFor="register-website">Website</label>
+                <input id="register-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+              </div>
+              <Field icon={<User size={20} aria-hidden="true" />} id="register-username" label="Username" name="username" placeholder="nama pengguna" autoComplete="username" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} hint={availability.username} onBlurValue={(value) => checkAvailability("username", value)} />
+              <Field icon={<Mail size={20} aria-hidden="true" />} id="register-email" label="Email Perusahaan" name="email" type="email" placeholder="email@perusahaan.com" autoComplete="email" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} hint={availability.email} onBlurValue={(value) => checkAvailability("email", value)} />
+              <p className="-mt-3 text-xs text-[var(--text-muted)]">Slip gaji dan info penting dikirim ke email ini.</p>
+              <Field icon={<ContactRound size={20} aria-hidden="true" />} id="register-fullname" label="Nama Lengkap" name="fullName" placeholder="Nama sesuai identitas" autoComplete="name" disabled={isSubmitting} describedBy={error ? "register-error" : undefined} />
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <SelectField
+                  icon={<Building2 size={20} aria-hidden="true" />}
+                  id="register-division"
+                  label="Divisi (opsional)"
+                  name="division"
+                  disabled={isSubmitting}
+                  placeholderOption="Pilih divisi"
+                  options={options.divisions.map((division) => ({ value: division, label: division }))}
+                />
+                <div>
+                  <label htmlFor="register-position" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">Posisi (opsional)</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"><Briefcase size={20} aria-hidden="true" /></div>
+                    <input
+                      id="register-position"
+                      name="position"
+                      type="text"
+                      list="register-position-options"
+                      className="w-full pl-12 pr-4 py-3.5 text-sm font-medium bg-[var(--bg-input)] text-[var(--text-primary)] border-2 rounded-2xl transition-all duration-200 placeholder:text-[var(--text-muted)] placeholder:font-normal focus:outline-none focus:ring-4 disabled:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-60 border-[var(--border-color)] focus:border-[var(--primary)] focus:ring-[var(--primary-light)]"
+                      placeholder="cth: Operator Cetak"
+                      autoComplete="organization-title"
+                      disabled={isSubmitting}
+                    />
+                    <datalist id="register-position-options">
+                      {options.positions.map((position) => (
+                        <option key={position} value={position} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+              </div>
+
+              <SelectField
+                icon={<UserCheck size={20} aria-hidden="true" />}
+                id="register-supervisor"
+                label="Atasan Langsung / Leader (opsional)"
+                name="supervisorId"
+                disabled={isSubmitting}
+                placeholderOption="Pilih leader Anda"
+                options={options.leaders.map((leader) => ({ value: leader.id, label: leader.division ? `${leader.fullName} — ${leader.division}` : leader.fullName }))}
+              />
 
               <div>
                 <label htmlFor="register-password" className="block text-sm font-semibold text-[var(--text-primary)] mb-2">Kata Sandi</label>
@@ -230,6 +342,8 @@ function Field({
   autoComplete,
   disabled,
   describedBy,
+  hint,
+  onBlurValue,
 }: {
   icon: React.ReactNode;
   id: string;
@@ -240,6 +354,8 @@ function Field({
   autoComplete: string;
   disabled: boolean;
   describedBy?: string;
+  hint?: string;
+  onBlurValue?: (value: string) => void;
 }) {
   return (
     <div>
@@ -256,8 +372,49 @@ function Field({
           required
           disabled={disabled}
           aria-describedby={describedBy}
-          aria-invalid={Boolean(describedBy)}
+          aria-invalid={Boolean(describedBy) || Boolean(hint)}
+          onBlur={onBlurValue ? (event) => onBlurValue(event.target.value) : undefined}
         />
+      </div>
+      {hint && <p role="status" className="mt-1.5 text-xs font-semibold text-[var(--danger)]">{hint}</p>}
+    </div>
+  );
+}
+
+function SelectField({
+  icon,
+  id,
+  label,
+  name,
+  disabled,
+  placeholderOption,
+  options,
+}: {
+  icon: React.ReactNode;
+  id: string;
+  label: string;
+  name: string;
+  disabled: boolean;
+  placeholderOption: string;
+  options: Array<{ value: string; label: string }>;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-semibold text-[var(--text-primary)] mb-2">{label}</label>
+      <div className="relative">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">{icon}</div>
+        <select
+          id={id}
+          name={name}
+          defaultValue=""
+          disabled={disabled || options.length === 0}
+          className="w-full appearance-none pl-12 pr-4 py-3.5 text-sm font-medium bg-[var(--bg-input)] text-[var(--text-primary)] border-2 rounded-2xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-60 border-[var(--border-color)] focus:border-[var(--primary)] focus:ring-[var(--primary-light)]"
+        >
+          <option value="">{options.length === 0 ? "Belum ada pilihan — lewati saja" : placeholderOption}</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
       </div>
     </div>
   );

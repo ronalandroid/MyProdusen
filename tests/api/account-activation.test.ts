@@ -34,6 +34,10 @@ describe('account self-activation', () => {
 
     const login = await service.login(user.email, 'Password123!');
     expect(login.user.id).toBe(user.id);
+
+    // Clicking the emailed link proves the mailbox too.
+    const [row] = await db.select({ emailVerifiedAt: users.emailVerifiedAt }).from(users).where(eq(users.id, user.id)).limit(1);
+    expect(row?.emailVerifiedAt).toBeInstanceOf(Date);
   });
 
   it('rejects password reset token for account activation', async () => {

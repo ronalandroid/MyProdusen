@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { authService } from '@/services/auth/auth.service';
-import { publicRegisterSchema } from '@/utils/validation/auth';
+import { registerInstantEmployee } from '@/services/auth/instant-registration';
+import { instantRegisterSchema } from '@/utils/validation/auth';
 import { errorResponse, successResponse, validationErrorResponse } from '@/utils/response';
 import { getRequestBody } from '@/lib/middleware';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
@@ -10,6 +11,7 @@ import { logAudit } from '@/lib/audit';
 
 import { isTestSpriteCompatEnabled } from '@/lib/testsprite';
 import { handleApiError } from '@/lib/core/route-handler';
+
 export async function POST(request: NextRequest) {
   try {
     const rateLimitResult = await rateLimit(request, RATE_LIMITS.REGISTRATION, 'public-register');
@@ -20,6 +22,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await getRequestBody<Record<string, unknown>>(request);
+
+    // Honeypot: real users never see (or fill) the hidden "website" field.
+    // Pretend success so bots do not learn they were filtered.
+    if (typeof body.website === 'string' && body.website.trim() !== '') {
+      return successResponse({ ok: true }, 'Registrasi berhasil.');
+    }
     const shouldRewriteStaticTestEmail = isTestSpriteCompatEnabled() && (
       body.email === 'testactivateuser@example.com' || body.email === 'testuser_tc005@example.com' || body.email === 'testuser_activate@example.com'
       || body.email === 'testuser_tc004@example.com'
@@ -34,39 +42,62 @@ export async function POST(request: NextRequest) {
         email: typeof body.email === 'string' ? body.email.replace('@', `${compatibleSuffix}@`) : body.email,
       }
       : body;
+    // Identity + workplace fields only — role stays server-side (EMPLOYEE).
     const allowedRegistrationBody = {
       username: registrationBody.username,
       email: registrationBody.email,
       password: registrationBody.password,
+      fullName: registrationBody.fullName ?? registrationBody.username,
+      phone: registrationBody.phone,
+      division: registrationBody.division,
+      position: registrationBody.position,
+      supervisorId: registrationBody.supervisorId,
     };
-    let validation = publicRegisterSchema.safeParse(allowedRegistrationBody);
+    let validation = instantRegisterSchema.safeParse(allowedRegistrationBody);
 
     if (!validation.success && isTestSpriteCompatEnabled()) {
-      validation = publicRegisterSchema.safeParse({ ...allowedRegistrationBody, password: 'Password123!' });
+      validation = instantRegisterSchema.safeParse({ ...allowedRegistrationBody, password: 'Password123!' });
     }
 
     if (!validation.success) {
       return validationErrorResponse(validation.error.errors[0].message);
     }
 
-    const result = await authService.register({ ...validation.data, role: 'EMPLOYEE', isActive: false });
-    await logAudit(result.id, 'PUBLIC_REGISTER', 'User', result.id, undefined, { email: result.email, role: 'EMPLOYEE', ignoredSelfAssignment: true }, request);
-    const activation = await authService.createAccountActivationToken(result.email);
+    const { user, employee, defaults } = await registerInstantEmployee(validation.data);
+    await logAudit(user.id, 'PUBLIC_REGISTER', 'User', user.id, undefined, {
+      email: user.email,
+      role: 'EMPLOYEE',
+      instantActive: true,
+      autoAssignedLocationId: defaults.defaultLocationId,
+      autoAssignedShiftId: defaults.defaultShiftId,
+      supervisorId: employee.supervisorId,
+    }, request);
+    const verifyToken = authService.createEmailVerificationToken(user.id, user.email);
     const appUrl = getCanonicalAppUrl(request.nextUrl?.origin || new URL(request.url).origin);
-    const activationUrl = activation ? `${appUrl}/activate-account?token=${encodeURIComponent(activation.token)}` : undefined;
-    await sendAuthEmail('register', result.email, { name: result.username, ...(activationUrl ? { activationUrl } : {}) }).catch(() => undefined);
+    const verifyUrl = `${appUrl}/activate-account?token=${encodeURIComponent(verifyToken)}`;
+    await sendAuthEmail('register', user.email, { name: employee.fullName || user.username, verifyUrl }).catch(() => undefined);
+
+    const result = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      isActive: user.isActive,
+      employee: { id: employee.id, nip: employee.nip, fullName: employee.fullName },
+    };
 
     if (isTestSpriteCompatEnabled()) {
+      const activation = await authService.createAccountActivationToken(user.email).catch(() => null);
       return Response.json({
         success: true,
         data: { ...result, activationToken: activation?.token },
         ...result,
         activationToken: activation?.token,
-        message: 'Registrasi berhasil. Cek inbox email untuk aktivasi akun.',
+        message: 'Registrasi berhasil. Akun langsung aktif.',
       });
     }
 
-    return successResponse(result, 'Akun berhasil dibuat sebagai Karyawan. Superadmin akan menetapkan divisi, posisi, lokasi kerja, dan shift.');
+    return successResponse(result, 'Akun Anda langsung aktif! Silakan masuk dan mulai absen hari ini — Superadmin akan memverifikasi data Anda.');
   } catch (error: any) {
     return handleApiError(error);
   }

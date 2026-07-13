@@ -5,6 +5,7 @@ import { POST as publicRegisterPOST } from '@/app/api/auth/public-register/route
 import { GET as profileGET } from '@/app/api/auth/profile/route';
 import { POST as changePasswordPOST } from '@/app/api/auth/change-password/route';
 import { GET as publicRegisterTokenGET } from '@/app/api/auth/public-register-token/route';
+import { GET as availabilityGET } from '@/app/api/auth/register-availability/route';
 import { GET as testSupportActivationTokenGET } from '@/app/api/test-support/activation-token/route';
 import { POST as testSupportCleanupUserPOST } from '@/app/api/test-support/cleanup-user/route';
 import { createTestUser, createMockRequest, cleanupTestData } from '../helpers/test-utils';
@@ -14,11 +15,13 @@ import { eq } from 'drizzle-orm';
 
 describe('Auth API', () => {
   const testUserIds: string[] = [];
+  const testEmployeeIds: string[] = [];
 
   afterEach(async () => {
     vi.unstubAllEnvs();
-    await cleanupTestData({ userIds: testUserIds });
+    await cleanupTestData({ userIds: testUserIds, employeeIds: testEmployeeIds });
     testUserIds.length = 0;
+    testEmployeeIds.length = 0;
   });
 
   describe('POST /api/auth/login', () => {
@@ -287,8 +290,11 @@ describe('Auth API', () => {
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.data.role).toBe('EMPLOYEE');
-      expect(data.data.isActive).toBe(false);
+      // Instant onboarding: langsung aktif; verifikasi jadi tugas Superadmin.
+      expect(data.data.isActive).toBe(true);
+      expect(data.data.employee?.nip).toBeTruthy();
       testUserIds.push(data.data.id);
+      if (data.data.employee?.id) testEmployeeIds.push(data.data.employee.id);
     });
 
     it('creates EMPLOYEE only when public registration payload is valid', async () => {
@@ -303,8 +309,41 @@ describe('Auth API', () => {
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.data.role).toBe('EMPLOYEE');
-      expect(data.data.isActive).toBe(false);
+      expect(data.data.isActive).toBe(true);
+      expect(data.data.employee?.fullName).toBeTruthy();
       testUserIds.push(data.data.id);
+      if (data.data.employee?.id) testEmployeeIds.push(data.data.employee.id);
+    });
+
+    it('honeypot: pretends success for bots and creates nothing', async () => {
+      const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const email = `bot_${uniqueSuffix}@test.com`;
+      const request = createMockRequest('POST', 'http://localhost:3000/api/auth/public-register', {
+        body: { email, username: `bot_${uniqueSuffix}`, password: 'Password123!', fullName: 'Bot Uji', website: 'https://spam.example' },
+      });
+
+      const response = await publicRegisterPOST(request as any);
+      const data = await response.json();
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+
+      const [created] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+      expect(created).toBeUndefined();
+    });
+
+    it('availability endpoint reports taken username/email without leaking more', async () => {
+      const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const email = `avail_${uniqueSuffix}@test.com`;
+      const register = createMockRequest('POST', 'http://localhost:3000/api/auth/public-register', {
+        body: { email, username: `avail_${uniqueSuffix}`, password: 'Password123!', fullName: 'Avail Uji' },
+      });
+      const registered = await (await publicRegisterPOST(register as any)).json();
+      testUserIds.push(registered.data.id);
+      if (registered.data.employee?.id) testEmployeeIds.push(registered.data.employee.id);
+
+      const check = createMockRequest('GET', `http://localhost:3000/api/auth/register-availability?username=avail_${uniqueSuffix}&email=nobody_${uniqueSuffix}@test.com`);
+      const result = await (await availabilityGET(check as any)).json();
+      expect(result.data).toEqual({ usernameTaken: true, emailTaken: false });
     });
   });
 
