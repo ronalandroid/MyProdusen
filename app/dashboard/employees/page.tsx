@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { sizedImageSrc } from "@/lib/images/sized-image-src";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Search, Plus, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Search, Plus, Edit, Trash2, FileText } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
@@ -224,6 +224,34 @@ export default function EmployeesPage() {
   });
 
   const canManageEmployees = profile?.role === "SUPERADMIN";
+  const [downloadingTrackRecord, setDownloadingTrackRecord] = useState<string | null>(null);
+
+  const handleTrackRecord = async (emp: Employee) => {
+    setDownloadingTrackRecord(emp.id);
+    try {
+      const response = await fetch(`/api/reports/employees/${emp.id}/track-record`, {
+        credentials: "include",
+        headers: getAuthHeaders() as Record<string, string>,
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error || "Gagal membuat track record");
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `track-record-${emp.nip || emp.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Gagal membuat track record");
+    } finally {
+      setDownloadingTrackRecord(null);
+    }
+  };
 
   return (
     <div className="phone-screen feature-screen" style={{ display: "flex", flexDirection: "column", gap: "20px", position: "relative", minHeight: "100%" }}>
@@ -324,6 +352,16 @@ export default function EmployeesPage() {
                 </button>
                 {canManageEmployees && (
                   <>
+                    <button
+                      type="button"
+                      onClick={() => handleTrackRecord(emp)}
+                      disabled={downloadingTrackRecord === emp.id}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                      aria-label={`Cetak track record ${emp.fullName}`}
+                      title="Track Record PDF (untuk offboarding/arsip)"
+                    >
+                      <FileText size={18} color="var(--text-muted)" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleEdit(emp)}
