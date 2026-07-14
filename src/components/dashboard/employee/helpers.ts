@@ -9,7 +9,8 @@ import {
   BarChart3,
 } from "lucide-react";
 import type { RealtimeEventType } from "@/lib/realtime/events";
-import type { GpsState } from "./types";
+import type { ClientUserProfile } from "@/lib/auth-client";
+import type { GpsState, WorkLocationDetail } from "./types";
 
 export const statusLabel: Record<string, string> = {
   PRESENT: "Hadir",
@@ -53,6 +54,25 @@ export const quickActions = [
   { name: "Notifikasi", path: "/dashboard/notifications", icon: Bell, bg: "rgba(124,58,237,0.1)", text: "#7C3AED" },
   { name: "Akun", path: "/dashboard/profile", icon: User, bg: "rgba(251,191,36,0.15)", text: "#D97706" },
 ];
+
+/**
+ * The employee's own work location comes from their profile, which already resolves
+ * it. Never fetch GET /api/work-locations/[id] for this: that route is gated behind
+ * LOCATION_READ (SUPERADMIN only) and 403s for every EMPLOYEE/LEADER.
+ */
+export function resolveWorkLocation(profile: ClientUserProfile | null): WorkLocationDetail | null {
+  const location = profile?.employee?.defaultLocation;
+  if (!location) return null;
+
+  return {
+    id: location.id,
+    name: location.name,
+    address: location.address,
+    latitude: location.latitude,
+    longitude: location.longitude,
+    radius: location.radius,
+  };
+}
 
 export function startOfMonth(): Date {
   const today = new Date();

@@ -24,6 +24,8 @@ import {
   Users,
 } from "lucide-react";
 import { BerandaReminderToasts } from "./employee/BerandaReminderToasts";
+import { resolveWorkLocation } from "./employee/helpers";
+import type { WorkLocationDetail } from "./employee/types";
 import { getAuthHeaders, type ClientUserProfile } from "@/lib/auth-client";
 
 interface AttendanceRecord {
@@ -37,21 +39,6 @@ interface AttendanceRecord {
 interface AttendanceResponse {
   success: boolean;
   data?: AttendanceRecord[];
-  error?: string;
-}
-
-interface WorkLocationDetail {
-  id: string;
-  name: string;
-  address: string;
-  latitude?: number;
-  longitude?: number;
-  radius?: number;
-}
-
-interface WorkLocationResponse {
-  success: boolean;
-  data?: WorkLocationDetail;
   error?: string;
 }
 
@@ -289,17 +276,7 @@ export default function LeaderBeranda({ profile }: { profile: ClientUserProfile 
           dashboardUpdate.notifications = notifPayload.data.slice(0, 3);
         }
 
-        const locationId = profile?.employee?.defaultLocation?.id;
-        if (locationId) {
-          const detailRes = await fetch(`/api/work-locations/${locationId}`, {
-            headers: getAuthHeaders(),
-            cache: "no-store",
-          });
-          const detailPayload = (await detailRes.json()) as WorkLocationResponse;
-          if (!cancelled && detailRes.ok && detailPayload.success && detailPayload.data) {
-            dashboardUpdate.workLocation = detailPayload.data;
-          }
-        }
+        dashboardUpdate.workLocation = resolveWorkLocation(profile);
 
         if (!cancelled) {
           dispatchDashboard(dashboardUpdate);
