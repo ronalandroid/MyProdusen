@@ -62,8 +62,10 @@ describe('kpi-period happy paths (real DB, seeded)', () => {
   it('assignKpi: notifies the employee so their KPI view can sync live (owner #28)', async () => {
     await assignKpi({ employeeId: empId, templateId, period: '2099-07', assignedBy: 'itest' });
     const rows = await db.select().from(notifications).where(eq(notifications.userId, empId));
-    const kpiNotif = rows.find((r) => r.type === 'KPI_ASSIGNED');
+    // Scope to THIS assignment's period — the file also assigns 2099-01 earlier,
+    // so a bare type filter would pick the wrong (order-dependent) notification.
+    const kpiNotif = rows.find((r) => r.type === 'KPI_ASSIGNED' && r.message.includes('2099-07'));
+    expect(kpiNotif).toBeDefined();
     expect(kpiNotif?.title).toContain('KPI baru ditetapkan');
-    expect(kpiNotif?.message).toContain('2099-07');
   });
 });
