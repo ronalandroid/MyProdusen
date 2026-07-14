@@ -29,12 +29,6 @@ export interface WorkLocationDetail {
   radius?: number;
 }
 
-export interface WorkLocationResponse {
-  success: boolean;
-  data?: WorkLocationDetail;
-  error?: string;
-}
-
 export interface LeaveBalance {
   year: number;
   entitlement: number;
@@ -63,7 +57,6 @@ export interface DashboardData {
   perfScore: PerformanceScore | null;
   perfHistory: PerformanceHistoryItem[];
   perfBadges: PerformanceBadge[];
-  workLocation: WorkLocationDetail | null;
 }
 
 export interface Props {

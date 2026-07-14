@@ -8,7 +8,6 @@ import type {
   DashboardData,
   HeatmapResponse,
   AttendanceResponse,
-  WorkLocationResponse,
   AttendanceRecord,
   NotificationItem,
   PerformanceHistoryItem,
@@ -28,6 +27,7 @@ import {
   initialGpsState,
   emptyHeatmap,
   dashboardRealtimeEvents,
+  resolveWorkLocation,
 } from "./helpers";
 
 export function useEmployeeBeranda(profile: ClientUserProfile | null) {
@@ -61,15 +61,6 @@ export function useEmployeeBeranda(profile: ClientUserProfile | null) {
         badgesRes.ok ? badgesRes.json().catch(() => null) : null,
       ]);
 
-      let workLocationPayload: WorkLocationResponse | null = null;
-      if (locationId) {
-        const detailRes = await fetch(`/api/work-locations/${locationId}`, {
-          headers: getAuthHeaders(),
-          cache: "no-store",
-        });
-        workLocationPayload = (await detailRes.json().catch(() => null)) as WorkLocationResponse | null;
-      }
-
       return {
         heatmap: heatmapRes.ok && heatmapPayload?.success ? heatmapPayload.data?.heatmap ?? {} : {},
         history: attendanceRes.ok && attendancePayload?.success ? attendancePayload.data?.slice(0, 5) ?? [] : [],
@@ -78,7 +69,6 @@ export function useEmployeeBeranda(profile: ClientUserProfile | null) {
         perfScore: perfPayload?.success ? perfPayload.data ?? null : null,
         perfHistory: historyPayload?.success ? historyPayload.data ?? [] : [],
         perfBadges: badgesPayload?.success ? badgesPayload.data ?? [] : [],
-        workLocation: workLocationPayload?.success ? workLocationPayload.data ?? null : null,
       };
     },
     // Keep the beranda fresh in near-real-time: refetch the moment the user
@@ -99,7 +89,7 @@ export function useEmployeeBeranda(profile: ClientUserProfile | null) {
 
   const heatmap: Record<string, string> = dashboardData?.heatmap ?? emptyHeatmap;
   const history: AttendanceRecord[] = dashboardData?.history ?? [];
-  const workLocation = dashboardData?.workLocation ?? null;
+  const workLocation = resolveWorkLocation(profile);
   const leaveBalance = dashboardData?.leaveBalance ?? null;
   const notifications: NotificationItem[] = dashboardData?.notifications ?? [];
   const loadError = dashboardError instanceof Error ? dashboardError.message : "";
