@@ -234,6 +234,7 @@ export default function ProfilePage() {
           <ProfileLink href="/dashboard/payroll" label="Gaji / Payroll" />
           {overtimeEnabled && <ProfileLink href="/dashboard/overtime" label="Pengajuan Lembur" />}
           <ProfileLink href="/dashboard/profile/password" label="Ubah Kata Sandi" />
+          <ProfileLink href="/dashboard/profile/activity" label="Aktivitas Akun" />
           <ProfileLink href="/dashboard/profile/notifications" label="Notifikasi" />
           <ProfileLink href="/dashboard/profile/about" label="Tentang Aplikasi" />
         </div>
