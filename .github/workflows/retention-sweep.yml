@@ -1,0 +1,65 @@
+# Monthly data-retention sweep (kebijakan owner #30).
+#
+# Calls the production retention endpoint, which purges attendance selfie files
+# older than 6 months and deletes audit logs older than 12 months. Attendance
+# rows themselves are preserved — only the selfie files/columns are cleaned.
+#
+# Requires repo secret RETENTION_CRON_SECRET, matching the app env var of the
+# same name (set in Coolify). Runs a DRY-RUN first for the logs, then the real
+# sweep. Can also be triggered manually (workflow_dispatch) with dry_run input.
+name: Data retention sweep
+
+on:
+  schedule:
+    - cron: '15 3 1 * *' # 03:15 UTC on the 1st of each month (low-traffic window)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only simulate (no deletion)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: retention-sweep
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SWEEP_URL: https://myprodusen.online/api/admin/retention/sweep
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Guard — secret configured
+        run: |
+          if [ -z "${{ secrets.RETENTION_CRON_SECRET }}" ]; then
+            echo "::error::RETENTION_CRON_SECRET is not set. Add it in repo Settings → Secrets → Actions (must match the app env)."
+            exit 1
+          fi
+
+      - name: Dry-run (report only)
+        run: |
+          set -e
+          echo "Dry-run retention sweep…"
+          curl -fsS -m 60 -X POST "$SWEEP_URL" \
+            -H "x-retention-secret: ${{ secrets.RETENTION_CRON_SECRET }}" \
+            -H 'Content-Type: application/json' \
+            -d '{"dryRun": true}' | head -c 1000
+          echo ""
+
+      - name: Real sweep
+        if: ${{ github.event_name == 'schedule' || inputs.dry_run != true }}
+        run: |
+          set -e
+          echo "Running real retention sweep…"
+          RESP=$(curl -fsS -m 120 -X POST "$SWEEP_URL" \
+            -H "x-retention-secret: ${{ secrets.RETENTION_CRON_SECRET }}" \
+            -H 'Content-Type: application/json' \
+            -d '{"dryRun": false}')
+          echo "$RESP" | head -c 1000
+          echo ""
+          echo "$RESP" | grep -q '"success":true' || { echo "::error::Retention sweep did not report success"; exit 1; }
