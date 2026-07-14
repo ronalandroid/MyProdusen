@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { db, users, employees, kpiTemplates, kpiItems, kpiAssignments, kpiResults } from '@/lib/db';
+import { db, users, employees, kpiTemplates, kpiItems, kpiAssignments, kpiResults, notifications } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { createTemplate, createItem, assignKpi, getAssignments } from '@/services/kpi/kpi-period';
 
@@ -36,6 +36,7 @@ describe('kpi-period happy paths (real DB, seeded)', () => {
       await db.delete(kpiItems).where(eq(kpiItems.templateId, templateId));
       await db.delete(kpiTemplates).where(eq(kpiTemplates.id, templateId));
     }
+    await db.delete(notifications).where(eq(notifications.userId, empId));
     await db.delete(employees).where(eq(employees.id, empId));
     await db.delete(users).where(eq(users.id, empId));
   });
@@ -56,5 +57,13 @@ describe('kpi-period happy paths (real DB, seeded)', () => {
     await expect(
       assignKpi({ employeeId: empId, templateId, period: PERIOD, assignedBy: 'itest' }),
     ).rejects.toThrow(/sudah di-assign/i);
+  });
+
+  it('assignKpi: notifies the employee so their KPI view can sync live (owner #28)', async () => {
+    await assignKpi({ employeeId: empId, templateId, period: '2099-07', assignedBy: 'itest' });
+    const rows = await db.select().from(notifications).where(eq(notifications.userId, empId));
+    const kpiNotif = rows.find((r) => r.type === 'KPI_ASSIGNED');
+    expect(kpiNotif?.title).toContain('KPI baru ditetapkan');
+    expect(kpiNotif?.message).toContain('2099-07');
   });
 });
