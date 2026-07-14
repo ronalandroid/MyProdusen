@@ -2,6 +2,7 @@ import { db, kpiTemplates, kpiItems, kpiAssignments, kpiResults, employees, kpiM
 import { eq, and, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { notifyUser } from '@/lib/notifications/dispatch';
+import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 import { logAudit } from '@/lib/audit';
 import { BusinessError } from '@/lib/core/business-error';
 import type { KpiScoringType } from './kpi-calculator';
@@ -202,6 +203,24 @@ export async function assignKpi(data: {
       assignedBy: data.assignedBy,
     })
     .returning();
+
+  // Sync realtime to the employee (kebijakan owner #28): KPI yang ditetapkan
+  // Superadmin langsung muncul di akun karyawan tanpa perlu refresh manual.
+  if (employee.userId) {
+    await notifyUser({
+      userId: employee.userId,
+      title: 'KPI baru ditetapkan',
+      message: `Anda mendapat KPI "${template.name}" untuk periode ${data.period}.`,
+      type: 'KPI_ASSIGNED',
+    }).catch(() => undefined);
+
+    await publishRealtimeEvent(createRealtimeEvent({
+      type: 'dashboard.updated',
+      scope: 'user',
+      target: employee.userId,
+      payload: { source: 'kpi.assigned', period: data.period, templateId: data.templateId },
+    })).catch(() => undefined);
+  }
 
   return assignment;
 }

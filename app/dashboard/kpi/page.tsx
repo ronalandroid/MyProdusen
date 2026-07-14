@@ -6,6 +6,7 @@ import { ArrowLeft, Target, TrendingUp, Users } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
+import { useRealtime } from "@/hooks/useRealtime";
 
 type KpiResultRow = {
   result: {
@@ -99,6 +100,17 @@ export default function KPIPage() {
   const canViewTeam = role === "SUPERADMIN";
 
   const loadInitialData = () => queryClient.invalidateQueries({ queryKey: ["kpi-overview"] });
+
+  // Live sync (kebijakan owner #28): when Superadmin assigns a KPI, the server
+  // publishes dashboard.updated to this employee — refresh so it appears at
+  // once, no manual reload.
+  useRealtime({
+    eventTypes: ["dashboard.updated"],
+    onEvent: () => {
+      void queryClient.invalidateQueries({ queryKey: ["kpi-overview"] });
+      void queryClient.invalidateQueries({ queryKey: ["kpi-employee-summary"] });
+    },
+  });
 
   const {
     data: summaryData,
