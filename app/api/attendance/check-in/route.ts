@@ -65,6 +65,12 @@ export async function POST(request: NextRequest) {
       userAgent,
       note: data.note,
       manualReason: data.manualReason,
+      // Liveness signals were parsed but never forwarded — the handler's
+      // evaluateLiveness + suspicious-attendance risk depend on them.
+      livenessScore: data.livenessScore,
+      livenessPassed: data.livenessPassed,
+      faceDetected: data.faceDetected,
+      livenessUnsupported: data.livenessUnsupported,
     });
 
     await logAudit(

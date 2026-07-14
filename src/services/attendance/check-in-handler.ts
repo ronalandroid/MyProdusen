@@ -1,5 +1,8 @@
-import { db, attendances, employees, workLocations, shifts, attendanceDailySummaries, payrollCalculationHistory, workCalendarDays, notifications } from '@/lib/db';
+import { db, attendances, employees, workLocations, shifts, attendanceDailySummaries, payrollCalculationHistory, workCalendarDays, notifications, users } from '@/lib/db';
 import { eq, and, gte, lt } from 'drizzle-orm';
+import { assessAttendanceRisk } from '@/lib/attendance/attendance-risk';
+import { notifyUser } from '@/lib/notifications/dispatch';
+import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
 import { saveAttendanceSelfie } from '@/lib/upload';
 import { payrollPeriodLockService } from '@/features/payroll/payroll-period-lock.service';
 import { validateGpsAttendance } from '@/lib/attendance/gps-validation';
@@ -355,10 +358,59 @@ export async function checkIn(data: {
   // Invalidate attendance caches
   await invalidateAttendanceCaches(data.employeeId);
 
+  // Suspicious-attendance detection (kebijakan owner #13): weak liveness / data
+  // signals that individually pass the gates but together look off raise a
+  // warning to Superadmin. Best-effort — never affects the check-in result.
+  const risk = assessAttendanceRisk({
+    livenessPassed: data.livenessPassed ?? false,
+    livenessScore: data.livenessScore,
+    faceDetected: data.faceDetected ?? data.livenessPassed,
+    livenessUnsupported: data.livenessUnsupported,
+    accuracyMeters: data.accuracy,
+    distanceMeters: distance,
+    radiusMeters: effectiveRadius,
+    geoStatus: checkInGeoStatus,
+  });
+  if (risk.level === 'high') {
+    await warnSuperadminsOfSuspiciousAttendance(employee.fullName, attendance.id, risk.reasons).catch(() => undefined);
+  }
+
   return {
     ...attendance,
     checkInGeoStatus,
     geoValidation: validation,
     isPendingGeoReview: validation.decision === 'pending',
+    riskLevel: risk.level,
   };
+}
+
+/**
+ * Best-effort warning to every active Superadmin about a suspicious check-in.
+ * Failures here must never surface to the employee — the clock-in already
+ * succeeded and the selfie/GPS evidence is on the record for review.
+ */
+async function warnSuperadminsOfSuspiciousAttendance(employeeName: string, attendanceId: string, reasons: string[]) {
+  const superadmins = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.role, 'SUPERADMIN'), eq(users.isActive, true)));
+
+  const message = `${employeeName}: ${reasons.join('; ')}`;
+  await Promise.all(
+    superadmins.map((admin) =>
+      notifyUser({
+        userId: admin.id,
+        title: 'Absensi mencurigakan menunggu tinjauan',
+        message,
+        type: 'ATTENDANCE_SUSPICIOUS',
+      }).catch(() => undefined),
+    ),
+  );
+
+  await publishRealtimeEvent(createRealtimeEvent({
+    type: 'dashboard.updated',
+    scope: 'role',
+    target: 'SUPERADMIN',
+    payload: { source: 'attendance.suspicious', attendanceId },
+  })).catch(() => undefined);
 }
