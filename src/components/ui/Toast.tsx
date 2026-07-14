@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -21,6 +21,9 @@ interface ToastContextType {
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
+
+// How long the slide-out lasts before the node is removed from the DOM.
+const EXIT_MS = 260;
 
 const TOAST_ICONS = {
   success: <CheckCircle size={20} aria-hidden="true" />,
@@ -49,15 +52,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const showToast = useCallback((type: ToastType, message: string, duration = 5000) => {
     const id = Math.random().toString(36).substr(2, 9);
-    const newToast: Toast = { id, type, message, duration };
-    
-    setToasts((prev) => [...prev, newToast]);
-
-    if (duration > 0) {
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((toast) => toast.id !== id));
-      }, duration);
-    }
+    // Auto-dismiss is now owned by ToastItem so it can animate out first.
+    setToasts((prev) => [...prev, { id, type, message, duration }]);
   }, []);
 
   const removeToast = useCallback((id: string) => {
@@ -75,24 +71,42 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div
         className="fixed top-4 right-4 z-[var(--z-tooltip)] flex flex-col gap-2 max-w-sm w-full px-4 sm:px-0"
         aria-live="polite"
-        aria-atomic="true"
+        aria-atomic="false"
       >
         {toasts.map((toast) => (
-          <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
+          <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
         ))}
       </div>
     </ToastContext.Provider>
   );
 }
 
-function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
+function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
+  const [leaving, setLeaving] = useState(false);
+  const toastId = toast.id;
+  const duration = toast.duration ?? 5000;
+
+  // Stable (onRemove is useCallback([]); toastId constant) so the effect runs
+  // once — the enter/exit motion is CSS-driven, immune to parent re-renders.
+  const beginLeave = useCallback(() => {
+    setLeaving(true);
+    setTimeout(() => onRemove(toastId), EXIT_MS);
+  }, [onRemove, toastId]);
+
+  useEffect(() => {
+    if (duration <= 0) return;
+    const timer = setTimeout(beginLeave, duration);
+    return () => clearTimeout(timer);
+  }, [duration, beginLeave]);
+
   return (
     <div
       className={`
         ${TOAST_STYLES[toast.type]}
+        relative overflow-hidden
         flex items-center gap-3 p-4 rounded-xl shadow-lg border-2
-        animate-slide-up
         backdrop-blur-sm
+        ${leaving ? 'toast-leave' : 'toast-enter'}
       `}
       role="alert"
     >
@@ -104,17 +118,25 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       </p>
       <button
         type="button"
-        onClick={onClose}
+        onClick={beginLeave}
         className="
           flex-shrink-0 p-1 rounded-full
           hover:bg-white/20
           transition-colors duration-200
           focus:outline-none focus-visible:ring-2 focus-visible:ring-white
         "
-        aria-label="Close notification"
+        aria-label="Tutup notifikasi"
       >
         <X size={16} aria-hidden="true" />
       </button>
+      {/* Time-remaining bar: CSS scaleX animation over the toast duration. */}
+      {duration > 0 && !leaving && (
+        <span
+          aria-hidden="true"
+          className="toast-progress-bar pointer-events-none absolute bottom-0 left-0 h-1 w-full bg-white/40"
+          style={{ animationDuration: `${duration}ms` }}
+        />
+      )}
     </div>
   );
 }
