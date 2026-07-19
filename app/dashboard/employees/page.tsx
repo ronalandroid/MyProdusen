@@ -82,6 +82,7 @@ export default function EmployeesPage() {
     queryKey: ["divisions", "options"],
     queryFn: () => fetchApiList<{ id: string; name: string }>("/api/divisions", "Gagal memuat divisi"),
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
   const divisionOptions = (divisionsData ?? []).map((division) => division.name);
   useRealtime({

@@ -1,4 +1,4 @@
-import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, eq, inArray, or, sql, type SQL } from 'drizzle-orm';
 import { db, divisions, employees, positions, payrollRules } from '@/lib/db';
 import { BusinessError } from '@/lib/core/business-error';
 import { AppError } from '@/lib/core/app-error';
@@ -38,11 +38,20 @@ async function broadcastDivisionsUpdated() {
   );
 }
 
+/**
+ * Kesetaraan nama case-insensitive. JANGAN pakai ilike di sini: nama divisi
+ * adalah input pengguna, dan % / _ di dalamnya menjadi wildcard ilike — nama
+ * "100%" bisa mencocokkan (dan me-rename!) teks divisi karyawan lain.
+ */
+function nameEquals(column: typeof employees.division | typeof divisions.name, name: string): SQL {
+  return sql`lower(${column}) = lower(${name})`;
+}
+
 /** Karyawan aktif yang tertaut ke divisi — via divisionId ATAU teks legacy. */
 function activeMemberCondition(divisionId: string, divisionName: string) {
   return and(
     eq(employees.status, 'ACTIVE'),
-    or(eq(employees.divisionId, divisionId), ilike(employees.division, divisionName)),
+    or(eq(employees.divisionId, divisionId), nameEquals(employees.division, divisionName)),
   );
 }
 
@@ -85,7 +94,7 @@ export const divisionService = {
   async findDivisionByName(name: string) {
     const trimmed = name.trim();
     if (!trimmed) return null;
-    const [row] = await db.select().from(divisions).where(ilike(divisions.name, trimmed)).limit(1);
+    const [row] = await db.select().from(divisions).where(nameEquals(divisions.name, trimmed)).limit(1);
     return row ?? null;
   },
 
@@ -161,7 +170,7 @@ export const divisionService = {
       await db
         .update(employees)
         .set({ division: nextName })
-        .where(or(eq(employees.divisionId, id), ilike(employees.division, division.name)));
+        .where(or(eq(employees.divisionId, id), nameEquals(employees.division, division.name)));
     }
 
     await broadcastDivisionsUpdated();

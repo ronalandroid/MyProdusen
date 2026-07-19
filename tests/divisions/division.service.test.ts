@@ -175,6 +175,35 @@ describe('divisionService.findDivisionByName', () => {
   });
 });
 
+describe('nama divisi berisi karakter wildcard (% dan _)', () => {
+  it('findDivisionByName memperlakukan % dan _ sebagai huruf biasa, bukan wildcard', async () => {
+    const marker = Date.now().toString(36);
+    const division = await makeDivision(`Divisi ${marker} 100%`);
+
+    // '%' mentah TIDAK boleh cocok ke divisi mana pun lewat wildcard.
+    const wildcard = await divisionService.findDivisionByName('%');
+    expect(wildcard).toBeNull();
+
+    // Nama persis (case-insensitive) tetap ketemu.
+    const exact = await divisionService.findDivisionByName(`divisi ${marker} 100%`);
+    expect(exact?.id).toBe(division.id);
+  });
+
+  it('rename-sync tidak menimpa karyawan divisi lain yang mirip pola', async () => {
+    const marker = Date.now().toString(36);
+    // "Divisi <m>%" — kalau dipakai sebagai pola ilike, akan mencocokkan "Divisi <m>X" juga.
+    const trap = await makeDivision(`Divisi ${marker}%`);
+    const other = await makeDivision(`Divisi ${marker}X`);
+    const employeeId = await makeEmployee();
+    await db.update(employees).set({ division: other.name, divisionId: other.id }).where(eq(employees.id, employeeId));
+
+    await divisionService.updateDivision(trap.id, { name: `Divisi ${marker} Aman` });
+
+    const [row] = await db.select({ division: employees.division }).from(employees).where(eq(employees.id, employeeId));
+    expect(row.division).toBe(other.name); // TIDAK ikut ter-rename
+  });
+});
+
 describe('dual-write divisionId on employee write paths', () => {
   it('registrasi/pembuatan profil menautkan divisionId saat nama divisi cocok', async () => {
     const division = await makeDivision(uniqueName('Divisi Registrasi'));

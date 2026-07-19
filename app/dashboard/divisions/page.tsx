@@ -34,6 +34,9 @@ export default function DivisionsPage() {
   const { data, isLoading, error: loadError } = useQuery<DivisionRow[]>({
     queryKey: ["divisions", "admin"],
     queryFn: () => fetchApiList<DivisionRow>("/api/divisions?includeInactive=true", "Gagal memuat divisi"),
+    // Penyembuh-diri bila push realtime tak sampai (mis. Redis mati):
+    // kembali fokus ke tab = data segar.
+    refetchOnWindowFocus: true,
   });
   const divisions = data ?? [];
 
