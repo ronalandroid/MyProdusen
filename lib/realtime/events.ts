@@ -5,6 +5,7 @@ export type RealtimeEventType =
   | 'notification.read'
   | 'attendance.updated'
   | 'dashboard.updated'
+  | 'divisions.updated'
   | 'sync.updated'
   | 'announcement.created'
   | 'heartbeat';

@@ -9,6 +9,7 @@ import { parseJsonBody, withApiHandler } from '@/lib/core/route-handler';
 import { logAudit } from '@/lib/audit';
 import { getUserEmailEvents, sendAuthEmail } from '@/lib/email';
 import { leaderService } from '@/services/leader/leader.service';
+import { divisionService } from '@/services/divisions/division.service';
 import { db, employees } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import type { UserRole } from '@/lib/permissions';
@@ -79,8 +80,12 @@ export const PATCH = withApiHandler(async (request: NextRequest) => {
 
   if (body.division !== undefined || body.position !== undefined || body.defaultLocationId !== undefined || body.defaultShiftId !== undefined) {
     if (!employee) throw new AppError('LEADER_REQUIRES_EMPLOYEE_PROFILE', 'User belum memiliki profil karyawan', 422);
+    // Dual-write: tautkan divisionId dari tabel Division bila nama cocok.
+    const nextDivisionName = body.division?.trim() || employee.division;
+    const linkedDivision = nextDivisionName ? await divisionService.findDivisionByName(nextDivisionName) : null;
     await db.update(employees).set({
-      division: body.division?.trim() || employee.division,
+      division: linkedDivision?.name ?? nextDivisionName,
+      divisionId: body.division !== undefined ? (linkedDivision?.id ?? null) : employee.divisionId,
       position: body.position?.trim() || employee.position,
       defaultLocationId: body.defaultLocationId || employee.defaultLocationId,
       defaultShiftId: body.defaultShiftId || employee.defaultShiftId,

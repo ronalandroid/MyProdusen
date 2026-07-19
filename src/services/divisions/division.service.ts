@@ -1,0 +1,205 @@
+import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { db, divisions, employees, positions, payrollRules } from '@/lib/db';
+import { BusinessError } from '@/lib/core/business-error';
+import { AppError } from '@/lib/core/app-error';
+import { publishRealtimeEvent, createRealtimeEvent } from '@/lib/realtime/publisher';
+
+/**
+ * Divisi yang bisa dikustomisasi Superadmin (kebijakan owner 2026-07-19).
+ * Sumber kebenaran adalah tabel Division; kolom teks legacy Employee.division
+ * tetap ditulis (dual-write) supaya laporan lama yang group-by teks ikut sinkron.
+ * Penghapusan DIBLOKIR selama masih ada karyawan aktif, posisi, atau aturan
+ * gaji yang menunjuk divisi itu — pilihan eksplisit owner ("blokir sampai kosong").
+ */
+
+export interface DivisionSummary {
+  id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  isActive: boolean;
+  memberCount: number;
+}
+
+const MIN_NAME_LENGTH = 2;
+const MAX_NAME_LENGTH = 60;
+
+export function slugifyDivisionName(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+async function broadcastDivisionsUpdated() {
+  await publishRealtimeEvent(
+    createRealtimeEvent({ type: 'divisions.updated', scope: 'global', payload: {} }),
+  );
+}
+
+/** Karyawan aktif yang tertaut ke divisi — via divisionId ATAU teks legacy. */
+function activeMemberCondition(divisionId: string, divisionName: string) {
+  return and(
+    eq(employees.status, 'ACTIVE'),
+    or(eq(employees.divisionId, divisionId), ilike(employees.division, divisionName)),
+  );
+}
+
+export const divisionService = {
+  async listDivisions(filters?: { includeInactive?: boolean }): Promise<DivisionSummary[]> {
+    const rows = await db
+      .select()
+      .from(divisions)
+      .where(filters?.includeInactive ? undefined : eq(divisions.isActive, true))
+      .orderBy(divisions.name);
+
+    if (rows.length === 0) return [];
+
+    // Two grouped counts instead of N per-division queries; merged in memory.
+    const idCounts = await db
+      .select({ divisionId: employees.divisionId, total: sql<number>`cast(count(*) as int)` })
+      .from(employees)
+      .where(and(eq(employees.status, 'ACTIVE'), inArray(employees.divisionId, rows.map((r) => r.id))))
+      .groupBy(employees.divisionId);
+
+    const textCounts = await db
+      .select({ division: sql<string>`lower(${employees.division})`, total: sql<number>`cast(count(*) as int)` })
+      .from(employees)
+      .where(and(eq(employees.status, 'ACTIVE'), sql`${employees.divisionId} is null`))
+      .groupBy(sql`lower(${employees.division})`);
+
+    const byId = new Map(idCounts.map((c) => [c.divisionId, c.total]));
+    const byText = new Map(textCounts.map((c) => [c.division, c.total]));
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      code: row.code,
+      description: row.description,
+      isActive: row.isActive,
+      memberCount: (byId.get(row.id) ?? 0) + (byText.get(row.name.toLowerCase()) ?? 0),
+    }));
+  },
+
+  async findDivisionByName(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return null;
+    const [row] = await db.select().from(divisions).where(ilike(divisions.name, trimmed)).limit(1);
+    return row ?? null;
+  },
+
+  async createDivision(data: { name: string; description?: string }) {
+    const name = data.name.trim();
+    if (name.length < MIN_NAME_LENGTH || name.length > MAX_NAME_LENGTH) {
+      throw AppError.validation(`Nama divisi harus ${MIN_NAME_LENGTH}-${MAX_NAME_LENGTH} karakter`);
+    }
+    const code = slugifyDivisionName(name);
+    if (!code) throw AppError.validation('Nama divisi tidak valid');
+
+    const [existing] = await db.select().from(divisions).where(eq(divisions.code, code)).limit(1);
+    if (existing) {
+      if (existing.isActive) {
+        throw new BusinessError(`Divisi "${existing.name}" sudah ada`);
+      }
+      // Divisi lama yang dinonaktifkan dihidupkan lagi — riwayat lama tetap tertaut.
+      const [revived] = await db
+        .update(divisions)
+        .set({ name, isActive: true, description: data.description ?? existing.description, updatedAt: new Date() })
+        .where(eq(divisions.id, existing.id))
+        .returning();
+      await broadcastDivisionsUpdated();
+      return revived;
+    }
+
+    const [created] = await db
+      .insert(divisions)
+      .values({
+        id: `division_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        name,
+        code,
+        description: data.description ?? null,
+        isActive: true,
+      })
+      .returning();
+    await broadcastDivisionsUpdated();
+    return created;
+  },
+
+  async updateDivision(id: string, data: { name?: string; description?: string; isActive?: boolean }) {
+    const [division] = await db.select().from(divisions).where(eq(divisions.id, id)).limit(1);
+    if (!division) throw AppError.notFound('Divisi tidak ditemukan');
+
+    const nextName = data.name?.trim();
+    if (nextName !== undefined) {
+      if (nextName.length < MIN_NAME_LENGTH || nextName.length > MAX_NAME_LENGTH) {
+        throw AppError.validation(`Nama divisi harus ${MIN_NAME_LENGTH}-${MAX_NAME_LENGTH} karakter`);
+      }
+      const nextCode = slugifyDivisionName(nextName);
+      const [clash] = await db
+        .select({ id: divisions.id })
+        .from(divisions)
+        .where(and(eq(divisions.code, nextCode), sql`${divisions.id} <> ${id}`))
+        .limit(1);
+      if (clash) throw new BusinessError(`Divisi dengan nama "${nextName}" sudah ada`);
+    }
+
+    const [updated] = await db
+      .update(divisions)
+      .set({
+        ...(nextName !== undefined ? { name: nextName, code: slugifyDivisionName(nextName) } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
+        ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(divisions.id, id))
+      .returning();
+
+    // Dual-write: teks legacy di Employee ikut ganti nama supaya laporan
+    // group-by teks & dropdown lama tetap konsisten.
+    if (nextName !== undefined && nextName !== division.name) {
+      await db
+        .update(employees)
+        .set({ division: nextName })
+        .where(or(eq(employees.divisionId, id), ilike(employees.division, division.name)));
+    }
+
+    await broadcastDivisionsUpdated();
+    return updated;
+  },
+
+  async deleteDivision(id: string) {
+    const [division] = await db.select().from(divisions).where(eq(divisions.id, id)).limit(1);
+    if (!division) throw AppError.notFound('Divisi tidak ditemukan');
+
+    const [[memberRow], [positionRow], [ruleRow]] = await Promise.all([
+      db
+        .select({ total: sql<number>`cast(count(*) as int)` })
+        .from(employees)
+        .where(activeMemberCondition(id, division.name)),
+      db
+        .select({ total: sql<number>`cast(count(*) as int)` })
+        .from(positions)
+        .where(and(eq(positions.divisionId, id), eq(positions.isActive, true))),
+      db
+        .select({ total: sql<number>`cast(count(*) as int)` })
+        .from(payrollRules)
+        .where(and(eq(payrollRules.divisionId, id), eq(payrollRules.isActive, true))),
+    ]);
+
+    if (memberRow.total > 0) {
+      throw new BusinessError(
+        `Divisi "${division.name}" masih punya ${memberRow.total} karyawan aktif. Pindahkan dulu karyawannya, lalu hapus.`,
+      );
+    }
+    if (positionRow.total > 0 || ruleRow.total > 0) {
+      throw new BusinessError(
+        `Divisi "${division.name}" masih dipakai oleh ${positionRow.total} posisi dan ${ruleRow.total} aturan gaji. Nonaktifkan saja, atau bersihkan dulu referensinya.`,
+      );
+    }
+
+    await db.delete(divisions).where(eq(divisions.id, id));
+    await broadcastDivisionsUpdated();
+    return { deleted: true as const, id, name: division.name };
+  },
+};
