@@ -55,6 +55,15 @@ function activeMemberCondition(divisionId: string, divisionName: string) {
   );
 }
 
+/** Sinkronkan teks legacy karyawan setiap kali nama divisi berubah. */
+async function syncEmployeeDivisionText(divisionId: string, oldName: string, newName: string) {
+  if (oldName === newName) return;
+  await db
+    .update(employees)
+    .set({ division: newName })
+    .where(or(eq(employees.divisionId, divisionId), nameEquals(employees.division, oldName)));
+}
+
 export const divisionService = {
   async listDivisions(filters?: { includeInactive?: boolean }): Promise<DivisionSummary[]> {
     const rows = await db
@@ -91,10 +100,19 @@ export const divisionService = {
     }));
   },
 
+  /**
+   * Hanya divisi AKTIF — divisi nonaktif tersembunyi dari semua pilihan, jadi
+   * jalur tulis (termasuk registrasi publik yang mengetik nama bebas) tidak
+   * boleh diam-diam menautkan karyawan ke divisi yang sudah dipensiunkan.
+   */
   async findDivisionByName(name: string) {
     const trimmed = name.trim();
     if (!trimmed) return null;
-    const [row] = await db.select().from(divisions).where(nameEquals(divisions.name, trimmed)).limit(1);
+    const [row] = await db
+      .select()
+      .from(divisions)
+      .where(and(eq(divisions.isActive, true), nameEquals(divisions.name, trimmed)))
+      .limit(1);
     return row ?? null;
   },
 
@@ -117,6 +135,10 @@ export const divisionService = {
         .set({ name, isActive: true, description: data.description ?? existing.description, updatedAt: new Date() })
         .where(eq(divisions.id, existing.id))
         .returning();
+      // Revival bisa mengganti nama tampilan (slug sama, mis. "Gudang Utama" →
+      // "Gudang-Utama") — teks legacy karyawan wajib ikut, sama seperti rename
+      // biasa, agar memberCount dan blokir-hapus tetap melihat mereka.
+      await syncEmployeeDivisionText(existing.id, existing.name, name);
       await broadcastDivisionsUpdated();
       return revived;
     }
@@ -166,11 +188,8 @@ export const divisionService = {
 
     // Dual-write: teks legacy di Employee ikut ganti nama supaya laporan
     // group-by teks & dropdown lama tetap konsisten.
-    if (nextName !== undefined && nextName !== division.name) {
-      await db
-        .update(employees)
-        .set({ division: nextName })
-        .where(or(eq(employees.divisionId, id), nameEquals(employees.division, division.name)));
+    if (nextName !== undefined) {
+      await syncEmployeeDivisionText(id, division.name, nextName);
     }
 
     await broadcastDivisionsUpdated();
@@ -207,8 +226,42 @@ export const divisionService = {
       );
     }
 
-    await db.delete(divisions).where(eq(divisions.id, id));
+    // Hitungan di atas hanya untuk pesan yang ramah. Penjaga sebenarnya ada di
+    // DELETE bersyarat satu-statement di bawah (anti-TOCTOU): assignment yang
+    // masuk di antara hitung dan hapus tetap membatalkan penghapusan.
+    const removed = await this.attemptAtomicDelete(id, division.name);
+    if (!removed) {
+      throw new BusinessError(
+        `Divisi "${division.name}" baru saja dipakai (karyawan/posisi/aturan gaji ditambahkan bersamaan). Muat ulang lalu coba lagi.`,
+      );
+    }
+
     await broadcastDivisionsUpdated();
     return { deleted: true as const, id, name: division.name };
+  },
+
+  /**
+   * DELETE bersyarat dalam SATU statement: semua pemeriksaan referensi berjalan
+   * di snapshot statement yang sama, jadi tidak ada jendela balapan antara
+   * "cek kosong" dan "hapus". Mengembalikan false bila divisi masih dipakai.
+   */
+  async attemptAtomicDelete(id: string, divisionName: string): Promise<boolean> {
+    const rows = await db.execute(sql`
+      DELETE FROM "Division" d
+      WHERE d."id" = ${id}
+        AND NOT EXISTS (
+          SELECT 1 FROM "Employee" e
+          WHERE e."status" = 'ACTIVE'
+            AND (e."divisionId" = ${id} OR lower(e."division") = lower(${divisionName}))
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM "Position" p WHERE p."divisionId" = ${id} AND p."isActive" = true
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM "PayrollRule" r WHERE r."divisionId" = ${id} AND r."isActive" = true
+        )
+      RETURNING d."id"
+    `);
+    return rows.length > 0;
   },
 };

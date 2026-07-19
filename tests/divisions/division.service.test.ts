@@ -71,6 +71,24 @@ describe('divisionService.createDivision', () => {
     expect(revived.id).toBe(division.id);
     expect(revived.isActive).toBe(true);
   });
+
+  it('revival dengan nama beda (slug sama) ikut menyinkronkan teks karyawan — anti bypass blokir-hapus', async () => {
+    const marker = Date.now().toString(36);
+    // "Divisi X <m>" dan "Divisi-X <m>" menghasilkan slug yang sama.
+    const division = await makeDivision(`Divisi X ${marker}`);
+    const employeeId = await makeEmployee();
+    // Karyawan tertaut lewat TEKS saja (kondisi legacy).
+    await db.update(employees).set({ division: division.name, divisionId: null }).where(eq(employees.id, employeeId));
+    await divisionService.updateDivision(division.id, { isActive: false });
+
+    const revived = await divisionService.createDivision({ name: `Divisi-X ${marker}` });
+    expect(revived.id).toBe(division.id);
+
+    // Teks karyawan ikut nama baru → tetap terhitung → hapus tetap terblokir.
+    const [row] = await db.select({ division: employees.division }).from(employees).where(eq(employees.id, employeeId));
+    expect(row.division).toBe(`Divisi-X ${marker}`);
+    await expect(divisionService.deleteDivision(division.id)).rejects.toThrow(/karyawan/i);
+  });
 });
 
 describe('divisionService.updateDivision', () => {
@@ -126,6 +144,21 @@ describe('divisionService.deleteDivision', () => {
     } finally {
       await db.delete(payrollRules).where(eq(payrollRules.id, ruleId));
     }
+  });
+
+  it('guard atomik: DELETE bersyarat menolak walau pengecekan hitung dilewati (anti-TOCTOU)', async () => {
+    // Simulasi jendela balapan: karyawan ter-assign SETELAH count tapi sebelum
+    // delete. Guard harus ada DI DALAM statement DELETE itu sendiri, bukan
+    // hanya di pengecekan hitung sebelumnya.
+    const division = await makeDivision(uniqueName('Divisi Balapan'));
+    const employeeId = await makeEmployee();
+    await db.update(employees).set({ divisionId: division.id }).where(eq(employees.id, employeeId));
+
+    const removed = await divisionService.attemptAtomicDelete(division.id, division.name);
+    expect(removed).toBe(false);
+
+    const list = await divisionService.listDivisions();
+    expect(list.some((d) => d.id === division.id)).toBe(true); // masih ada
   });
 
   it('deletes an empty division and removes it from the list', async () => {
@@ -205,6 +238,32 @@ describe('nama divisi berisi karakter wildcard (% dan _)', () => {
 });
 
 describe('dual-write divisionId on employee write paths', () => {
+  it('createEmployee (jalur admin Tambah Karyawan) juga menautkan divisionId', async () => {
+    const division = await makeDivision(uniqueName('Divisi Admin Buat'));
+    const stamp = `${Date.now()}${Math.random().toString(36).slice(2, 6)}`;
+
+    const { employeeService } = await import('@/services/employees/employee.service');
+    const created = await employeeService.createEmployee({
+      email: `dualwrite.${stamp}@myprodusen.test`,
+      username: `dualwrite_${stamp}`,
+      password: 'UjiDualWrite123!',
+      fullName: 'Uji Admin Buat',
+      division: division.name,
+    });
+    userIds.push(created.userId);
+    employeeIds.push(created.id);
+
+    expect(created.divisionId).toBe(division.id);
+  });
+
+  it('findDivisionByName TIDAK menautkan ke divisi nonaktif (kebijakan: nonaktif = tersembunyi)', async () => {
+    const division = await makeDivision(uniqueName('Divisi Pensiun'));
+    await divisionService.updateDivision(division.id, { isActive: false });
+
+    const found = await divisionService.findDivisionByName(division.name);
+    expect(found).toBeNull();
+  });
+
   it('registrasi/pembuatan profil menautkan divisionId saat nama divisi cocok', async () => {
     const division = await makeDivision(uniqueName('Divisi Registrasi'));
     const user = await createTestUser('EMPLOYEE');

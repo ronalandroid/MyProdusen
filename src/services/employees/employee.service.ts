@@ -92,6 +92,10 @@ export class EmployeeService extends BaseService {
       })
       .returning();
 
+    // Dual-write: tautkan ke tabel Division terkelola bila namanya cocok —
+    // sama seperti createEmployeeProfileForUser dan updateEmployee.
+    const linkedDivision = data.division ? await divisionService.findDivisionByName(data.division) : null;
+
     // Create employee, deriving the NIP atomically-by-retry: getNextNIP derives
     // from the current NIP set, so two concurrent creates can derive the same NIP.
     // On the unique-NIP violation we re-derive against the now-updated set and
@@ -103,7 +107,8 @@ export class EmployeeService extends BaseService {
       email: data.email,
       phone: data.phone,
       address: data.address,
-      division: data.division,
+      division: linkedDivision?.name ?? data.division,
+      divisionId: linkedDivision?.id,
       position: data.position,
       supervisorId: data.supervisorId,
       defaultShiftId: data.defaultShiftId,
