@@ -20,6 +20,7 @@ import { CacheKeys, CacheTags } from '@/lib/cache/cache-keys';
 import { CacheStrategy } from '@/lib/cache/cache-strategies';
 import { BaseService } from '@/lib/core/base-service';
 import { AppError } from '@/lib/core/app-error';
+import { divisionService } from '@/services/divisions/division.service';
 import type { UserRole } from '@/lib/permissions';
 
 export type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
@@ -91,6 +92,10 @@ export class EmployeeService extends BaseService {
       })
       .returning();
 
+    // Dual-write: tautkan ke tabel Division terkelola bila namanya cocok —
+    // sama seperti createEmployeeProfileForUser dan updateEmployee.
+    const linkedDivision = data.division ? await divisionService.findDivisionByName(data.division) : null;
+
     // Create employee, deriving the NIP atomically-by-retry: getNextNIP derives
     // from the current NIP set, so two concurrent creates can derive the same NIP.
     // On the unique-NIP violation we re-derive against the now-updated set and
@@ -102,7 +107,8 @@ export class EmployeeService extends BaseService {
       email: data.email,
       phone: data.phone,
       address: data.address,
-      division: data.division,
+      division: linkedDivision?.name ?? data.division,
+      divisionId: linkedDivision?.id,
       position: data.position,
       supervisorId: data.supervisorId,
       defaultShiftId: data.defaultShiftId,
@@ -156,6 +162,10 @@ export class EmployeeService extends BaseService {
     const employeeId = `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const joinDate = data.joinDate ? new Date(data.joinDate) : new Date();
 
+    // Dual-write: tautkan ke tabel Division yang dikelola Superadmin bila
+    // nama divisinya cocok (teks legacy tetap disimpan untuk laporan lama).
+    const linkedDivision = data.division ? await divisionService.findDivisionByName(data.division) : null;
+
     // Create employee with a collision-safe NIP (see insertEmployeeWithUniqueNip).
     const employee = await this.insertEmployeeWithUniqueNip(joinDate, {
       id: employeeId,
@@ -164,7 +174,8 @@ export class EmployeeService extends BaseService {
       email: user.email,
       phone: data.phone,
       address: data.address,
-      division: data.division,
+      division: linkedDivision?.name ?? data.division,
+      divisionId: linkedDivision?.id,
       position: data.position,
       supervisorId: data.supervisorId,
       defaultShiftId: data.defaultShiftId,
@@ -408,10 +419,18 @@ export class EmployeeService extends BaseService {
       throw AppError.notFound('Karyawan tidak ditemukan');
     }
 
+    // Dual-write: sinkronkan tautan divisionId setiap kali teks divisi diubah.
+    const linkedDivision = data.division !== undefined
+      ? await divisionService.findDivisionByName(data.division)
+      : undefined;
+
     const [updated] = await db
       .update(employees)
       .set({
         ...data,
+        ...(linkedDivision !== undefined
+          ? { division: linkedDivision?.name ?? data.division, divisionId: linkedDivision?.id ?? null }
+          : {}),
         updatedAt: new Date(),
       })
       .where(eq(employees.id, id))

@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, RefreshCw, ShieldCheck, UserCog } from "lucide-react";
 import { fetchApiData, fetchApiList } from "@/hooks/useDashboardQueries";
+import { useRealtime } from "@/hooks/useRealtime";
 
 type UserRole = "SUPERADMIN" | "LEADER" | "EMPLOYEE";
 type Team = { id: string; name: string; active?: boolean };
 type WorkLocation = { id: string; name: string; isActive?: boolean };
 type Shift = { id: string; name: string; isActive?: boolean };
+type Division = { id: string; name: string; isActive?: boolean };
 
 type UserRow = {
   id: string;
@@ -36,6 +38,7 @@ const EMPTY_USERS: UserRow[] = [];
 const EMPTY_TEAMS: Team[] = [];
 const EMPTY_LOCATIONS: WorkLocation[] = [];
 const EMPTY_SHIFTS: Shift[] = [];
+const EMPTY_DIVISIONS: Division[] = [];
 
 const roleLabels: Record<UserRole, string> = { SUPERADMIN: "Superadmin", LEADER: "Leader", EMPLOYEE: "Karyawan" };
 function normalizeRole(role: unknown): UserRole { const value = String(role).toUpperCase(); return value === "SUPERADMIN" || value === "LEADER" ? value : "EMPLOYEE"; }
@@ -53,17 +56,19 @@ export default function UsersPage() {
   const { data: usersData, isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
-      const [userRows, teamRows, locationRows, shiftRows] = await Promise.all([
+      const [userRows, teamRows, locationRows, shiftRows, divisionRows] = await Promise.all([
         fetchApiList<any>("/api/users", "Gagal mengambil /api/users"),
         fetchApiList<any>("/api/teams", "Gagal mengambil /api/teams"),
         fetchApiList<any>("/api/work-locations?isActive=true", "Gagal mengambil /api/work-locations?isActive=true"),
         fetchApiList<any>("/api/shifts?isActive=true", "Gagal mengambil /api/shifts?isActive=true"),
+        fetchApiList<any>("/api/divisions", "Gagal mengambil /api/divisions"),
       ]);
       return {
         users: (rowsFrom(userRows) as any[]).map((row: any) => ({ ...row, role: normalizeRole(row.role) })) as UserRow[],
         teams: (rowsFrom(teamRows) as Team[]).filter((team: Team) => team.active !== false),
         locations: (rowsFrom(locationRows) as WorkLocation[]).filter((location: WorkLocation) => location.isActive !== false),
         shifts: (rowsFrom(shiftRows) as Shift[]).filter((shift: Shift) => shift.isActive !== false),
+        divisions: (rowsFrom(divisionRows) as Division[]).filter((division: Division) => division.isActive !== false),
       };
     },
   });
@@ -72,8 +77,18 @@ export default function UsersPage() {
   const teams = usersData?.teams ?? EMPTY_TEAMS;
   const locations = usersData?.locations ?? EMPTY_LOCATIONS;
   const shifts = usersData?.shifts ?? EMPTY_SHIFTS;
+  const divisionOptions = usersData?.divisions ?? EMPTY_DIVISIONS;
   const loading = usersLoading;
   const error = localError || (usersError instanceof Error ? usersError.message : "");
+
+  // Divisi bisa berubah dari halaman Divisi (bahkan di perangkat lain) —
+  // segarkan dropdown di sini secara realtime.
+  useRealtime({
+    eventTypes: ["divisions.updated"],
+    onEvent: () => {
+      void queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
 
   const setUsers = (updater: (rows: UserRow[]) => UserRow[]) => {
     setOptimisticUsers((current) => updater(current ?? usersData?.users ?? EMPTY_USERS));
@@ -153,7 +168,8 @@ export default function UsersPage() {
                 {user.hasEmployeeProfile && <div className="mt-3 grid gap-2 rounded-2xl bg-[var(--bg-main)] p-3 text-xs text-[var(--text-secondary)] sm:grid-cols-2"><p><strong className="text-[var(--text-primary)]">Nomor HP:</strong> {user.phone || "Belum diisi"}</p><p><strong className="text-[var(--text-primary)]">Alamat:</strong> {user.address || "Belum diisi"}</p><p><strong className="text-[var(--text-primary)]">Email:</strong> {user.emailVerifiedAt ? "Terverifikasi" : "Belum diverifikasi"}</p></div>}
                 <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   <label className="block text-sm font-semibold">Role<select className="mt-2 w-full rounded-xl border-2 border-[var(--border-color)] bg-white px-3 py-2" value={user.role} disabled={savingId === user.id || !user.hasEmployeeProfile && user.role !== "SUPERADMIN"} onChange={(event) => updateUser(user, { role: event.target.value as UserRole })}>{Object.entries(roleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-                  <label className="block text-sm font-semibold">Team / Divisi<select className="mt-2 w-full rounded-xl border-2 border-[var(--border-color)] bg-white px-3 py-2" value={user.teamId || ""} disabled={savingId === user.id || !user.hasEmployeeProfile} onChange={(event) => updateUser(user, { teamId: event.target.value })}><option value="">Belum ditetapkan</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
+                  <label className="block text-sm font-semibold">Team<select className="mt-2 w-full rounded-xl border-2 border-[var(--border-color)] bg-white px-3 py-2" value={user.teamId || ""} disabled={savingId === user.id || !user.hasEmployeeProfile} onChange={(event) => updateUser(user, { teamId: event.target.value })}><option value="">Belum ditetapkan</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
+                  <label className="block text-sm font-semibold">Divisi<select className="mt-2 w-full rounded-xl border-2 border-[var(--border-color)] bg-white px-3 py-2" value={user.division || ""} disabled={savingId === user.id || !user.hasEmployeeProfile} onChange={(event) => updateUser(user, { division: event.target.value })}><option value="">Belum ditetapkan</option>{divisionOptions.map((division) => <option key={division.id} value={division.name}>{division.name}</option>)}{user.division && !divisionOptions.some((division) => division.name === user.division) && <option value={user.division}>{user.division} (lama)</option>}</select></label>
                   <label className="block text-sm font-semibold">Posisi / Jabatan<input className="input mt-2" value={user.position || ""} disabled={savingId === user.id || !user.hasEmployeeProfile} onChange={(event) => setUsers((rows) => rows.map((row) => row.id === user.id ? { ...row, position: event.target.value } : row))} onBlur={(event) => updateUser(user, { position: event.target.value })} placeholder="Karyawan Produksi / Leader Cetak" /></label>
                   <label className="block text-sm font-semibold">Lokasi Kerja<select className="mt-2 w-full rounded-xl border-2 border-[var(--border-color)] bg-white px-3 py-2" value={user.defaultLocationId || ""} disabled={savingId === user.id || !user.hasEmployeeProfile} onChange={(event) => updateUser(user, { defaultLocationId: event.target.value })}><option value="">Belum ditetapkan</option>{locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select></label>
                   <label className="block text-sm font-semibold">Shift<select className="mt-2 w-full rounded-xl border-2 border-[var(--border-color)] bg-white px-3 py-2" value={user.defaultShiftId || ""} disabled={savingId === user.id || !user.hasEmployeeProfile} onChange={(event) => updateUser(user, { defaultShiftId: event.target.value })}><option value="">Belum ditetapkan</option>{shifts.map((shift) => <option key={shift.id} value={shift.id}>{shift.name}</option>)}</select></label>
@@ -165,7 +181,7 @@ export default function UsersPage() {
           </div>
         )}
       </section>
-      {profileModalUser && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 bg-black/50 backdrop-blur-sm"><div className="card w-full max-w-lg"><div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold">Lengkapi Profil Karyawan</h3><button type="button" onClick={() => setProfileModalUser(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">&times;</button></div><form onSubmit={handleCreateProfile} className="grid gap-4"><input name="fullName" className="input" required placeholder="Nama lengkap" defaultValue={profileModalUser.username} /><input name="division" className="input" placeholder="Divisi / Team" /><input name="position" className="input" placeholder="Posisi / Jabatan" /><select name="defaultLocationId" className="input" required><option value="">Pilih lokasi kerja</option>{locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select><select name="defaultShiftId" className="input" required><option value="">Pilih shift</option>{shifts.map((shift) => <option key={shift.id} value={shift.id}>{shift.name}</option>)}</select><div className="flex justify-end gap-3"><button type="button" className="btn btn-secondary" onClick={() => setProfileModalUser(null)}>Batal</button><button type="submit" className="btn btn-primary" disabled={isSubmittingProfile}>{isSubmittingProfile ? "Menyimpan..." : "Simpan Profil"}</button></div></form></div></div>}
+      {profileModalUser && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 bg-black/50 backdrop-blur-sm"><div className="card w-full max-w-lg"><div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold">Lengkapi Profil Karyawan</h3><button type="button" onClick={() => setProfileModalUser(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">&times;</button></div><form onSubmit={handleCreateProfile} className="grid gap-4"><input name="fullName" className="input" required placeholder="Nama lengkap" defaultValue={profileModalUser.username} /><select name="division" className="input" defaultValue=""><option value="">Pilih divisi (opsional)</option>{divisionOptions.map((division) => <option key={division.id} value={division.name}>{division.name}</option>)}</select><input name="position" className="input" placeholder="Posisi / Jabatan" /><select name="defaultLocationId" className="input" required><option value="">Pilih lokasi kerja</option>{locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select><select name="defaultShiftId" className="input" required><option value="">Pilih shift</option>{shifts.map((shift) => <option key={shift.id} value={shift.id}>{shift.name}</option>)}</select><div className="flex justify-end gap-3"><button type="button" className="btn btn-secondary" onClick={() => setProfileModalUser(null)}>Batal</button><button type="submit" className="btn btn-primary" disabled={isSubmittingProfile}>{isSubmittingProfile ? "Menyimpan..." : "Simpan Profil"}</button></div></form></div></div>}
     </main>
   );
 }

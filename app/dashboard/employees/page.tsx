@@ -12,6 +12,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useToast } from "@/components/ui/Toast";
 import { getAuthHeaders } from "@/lib/auth-client";
 import { fetchApiData, fetchApiList, useCachedProfile } from "@/hooks/useDashboardQueries";
+import { useRealtime } from "@/hooks/useRealtime";
 import EmployeeDrawer from "@/components/admin/EmployeeDrawer";
 
 interface Employee {
@@ -35,7 +36,6 @@ const accessRoleOptions = [
   { value: "SUPERADMIN", label: "Superadmin", description: "Akses penuh owner/superadmin" },
 ] as const;
 
-const divisionOptions = ["HR", "Produksi", "Packing", "Sales", "Expedition", "Finance", "Operational"];
 const positionOptions = ["Admin", "Leader", "Staff", "Driver", "Manager", "Operator"];
 
 const getStatusBadge = (status: string) => {
@@ -77,6 +77,20 @@ export default function EmployeesPage() {
   });
   const employees = employeesData ?? [];
   const loading = employeesLoading;
+  // Divisi dari daftar terkelola Superadmin — bukan daftar hardcoded.
+  const { data: divisionsData } = useQuery<{ id: string; name: string }[]>({
+    queryKey: ["divisions", "options"],
+    queryFn: () => fetchApiList<{ id: string; name: string }>("/api/divisions", "Gagal memuat divisi"),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
+  const divisionOptions = (divisionsData ?? []).map((division) => division.name);
+  useRealtime({
+    eventTypes: ["divisions.updated"],
+    onEvent: () => {
+      void queryClient.invalidateQueries({ queryKey: ["divisions"] });
+    },
+  });
   const fetchEmployees = useCallback(() => queryClient.invalidateQueries({ queryKey: ["employees"] }), [queryClient]);
   const [formData, setFormData] = useState({
     nip: "",

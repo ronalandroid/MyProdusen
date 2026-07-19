@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { and, asc, eq, isNotNull } from 'drizzle-orm';
-import { db, employees, users } from '@/lib/db';
+import { db, divisions, employees, users } from '@/lib/db';
 import { successResponse, errorResponse } from '@/utils/response';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { handleApiError } from '@/lib/core/route-handler';
@@ -20,10 +20,13 @@ export async function GET(request: NextRequest) {
 
     const [registrationOpen, divisionRows, positionRows, leaderRows] = await Promise.all([
       isPublicRegistrationOpen(),
+      // Daftar divisi dari tabel Division yang dikelola Superadmin — divisi baru
+      // langsung tampil di formulir daftar walau belum punya karyawan.
       db
-        .selectDistinct({ division: employees.division })
-        .from(employees)
-        .where(and(eq(employees.status, 'ACTIVE'), isNotNull(employees.division))),
+        .select({ division: divisions.name })
+        .from(divisions)
+        .where(eq(divisions.isActive, true))
+        .orderBy(asc(divisions.name)),
       db
         .selectDistinct({ position: employees.position })
         .from(employees)
